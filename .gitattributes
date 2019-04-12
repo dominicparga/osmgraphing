@@ -1,0 +1,9 @@
+# Unify line endings
+* text=auto
+
+# Ignore line ending conversion for binary files
+*.jar   binary
+*.pdf   binary
+*.png   binary
+*.jpg   binary
+*.note  binary
