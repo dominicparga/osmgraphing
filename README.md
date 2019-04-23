@@ -1,6 +1,6 @@
 # osmgraphing
 
-Goal of this student project is parsing [openstreetmap](openstreetmap.org) data to calculate traffic routes on it.
+Goal of this student project is parsing [openstreetmap][web_openstreetmap] data to calculate traffic routes on it.
 
 ## Goal
 
@@ -25,7 +25,7 @@ Following requirements should be fulfilled:
 
 Downloaded osm data is provided in xml, where nodes are related to location in latitude and longitude.
 
-Problems will be the size limit of downloading from [openstreetmap](openstreet.org), but there are other osm data providers like [geofabrik](download.geofabrik.de) for instance.
+Problems will be the size limit of downloading from [openstreetmap][web_openstreetmap], but there are other osm data providers like [geofabrik][web_geofabrik] for instance.
 
 ### Read `raw osm data`
 
@@ -64,3 +64,6 @@ A metric for calculating lengths is needes as well.
 - Check `leaflet` - osm data provider?
 - Write info about filtered tags (count them explicitly)
 - Check order of latitude and longitude since changing it during development is quite annoying ._.
+
+[web_openstreetmap]: https://openstreetmap.org
+[web_geofabrik]: https://geofabrik.de
