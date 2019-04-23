@@ -16,8 +16,8 @@ Following requirements should be fulfilled:
 
 - Machines __up to 16 GB RAM__ should be able run the project.
 - Preprocessing should take __less than 10 minutes__.
-- A routing query should be processed in __under 10 seconds__.
-- If Contraction Hierarchies are used, the __speedup__ should be __up to 1000x__.
+- A __routing query__ should be processed in __under 10 seconds__.
+- If __Contraction Hierarchies__ are used, the __speedup__ should be __up to 1000x__.
 - The project should support at least __Ubuntu 18.04__.
 - __Test maps__ are `Isle of Men`, `Stuttgart` or `Baden-Württemberg` and `Germany`.
 
@@ -36,7 +36,7 @@ Since osm data is stored in huge xml files (up to GB), reading in those files to
 For routing, traffic crossroads are needed and many tags of the provided data is not needed.
 So first step will be providing osm data and filtering unnecessary tags in a parsing step.
 
-### Merge and process `osm nodes` and `osm edges`
+### Merge and process `osm-nodes` and `osm-edges`
 
 To do routing on the remaining data, the parsing result has to be stored efficiently in a graph structure.
 Since nodes are location related, not traffic-logic related, osm-nodes or osm-edges have to be merged into crossroads and edges, so routing algorithms don't have to execute useless steps.
