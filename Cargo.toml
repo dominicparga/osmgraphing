@@ -1,8 +1,10 @@
 [package]
 name = "osmgraphing"
 version = "0.1.0"
-authors = ["dominicparga <dominic.parga@gmail.com>,
-			jenasat <jena.s@outlook.de>"]
+authors = [
+    "dominicparga <dominic.parga@gmail.com>",
+    "jenasat <jena.s@outlook.de>"
+]
 edition = "2018"
 
 [dependencies]
