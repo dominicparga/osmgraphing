@@ -47,13 +47,13 @@ An offset-graph will fulfill the needs of quick node accesses.
 Following picture shows a small example of the data structure.
 
 ```text
-1 --> 2 <---+
+1 --- 2 ----+
 |     |     |
 +---> 3 <-- 4
 
-nodes           1 2 3 4
-edges per node  [(1 2) (1 3)] [(2 3)] [(3 2)] [(4 2) (4 3)]
-offset          [0] [4] [6] [8]
+nodes                1     2    3   4
+edge destinations   2 3  1 3 4  2  2 3
+offsets              0     2    5   6
 ```
 
 A metric for calculating lengths is needes as well.
