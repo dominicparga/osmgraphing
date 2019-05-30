@@ -1,6 +1,6 @@
 # osmgraphing
 
-Goal of this student project is parsing [openstreetmap][web_openstreetmap] data to calculate traffic routes on it.
+Goal of this student project is parsing [openstreetmap][www_openstreetmap] data to calculate traffic routes on it.
 
 ## News
 
@@ -9,7 +9,7 @@ Please see our Wiki if you are interested in more details.
 
 ## Setup and usage
 
-Please refer to [setup and usage][web_osmgraphing_usage] to get details about the project setup and how to run the code.
+Please refer to [setup and usage][www_osmgraphing_usage] to get details about the project setup and how to run the code.
 
-[web_openstreetmap]: https://openstreetmap.org
-[web_osmgraphing_usage]: https://github.com/dominicparga/osmgraphing/wiki/Usage
+[www_openstreetmap]: https://openstreetmap.org
+[www_osmgraphing_usage]: https://github.com/dominicparga/osmgraphing/wiki/Usage
