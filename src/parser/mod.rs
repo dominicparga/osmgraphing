@@ -2,6 +2,19 @@ use quick_xml;
 use quick_xml::Reader;
 use quick_xml::events::Event;
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// filtering
+
+pub trait Filter {}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// parsing
+
+pub trait Parser {
+    // fn apply(self, filter: &Filter) -> Self;
+    fn apply(self) -> Self;
+}
+
 pub struct XmlParser {
     pub xml: String,
 }
@@ -21,19 +34,18 @@ impl Default for XmlParser {
     }
 }
 
-pub trait Filter {
-    fn apply(self) -> Self;
-}
-
-impl Filter for XmlParser {
+impl Parser for XmlParser {
+    // fn apply(self, filter: &Filter) -> Self {
     fn apply(self) -> Self {
         println!("{}", self.xml);
         return self;
     }
 }
 
-fn stuff() {
-    let xml = "";
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// stuff
+
+pub fn stuff(xml: &str) {
     let mut reader = Reader::from_str(xml);
     reader.trim_text(true);
 

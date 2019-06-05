@@ -5,7 +5,7 @@ use graph::Edge;
 
 mod parser;
 use parser::XmlParser;
-use parser::Filter;
+use parser::Parser;
 
 fn main() {
     println!("Hello, world!");
@@ -19,6 +19,7 @@ fn main() {
     println!("{}", graph);
 
     let p = XmlParser { ..Default::default() };
-    p.apply().apply().apply();
-    println!();
+    // p.apply().apply().apply();
+
+    parser::stuff(&p.xml);
 }
