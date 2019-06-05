@@ -8,3 +8,4 @@ authors = [
 edition = "2018"
 
 [dependencies]
+quick-xml = "*"
