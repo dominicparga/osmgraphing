@@ -1,4 +1,4 @@
-use std::ffi::{OsString,OsStr};
+use std::ffi::{OsStr};
 use std::fs::File;
 use std::path::Path;
 
@@ -26,11 +26,7 @@ impl Reader {
 }
 
 impl super::Read for Reader {
-    fn from_str(s: &str) -> Reader {
-        return Self::from_os_str(&OsString::from(s));
-    }
-
-    fn from_os_str<S: AsRef<OsStr> + ?Sized>(path: &S) -> Reader {
+    fn from_path<S: AsRef<OsStr> + ?Sized>(path: &S) -> Reader {
         let path = Path::new(&path);
         let file = File::open(&path).unwrap();
         return Reader { pbf: OsmPbfReader::new(file) };

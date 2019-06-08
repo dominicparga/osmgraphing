@@ -24,8 +24,8 @@ fn main() {
     // p.apply().apply().apply();
 
     let mut reader = match std::env::args_os().nth(1) {
-        Some(filename)  => osm::pbf::Reader::from_os_str(&filename),
-        None            => osm::pbf::Reader::from_str("custom/maps/raw/andorra-latest.osm.pbf"),
+        Some(filename)  => osm::pbf::Reader::from_path(&filename),
+        None            => osm::pbf::Reader::from_path("custom/maps/raw/andorra-latest.osm.pbf"),
     };
     reader.stuff();
 }
