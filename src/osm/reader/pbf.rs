@@ -1,6 +1,7 @@
 use std::ffi::{OsStr};
 use std::fs::File;
 use std::path::Path;
+use std::io;
 
 use osmpbfreader::{OsmPbfReader,OsmObj,RelationId};
 
@@ -9,6 +10,14 @@ pub struct Reader {
 }
 
 impl Reader {
+    pub fn from_path<S: AsRef<OsStr> + ?Sized>(path: &S) -> io::Result<Self> {
+        let path = Path::new(&path);
+        match File::open(&path) {
+            Ok(file) => Ok(Reader { pbf: OsmPbfReader::new(file) }),
+            Err(e)   => Err(e),
+        }
+    }
+
     // TODO: move out of this lib into example file
     pub fn stuff(&mut self) {
         fn wanted(obj: &OsmObj) -> bool {
@@ -24,13 +33,5 @@ impl Reader {
         for (id, _) in objects {
             println!("{:?}", id);
         }
-    }
-}
-
-impl super::Read for Reader {
-    fn from_path<S: AsRef<OsStr> + ?Sized>(path: &S) -> Reader {
-        let path = Path::new(&path);
-        let file = File::open(&path).expect("File exists");
-        return Reader { pbf: OsmPbfReader::new(file) };
     }
 }
