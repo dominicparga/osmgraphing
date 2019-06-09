@@ -2,13 +2,14 @@ use std::ffi::{OsStr};
 use std::fs::File;
 use std::path::Path;
 
-use osmpbfreader::{OsmPbfReader,OsmObj, RelationId};
+use osmpbfreader::{OsmPbfReader,OsmObj,RelationId};
 
 pub struct Reader {
     pbf: OsmPbfReader<File>,
 }
 
 impl Reader {
+    // TODO: move out of this lib into example file
     pub fn stuff(&mut self) {
         fn wanted(obj: &OsmObj) -> bool {
             obj.id() == RelationId(7444).into() //id of relation for Paris

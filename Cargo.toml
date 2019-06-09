@@ -1,12 +1,39 @@
 [package]
 name = "osmgraphing"
 version = "0.1.0"
+edition = "2018"
+
 authors = [
     "dominicparga <dominic.parga@gmail.com>",
     "jenasat <jena.s@outlook.de>"
 ]
-edition = "2018"
+repository = "www.github.com/dominicparga/osmgraphing"
+readme = "README.md"
+keywords = ["osm", "route", "routing", "pbf", "xml"]
+categories = ["algorithms", "data-structures", "parser-implementations", "parsing", ""]
+license = "Apache 2.0"
+
+[badges]
+travis-ci = { repository = "dominicparga/osmgraphing", branch = "master" }
+
 
 [dependencies]
 quick-xml = "*"
 osmpbfreader = "*"
+
+
+[[example]]
+name = "xml_reader"
+path = "examples/playground/xml_reader.rs"
+
+[[example]]
+name = "parser"
+path = "examples/playground/parser.rs"
+
+[[example]]
+name = "pipes_and_filters"
+path = "examples/playground/pipes_and_filters.rs"
+
+[[example]]
+name = "graph"
+path = "examples/playground/graph.rs"

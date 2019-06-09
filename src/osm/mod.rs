@@ -1,8 +1,21 @@
+//------------------------------------------------------------------------------------------------//
+// reader
+
 use std::ffi::{OsStr};
 
-pub trait Read {
+trait Read {
     fn from_path<S: AsRef<OsStr> + ?Sized>(path: &S) -> Self;
 }
 
-pub mod pbf;
+mod pbf;
 // pub mod xml; // not finished yet
+
+//------------------------------------------------------------------------------------------------//
+// parser
+
+pub trait Parse {
+    fn parse<S: AsRef<OsStr> + ?Sized>(&self, path: &S);
+}
+
+mod parser;
+pub use parser::Parser;
