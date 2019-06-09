@@ -16,6 +16,7 @@ impl Reader {
         }
 
         let objects = self.pbf.get_objs_and_deps(wanted).unwrap();
+        // for _obj in pbf.iter().map(Result::unwrap) {
         println!(
             "The relation Paris is composed of {:?} items",
             objects.len()
