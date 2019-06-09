@@ -29,7 +29,7 @@ impl Reader {
 impl super::Read for Reader {
     fn from_path<S: AsRef<OsStr> + ?Sized>(path: &S) -> Reader {
         let path = Path::new(&path);
-        let file = File::open(&path).unwrap();
+        let file = File::open(&path).expect("File exists");
         return Reader { pbf: OsmPbfReader::new(file) };
     }
 }

@@ -48,8 +48,6 @@ impl super::Parse for Parser {
         };
         if let Some(mut reader) = reader {
             reader.stuff();
-        } else {
-            panic!("Given file has unsupported extension.");
         }
     }
 }
