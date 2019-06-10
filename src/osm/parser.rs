@@ -1,14 +1,10 @@
 use std::ffi::OsStr;
 use std::path::Path;
 
-use super::Read;
+pub struct Parser;
 
-pub struct Parser {
-
-}
-
-impl super::Parse for Parser {
-    fn parse<S: AsRef<OsStr> + ?Sized>(&self, path: &S) {
+impl Parser {
+    pub fn parse<S: AsRef<OsStr> + ?Sized>(&self, path: &S) {
         //----------------------------------------------------------------------------------------//
         // supported file extensions
 
