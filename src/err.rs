@@ -1,6 +1,8 @@
 use std::fmt;
 use std::io;
 
+use quick_xml;
+
 //------------------------------------------------------------------------------------------------//
 
 #[derive(Debug)]
@@ -9,14 +11,15 @@ pub enum Error {
     UnsuppExt(String),
     Io(io::Error),
     InvalidUnicode(String),
+    XmlIo(quick_xml::Error),
 }
 
 impl Error {
-    pub fn from(msg: &str) -> Self {
+    pub fn custom(msg: &str) -> Self {
         Error::Custom(String::from(msg))
     }
 
-    pub fn from_unsupported_extension(ext: &str, supported: &[&str]) -> Self {
+    pub fn unsupported_extension(ext: &str, supported: &[&str]) -> Self {
         let mut msg = {
             if ext.is_empty() {
                 String::from("The file has no extension.")
@@ -31,7 +34,7 @@ impl Error {
         Error::UnsuppExt(msg)
     }
 
-    pub fn from_invalid_unicode() -> Self {
+    pub fn invalid_unicode() -> Self {
         Error::InvalidUnicode(String::from("File name is invalid Unicode."))
     }
 }
@@ -42,7 +45,22 @@ impl fmt::Display for Error {
             Error::Custom(msg)         => msg.fmt(f),
             Error::UnsuppExt(msg)      => msg.fmt(f),
             Error::Io(e)               => e.fmt(f),
+            Error::XmlIo(e)            => e.fmt(f),
             Error::InvalidUnicode(msg) => msg.fmt(f),
         }
+    }
+}
+
+//------------------------------------------------------------------------------------------------//
+
+impl From<io::Error> for Error {
+    fn from(e: io::Error) -> Self {
+        Error::Io(e)
+    }
+}
+
+impl From<quick_xml::Error> for Error {
+    fn from(e: quick_xml::Error) -> Self {
+        Error::XmlIo(e)
     }
 }

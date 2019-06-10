@@ -1,4 +1,4 @@
-use std::ffi::{OsStr};
+use std::ffi::OsStr;
 use std::fs::File;
 use std::path::Path;
 use std::io;
