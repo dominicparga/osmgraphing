@@ -12,10 +12,8 @@ pub struct Reader {
 impl Reader {
     pub fn from_path<S: AsRef<OsStr> + ?Sized>(path: &S) -> io::Result<Self> {
         let path = Path::new(&path);
-        match File::open(&path) {
-            Ok(file) => Ok(Reader { pbf: OsmPbfReader::new(file) }),
-            Err(e)   => Err(e),
-        }
+        let file = File::open(&path)?;
+        Ok(Reader { pbf: OsmPbfReader::new(file) })
     }
 
     // TODO: move out of this lib into example file
