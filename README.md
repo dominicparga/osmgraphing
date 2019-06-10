@@ -6,8 +6,9 @@ Goal of this student project is parsing [openstreetmap][www_openstreetmap] data 
 
 ## News
 
-We are currently planning the project (e.g. which tags should be accepted, osm defaults, ...) but will start these days with coding.
-Please see our Wiki if you are interested in more details.
+The project setup has been finished.
+Examples can be added easily, which helps a lot when implementing.
+We are currently working on the parser with focus on pbf-files and the logic, i.e. graph structure and routing.
 
 ## Setup and usage
 
