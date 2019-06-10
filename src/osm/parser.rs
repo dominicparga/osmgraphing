@@ -21,6 +21,22 @@ impl Parser {
         //----------------------------------------------------------------------------------------//
         // filter
 
-        reader.stuff();
+        let filter = |_| true;
+        for obj in reader.iter().map(Result::unwrap) {
+            if !filter(obj.tags()) {
+                continue;
+            }
+            match obj {
+                osmpbfreader::OsmObj::Node(node) => {
+                    println!("{:?}", node)
+                }
+                osmpbfreader::OsmObj::Way(way) => {
+                    println!("{:?}", way)
+                }
+                osmpbfreader::OsmObj::Relation(rel) => {
+                    println!("{:?}", rel)
+                }
+            }
+        }
     }
 }

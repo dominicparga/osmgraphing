@@ -9,6 +9,7 @@ use crate::err::Error;
 mod pbf {
     pub use osmpbfreader::reader::OsmPbfReader as Reader;
     pub use osmpbfreader::{OsmPbfReader, OsmObj, RelationId};
+    pub use osmpbfreader::reader::Iter;
 }
 mod xml {
     use std::ffi::OsStr;
@@ -69,6 +70,14 @@ impl Reader<File> {
             }
             // no extension
             None => Err(Error::unsupported_extension("", Self::supp_exts())),
+        }
+    }
+
+    pub fn iter(&mut self) -> pbf::Iter<File> {
+        if let Reader::Pbf(reader) = self {
+            reader.iter()
+        } else {
+            panic!()
         }
     }
 
