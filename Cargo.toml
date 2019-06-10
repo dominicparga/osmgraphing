@@ -20,7 +20,6 @@ travis-ci = { repository = "dominicparga/osmgraphing", branch = "master" }
 [dependencies]
 quick-xml = "*"
 osmpbfreader = "*"
-failure = "*"
 
 
 [[example]]
