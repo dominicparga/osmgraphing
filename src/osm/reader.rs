@@ -80,23 +80,4 @@ impl Reader<File> {
             panic!()
         }
     }
-
-    pub fn stuff(&mut self) {
-        if let Reader::Pbf(reader) = self {
-            // TODO: move out of this lib into example file
-            fn wanted(obj: &pbf::OsmObj) -> bool {
-                obj.id() == pbf::RelationId(7444).into() //id of relation for Paris
-            }
-
-            let objects = reader.get_objs_and_deps(wanted).unwrap();
-            // for _obj in pbf.iter().map(Result::unwrap) {
-            println!(
-                "The relation Paris is composed of {:?} items",
-                objects.len()
-            );
-            for (id, _) in objects {
-                println!("{:?}", id);
-            }
-        }
-    }
 }

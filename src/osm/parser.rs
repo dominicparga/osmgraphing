@@ -21,10 +21,16 @@ impl Parser {
         //----------------------------------------------------------------------------------------//
         // filter
 
-        let filter = |_obj: &osmpbfreader::OsmObj| {
-            _obj.tags();
-            true
-        };
+        fn filter(obj: &osmpbfreader::OsmObj) -> bool {
+            obj.tags();
+            obj.id();
+            obj.id() != osmpbfreader::RelationId(7444).into() // id of relation for Paris
+        }
+
+        // let filter = |_obj: &osmpbfreader::OsmObj| {
+        //     _obj.tags();
+        //     true
+        // };
         for obj in reader.iter().map(Result::unwrap) {
             if !filter(&obj) {
                 continue;
