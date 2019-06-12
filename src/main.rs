@@ -1,3 +1,3 @@
 fn main() {
-    println!("Hello, world!");
+    println!("Please use 'cargo run --example' for all supported example files.")
 }
