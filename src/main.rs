@@ -1,4 +1,6 @@
 use osmgraphing::graph;
+use osmgraphing::dijkstra;
+use dijkstra::ShortestPath;
 use graph::Graph;
 use graph::Node;
 use graph::Edge;
@@ -15,7 +17,9 @@ fn main() {
                      Edge { id: 4, src: c.id, dest: d.id, weight: 3 }];
     let nodes = vec![a, b, c, d];
     let graph = Graph { nodes: nodes, edges: edges, node_count: 4, edge_count: 5 };
-
+    let mut dijkstra = dijkstra::init_dijkstra(&graph);
+    dijkstra.compute_shortestPath(0, 3);
+    println!("{}", dijkstra.get_distance(3));
 
     println!("{}", graph);
 }
