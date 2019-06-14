@@ -19,8 +19,13 @@ fn main() {
     let graph = Graph { nodes: nodes, edges: edges, node_count: 4, edge_count: 5 };
     let mut dijkstra = dijkstra::init_dijkstra(&graph);
     dijkstra.compute_shortestPath(0, 3);
-    println!("{}", dijkstra.get_distance(3));
-
     println!("{}", graph);
+    for i in 0 .. graph.node_count {
+        println!("{{Distance to Node {} is {}}}", i, dijkstra.get_distance(i));
+    }
+    let path = dijkstra.get_Path(0, 3);
+    for i in 0 .. path.len() {
+        println!("{{Shortest Path leads along edge {}}}", graph.edges[path[i]]);
+    }
 }
 

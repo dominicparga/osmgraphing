@@ -49,7 +49,7 @@ impl<'a>  ShortestPath for Dijkstra<'a>  {
                 continue;
             }
             let graph_node = &self.graph.nodes[id];
-            for i in graph_node.edge_start .. graph_node.edge_end {
+            for i in graph_node.edge_start .. graph_node.edge_end + 1 {
                 let current_edge = &self.graph.edges[i];
                 let current_cost = cost + current_edge.weight;
                 if current_cost < self.cost[current_edge.dest] {
