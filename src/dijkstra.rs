@@ -3,6 +3,7 @@ use std:: {
     cmp::Ordering,
     collections::BinaryHeap,
 };
+use std::time::{Duration, Instant};
 
 pub struct Dijkstra<'a> {
     pub graph: &'a graph::Graph,
@@ -38,6 +39,7 @@ pub trait ShortestPath {
 
 impl<'a>  ShortestPath for Dijkstra<'a>  {
     fn compute_shortestPath(&mut self, source: usize, dest: usize) {
+        let now = Instant::now();
         self.cost[source] = 0;
         let mut queue = BinaryHeap::new();
         queue.push(CostNode {cost: 0, id: source});
@@ -59,6 +61,7 @@ impl<'a>  ShortestPath for Dijkstra<'a>  {
                 }
             }
         }
+        println!("Ran Dijkstra in {} microseconds a.k.a {} seconds", now.elapsed().as_micros(),now.elapsed().as_secs());
     }
 
     fn get_distance(&mut self, node_id: usize) -> usize{
