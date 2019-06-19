@@ -9,14 +9,7 @@ impl Parser {
         //----------------------------------------------------------------------------------------//
         // get reader
 
-        let mut reader;
-        match Reader::from_path(&path) {
-            Err(e) => {
-                println!("{}", e);
-                return ()
-            },
-            Ok(r) => reader = r,
-        }
+        let mut reader = Reader::from_path(&path).unwrap();
 
         //----------------------------------------------------------------------------------------//
         // filter
