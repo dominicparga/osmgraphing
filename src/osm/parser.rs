@@ -1,49 +1,51 @@
 use std::ffi::OsStr;
-use std::path::Path;
+
+use super::Reader;
 
 pub struct Parser;
 
 impl Parser {
     pub fn parse<S: AsRef<OsStr> + ?Sized>(&self, path: &S) {
         //----------------------------------------------------------------------------------------//
-        // supported file extensions
+        // get reader
 
-        const EXT_PBF: &str = "pbf";
-        // const EXT_XML: &str = "xml";
-
-        fn unsupported_ext_found(unsupp_ext: Option<&str>) {
-            if let Some(unsupp_ext) = unsupp_ext {
-                println!("Unsupported extension '{}' were given!", unsupp_ext);
-            };
-            println!("Please insert a path to a valid osm-file. Supported extensions are: {}",
-                EXT_PBF
-            );
+        let mut reader;
+        match Reader::from_path(&path) {
+            Err(e) => {
+                println!("{}", e);
+                return ()
+            },
+            Ok(r) => reader = r,
         }
 
         //----------------------------------------------------------------------------------------//
-        // process given path
+        // filter
 
-        // check path
-        let path = Path::new(&path);
-        let reader = match path.extension() {
-            None => {
-                unsupported_ext_found(None);
-                None
-            },
-            Some(os_str) => {
-                match os_str.to_str() {
-                    Some(EXT_PBF) => {
-                        Some(super::pbf::Reader::from_path(path))
-                    },
-                    unsupp_ext => {
-                        unsupported_ext_found(unsupp_ext);
-                        None
-                    },
+        fn filter(obj: &osmpbfreader::OsmObj) -> bool {
+            obj.tags();
+            obj.id();
+            obj.id() != osmpbfreader::RelationId(7444).into() // id of relation for Paris
+        }
+
+        // let filter = |_obj: &osmpbfreader::OsmObj| {
+        //     _obj.tags();
+        //     true
+        // };
+        for obj in reader.iter().map(Result::unwrap) {
+            if !filter(&obj) {
+                continue;
+            }
+            match obj {
+                osmpbfreader::OsmObj::Node(node) => {
+                    println!("{:?}", node)
+                }
+                osmpbfreader::OsmObj::Way(way) => {
+                    println!("{:?}", way)
+                }
+                osmpbfreader::OsmObj::Relation(rel) => {
+                    println!("{:?}", rel)
                 }
             }
-        };
-        if let Some(mut reader) = reader {
-            reader.stuff();
         }
     }
 }
