@@ -11,6 +11,7 @@ fn main() {
         edge_count: 0
     };
 
+    // TODO check for windows
     graph.read_graph("res/graphs/small.txt").expect("error reading file!");
     graph.set_edge_offset();
     //println!("{}", graph);
