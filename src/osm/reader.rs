@@ -42,7 +42,7 @@ impl<R> Reader<R> {
     const EXT_PBF: &'static str = "pbf";
     const _EXT_XML: &'static str = "osm";
 
-    pub fn supp_exts() -> &'static [&'static str; 1] {
+    pub fn supported_exts() -> &'static [&'static str; 1] {
         &[Reader::<R>::EXT_PBF]
     }
 }
@@ -62,14 +62,14 @@ impl Reader<File> {
                     Ok(Reader::Pbf(pbf::Reader::new(file)))
                 },
                 // unsupported extension
-                Some(unsupp_ext) => {
-                    Err(Error::unsupported_extension(unsupp_ext, Self::supp_exts()))
+                Some(unsupported_ext) => {
+                    Err(Error::unsupported_extension(unsupported_ext, Self::supported_exts()))
                 },
                 // path is not valid unicode
                 None => Err(Error::invalid_unicode()),
             }
             // no extension
-            None => Err(Error::unsupported_extension("", Self::supp_exts())),
+            None => Err(Error::unsupported_extension("", Self::supported_exts())),
         }
     }
 
