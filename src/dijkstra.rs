@@ -3,7 +3,7 @@ use std:: {
     cmp::Ordering,
     collections::BinaryHeap,
 };
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 pub struct Dijkstra<'a> {
     pub graph: &'a graph::Graph,
@@ -32,13 +32,13 @@ impl PartialOrd for CostNode {
 }
 
 pub trait ShortestPath {
-    fn compute_shortestPath(&mut self, source: usize, dest: usize);
+    fn compute_shortest_path(&mut self, source: usize, dest: usize);
     fn get_distance(&mut self, node_id: usize) -> usize;
-    fn get_Path(&mut self, source: usize, dest: usize) -> Vec<usize>;
+    fn get_path(&mut self, source: usize, dest: usize) -> Vec<usize>;
 }
 
 impl<'a>  ShortestPath for Dijkstra<'a>  {
-    fn compute_shortestPath(&mut self, source: usize, dest: usize) {
+    fn compute_shortest_path(&mut self, source: usize, dest: usize) {
         let now = Instant::now();
         self.cost[source] = 0;
         let mut queue = BinaryHeap::new();
@@ -46,7 +46,7 @@ impl<'a>  ShortestPath for Dijkstra<'a>  {
         while let Some(CostNode {cost, id} ) = queue.pop() {
             if id == dest {
                 break;
-            } 
+            }
             if cost > self.cost[id] {
                 continue;
             }
@@ -73,7 +73,7 @@ impl<'a>  ShortestPath for Dijkstra<'a>  {
         }
     }
 
-    fn get_Path(&mut self, source: usize, dest: usize) -> std::vec::Vec<usize> {
+    fn get_path(&mut self, source: usize, dest: usize) -> std::vec::Vec<usize> {
         if source >= self.graph.node_count || dest >= self.graph.node_count {
             let result = vec![];
             result

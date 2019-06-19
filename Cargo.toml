@@ -37,3 +37,7 @@ path = "examples/playground/pipes_and_filters.rs"
 [[example]]
 name = "graph"
 path = "examples/playground/graph.rs"
+
+[[example]]
+name = "dijkstra"
+path = "examples/playground/dijkstra.rs"
