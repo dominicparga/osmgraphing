@@ -1,8 +1,8 @@
+use std::cmp::Ordering;
+use std::collections::BinaryHeap;
+use std::borrow::Cow;
+
 use super::Graph;
-use std:: {
-    cmp::Ordering,
-    collections::BinaryHeap,
-};
 
 //--------------------------------------------------------------------------------------------------
 // nodes
@@ -40,10 +40,27 @@ impl PartialEq for CostNode {
 //--------------------------------------------------------------------------------------------------
 // Dijkstra's type of path
 
+#[derive(Clone)]
 pub struct Path {
     pub cost: Vec<f64>,
     pub predecessors: Vec<usize>,
 }
+
+// impl<'a> ToOwned for &'a Path {
+//     type Owned = Path;
+
+//     fn to_owned(&self) -> Self::Owned {
+//         Path {
+//             cost: self.cost.to_owned(),
+//             predecessors: self.predecessors.to_owned(),
+//         }
+//     }
+// }
+
+// impl<'a> Into<Cow<'a, Path>> for Path {
+//     fn into(self) -> Cow<'a, Path> {
+//     }
+// }
 
 //--------------------------------------------------------------------------------------------------
 // Dijkstra
@@ -66,7 +83,7 @@ impl<'a> Dijkstra<'a> {
 }
 
 impl<'a> Dijkstra<'a> {
-    pub fn compute_shortest_path(&mut self, src: usize, dst: usize) {
+    pub fn compute_shortest_path(&mut self, src: usize, dst: usize) -> Cow<Path> {
         self.path.cost[src] = 0.0;
         let mut queue = BinaryHeap::new();
         queue.push(CostNode {cost: 0.0, id: src});
@@ -88,15 +105,7 @@ impl<'a> Dijkstra<'a> {
                 }
             }
         }
-    }
-
-    pub fn get_distance(&mut self, node_id: usize) -> f64 {
-        if node_id >= self.graph.node_count {
-            let result = std::f64::MAX;
-            result
-        } else {
-            self.path.cost[node_id]
-        }
+        Cow::Borrowed(&self.path)
     }
 
     pub fn get_path(&mut self, src: usize, dst: usize) -> std::vec::Vec<usize> {

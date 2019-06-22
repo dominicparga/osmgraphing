@@ -24,5 +24,5 @@ fn main() {
     let mut dijkstra = routing::Dijkstra::new(&graph);
     dijkstra.compute_shortest_path(0, 100000000);
     println!("Ran Dijkstra in {} microseconds a.k.a {} seconds", now.elapsed().as_micros(),now.elapsed().as_secs());
-    println!("Distance to Node 4: {}", dijkstra.get_distance(9990));
+    // println!("Distance to Node 4: {}", dijkstra.get_distance(9990));
 }
