@@ -110,8 +110,8 @@ impl Graph {
                     self.edges.push(Edge {
                         id: hax,
                         src: param[0].parse::<usize>().unwrap(),
-                        dest: param[1].parse::<usize>().unwrap(),
-                        weight: param[2].parse::<usize>().unwrap(),
+                        dst: param[1].parse::<usize>().unwrap(),
+                        weight: param[2].parse::<f64>().unwrap(),
                     });
                     hax += 1;
                 }
@@ -156,8 +156,8 @@ impl fmt::Display for Node {
 pub struct Edge {
     pub id: usize,
     pub src: usize,
-    pub dest: usize,
-    pub weight: usize,
+    pub dst: usize,
+    pub weight: f64,
 }
 
 impl fmt::Display for Edge {
@@ -165,7 +165,7 @@ impl fmt::Display for Edge {
         write!(
             f,
             "{{id: {}, source: {}, target: {}, length: {}}}",
-            self.id, self.src, self.dest, self.weight
+            self.id, self.src, self.dst, self.weight
         )
     }
 }
