@@ -86,12 +86,13 @@ impl<'a> Dijkstra<'a> {
     pub fn compute_shortest_path(&mut self, src: usize, dst: usize) -> Cow<Path> {
         self.path.cost[src] = 0.0;
         let mut queue = BinaryHeap::new();
+
         queue.push(CostNode {cost: 0.0, id: src});
-        while let Some(CostNode {cost, id} ) = queue.pop() {
+        while let Some(CostNode {cost, id}) = queue.pop() {
             if id == dst {
                 break;
             }
-            if cost > self.path.cost[id] {
+            if cost >= self.path.cost[id] {
                 continue;
             }
             let graph_node = &self.graph.nodes[id];
@@ -105,6 +106,7 @@ impl<'a> Dijkstra<'a> {
                 }
             }
         }
+
         Cow::Borrowed(&self.path)
     }
 
