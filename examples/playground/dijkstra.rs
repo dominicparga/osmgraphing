@@ -1,5 +1,5 @@
 use osmgraphing::routing;
-use routing::ShortestPath;
+use routing::dijkstra::ShortestPath;
 
 fn main() {
     let mut graph = routing::Graph {
@@ -13,7 +13,7 @@ fn main() {
     graph.read_graph("res/graphs/small.txt").expect("error reading file!");
     graph.set_edge_offset();
     //println!("{}", graph);
-    let mut dijkstra = routing::init_dijkstra(&graph);
+    let mut dijkstra = routing::dijkstra::init(&graph);
     dijkstra.compute_shortest_path(0, 100000000);
     println!("Distance to Node 4: {}", dijkstra.get_distance(9990));
 }

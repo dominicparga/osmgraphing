@@ -5,22 +5,20 @@ use std:: {
 };
 use std::time::Instant;
 
-pub struct Dijkstra<'a> {
-    pub graph: &'a Graph,
-    pub cost: Vec<usize>,
-    pub path: Vec<usize>
-}
+//--------------------------------------------------------------------------------------------------
+// nodes
 
 #[derive(Copy, Clone, Eq, PartialEq)]
-pub struct CostNode {
-    pub cost: usize,
+struct CostNode {
     pub id: usize,
+    pub cost: usize,
 }
 
 impl Ord for CostNode {
     fn cmp(&self, other: &CostNode) -> Ordering {
-        //flips the ordering
-        other.cost.cmp(&self.cost)
+        // flips the ordering
+        other.cost
+            .cmp(&self.cost)
             .then_with(|| self.id.cmp(&other.id))
     }
 }
@@ -31,13 +29,21 @@ impl PartialOrd for CostNode {
     }
 }
 
+//--------------------------------------------------------------------------------------------------
+
+pub struct Dijkstra<'a> {
+    pub graph: &'a Graph,
+    pub cost: Vec<usize>,
+    pub path: Vec<usize>
+}
+
 pub trait ShortestPath {
     fn compute_shortest_path(&mut self, source: usize, dest: usize);
     fn get_distance(&mut self, node_id: usize) -> usize;
     fn get_path(&mut self, source: usize, dest: usize) -> Vec<usize>;
 }
 
-impl<'a>  ShortestPath for Dijkstra<'a>  {
+impl<'a>  ShortestPath for Dijkstra<'a> {
     fn compute_shortest_path(&mut self, source: usize, dest: usize) {
         let now = Instant::now();
         self.cost[source] = 0;
@@ -64,7 +70,7 @@ impl<'a>  ShortestPath for Dijkstra<'a>  {
         println!("Ran Dijkstra in {} microseconds a.k.a {} seconds", now.elapsed().as_micros(),now.elapsed().as_secs());
     }
 
-    fn get_distance(&mut self, node_id: usize) -> usize{
+    fn get_distance(&mut self, node_id: usize) -> usize {
         if node_id >= self.graph.node_count {
             let result = std::usize::MAX;
             result
@@ -90,7 +96,7 @@ impl<'a>  ShortestPath for Dijkstra<'a>  {
     }
 }
 
-pub fn init_dijkstra(graph: &Graph) -> Dijkstra {
+pub fn init(graph: &Graph) -> Dijkstra {
     let cost = vec![std::usize::MAX; graph.node_count];
     let path = vec![std::usize::MAX; graph.node_count];
     let dijkstra = Dijkstra {
