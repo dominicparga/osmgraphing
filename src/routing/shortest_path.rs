@@ -1,4 +1,4 @@
-use super::graph;
+use super::Graph;
 use std:: {
     cmp::Ordering,
     collections::BinaryHeap,
@@ -6,7 +6,7 @@ use std:: {
 use std::time::Instant;
 
 pub struct Dijkstra<'a> {
-    pub graph: &'a graph::Graph,
+    pub graph: &'a Graph,
     pub cost: Vec<usize>,
     pub path: Vec<usize>
 }
@@ -90,7 +90,7 @@ impl<'a>  ShortestPath for Dijkstra<'a>  {
     }
 }
 
-pub fn init_dijkstra(graph: &graph::Graph) -> Dijkstra{
+pub fn init_dijkstra(graph: &Graph) -> Dijkstra {
     let cost = vec![std::usize::MAX; graph.node_count];
     let path = vec![std::usize::MAX; graph.node_count];
     let dijkstra = Dijkstra {
@@ -100,4 +100,3 @@ pub fn init_dijkstra(graph: &graph::Graph) -> Dijkstra{
     };
     dijkstra
 }
-
