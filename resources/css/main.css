@@ -1,0 +1,11 @@
+#map {
+    height: 100%;
+    width: 80%;
+    float: right;
+}
+
+#queryBox {
+    height: 100%;
+    width: 20%;
+    float: left;
+}

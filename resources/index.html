@@ -1,0 +1,30 @@
+<html>
+</head>
+    <link rel="stylesheet" href="css/leaflet.css" /> 
+    <link rel="stylesheet" href="css/main.css" />
+    <script src="js/leaflet.js"></script> 
+    <script src="js/jquery.js"></script> 
+</head>
+
+<body>
+    <div id="queryBox">
+            <h4 style="margin-bottom: 1px;">Create a new source marker</h2>
+            <br/>
+            lat.: <input style="margin-left: 4px;" type="text" name="latitude" id="lat_src_input" value="48.78232"/>   
+            <input style="margin-left: 10px;" type="button" onclick="createSource()" value="Show Source"/>
+            <br/> 
+            lng.: <input style="margin-top: 10px;" type="text" name="longitude" id="lng_src_input" value="9.17702"/>
+            <!-- zoom (Opt.): <input type="text" name="zoom level" id="zoom"/> -->
+            <br/>
+            <h4 style="margin-bottom: 1px;">Create a new destination marker</h2>
+            <br/>
+            lat.: <input style="margin-left: 4px;" type="text" name="latitude" id="lat_dest_input"/>   
+            <input style="margin-left: 10px;" type="button" onclick="createDest()" value="Show Destination"/>
+            <br/> 
+            lng.: <input style="margin-top: 10px;" type="text" name="longitude" id="lng_dest_input"/>
+            <!-- zoom (Opt.): <input type="text" name="zoom level" id="zoom"/> -->
+    </div>
+    <div id="map"></div>
+    <script src="js/main.js"></script>
+</body>
+</html>
