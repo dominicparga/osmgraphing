@@ -46,22 +46,6 @@ pub struct Path {
     pub predecessors: Vec<usize>,
 }
 
-// impl<'a> ToOwned for &'a Path {
-//     type Owned = Path;
-
-//     fn to_owned(&self) -> Self::Owned {
-//         Path {
-//             cost: self.cost.to_owned(),
-//             predecessors: self.predecessors.to_owned(),
-//         }
-//     }
-// }
-
-// impl<'a> Into<Cow<'a, Path>> for Path {
-//     fn into(self) -> Cow<'a, Path> {
-//     }
-// }
-
 //--------------------------------------------------------------------------------------------------
 // Dijkstra
 
@@ -84,15 +68,29 @@ impl<'a> Dijkstra<'a> {
 
 impl<'a> Dijkstra<'a> {
     pub fn compute_shortest_path(&mut self, src: usize, dst: usize) -> Cow<Path> {
-        self.path.cost[src] = 0.0;
-        let mut queue = BinaryHeap::new();
+        //------------------------------------------------------------------------------------------
+        // initialize, but check path-"cache" before
 
-        queue.push(CostNode {cost: 0.0, id: src});
-        while let Some(CostNode {cost, id}) = queue.pop() {
+        if self.path.cost[src] != 0.0 {
+            for i in 0 .. self.graph.node_count() {
+                self.path.cost[i] = std::f64::MAX;
+                self.path.predecessors[i] = std::usize::MAX;
+            }
+        }
+        let mut queue = BinaryHeap::new();
+        queue.push(CostNode { id: src, cost: 0.0 });
+        self.path.cost[src] = 0.0;
+
+        //------------------------------------------------------------------------------------------
+        // compute
+
+        while let Some(CostNode { id, cost }) = queue.pop() {
+            // shortest path found
             if id == dst {
                 break;
             }
-            if cost >= self.path.cost[id] {
+            // if node has already been reached
+            if cost > self.path.cost[id] {
                 continue;
             }
             let graph_node = &self.graph.nodes[id];
