@@ -14,7 +14,7 @@ fn main() {
         nodes: Vec::new(),
         edges: Vec::new(),
         node_count: 0,
-        edge_count: 0
+        edge_count: 0,
     };
 
     graph.read_graph(filename).expect("error reading file!");

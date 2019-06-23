@@ -1,7 +1,7 @@
 mod xml {
     use quick_xml;
-    use quick_xml::Reader;
     use quick_xml::events::Event;
+    use quick_xml::Reader;
 
     pub fn stuff(xml: &str) {
         let mut reader = Reader::from_str(xml);
@@ -15,7 +15,10 @@ mod xml {
         loop {
             match reader.read_event(&mut buf) {
                 Ok(Event::Start(ref e)) => {
-                    println!("Event::Start(ref e) {:?}", String::from_utf8_lossy(e.name()));
+                    println!(
+                        "Event::Start(ref e) {:?}",
+                        String::from_utf8_lossy(e.name())
+                    );
                     match e.name() {
                         b"tag1" => println!(
                             "attributes values: {:?}",
@@ -24,19 +27,19 @@ mod xml {
                         b"tag2" => count += 1,
                         _ => (),
                     }
-                },
+                }
                 Ok(Event::Text(e)) => {
                     println!("Event::Text(e)");
                     txt.push(e.unescape_and_decode(&reader).unwrap())
-                },
+                }
                 Ok(Event::Eof) => {
                     println!("Event::Eof");
-                    break
-                }, // exits the loop when reaching end of file
+                    break;
+                } // exits the loop when reaching end of file
                 Err(e) => panic!("Error at position {}: {:?}", reader.buffer_position(), e),
                 _ => {
                     println!("Ignored event");
-                }, // There are several other `Event`s we do not consider here
+                } // There are several other `Event`s we do not consider here
             }
 
             println!("{:?}", txt);
@@ -50,12 +53,14 @@ mod xml {
 }
 
 fn main() {
-    xml::stuff(r#"
-        <tag1 att1 = "test">
-            <tag2><!--Test comment-->TEST</tag2>
-            <tag2>
-                Test 2
-            </tag2>
-        </tag1>
-    "#);
+    xml::stuff(
+        r#"
+            <tag1 att1 = "test">
+                <tag2><!--Test comment-->TEST</tag2>
+                <tag2>
+                    Test 2
+                </tag2>
+            </tag1>
+        "#,
+    );
 }

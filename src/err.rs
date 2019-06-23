@@ -42,10 +42,10 @@ impl Error {
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Error::Custom(msg)         => msg.fmt(f),
-            Error::UnsuppExt(msg)      => msg.fmt(f),
-            Error::Io(e)               => e.fmt(f),
-            Error::XmlIo(e)            => e.fmt(f),
+            Error::Custom(msg) => msg.fmt(f),
+            Error::UnsuppExt(msg) => msg.fmt(f),
+            Error::Io(e) => e.fmt(f),
+            Error::XmlIo(e) => e.fmt(f),
             Error::InvalidUnicode(msg) => msg.fmt(f),
         }
     }
