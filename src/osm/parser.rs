@@ -29,15 +29,9 @@ impl Parser {
                 continue;
             }
             match obj {
-                osmpbfreader::OsmObj::Node(node) => {
-                    println!("{:?}", node)
-                }
-                osmpbfreader::OsmObj::Way(way) => {
-                    println!("{:?}", way)
-                }
-                osmpbfreader::OsmObj::Relation(rel) => {
-                    println!("{:?}", rel)
-                }
+                osmpbfreader::OsmObj::Node(node) => println!("{:?}", node),
+                osmpbfreader::OsmObj::Way(way) => println!("{:?}", way),
+                osmpbfreader::OsmObj::Relation(rel) => println!("{:?}", rel),
             }
         }
     }
