@@ -35,8 +35,12 @@ impl fmt::Display for Graph {
 impl Graph {
     //----------------------------------------------------------------------------------------------
 
-    pub fn node_count(&self) -> usize { self.node_count }
-    pub fn edge_count(&self) -> usize { self.edge_count }
+    pub fn node_count(&self) -> usize {
+        self.node_count
+    }
+    pub fn edge_count(&self) -> usize {
+        self.edge_count
+    }
 }
 
 impl Graph {

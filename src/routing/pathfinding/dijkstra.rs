@@ -1,6 +1,6 @@
+use std::borrow::Cow;
 use std::cmp::Ordering;
 use std::collections::BinaryHeap;
-use std::borrow::Cow;
 
 use super::Graph;
 
@@ -18,8 +18,7 @@ impl Ord for CostNode {
         // (1) cost in float, but cmp uses only m, which is ok
         // (2) inverse order since BinaryHeap is max-heap, but min-heap is needed
         let delta = (other.cost - self.cost) as i64;
-        delta.cmp(&0)
-            .then_with(|| other.id.cmp(&self.id))
+        delta.cmp(&0).then_with(|| other.id.cmp(&self.id))
     }
 }
 
@@ -61,7 +60,7 @@ impl<'a> Dijkstra<'a> {
             path: Path {
                 cost: vec![std::f64::MAX; graph.node_count],
                 predecessors: vec![std::usize::MAX; graph.node_count],
-            }
+            },
         }
     }
 }
@@ -71,11 +70,9 @@ impl<'a> Dijkstra<'a> {
         //------------------------------------------------------------------------------------------
         // initialize, but check path-"cache" before
 
-        if self.path.cost[src] != 0.0 {
-            for i in 0 .. self.graph.node_count() {
-                self.path.cost[i] = std::f64::MAX;
-                self.path.predecessors[i] = std::usize::MAX;
-            }
+        for i in 0..self.graph.node_count() {
+            self.path.cost[i] = std::f64::MAX;
+            self.path.predecessors[i] = std::usize::MAX;
         }
         let mut queue = BinaryHeap::new(); // max-heap, but CostNode's natural order is reversed
 
@@ -100,14 +97,17 @@ impl<'a> Dijkstra<'a> {
             // if not -> update "official" cost
             // and add successors
             let node = &self.graph.nodes[id];
-            for edge_idx in node.edge_start .. node.edge_end + 1 {
+            for edge_idx in node.edge_start..node.edge_end + 1 {
                 let edge = &self.graph.edges[edge_idx];
                 let new_cost = cost + edge.weight;
 
                 if new_cost < self.path.cost[edge.dst] {
                     self.path.predecessors[edge.dst] = edge_idx;
                     self.path.cost[edge.dst] = new_cost;
-                    queue.push(CostNode { id: edge.dst, cost: new_cost });
+                    queue.push(CostNode {
+                        id: edge.dst,
+                        cost: new_cost,
+                    });
                 }
             }
         }
