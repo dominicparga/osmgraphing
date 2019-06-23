@@ -1,48 +1,97 @@
 use std::fmt;
-use std::time::Instant;
 
 //--------------------------------------------------------------------------------------------------
+// definitions
+
+pub struct GraphBuilder {
+    graph: Graph,
+}
 
 pub struct Graph {
-    pub nodes: Vec<Node>,
-    pub edges: Vec<Edge>,
-    pub node_count: usize,
-    pub edge_count: usize,
+    nodes: Vec<Node>,
+    edges: Vec<Edge>,
 }
 
 pub struct Node {
-    pub id: usize,
-    pub lat: f64,
-    pub lon: f64,
-    pub edge_start: usize,
-    pub edge_end: usize,
+    id: usize,
+    lat: f64,
+    lon: f64,
 }
 
 pub struct Edge {
-    pub id: usize,
-    pub src: usize,
-    pub dst: usize,
-    pub weight: f64,
+    id: usize,
+    src: usize,
+    dst: usize,
+    weight: f64,
 }
 
 //--------------------------------------------------------------------------------------------------
+// implementations
+
+impl GraphBuilder {
+    //----------------------------------------------------------------------------------------------
+    // init self
+
+    pub fn new() -> Self {
+        GraphBuilder {
+            graph: Graph {
+                nodes: Vec::new(),
+                edges: Vec::new(),
+            },
+        }
+    }
+
+    pub fn with_capacity(node_capacity: usize, edge_capacity: usize) -> Self {
+        GraphBuilder {
+            graph: Graph {
+                nodes: Vec::with_capacity(node_capacity),
+                edges: Vec::with_capacity(edge_capacity),
+            },
+        }
+    }
+
+    //----------------------------------------------------------------------------------------------
+    // build graph
+
+    pub fn new_graph(&mut self) -> &mut Self {
+        self.graph = Graph::new();
+        self
+    }
+
+    pub fn reserve_nodes(&mut self, additional: usize) -> &mut Self {
+        self.graph.nodes.reserve(additional);
+        self
+    }
+
+    pub fn reserve_edges(&mut self, additional: usize) -> &mut Self {
+        self.graph.edges.reserve(additional);
+        self
+    }
+
+    pub fn push_node(&mut self, id: usize, lat: f64, lon: f64) -> &mut Self {
+        self.graph.nodes.push(Node { id, lat, lon });
+        self
+    }
+
+    pub fn push_edge(&mut self, id: usize, src: usize, dst: usize, weight: f64) -> &mut Self {
+        self.graph.edges.push(Edge {
+            id,
+            src,
+            dst,
+            weight,
+        });
+        self
+    }
+
+    pub fn finalize(&mut self) -> Graph {
+        // TODO compute offset array
+        self.graph
+    }
+}
 
 impl Graph {
-    //----------------------------------------------------------------------------------------------
-
-    pub fn node_count(&self) -> usize {
-        self.node_count
-    }
-    pub fn edge_count(&self) -> usize {
-        self.edge_count
-    }
-
-    //----------------------------------------------------------------------------------------------
-    // edge offset
-
+    // TODO move into GraphBuilder::finalize
     pub fn set_edge_offset(&mut self) {
-        let now = Instant::now();
-        let l = self.node_count;
         let mut i = 0;
         let mut j = 0;
         for edge in self.edges.iter() {
@@ -50,27 +99,62 @@ impl Graph {
                 self.nodes[j].edge_end = i;
             } else {
                 j += 1;
-                while j < l && edge.src != self.nodes[j].id {
+                while j < self.node_count() && edge.src != self.nodes[j].id {
                     self.nodes[j].edge_start = i - 1;
                     self.nodes[j].edge_end = i - 1;
                     j += 1;
                 }
-                if j < l {
+                if j < self.node_count() {
                     self.nodes[j].edge_start = i;
                     self.nodes[j].edge_end = i;
                 }
             }
             i += 1;
         }
-        println!(
-            "Set offset in {} microseconds a.k.a. {} seconds",
-            now.elapsed().as_micros(),
-            now.elapsed().as_secs()
-        );
     }
 
+    //----------------------------------------------------------------------------------------------
+    // getter
+
+    pub fn node_count(&self) -> usize {
+        self.nodes.len()
+    }
+
+    pub fn edge_count(&self) -> usize {
+        self.edges.len()
+    }
+
+    pub fn node(&self, id: usize) -> &Node {
+        // TODO
+        &self.nodes[0]
+    }
+
+    pub fn edge(&self, src: usize, dst: usize) -> &Edge {
+        // TODO
+        &self.edges[0]
+    }
+
+    pub fn leaving_edges(&self, node_id: usize) -> &[Edge] {
+        // for edge_idx in node.edge_start..node.edge_end + 1 {
+        //     let edge = &self.graph.edges[edge_idx];
+        // TODO
+        &self.edges[..]
+    }
 }
 
+impl Node {}
+
+impl Edge {
+    pub fn src(&self) -> usize {
+        self.src
+    }
+    pub fn dst(&self) -> usize {
+        self.dst
+    }
+    pub fn weight(&self) -> f64 {
+        self.weight
+    }
+}
 
 //--------------------------------------------------------------------------------------------------
 // fmt::Display
@@ -80,7 +164,8 @@ impl fmt::Display for Graph {
         writeln!(
             f,
             "{{number of nodes: {}, number of edges: {}}}",
-            self.node_count, self.edge_count
+            self.node_count(),
+            self.edge_count()
         )?;
         for node in &self.nodes {
             writeln!(f, "{}", node)?;
@@ -96,8 +181,8 @@ impl fmt::Display for Node {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "{{ id: {}, coord=({:.2}, {:.2}), edge_start: {}, edge_end: {} }}",
-            self.id, self.lat, self.lon, self.edge_start, self.edge_end
+            "{{ id: {}, coord=({:.2}, {:.2}) }}",
+            self.id, self.lat, self.lon,
         )
     }
 }

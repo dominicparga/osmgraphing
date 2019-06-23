@@ -2,7 +2,9 @@ use std::borrow::Cow;
 use std::cmp::Ordering;
 use std::collections::BinaryHeap;
 
-use super::Graph;
+use crate::routing;
+use routing::Graph;
+use routing::Edge;
 
 //--------------------------------------------------------------------------------------------------
 // nodes
@@ -40,9 +42,9 @@ impl PartialEq for CostNode {
 // Dijkstra's type of path
 
 #[derive(Clone)]
-pub struct Path {
+pub struct Path<'a> {
     pub cost: Vec<f64>,
-    pub predecessors: Vec<usize>,
+    pub predecessors: Vec<Option<&'a Edge>>,
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -50,7 +52,7 @@ pub struct Path {
 
 pub struct Dijkstra<'a> {
     pub graph: &'a Graph,
-    pub path: Path,
+    pub path: Path<'a>,
 }
 
 impl<'a> Dijkstra<'a> {
@@ -58,8 +60,8 @@ impl<'a> Dijkstra<'a> {
         Dijkstra {
             graph,
             path: Path {
-                cost: vec![std::f64::MAX; graph.node_count],
-                predecessors: vec![std::usize::MAX; graph.node_count],
+                cost: vec![std::f64::MAX; graph.node_count()],
+                predecessors: vec![None; graph.node_count()],
             },
         }
     }
@@ -72,7 +74,7 @@ impl<'a> Dijkstra<'a> {
 
         for i in 0..self.graph.node_count() {
             self.path.cost[i] = std::f64::MAX;
-            self.path.predecessors[i] = std::usize::MAX;
+            self.path.predecessors[i] = None;
         }
         let mut queue = BinaryHeap::new(); // max-heap, but CostNode's natural order is reversed
 
@@ -96,16 +98,14 @@ impl<'a> Dijkstra<'a> {
 
             // if not -> update "official" cost
             // and add successors
-            let node = &self.graph.nodes[id];
-            for edge_idx in node.edge_start..node.edge_end + 1 {
-                let edge = &self.graph.edges[edge_idx];
-                let new_cost = cost + edge.weight;
+            for edge in self.graph.leaving_edges(id) {
+                let new_cost = cost + edge.weight();
 
-                if new_cost < self.path.cost[edge.dst] {
-                    self.path.predecessors[edge.dst] = edge_idx;
-                    self.path.cost[edge.dst] = new_cost;
+                if new_cost < self.path.cost[edge.dst()] {
+                    self.path.predecessors[edge.dst()] = Some(&edge);
+                    self.path.cost[edge.dst()] = new_cost;
                     queue.push(CostNode {
-                        id: edge.dst,
+                        id: edge.dst(),
                         cost: new_cost,
                     });
                 }
@@ -115,19 +115,20 @@ impl<'a> Dijkstra<'a> {
         Cow::Borrowed(&self.path)
     }
 
-    pub fn get_path(&mut self, src: usize, dst: usize) -> std::vec::Vec<usize> {
-        if src >= self.graph.node_count || dst >= self.graph.node_count {
-            let result = vec![];
-            result
-        } else {
-            let mut shortest_path = Vec::new();
-            let mut current_predec = dst;
-            while current_predec != src {
-                let edge = &self.graph.edges[self.path.predecessors[current_predec]];
-                shortest_path.push(edge.id);
-                current_predec = edge.src;
-            }
-            shortest_path
-        }
-    }
+    // TODO
+    // pub fn get_path(&mut self, src: usize, dst: usize) -> std::vec::Vec<usize> {
+    //     if src >= self.graph.node_count() || dst >= self.graph.node_count() {
+    //         let result = vec![];
+    //         result
+    //     } else {
+    //         let mut shortest_path = Vec::new();
+    //         let mut current_predec = dst;
+    //         while current_predec != src {
+    //             let edge = self.graph.edge(self.path.predecessors[current_predec]);
+    //             shortest_path.push(edge.id);
+    //             current_predec = edge.src;
+    //         }
+    //         shortest_path
+    //     }
+    // }
 }

@@ -3,8 +3,8 @@ use std::path::Path;
 
 use crate::err::FileError;
 
-pub mod pbf;
 pub mod fmi;
+pub mod pbf;
 
 //--------------------------------------------------------------------------------------------------
 

@@ -1,73 +1,82 @@
-//----------------------------------------------------------------------------------------------
-// TODO unused and broken
-//----------------------------------------------------------------------------------------------
-
 use std::ffi::OsStr;
 use std::fs::File;
 use std::io;
+use std::io::BufRead;
 use std::path::Path;
+
+use crate::err;
+use crate::routing;
+use routing::Graph;
+use routing::GraphBuilder;
 
 //--------------------------------------------------------------------------------------------------
 
 pub struct Parser;
 
 impl Parser {
-    pub fn parse<S: AsRef<OsStr> + ?Sized>(&self, path: &S) -> io::Result<()> {
+    pub fn parse<S: AsRef<OsStr> + ?Sized>(&self, path: &S) -> Result<Graph, err::ParseError> {
+        //------------------------------------------------------------------------------------------
+        // get reader
+
+        let path = Path::new(&path);
         let file = File::open(&path)?;
-        let mut n_nodes;
-        let mut n_edges;
-        let mut i = 0;
         let reader = io::BufReader::new(file);
 
-        let mut hax = 0;
-        for line in reader.lines() {
-            let curr_line = line.unwrap();
-            if curr_line == "" || curr_line.chars().next().unwrap() == '#' {
+        //------------------------------------------------------------------------------------------
+        // graph
+
+        let mut node_count;
+        let mut edge_count;
+        let mut edge_id = 0;
+        let mut graph_builder = GraphBuilder::new();
+
+        //------------------------------------------------------------------------------------------
+        // parse
+
+        let mut i = 0;
+        for line in reader.lines().map(Result::unwrap) {
+            if line.trim() == "" || line.chars().next().unwrap() == '#' {
                 continue;
             }
-            match i {
-                0 => {
-                    n_nodes = curr_line.parse::<usize>().unwrap();
-                    self.nodes.reserve(n_nodes);
-                    self.node_count = n_nodes;
-                }
-                1 => {
-                    n_edges = curr_line.parse::<usize>().unwrap();
-                    self.edges.reserve(n_edges);
-                    self.edge_count = n_edges;
-                }
-                j if j > 1 && j <= self.node_count + 1 => {
-                    let line_string = curr_line.split_whitespace();
-                    let param: Vec<&str> = line_string.collect();
-                    self.nodes.push(Node {
-                        id: param[0].parse::<usize>().unwrap(),
-                        lat: param[2].parse::<f64>().unwrap(),
-                        lon: param[3].parse::<f64>().unwrap(),
-                        edge_start: 0,
-                        edge_end: 0,
-                    });
-                }
-                j if j > self.node_count + 1 => {
-                    let line_string = curr_line.split_whitespace();
-                    let param: Vec<&str> = line_string.collect();
-                    self.edges.push(Edge {
-                        id: hax,
-                        src: param[0].parse::<usize>().unwrap(),
-                        dst: param[1].parse::<usize>().unwrap(),
-                        weight: param[2].parse::<f64>().unwrap(),
-                    });
-                    hax += 1;
-                }
 
-                _ => {}
+            match i {
+                // first functional line -> number of nodes
+                0 => {
+                    node_count = line.parse::<usize>().unwrap();
+                    graph_builder.reserve_nodes(node_count);
+                }
+                // second functional line -> number of edges
+                1 => {
+                    edge_count = line.parse::<usize>().unwrap();
+                    graph_builder.reserve_edges(edge_count);
+                }
+                // nodes
+                _ if (1 < i) && (i < node_count + 2) => {
+                    let line_string = line.split_whitespace();
+                    let params: Vec<&str> = line_string.collect();
+                    graph_builder.push_node(
+                        params[0].parse::<usize>()?, // id
+                        params[2].parse::<f64>()?,   // lat
+                        params[3].parse::<f64>()?,   // lon
+                    );
+                }
+                // edges
+                _ if (node_count + 2 <= i) => {
+                    let line_string = line.split_whitespace();
+                    let params: Vec<&str> = line_string.collect();
+                    graph_builder.push_edge(
+                        edge_id,                     // id
+                        params[0].parse::<usize>()?, // src
+                        params[1].parse::<usize>()?, // dst
+                        params[2].parse::<f64>()?,   // weight
+                    );
+                    edge_id += 1;
+                }
+                _ => (),
             }
             i += 1;
         }
-        println!(
-            "Read graph in {} microseconds a.k.a. {} seconds",
-            now.elapsed().as_micros(),
-            now.elapsed().as_secs()
-        );
-        Ok(())
+
+        Ok(graph_builder.finalize())
     }
 }

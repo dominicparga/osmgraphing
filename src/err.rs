@@ -1,5 +1,6 @@
 use std::fmt;
 use std::io;
+use std::num;
 
 use quick_xml;
 
@@ -75,5 +76,42 @@ impl From<io::Error> for FileError {
 impl From<quick_xml::Error> for FileError {
     fn from(e: quick_xml::Error) -> Self {
         FileError::XmlIo(e)
+    }
+}
+
+//--------------------------------------------------------------------------------------------------
+
+#[derive(Debug)]
+pub enum ParseError {
+    Io(io::Error),
+    Int(num::ParseIntError),
+    Float(num::ParseFloatError),
+}
+
+impl fmt::Display for ParseError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            ParseError::Io(e) => e.fmt(f),
+            ParseError::Int(e) => e.fmt(f),
+            ParseError::Float(e) => e.fmt(f),
+        }
+    }
+}
+
+impl From<io::Error> for ParseError {
+    fn from(e: io::Error) -> Self {
+        ParseError::Io(e)
+    }
+}
+
+impl From<num::ParseIntError> for ParseError {
+    fn from(e: num::ParseIntError) -> Self {
+        ParseError::Int(e)
+    }
+}
+
+impl From<num::ParseFloatError> for ParseError {
+    fn from(e: num::ParseFloatError) -> Self {
+        ParseError::Float(e)
     }
 }
