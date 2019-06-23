@@ -77,7 +77,9 @@ impl<'a> Dijkstra<'a> {
                 self.path.predecessors[i] = std::usize::MAX;
             }
         }
-        let mut queue = BinaryHeap::new();
+        let mut queue = BinaryHeap::new(); // max-heap, but CostNode's natural order is reversed
+
+        // prepare first iteration
         queue.push(CostNode { id: src, cost: 0.0 });
         self.path.cost[src] = 0.0;
 
@@ -89,18 +91,23 @@ impl<'a> Dijkstra<'a> {
             if id == dst {
                 break;
             }
-            // if node has already been reached
+
+            // if node has already been visited
             if cost > self.path.cost[id] {
                 continue;
             }
-            let graph_node = &self.graph.nodes[id];
-            for i in graph_node.edge_start .. graph_node.edge_end + 1 {
-                let current_edge = &self.graph.edges[i];
-                let current_cost = cost + current_edge.weight;
-                if current_cost < self.path.cost[current_edge.dst] {
-                    self.path.predecessors[current_edge.dst] = i;
-                    self.path.cost[current_edge.dst] = current_cost;
-                    queue.push(CostNode {cost: current_cost, id: current_edge.dst});
+
+            // if not -> update "official" cost
+            // and add successors
+            let node = &self.graph.nodes[id];
+            for edge_idx in node.edge_start .. node.edge_end + 1 {
+                let edge = &self.graph.edges[edge_idx];
+                let new_cost = cost + edge.weight;
+
+                if new_cost < self.path.cost[edge.dst] {
+                    self.path.predecessors[edge.dst] = edge_idx;
+                    self.path.cost[edge.dst] = new_cost;
+                    queue.push(CostNode { id: edge.dst, cost: new_cost });
                 }
             }
         }
@@ -116,9 +123,9 @@ impl<'a> Dijkstra<'a> {
             let mut shortest_path = Vec::new();
             let mut current_predec = dst;
             while current_predec != src {
-                let current_edge = &self.graph.edges[self.path.predecessors[current_predec]];
-                shortest_path.push(current_edge.id);
-                current_predec = current_edge.src;
+                let edge = &self.graph.edges[self.path.predecessors[current_predec]];
+                shortest_path.push(edge.id);
+                current_predec = edge.src;
             }
             shortest_path
         }
