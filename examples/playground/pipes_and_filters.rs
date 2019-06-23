@@ -12,13 +12,13 @@ mod parser {
             return XmlParser {
                 xml: String::from(
                     r#"
-                    <tag1 att1 = "test">
-                        <tag2><!--Test comment-->TEST</tag2>
-                        <tag2>
-                            Test 2
-                        </tag2>
-                    </tag1>
-                "#,
+                        <tag1 att1 = "test">
+                            <tag2><!--Test comment-->TEST</tag2>
+                            <tag2>
+                                Test 2
+                            </tag2>
+                        </tag1>
+                    "#,
                 ),
             };
         }
