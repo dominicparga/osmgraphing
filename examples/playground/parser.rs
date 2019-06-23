@@ -3,11 +3,19 @@ use std::ffi::OsString;
 use osmgraphing::osm;
 
 fn main() {
-    // TODO check for windows
     let filename = match std::env::args_os().nth(1) {
         Some(filename) => filename,
-        None => OsString::from("custom/maps/raw/andorra-latest.osm.pbf"),
+        None => OsString::from("custom/res/osm/raw/andorra-latest.osm.pbf"),
     };
-    let parser = osm::Parser {};
-    parser.parse(&filename);
+
+    // check if filetype is supported
+    let parser = match osm::Support::from_path(&filename) {
+        Ok(osm::Support::PBF) => osm::pbf::Parser,
+        Err(e) => panic!("{:}", e),
+    };
+
+    match parser.parse(&filename) {
+        Err(e) => panic!("{:}", e),
+        _ => (),
+    }
 }
