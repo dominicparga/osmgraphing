@@ -1,21 +1,21 @@
 use std::ffi::OsStr;
-use std::path::Path;
 use std::fs::File;
+use std::path::Path;
 
 use crate::err::Error;
 
 //------------------------------------------------------------------------------------------------//
 
 mod pbf {
-    pub use osmpbfreader::reader::OsmPbfReader as Reader;
-    pub use osmpbfreader::{OsmPbfReader, OsmObj, RelationId};
     pub use osmpbfreader::reader::Iter;
+    pub use osmpbfreader::reader::OsmPbfReader as Reader;
+    pub use osmpbfreader::{OsmObj, OsmPbfReader, RelationId};
 }
 mod xml {
     use std::ffi::OsStr;
     use std::fs::File;
-    use std::path::Path;
     use std::io::BufReader;
+    use std::path::Path;
 
     use quick_xml::Reader as XmlReader;
 
@@ -48,7 +48,8 @@ impl<R> Reader<R> {
 }
 
 impl Reader<File> {
-    pub fn from_path<S>(path: &S) -> Result<Self, Error> where
+    pub fn from_path<S>(path: &S) -> Result<Self, Error>
+    where
         S: AsRef<OsStr> + ?Sized,
     {
         // check path
@@ -60,14 +61,15 @@ impl Reader<File> {
                 Some(Self::EXT_PBF) => {
                     let file = File::open(&path)?;
                     Ok(Reader::Pbf(pbf::Reader::new(file)))
-                },
+                }
                 // unsupported extension
-                Some(unsupported_ext) => {
-                    Err(Error::unsupported_extension(unsupported_ext, Self::supported_exts()))
-                },
+                Some(unsupported_ext) => Err(Error::unsupported_extension(
+                    unsupported_ext,
+                    Self::supported_exts(),
+                )),
                 // path is not valid unicode
                 None => Err(Error::invalid_unicode()),
-            }
+            },
             // no extension
             None => Err(Error::unsupported_extension("", Self::supported_exts())),
         }

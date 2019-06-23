@@ -1,14 +1,11 @@
 use super::graph;
-use std:: {
-    cmp::Ordering,
-    collections::BinaryHeap,
-};
 use std::time::Instant;
+use std::{cmp::Ordering, collections::BinaryHeap};
 
 pub struct Dijkstra<'a> {
     pub graph: &'a graph::Graph,
     pub cost: Vec<usize>,
-    pub path: Vec<usize>
+    pub path: Vec<usize>,
 }
 
 #[derive(Copy, Clone, Eq, PartialEq)]
@@ -20,7 +17,9 @@ pub struct CostNode {
 impl Ord for CostNode {
     fn cmp(&self, other: &CostNode) -> Ordering {
         //flips the ordering
-        other.cost.cmp(&self.cost)
+        other
+            .cost
+            .cmp(&self.cost)
             .then_with(|| self.id.cmp(&other.id))
     }
 }
@@ -37,13 +36,16 @@ pub trait ShortestPath {
     fn get_path(&mut self, source: usize, dest: usize) -> Vec<usize>;
 }
 
-impl<'a>  ShortestPath for Dijkstra<'a>  {
+impl<'a> ShortestPath for Dijkstra<'a> {
     fn compute_shortest_path(&mut self, source: usize, dest: usize) {
         let now = Instant::now();
         self.cost[source] = 0;
         let mut queue = BinaryHeap::new();
-        queue.push(CostNode {cost: 0, id: source});
-        while let Some(CostNode {cost, id} ) = queue.pop() {
+        queue.push(CostNode {
+            cost: 0,
+            id: source,
+        });
+        while let Some(CostNode { cost, id }) = queue.pop() {
             if id == dest {
                 break;
             }
@@ -51,20 +53,27 @@ impl<'a>  ShortestPath for Dijkstra<'a>  {
                 continue;
             }
             let graph_node = &self.graph.nodes[id];
-            for i in graph_node.edge_start .. graph_node.edge_end + 1 {
+            for i in graph_node.edge_start..graph_node.edge_end + 1 {
                 let current_edge = &self.graph.edges[i];
                 let current_cost = cost + current_edge.weight;
                 if current_cost < self.cost[current_edge.dest] {
                     self.path[current_edge.dest] = i;
                     self.cost[current_edge.dest] = current_cost;
-                    queue.push(CostNode {cost: current_cost, id: current_edge.dest});
+                    queue.push(CostNode {
+                        cost: current_cost,
+                        id: current_edge.dest,
+                    });
                 }
             }
         }
-        println!("Ran Dijkstra in {} microseconds a.k.a {} seconds", now.elapsed().as_micros(),now.elapsed().as_secs());
+        println!(
+            "Ran Dijkstra in {} microseconds a.k.a {} seconds",
+            now.elapsed().as_micros(),
+            now.elapsed().as_secs()
+        );
     }
 
-    fn get_distance(&mut self, node_id: usize) -> usize{
+    fn get_distance(&mut self, node_id: usize) -> usize {
         if node_id >= self.graph.node_count {
             let result = std::usize::MAX;
             result
@@ -85,19 +94,18 @@ impl<'a>  ShortestPath for Dijkstra<'a>  {
                 shortest_path.push(current_edge.id);
                 current_predec = current_edge.src;
             }
-        shortest_path
+            shortest_path
         }
     }
 }
 
-pub fn init_dijkstra(graph: &graph::Graph) -> Dijkstra{
+pub fn init_dijkstra(graph: &graph::Graph) -> Dijkstra {
     let cost = vec![std::usize::MAX; graph.node_count];
     let path = vec![std::usize::MAX; graph.node_count];
     let dijkstra = Dijkstra {
-        graph : graph,
-        cost : cost,
-        path : path
+        graph: graph,
+        cost: cost,
+        path: path,
     };
     dijkstra
 }
-
