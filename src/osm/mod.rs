@@ -9,17 +9,19 @@ pub mod pbf;
 //--------------------------------------------------------------------------------------------------
 
 pub enum Support {
-    PBF, // XML, FMI,
+    PBF,
+    // XML,
+    FMI,
 }
 
 impl Support {
     const EXT_PBF: &'static str = "pbf";
+    const EXT_FMI: &'static str = "fmi";
     // unsupported yet
     const _EXT_XML: &'static str = "osm";
-    const _EXT_FMI: &'static str = "fmi";
 
-    pub fn supported_exts() -> &'static [&'static str; 1] {
-        &[Self::EXT_PBF]
+    pub fn supported_exts() -> &'static [&'static str; 2] {
+        &[Self::EXT_PBF, Self::EXT_FMI]
     }
 
     pub fn from_path<S>(path: &S) -> Result<Self, FileError>
@@ -32,6 +34,7 @@ impl Support {
             // extension exists -> check if supported
             Some(os_str) => match os_str.to_str() {
                 Some(Self::EXT_PBF) => Ok(Support::PBF),
+                Some(Self::EXT_FMI) => Ok(Support::FMI),
                 Some(unsupported_ext) => Err(FileError::unsupported_extension(
                     unsupported_ext,
                     Self::supported_exts(),

@@ -1,7 +1,11 @@
 use std::ffi::OsStr;
 use std::fs::File;
-use std::io;
 use std::path::Path;
+
+use crate::err;
+use crate::routing;
+use err::ParseError;
+use routing::Graph;
 
 mod pbf {
     pub use osmpbfreader::reader::Iter;
@@ -14,7 +18,7 @@ mod pbf {
 pub struct Parser;
 
 impl Parser {
-    pub fn parse<S: AsRef<OsStr> + ?Sized>(&self, path: &S) -> io::Result<()> {
+    pub fn parse<S: AsRef<OsStr> + ?Sized>(&self, path: &S) -> Result<Graph, ParseError> {
         //------------------------------------------------------------------------------------------
         // get reader
 
@@ -46,6 +50,6 @@ impl Parser {
             }
         }
 
-        Ok(())
+        unimplemented!()
     }
 }

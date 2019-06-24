@@ -22,7 +22,7 @@ pub struct Edge {
     id: usize,
     src: usize,
     dst: usize,
-    weight: f64,
+    weight: u64,
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -75,7 +75,7 @@ impl GraphBuilder {
         self
     }
 
-    pub fn push_edge(&mut self, id: usize, src: usize, dst: usize, weight: f64) -> &mut Self {
+    pub fn push_edge(&mut self, id: usize, src: usize, dst: usize, weight: u64) -> &mut Self {
         self.graph.edges.push(Edge {
             id,
             src,
@@ -160,7 +160,7 @@ impl Edge {
     pub fn dst(&self) -> usize {
         self.dst
     }
-    pub fn weight(&self) -> f64 {
+    pub fn weight(&self) -> u64 {
         self.weight
     }
 }
@@ -172,15 +172,19 @@ impl fmt::Display for Graph {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         writeln!(
             f,
-            "{{number of nodes: {}, number of edges: {}}}",
+            "Graph: {{ number of nodes: {}, number of edges: {} }}",
             self.node_count(),
             self.edge_count()
         )?;
-        for node in &self.nodes {
-            writeln!(f, "{}", node)?;
-        }
-        for edge in &self.edges {
-            writeln!(f, "{}", edge)?;
+        if self.node_count() + self.node_count() < 42 {
+            writeln!(f, "")?;
+            for node in &self.nodes {
+                writeln!(f, "{}", node)?;
+            }
+            writeln!(f, "")?;
+            for edge in &self.edges {
+                writeln!(f, "{}", edge)?;
+            }
         }
         Ok(())
     }
@@ -190,7 +194,7 @@ impl fmt::Display for Node {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "{{ id: {}, coord=({:.2}, {:.2}) }}",
+            "Node: {{ id: {}, (lat, lon): ({:.6}, {:.6}) }}",
             self.id, self.lat, self.lon,
         )
     }
@@ -200,8 +204,8 @@ impl fmt::Display for Edge {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "{{id: {}, source: {}, target: {}, length: {}}}",
-            self.id, self.src, self.dst, self.weight
+            "Edge: {{ id: {}, ({})-{}->({}) }}",
+            self.id, self.src, self.weight, self.dst,
         )
     }
 }

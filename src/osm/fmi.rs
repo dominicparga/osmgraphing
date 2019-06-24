@@ -32,26 +32,50 @@ impl Parser {
         let mut graph_builder = GraphBuilder::new();
 
         //------------------------------------------------------------------------------------------
-        // parse
+        // Parsing a `.fmi`-file of following structure, where empty lines and comment lines (#) can
+        // be addes everywhere.
+        //
+        // # This is a comment line.
+        //
+        // # node_count
+        // 42
+        // # edge_count
+        // 16
+        //
+        // # 42 nodes of structure
+        // # id osm-id(ignored) lat lon
+        // ...
+        //
+        // # 16 edges of structure
+        // # src dst distance ??? maxspeed
+        // ...
 
         let mut i = 0;
         for line in reader.by_ref().lines().map(Result::unwrap) {
-            if line == "" || line.chars().next().unwrap() == '#' {
+            if line == "" || line.chars().next() == Some('#') {
                 continue;
             }
 
             match i {
                 // first functional line -> number of nodes
                 0 => {
-                    node_count = Some(line.parse::<usize>()?);
+                    node_count = Some(line.parse::<usize>().expect(&format!(
+                        "Parse node_count ({:?}) from fmi-file into usize.",
+                        line
+                    )));
+                    i += 1;
                 }
                 // second functional line -> number of edges
                 1 => {
-                    edge_count = Some(line.parse::<usize>()?);
+                    edge_count = Some(line.parse::<usize>().expect(&format!(
+                        "Parse edge_count ({:?}) from fmi-file into usize.",
+                        line
+                    )));
+                    i += 1;
+                    break;
                 }
-                _ => break,
+                _ => (),
             }
-            i += 1;
         }
 
         // set counts
@@ -67,7 +91,7 @@ impl Parser {
             Some(c) => c,
             None => {
                 return Err(ParseError::wrong_format(
-                    "The given fmi-file misses the node-count.",
+                    "The given fmi-file misses the edge-count.",
                 ))
             }
         };
@@ -75,7 +99,7 @@ impl Parser {
 
         // loop over elements
         for line in reader.lines().map(Result::unwrap) {
-            if line.trim() == "" || line.chars().next().unwrap() == '#' {
+            if line.trim() == "" || line.chars().next() == Some('#') {
                 continue;
             }
 
@@ -85,9 +109,18 @@ impl Parser {
                     let line_string = line.split_whitespace();
                     let params: Vec<&str> = line_string.collect();
                     graph_builder.push_node(
-                        params[0].parse::<usize>()?, // id
-                        params[2].parse::<f64>()?,   // lat
-                        params[3].parse::<f64>()?,   // lon
+                        params[0].parse::<usize>().expect(&format!(
+                            "Parse id ({:?}) from fmi-file into usize.",
+                            params[0]
+                        )),
+                        params[2].parse::<f64>().expect(&format!(
+                            "Parse lat ({:?}) from fmi-file into f64.",
+                            params[2]
+                        )),
+                        params[3].parse::<f64>().expect(&format!(
+                            "Parse lon ({:?}) from fmi-file into f64.",
+                            params[3]
+                        )),
                     );
                 }
                 // edges
@@ -95,10 +128,19 @@ impl Parser {
                     let line_string = line.split_whitespace();
                     let params: Vec<&str> = line_string.collect();
                     graph_builder.push_edge(
-                        edge_id,                     // id
-                        params[0].parse::<usize>()?, // src
-                        params[1].parse::<usize>()?, // dst
-                        params[2].parse::<f64>()?,   // weight
+                        edge_id,
+                        params[0].parse::<usize>().expect(&format!(
+                            "Parse src ({:?}) from fmi-file into usize.",
+                            params[0]
+                        )),
+                        params[1].parse::<usize>().expect(&format!(
+                            "Parse dst ({:?}) from fmi-file into usize.",
+                            params[1]
+                        )),
+                        params[2].parse::<u64>().expect(&format!(
+                            "Parse weight ({:?}) from fmi-file into u64.",
+                            params[2]
+                        )),
                     );
                     edge_id += 1;
                 }

@@ -12,7 +12,7 @@ use routing::Graph;
 #[derive(Copy, Clone)]
 struct CostNode {
     pub id: usize,
-    pub cost: f64,
+    pub cost: u64,
 }
 
 impl Ord for CostNode {
@@ -43,7 +43,7 @@ impl PartialEq for CostNode {
 
 #[derive(Clone)]
 pub struct Path<'a> {
-    pub cost: Vec<f64>,
+    pub cost: Vec<u64>,
     pub predecessors: Vec<Option<&'a Edge>>,
 }
 
@@ -60,7 +60,7 @@ impl<'a> Dijkstra<'a> {
         Dijkstra {
             graph,
             path: Path {
-                cost: vec![std::f64::MAX; graph.node_count()],
+                cost: vec![std::u64::MAX; graph.node_count()],
                 predecessors: vec![None; graph.node_count()],
             },
         }
@@ -73,14 +73,14 @@ impl<'a> Dijkstra<'a> {
         // initialize, but check path-"cache" before
 
         for i in 0..self.graph.node_count() {
-            self.path.cost[i] = std::f64::MAX;
+            self.path.cost[i] = std::u64::MAX;
             self.path.predecessors[i] = None;
         }
         let mut queue = BinaryHeap::new(); // max-heap, but CostNode's natural order is reversed
 
         // prepare first iteration
-        queue.push(CostNode { id: src, cost: 0.0 });
-        self.path.cost[src] = 0.0;
+        queue.push(CostNode { id: src, cost: 0 });
+        self.path.cost[src] = 0;
 
         //------------------------------------------------------------------------------------------
         // compute
