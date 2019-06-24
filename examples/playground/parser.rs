@@ -18,6 +18,10 @@ fn parse_fmi<S: AsRef<OsStr> + ?Sized>(path: &S) {
     println!("{}", graph);
 }
 
+fn parse_xml<S: AsRef<OsStr> + ?Sized>(_path: &S) {
+    unimplemented!()
+}
+
 fn main() {
     let filename = match std::env::args_os().nth(1) {
         Some(filename) => filename,
@@ -28,6 +32,7 @@ fn main() {
     match osm::Support::from_path(&filename) {
         Ok(osm::Support::PBF) => parse_pbf(&filename),
         Ok(osm::Support::FMI) => parse_fmi(&filename),
+        Ok(osm::Support::XML) => parse_xml(&filename),
         Err(e) => panic!("{:}", e),
     };
 }
