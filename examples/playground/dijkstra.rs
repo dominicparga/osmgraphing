@@ -7,7 +7,7 @@ fn main() {
     let filename = match std::env::args_os().nth(1) {
         Some(filename) => filename,
         // TODO check for windows
-        None => OsString::from("custom/res/graphs/fmi/germany.fmi"),
+        None => OsString::from("custom/resources/graphs/fmi/germany.fmi"),
     };
 
     let mut graph = routing::Graph {

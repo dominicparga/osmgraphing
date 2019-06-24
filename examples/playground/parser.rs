@@ -5,7 +5,7 @@ use osmgraphing::osm;
 fn main() {
     let filename = match std::env::args_os().nth(1) {
         Some(filename) => filename,
-        None => OsString::from("custom/res/osm/raw/andorra-latest.osm.pbf"),
+        None => OsString::from("custom/resources/osm/raw/andorra-latest.osm.pbf"),
     };
 
     // check if filetype is supported
