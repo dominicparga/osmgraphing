@@ -1,42 +1,33 @@
-use osmgraphing::routing;
-
-use std::ffi::OsString;
+use std::ffi::{OsStr, OsString};
 use std::time::Instant;
 
+use osmgraphing::osm;
+use osmgraphing::routing;
+
+fn parse<S: AsRef<OsStr> + ?Sized>(path: &S) -> routing::Graph {
+    match osm::Support::from_path(&path) {
+        Ok(osm::Support::PBF) => {
+            let parser = osm::pbf::Parser;
+            parser.parse(&path)
+        }
+        Ok(osm::Support::FMI) => {
+            let parser = osm::fmi::Parser;
+            parser.parse(&path)
+        }
+        Ok(osm::Support::XML) => unimplemented!(),
+        Err(e) => panic!("{:}", e),
+    }
+}
+
 fn main() {
-    let filename = match std::env::args_os().nth(1) {
-        Some(filename) => filename,
-        // TODO check for windows
-        None => OsString::from("resources/osm/small.fmi"),
-    };
+    // parse -> graph
+    let graph = parse(&OsString::from("resources/osm/small.fmi"));
+    println!("{}", graph);
 
-    let mut graph = routing::Graph {
-        nodes: Vec::new(),
-        edges: Vec::new(),
-        node_count: 0,
-        edge_count: 0,
-    };
-
-    graph.read_graph(filename).expect("error reading file!");
-    graph.set_edge_offset();
-
-    // somewhere in Stuttgart (Schwabstrasse)
-    // id 20_443_604 osm-id 2_933_335_353 lat 48.77017570000000291 lon 9.15657690000000102
-
-    // "near" Esslingen
-    // id:4_647 osm-id:163_354 lat:48.66743380000000485 lon:9.24459110000000095
-
-    // somewhere in Ulm
-    // id 9_058_109 osm-id 580_012_224 lat 48.39352330000000535 lon 9.9816315000000006
-
-    // near Aalen
-    // id 54_288 osm-id 2_237_652 lat 48.88542720000000230 lon 10.13642900000000147
-
-    // somewhere in Berlin
-    // id 296_679 osm-id 26_765_334 lat 52.50536590000000103 lon 13.38662390000000002
+    // routing
     let mut dijkstra = routing::Dijkstra::new(&graph);
-    let src = 20_443_604;
-    let dsts = vec![9_058_109, 296_679];
+    let src = 0;
+    let dsts: Vec<usize> = (0..graph.node_count()).collect();
 
     for dst in dsts {
         println!();
