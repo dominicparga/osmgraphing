@@ -12,7 +12,7 @@ pub enum Error {
 }
 
 impl Error {
-    pub fn custom(msg: &str) -> Self {
+    pub fn new(msg: &str) -> Self {
         Error::Custom(String::from(msg))
     }
 }
@@ -29,6 +29,7 @@ impl fmt::Display for Error {
 
 #[derive(Debug)]
 pub enum FileError {
+    Custom(Error),
     UnsuppExt(String),
     Io(io::Error),
     InvalidUnicode(String),
@@ -36,6 +37,10 @@ pub enum FileError {
 }
 
 impl FileError {
+    pub fn new(msg: &str) -> Self {
+        FileError::Custom(Error::new(msg))
+    }
+
     pub fn unsupported_extension(ext: &str, supported: &[&str]) -> Self {
         let mut msg = {
             if ext.is_empty() {
@@ -59,6 +64,7 @@ impl FileError {
 impl fmt::Display for FileError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
+            FileError::Custom(e) => e.fmt(f),
             FileError::UnsuppExt(msg) => msg.fmt(f),
             FileError::Io(e) => e.fmt(f),
             FileError::XmlIo(e) => e.fmt(f),
@@ -83,6 +89,7 @@ impl From<quick_xml::Error> for FileError {
 
 #[derive(Debug)]
 pub enum ParseError {
+    Custom(Error),
     Io(io::Error),
     Format(String),
     Int(num::ParseIntError),
@@ -90,6 +97,10 @@ pub enum ParseError {
 }
 
 impl ParseError {
+    pub fn new(msg: &str) -> Self {
+        ParseError::Custom(Error::new(msg))
+    }
+
     pub fn wrong_format(msg: &str) -> Self {
         ParseError::Format(String::from(msg))
     }
@@ -98,6 +109,7 @@ impl ParseError {
 impl fmt::Display for ParseError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
+            ParseError::Custom(e) => e.fmt(f),
             ParseError::Io(e) => e.fmt(f),
             ParseError::Format(msg) => msg.fmt(f),
             ParseError::Int(e) => e.fmt(f),
