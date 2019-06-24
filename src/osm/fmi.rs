@@ -5,7 +5,6 @@ use std::io::BufRead;
 use std::io::Read;
 use std::path::Path;
 
-use crate::err::ParseError;
 use crate::routing;
 use routing::Graph;
 use routing::GraphBuilder;
@@ -82,11 +81,11 @@ impl Parser {
         // set counts
         let node_count = match node_count {
             Some(c) => c,
-            None => panic!("The given fmi-file misses the node-count.")
+            None => panic!("The given fmi-file misses the node-count."),
         };
         let edge_count = match edge_count {
             Some(c) => c,
-            None => panic!("The given fmi-file misses the edge-count.")
+            None => panic!("The given fmi-file misses the edge-count."),
         };
         graph_builder.reserve(node_count, edge_count);
 

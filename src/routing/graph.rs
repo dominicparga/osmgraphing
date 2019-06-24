@@ -120,6 +120,7 @@ impl Graph {
         //     }
         //     i += 1;
         // }
+        unimplemented!()
     }
 
     //----------------------------------------------------------------------------------------------
@@ -134,20 +135,19 @@ impl Graph {
     }
 
     pub fn node(&self, id: usize) -> &Node {
-        // TODO
-        &self.nodes[0]
+        &self.nodes[id]
     }
 
-    pub fn edge(&self, src: usize, dst: usize) -> &Edge {
+    pub fn edge(&self, _src: usize, _dst: usize) -> &Edge {
         // TODO
-        &self.edges[0]
+        unimplemented!()
     }
 
-    pub fn leaving_edges(&self, node_id: usize) -> &[Edge] {
+    pub fn leaving_edges(&self, _node_id: usize) -> &[Edge] {
         // for edge_idx in node.edge_start..node.edge_end + 1 {
         //     let edge = &self.graph.edges[edge_idx];
-        // TODO
-        &self.edges[..]
+        // TODO &self.edges[..]
+        unimplemented!()
     }
 }
 

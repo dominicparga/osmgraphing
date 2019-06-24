@@ -2,9 +2,7 @@ use std::ffi::OsStr;
 use std::fs::File;
 use std::path::Path;
 
-use crate::err;
 use crate::routing;
-use err::ParseError;
 use routing::Graph;
 
 mod pbf {

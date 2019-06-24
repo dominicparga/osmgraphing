@@ -4,17 +4,13 @@ use osmgraphing::osm;
 
 fn parse_pbf<S: AsRef<OsStr> + ?Sized>(path: &S) {
     let parser = osm::pbf::Parser;
-    let graph = parser
-        .parse(&path)
-        .expect("PBF-Parser should parse given pbf-file.");
+    let graph = parser.parse(&path);
     println!("{}", graph);
 }
 
 fn parse_fmi<S: AsRef<OsStr> + ?Sized>(path: &S) {
     let parser = osm::fmi::Parser;
-    let graph = parser
-        .parse(&path)
-        .expect("FMI-Parser should parse given fmi-file.");
+    let graph = parser.parse(&path);
     println!("{}", graph);
 }
 
