@@ -84,14 +84,22 @@ impl From<quick_xml::Error> for FileError {
 #[derive(Debug)]
 pub enum ParseError {
     Io(io::Error),
+    Format(String),
     Int(num::ParseIntError),
     Float(num::ParseFloatError),
+}
+
+impl ParseError {
+    pub fn wrong_format(msg: &str) -> Self {
+        ParseError::Format(String::from(msg))
+    }
 }
 
 impl fmt::Display for ParseError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             ParseError::Io(e) => e.fmt(f),
+            ParseError::Format(msg) => msg.fmt(f),
             ParseError::Int(e) => e.fmt(f),
             ParseError::Float(e) => e.fmt(f),
         }

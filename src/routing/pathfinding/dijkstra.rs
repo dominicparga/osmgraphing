@@ -3,8 +3,8 @@ use std::cmp::Ordering;
 use std::collections::BinaryHeap;
 
 use crate::routing;
-use routing::Graph;
 use routing::Edge;
+use routing::Graph;
 
 //--------------------------------------------------------------------------------------------------
 // nodes

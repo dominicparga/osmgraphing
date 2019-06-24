@@ -34,10 +34,7 @@ impl GraphBuilder {
 
     pub fn new() -> Self {
         GraphBuilder {
-            graph: Graph {
-                nodes: Vec::new(),
-                edges: Vec::new(),
-            },
+            graph: Graph::new(),
         }
     }
 
@@ -56,6 +53,11 @@ impl GraphBuilder {
     pub fn new_graph(&mut self) -> &mut Self {
         self.graph = Graph::new();
         self
+    }
+
+    pub fn reserve(&mut self, additional_nodes: usize, additional_edges: usize) -> &mut Self {
+        self.reserve_nodes(additional_nodes)
+            .reserve_edges(additional_edges)
     }
 
     pub fn reserve_nodes(&mut self, additional: usize) -> &mut Self {
@@ -83,34 +85,41 @@ impl GraphBuilder {
         self
     }
 
-    pub fn finalize(&mut self) -> Graph {
+    pub fn finalize(self) -> Graph {
         // TODO compute offset array
         self.graph
     }
 }
 
 impl Graph {
+    fn new() -> Graph {
+        Graph {
+            nodes: Vec::new(),
+            edges: Vec::new(),
+        }
+    }
+
     // TODO move into GraphBuilder::finalize
     pub fn set_edge_offset(&mut self) {
-        let mut i = 0;
-        let mut j = 0;
-        for edge in self.edges.iter() {
-            if edge.src == self.nodes[j].id {
-                self.nodes[j].edge_end = i;
-            } else {
-                j += 1;
-                while j < self.node_count() && edge.src != self.nodes[j].id {
-                    self.nodes[j].edge_start = i - 1;
-                    self.nodes[j].edge_end = i - 1;
-                    j += 1;
-                }
-                if j < self.node_count() {
-                    self.nodes[j].edge_start = i;
-                    self.nodes[j].edge_end = i;
-                }
-            }
-            i += 1;
-        }
+        // let mut i = 0;
+        // let mut j = 0;
+        // for edge in self.edges.iter() {
+        //     if edge.src == self.nodes[j].id {
+        //         self.nodes[j].edge_end = i;
+        //     } else {
+        //         j += 1;
+        //         while j < self.node_count() && edge.src != self.nodes[j].id {
+        //             self.nodes[j].edge_start = i - 1;
+        //             self.nodes[j].edge_end = i - 1;
+        //             j += 1;
+        //         }
+        //         if j < self.node_count() {
+        //             self.nodes[j].edge_start = i;
+        //             self.nodes[j].edge_end = i;
+        //         }
+        //     }
+        //     i += 1;
+        // }
     }
 
     //----------------------------------------------------------------------------------------------
