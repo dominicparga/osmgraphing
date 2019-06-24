@@ -1,34 +1,27 @@
-use std::ffi::{OsStr, OsString};
+use std::ffi::OsString;
 
 use osmgraphing::osm;
 
-fn parse_pbf<S: AsRef<OsStr> + ?Sized>(path: &S) {
-    let parser = osm::pbf::Parser;
-    let graph = parser.parse(&path);
-    println!("{}", graph);
-}
-
-fn parse_fmi<S: AsRef<OsStr> + ?Sized>(path: &S) {
-    let parser = osm::fmi::Parser;
-    let graph = parser.parse(&path);
-    println!("{}", graph);
-}
-
-fn parse_xml<S: AsRef<OsStr> + ?Sized>(_path: &S) {
-    unimplemented!()
-}
-
 fn main() {
-    let filename = match std::env::args_os().nth(1) {
-        Some(filename) => filename,
+    let path = match std::env::args_os().nth(1) {
+        Some(path) => path,
         None => OsString::from("resources/osm/small.fmi"),
     };
 
-    // check if filetype is supported
-    match osm::Support::from_path(&filename) {
-        Ok(osm::Support::PBF) => parse_pbf(&filename),
-        Ok(osm::Support::FMI) => parse_fmi(&filename),
-        Ok(osm::Support::XML) => parse_xml(&filename),
+    let graph = match osm::Support::from_path(&path) {
+        Ok(osm::Support::PBF) => {
+            let parser = osm::pbf::Parser;
+            parser.parse(&path)
+        },
+        Ok(osm::Support::FMI) => {
+            let parser = osm::fmi::Parser;
+            parser.parse(&path)
+        },
+        Ok(osm::Support::XML) => {
+            unimplemented!()
+        },
         Err(e) => panic!("{:}", e),
     };
+
+    println!("{}", graph);
 }
