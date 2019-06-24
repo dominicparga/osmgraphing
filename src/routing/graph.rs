@@ -187,11 +187,11 @@ impl fmt::Display for Graph {
             if i < self.node_count() {
                 if i == n - 1 {
                     // if at least 2 nodes are missing -> print ...
-                    if i+1 < self.node_count() {
+                    if i + 1 < self.node_count() {
                         writeln!(f, "...")?;
                     }
                     // print last node
-                    writeln!(f, "{}", self.nodes[self.node_count()-1])?;
+                    writeln!(f, "{}", self.nodes[self.node_count() - 1])?;
                 } else {
                     writeln!(f, "{}", self.nodes[i])?;
                 }
@@ -207,11 +207,11 @@ impl fmt::Display for Graph {
             if j < self.edge_count() {
                 if j == m - 1 {
                     // if at least 2 edges are missing -> print ...
-                    if j+1 < self.edge_count() {
+                    if j + 1 < self.edge_count() {
                         writeln!(f, "...")?;
                     }
                     // print last edge
-                    writeln!(f, "{}", self.edges[self.edge_count()-1])?;
+                    writeln!(f, "{}", self.edges[self.edge_count() - 1])?;
                 } else {
                     writeln!(f, "{}", self.edges[j])?;
                 }

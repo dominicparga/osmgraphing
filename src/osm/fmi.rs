@@ -15,12 +15,13 @@ use routing::GraphBuilder;
 pub struct Parser;
 
 impl Parser {
-    pub fn parse<S: AsRef<OsStr> + ?Sized>(&self, path: &S) -> Result<Graph, ParseError> {
+    pub fn parse<S: AsRef<OsStr> + ?Sized>(&self, path: &S) -> Graph {
         //------------------------------------------------------------------------------------------
         // get reader
 
         let path = Path::new(&path);
-        let file = File::open(&path)?;
+        let file =
+            File::open(&path).expect(&format!("Expects the given path {:?} to exist.", path));
         let mut reader = io::BufReader::new(file);
 
         //------------------------------------------------------------------------------------------
@@ -81,19 +82,11 @@ impl Parser {
         // set counts
         let node_count = match node_count {
             Some(c) => c,
-            None => {
-                return Err(ParseError::wrong_format(
-                    "The given fmi-file misses the node-count.",
-                ))
-            }
+            None => panic!("The given fmi-file misses the node-count.")
         };
         let edge_count = match edge_count {
             Some(c) => c,
-            None => {
-                return Err(ParseError::wrong_format(
-                    "The given fmi-file misses the edge-count.",
-                ))
-            }
+            None => panic!("The given fmi-file misses the edge-count.")
         };
         graph_builder.reserve(node_count, edge_count);
 
@@ -149,6 +142,6 @@ impl Parser {
             i += 1;
         }
 
-        Ok(graph_builder.finalize())
+        graph_builder.finalize()
     }
 }

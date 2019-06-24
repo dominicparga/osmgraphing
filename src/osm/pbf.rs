@@ -18,12 +18,13 @@ mod pbf {
 pub struct Parser;
 
 impl Parser {
-    pub fn parse<S: AsRef<OsStr> + ?Sized>(&self, path: &S) -> Result<Graph, ParseError> {
+    pub fn parse<S: AsRef<OsStr> + ?Sized>(&self, path: &S) -> Graph {
         //------------------------------------------------------------------------------------------
         // get reader
 
         let path = Path::new(&path);
-        let file = File::open(&path)?;
+        let file =
+            File::open(&path).expect(&format!("Expects the given path {:?} to exist.", path));
         let mut reader = pbf::Reader::new(file);
 
         //------------------------------------------------------------------------------------------
