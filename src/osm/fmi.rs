@@ -140,7 +140,7 @@ impl Parser {
                         params[2].parse::<u64>().expect(&format!(
                             "Parse weight ({:?}) from fmi-file into u64.",
                             params[2]
-                        )),
+                        )) * 1_000,
                     );
                     edge_id += 1;
                 }
