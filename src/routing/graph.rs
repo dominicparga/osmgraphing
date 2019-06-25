@@ -40,11 +40,12 @@ impl GraphBuilder {
     }
 
     pub fn with_capacity(node_capacity: usize, edge_capacity: usize) -> Self {
+        // offsets -> n+1 due to method `leaving_edges(...)`
         GraphBuilder {
             graph: Graph {
                 nodes: Vec::with_capacity(node_capacity),
                 edges: Vec::with_capacity(edge_capacity),
-                offsets: Vec::with_capacity(node_capacity),
+                offsets: Vec::with_capacity(node_capacity + 1),
             },
         }
     }
@@ -113,6 +114,8 @@ impl GraphBuilder {
             }
             offset += 1;
         }
+        // last node needs an upper bound as well for `leaving_edges(...)`
+        self.graph.offsets.push(offset);
 
         self.graph
     }
@@ -125,30 +128,6 @@ impl Graph {
             edges: Vec::new(),
             offsets: Vec::new(),
         }
-    }
-
-    // TODO move into GraphBuilder::finalize
-    pub fn set_edge_offset(&mut self) {
-        // let mut i = 0;
-        // let mut j = 0;
-        // for edge in self.edges.iter() {
-        //     if edge.src == self.nodes[j].id {
-        //         self.nodes[j].edge_end = i;
-        //     } else {
-        //         j += 1;
-        //         while j < self.node_count() && edge.src != self.nodes[j].id {
-        //             self.nodes[j].edge_start = i - 1;
-        //             self.nodes[j].edge_end = i - 1;
-        //             j += 1;
-        //         }
-        //         if j < self.node_count() {
-        //             self.nodes[j].edge_start = i;
-        //             self.nodes[j].edge_end = i;
-        //         }
-        //     }
-        //     i += 1;
-        // }
-        unimplemented!()
     }
 
     //----------------------------------------------------------------------------------------------
@@ -171,11 +150,10 @@ impl Graph {
         unimplemented!()
     }
 
-    pub fn leaving_edges(&self, _node_id: usize) -> &[Edge] {
-        // for edge_idx in node.edge_start..node.edge_end + 1 {
-        //     let edge = &self.graph.edges[edge_idx];
-        // TODO &self.edges[..]
-        unimplemented!()
+    pub fn leaving_edges(&self, node_id: usize) -> &[Edge] {
+        let i0 = self.offsets[node_id];
+        let i1 = self.offsets[node_id + 1]; // guaranteed by array-length
+        &self.edges[i0..i1]
     }
 }
 
@@ -252,14 +230,14 @@ impl fmt::Display for Graph {
 
         // print offsets
         for mut i in 0..n {
-            // if enough nodes are in the graph
+            // if enough offsets are in the graph
             if i < self.node_count() {
                 if i == n - 1 {
-                    // if at least 2 nodes are missing -> print `...`
+                    // if at least 2 offsets are missing -> print `...`
                     if i + 1 < self.node_count() {
                         writeln!(f, "...")?;
                     }
-                    // print last node
+                    // print last offset
                     i = self.node_count() - 1;
                 }
                 writeln!(f, "{{ id: {}, offset: {} }}", i, self.offsets[i])?;
@@ -267,6 +245,9 @@ impl fmt::Display for Graph {
                 break;
             }
         }
+        // offset has n+1 entries due to `leaving_edges(...)`
+        let i = self.offsets.len() - 1;
+        writeln!(f, "{{ __: {}, offset: {} }}", i, self.offsets[i])?;
 
         Ok(())
     }
