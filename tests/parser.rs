@@ -1,8 +1,11 @@
 mod parser {
     use osmgraphing::osm;
-    use std::ffi::{OsString, OsStr};
+    use std::ffi::{OsStr, OsString};
 
-    fn assert_support<S>(path: &S, expected: osm::Support) where S: AsRef<OsStr> + ?Sized {
+    fn assert_support<S>(path: &S, expected: osm::Support)
+    where
+        S: AsRef<OsStr> + ?Sized,
+    {
         let path = OsString::from(&path);
 
         let support = match osm::Support::from_path(&path) {
@@ -14,8 +17,8 @@ mod parser {
     }
 
     mod support {
-        use osmgraphing::osm;
         use super::assert_support;
+        use osmgraphing::osm;
 
         #[test]
         fn fmi() {
@@ -34,8 +37,8 @@ mod parser {
     }
 
     mod unsupport {
-        use osmgraphing::osm;
         use super::assert_support;
+        use osmgraphing::osm;
 
         #[test]
         #[should_panic]
