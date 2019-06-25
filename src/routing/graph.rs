@@ -10,6 +10,7 @@ pub struct GraphBuilder {
 pub struct Graph {
     nodes: Vec<Node>,
     edges: Vec<Edge>,
+    offsets: Vec<usize>,
 }
 
 pub struct Node {
@@ -43,6 +44,7 @@ impl GraphBuilder {
             graph: Graph {
                 nodes: Vec::with_capacity(node_capacity),
                 edges: Vec::with_capacity(edge_capacity),
+                offsets: Vec::with_capacity(node_capacity),
             },
         }
     }
@@ -62,6 +64,7 @@ impl GraphBuilder {
 
     pub fn reserve_nodes(&mut self, additional: usize) -> &mut Self {
         self.graph.nodes.reserve(additional);
+        self.graph.offsets.reserve(additional);
         self
     }
 
@@ -85,8 +88,32 @@ impl GraphBuilder {
         self
     }
 
-    pub fn finalize(self) -> Graph {
-        // TODO compute offset array
+    pub fn finalize(mut self) -> Graph {
+        //------------------------------------------------------------------------------------------
+        // sort edges by ascending src, then by ascending dst
+
+        self.graph
+            .edges
+            .sort_by(|e0, e1| e0.src.cmp(&e1.src).then_with(|| e0.dst.cmp(&e1.dst)));
+
+        //------------------------------------------------------------------------------------------
+        // build offset-array
+
+        // i is node_idx, j is edge_idx
+        let mut i = 0;
+        let mut offset = 0;
+        self.graph.offsets.push(0);
+        for j in 0..self.graph.edge_count() {
+            let edge = &self.graph.edges[j];
+            // if coming edges have new src
+            // then update offset of new src
+            if i != edge.src {
+                i += 1;
+                self.graph.offsets.push(offset);
+            }
+            offset += 1;
+        }
+
         self.graph
     }
 }
@@ -96,6 +123,7 @@ impl Graph {
         Graph {
             nodes: Vec::new(),
             edges: Vec::new(),
+            offsets: Vec::new(),
         }
     }
 
@@ -182,19 +210,19 @@ impl fmt::Display for Graph {
         let n = 20;
         let m = 20;
 
-        for i in 0..n {
+        // print nodes
+        for mut i in 0..n {
             // if enough nodes are in the graph
             if i < self.node_count() {
                 if i == n - 1 {
-                    // if at least 2 nodes are missing -> print ...
+                    // if at least 2 nodes are missing -> print `...`
                     if i + 1 < self.node_count() {
                         writeln!(f, "...")?;
                     }
                     // print last node
-                    writeln!(f, "{}", self.nodes[self.node_count() - 1])?;
-                } else {
-                    writeln!(f, "{}", self.nodes[i])?;
+                    i = self.node_count() - 1;
                 }
+                writeln!(f, "{}", self.nodes[i])?;
             } else {
                 break;
             }
@@ -202,19 +230,39 @@ impl fmt::Display for Graph {
 
         writeln!(f, "")?;
 
-        for j in 0..m {
+        // print edges
+        for mut j in 0..m {
             // if enough edges are in the graph
             if j < self.edge_count() {
                 if j == m - 1 {
-                    // if at least 2 edges are missing -> print ...
+                    // if at least 2 edges are missing -> print `...`
                     if j + 1 < self.edge_count() {
                         writeln!(f, "...")?;
                     }
                     // print last edge
-                    writeln!(f, "{}", self.edges[self.edge_count() - 1])?;
-                } else {
-                    writeln!(f, "{}", self.edges[j])?;
+                    j = self.edge_count() - 1;
                 }
+                writeln!(f, "{}", self.edges[j])?;
+            } else {
+                break;
+            }
+        }
+
+        writeln!(f, "")?;
+
+        // print offsets
+        for mut i in 0..n {
+            // if enough nodes are in the graph
+            if i < self.node_count() {
+                if i == n - 1 {
+                    // if at least 2 nodes are missing -> print `...`
+                    if i + 1 < self.node_count() {
+                        writeln!(f, "...")?;
+                    }
+                    // print last node
+                    i = self.node_count() - 1;
+                }
+                writeln!(f, "{{ id: {}, offset: {} }}", i, self.offsets[i])?;
             } else {
                 break;
             }
