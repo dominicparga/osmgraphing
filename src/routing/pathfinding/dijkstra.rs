@@ -71,10 +71,8 @@ impl<'a> Dijkstra<'a> {
         //------------------------------------------------------------------------------------------
         // initialize, but check path-"cache" before
 
-        for i in 0..self.graph.node_count() {
-            self.path.cost[i] = std::u64::MAX;
-            self.path.predecessors[i] = None;
-        }
+        self.path.cost = vec![std::u64::MAX; self.graph.node_count()];
+        self.path.predecessors = vec![None; self.graph.node_count()];
         let mut queue = BinaryHeap::new(); // max-heap, but CostNode's natural order is reversed
 
         // prepare first iteration
