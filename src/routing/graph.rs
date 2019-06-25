@@ -145,9 +145,13 @@ impl Graph {
         &self.nodes[id]
     }
 
-    pub fn edge(&self, _src: usize, _dst: usize) -> &Edge {
-        // TODO
-        unimplemented!()
+    pub fn edge(&self, src: usize, dst: usize) -> &Edge {
+        let edges = self.leaving_edges(src);
+        let j = match edges.binary_search_by(|edge| edge.dst.cmp(&dst)) {
+            Ok(j) => j,
+            Err(_) => panic!("Edge (({})->({})) doesn't exist in the graph.", src, dst),
+        };
+        &self.edges[j]
     }
 
     pub fn leaving_edges(&self, node_id: usize) -> &[Edge] {
