@@ -19,8 +19,7 @@ impl Ord for CostNode {
     fn cmp(&self, other: &CostNode) -> Ordering {
         // (1) cost in float, but cmp uses only m, which is ok
         // (2) inverse order since BinaryHeap is max-heap, but min-heap is needed
-        let delta = (other.cost - self.cost) as i64;
-        delta.cmp(&0).then_with(|| other.id.cmp(&self.id))
+        other.cost.cmp(&self.cost).then_with(|| other.id.cmp(&self.id))
     }
 }
 
