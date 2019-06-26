@@ -15,12 +15,14 @@ pub struct Graph {
 
 pub struct Node {
     id: usize,
+    osm_id: Option<usize>,
     lat: f64,
     lon: f64,
 }
 
 pub struct Edge {
     id: usize,
+    osm_id: Option<usize>,
     src: usize,
     dst: usize,
     weight: u64,
@@ -74,14 +76,27 @@ impl GraphBuilder {
         self
     }
 
-    pub fn push_node(&mut self, id: usize, lat: f64, lon: f64) -> &mut Self {
-        self.graph.nodes.push(Node { id, lat, lon });
+    pub fn push_node(&mut self, id: usize, osm_id: Option<usize>, lat: f64, lon: f64) -> &mut Self {
+        self.graph.nodes.push(Node {
+            id,
+            osm_id,
+            lat,
+            lon,
+        });
         self
     }
 
-    pub fn push_edge(&mut self, id: usize, src: usize, dst: usize, weight: u64) -> &mut Self {
+    pub fn push_edge(
+        &mut self,
+        id: usize,
+        osm_id: Option<usize>,
+        src: usize,
+        dst: usize,
+        weight: u64,
+    ) -> &mut Self {
         self.graph.edges.push(Edge {
             id,
+            osm_id,
             src,
             dst,
             weight,
@@ -161,9 +176,28 @@ impl Graph {
     }
 }
 
-impl Node {}
+impl Node {
+    pub fn id(&self) -> usize {
+        self.id
+    }
+    pub fn osm_id(&self) -> Option<usize> {
+        self.osm_id
+    }
+    pub fn lat(&self) -> f64 {
+        self.lat
+    }
+    pub fn lon(&self) -> f64 {
+        self.lon
+    }
+}
 
 impl Edge {
+    pub fn id(&self) -> usize {
+        self.id
+    }
+    pub fn osm_id(&self) -> Option<usize> {
+        self.osm_id
+    }
     pub fn src(&self) -> usize {
         self.src
     }
