@@ -13,6 +13,16 @@ mod pbf {
 
 //--------------------------------------------------------------------------------------------------
 
+struct Way {
+    // put defaults here?
+}
+
+struct Node {
+
+}
+
+//--------------------------------------------------------------------------------------------------
+
 pub struct Parser;
 
 impl Parser {
@@ -38,16 +48,35 @@ impl Parser {
         //     _obj.tags();
         //     true
         // };
-        for obj in reader.iter().map(Result::unwrap) {
-            if !filter(&obj) {
-                continue;
-            }
-            match obj {
-                osmpbfreader::OsmObj::Node(node) => println!("{:?}", node),
-                osmpbfreader::OsmObj::Way(way) => println!("{:?}", way),
-                osmpbfreader::OsmObj::Relation(rel) => println!("{:?}", rel),
-            }
-        }
+        // for obj in reader.iter().map(Result::unwrap) {
+        //     if !filter(&obj) {
+        //         continue;
+        //     }
+        //     match obj {
+        //         pbf::OsmObj::Node(node) => println!("{:?}", node),
+        //         pbf::OsmObj::Way(way) => println!("{:?}", way),
+        //         pbf::OsmObj::Relation(rel) => println!("{:?}", rel),
+        //     }
+        // }
+
+        let ways: Vec<pbf::OsmObj> = reader
+            .iter()
+            .map(|obj| obj.expect("File is corrupted."))
+            .filter(|obj| obj.is_way())
+            .collect();
+
+        // - Get all Ways
+        // - Filter Ways
+        //   - WayId -> osm_id
+        //   - Tags
+        //     - oneway vs multiway
+        //     - maxspeed
+        //     - nodes
+        // - Get all Nodes
+
+        println!();
+        println!("{:?}", ways[0]);
+        println!();
 
         unimplemented!()
     }
