@@ -135,9 +135,13 @@ impl Parser {
                             params[1]
                         )),
                         params[2].parse::<u64>().expect(&format!(
-                            "Parse weight ({:?}) from fmi-file into u64.",
+                            "Parse kilometers ({:?}) from fmi-file into u64.",
                             params[2]
-                        )) * 1_000,
+                        )) * 1_000, // in m
+                        params[4].parse::<u16>().expect(&format!(
+                            "Parse maxspeed in km/h ({:?}) from fmi-file into u16.",
+                            params[4]
+                        )),
                     );
                     edge_id += 1;
                 }

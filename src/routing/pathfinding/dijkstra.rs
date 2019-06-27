@@ -99,7 +99,7 @@ impl<'a> Dijkstra<'a> {
             // if not -> update "official" cost
             // and add successors
             for edge in self.graph.leaving_edges(id) {
-                let new_cost = cost + edge.weight();
+                let new_cost = cost + edge.meters();
 
                 if new_cost < self.path.cost[edge.dst()] {
                     self.path.predecessors[edge.dst()] = Some(&edge);

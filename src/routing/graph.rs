@@ -25,7 +25,8 @@ pub struct Edge {
     osm_id: Option<usize>,
     src: usize,
     dst: usize,
-    weight: u64,
+    meters: u64,
+    maxspeed: u16,
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -92,14 +93,16 @@ impl GraphBuilder {
         osm_id: Option<usize>,
         src: usize,
         dst: usize,
-        weight: u64,
+        meters: u64,
+        maxspeed: u16,
     ) -> &mut Self {
         self.graph.edges.push(Edge {
             id,
             osm_id,
             src,
             dst,
-            weight,
+            meters,
+            maxspeed,
         });
         self
     }
@@ -204,8 +207,11 @@ impl Edge {
     pub fn dst(&self) -> usize {
         self.dst
     }
-    pub fn weight(&self) -> u64 {
-        self.weight
+    pub fn meters(&self) -> u64 {
+        self.meters
+    }
+    pub fn maxspeed(&self) -> u16 {
+        self.maxspeed
     }
 }
 
@@ -306,7 +312,7 @@ impl fmt::Display for Edge {
         write!(
             f,
             "Edge: {{ id: {}, ({})-{}->({}) }}",
-            self.id, self.src, self.weight, self.dst,
+            self.id, self.src, self.meters, self.dst,
         )
     }
 }
