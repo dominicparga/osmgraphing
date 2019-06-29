@@ -27,7 +27,7 @@ env_logger = "*"
 
 [[example]]
 name = "logging"
-path = "examples/kutgw/logging.rs"
+path = "examples/playground/logging.rs"
 
 [[example]]
 name = "xml_reader"
