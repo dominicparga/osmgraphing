@@ -177,96 +177,6 @@ impl GraphBuilder {
 
         graph
     }
-
-    // pub fn finalize(mut self) -> Graph {
-    //     //------------------------------------------------------------------------------------------
-    //     // apply IDs if given one is None (TODO check for uniqueness)
-    //     // sort nodes by ascending id
-
-    //     let mut i = 0;
-    //     for proto_node in self.nodes {
-    //         if proto_node.id.is_none() {
-    //             proto_node.id = Some(i);
-    //         }
-    //         i += 1;
-    //     };
-    //     self.nodes.sort_by(|n0, n1| n0.id.cmp(&n1.id));
-
-    //     //------------------------------------------------------------------------------------------
-    //     // sort edges by ascending src-id, then by ascending dst-id -> offset-array
-    //     // then give edges IDs
-
-    //     self.edges.sort_by(|e0, e1| {
-    //         e0.src_id
-    //             .cmp(&e1.src_id)
-    //             .then_with(|| e0.dst_id.cmp(&e1.dst_id))
-    //     });
-    //     let mut j = 0;
-    //     for proto_edge in self.edges {
-    //         if proto_edge.id.is_none() {
-    //             proto_edge.id = Some(j);
-    //         }
-    //         j += 1;
-    //     };
-
-    //     //------------------------------------------------------------------------------------------
-    //     // init graph and reserve capacity for (hopefully) better performance
-
-    //     let node_count = self.nodes.len();
-    //     let edge_count = self.edges.len();
-    //     let mut graph = Graph::new();
-    //     graph.nodes = self.nodes.iter().map(|proto_node| {
-    //         Node {
-    //             id: proto_node.id.expect("IDs should already have been set."),
-    //             lat: proto_node.lat,
-    //             lon: proto_node.lon,
-    //         }
-    //     }).collect();
-    //     graph.edges.reserve(edge_count);
-    //     // offsets -> n+1 due to method `leaving_edges(...)`
-    //     graph.offsets.reserve(node_count + 1);
-
-    //     //------------------------------------------------------------------------------------------
-    //     // build offset-array
-
-    //     // i for node-idx, j for edge-idx
-    //     let mut i = 0;
-    //     let mut offset = 0;
-    //     graph.offsets.push(offset);
-    //     for j in 0..edge_count {
-    //         // init needed attributes
-    //         let node_idx = i;
-    //         let proto_edge = &self.edges[j];
-
-    //         // add new edge to graph
-    //         let edge = Edge {
-    //             id: proto_edge.id,
-    //             src_idx: node_idx,
-    //             dst_idx: match graph.node_idx_from(proto_edge.dst_id) {
-    //                 Ok(idx) => idx,
-    //                 Err(_) => panic!(
-    //                     "The given destination-id `{:?}` of edge-id `{:?}` doesn't exist as node.",
-    //                     proto_edge.dst_id, proto_edge.id
-    //                 ),
-    //             },
-    //             meters: proto_edge.meters,
-    //             maxspeed: proto_edge.maxspeed,
-    //         };
-
-    //         // if coming edges have new src
-    //         // then update offset of new src
-    //         if node_idx != edge.src_idx {
-    //             i += 1;
-    //             graph.offsets.push(offset);
-    //         }
-    //         graph.edges.push(edge);
-    //         offset += 1;
-    //     }
-    //     // last node needs an upper bound as well for `leaving_edges(...)`
-    //     graph.offsets.push(offset);
-
-    //     graph
-    // }
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -430,7 +340,11 @@ impl fmt::Display for Graph {
                 writeln!(
                     f,
                     "Edge: {{ idx: {}, id: {}, ({})-{}->({}) }}",
-                    j, edge.id, self.node(edge.src_idx).id, edge.meters, self.node(edge.dst_idx).id,
+                    j,
+                    edge.id,
+                    self.node(edge.src_idx).id,
+                    edge.meters,
+                    self.node(edge.dst_idx).id,
                 )?;
             } else {
                 break;
