@@ -5,13 +5,14 @@ use std::collections::BinaryHeap;
 use crate::routing;
 use routing::Edge;
 use routing::Graph;
+use routing::NodeIdx;
 
 //--------------------------------------------------------------------------------------------------
 // nodes
 
 #[derive(Copy, Clone)]
 struct CostNode {
-    pub id: usize,
+    pub idx: NodeIdx,
     pub cost: u64,
 }
 
@@ -22,7 +23,7 @@ impl Ord for CostNode {
         other
             .cost
             .cmp(&self.cost)
-            .then_with(|| other.id.cmp(&self.id))
+            .then_with(|| other.idx.cmp(&self.idx))
     }
 }
 
@@ -70,7 +71,7 @@ impl<'a> Dijkstra<'a> {
 }
 
 impl<'a> Dijkstra<'a> {
-    pub fn compute_shortest_path(&mut self, src: usize, dst: usize) -> Cow<Path> {
+    pub fn compute_shortest_path(&mut self, src_idx: NodeIdx, dst_idx: NodeIdx) -> Cow<Path> {
         //------------------------------------------------------------------------------------------
         // initialize, but check path-"cache" before
 
@@ -79,33 +80,36 @@ impl<'a> Dijkstra<'a> {
         let mut queue = BinaryHeap::new(); // max-heap, but CostNode's natural order is reversed
 
         // prepare first iteration
-        queue.push(CostNode { id: src, cost: 0 });
-        self.path.cost[src] = 0;
+        queue.push(CostNode {
+            idx: src_idx,
+            cost: 0,
+        });
+        self.path.cost[src_idx] = 0;
 
         //------------------------------------------------------------------------------------------
         // compute
 
-        while let Some(CostNode { id, cost }) = queue.pop() {
+        while let Some(CostNode { idx, cost }) = queue.pop() {
             // shortest path found
-            if id == dst {
+            if idx == dst_idx {
                 break;
             }
 
             // if node has already been visited
-            if cost > self.path.cost[id] {
+            if cost > self.path.cost[idx.value()] {
                 continue;
             }
 
             // if not -> update "official" cost
             // and add successors
-            for edge in self.graph.leaving_edges(id) {
+            for edge in self.graph.leaving_edges(idx) {
                 let new_cost = cost + edge.meters();
 
-                if new_cost < self.path.cost[edge.dst()] {
-                    self.path.predecessors[edge.dst()] = Some(&edge);
-                    self.path.cost[edge.dst()] = new_cost;
+                if new_cost < self.path.cost[edge.dst_idx()] {
+                    self.path.predecessors[edge.dst_idx()] = Some(&edge);
+                    self.path.cost[edge.dst_idx()] = new_cost;
                     queue.push(CostNode {
-                        id: edge.dst(),
+                        idx: edge.dst_idx(),
                         cost: new_cost,
                     });
                 }

@@ -1,8 +1,9 @@
 mod graph;
-pub use graph::Edge;
+pub use graph::{Edge, Node};
+pub use graph::id::{EdgeId, NodeId};
+pub use graph::idx::{EdgeIdx, NodeIdx};
 pub use graph::Graph;
 pub use graph::GraphBuilder;
-pub use graph::Node;
 
 mod pathfinding;
 pub use pathfinding::Dijkstra;

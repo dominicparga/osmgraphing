@@ -101,12 +101,8 @@ impl Parser {
                     let line_string = line.split_whitespace();
                     let params: Vec<&str> = line_string.collect();
                     graph_builder.push_node(
-                        params[0].parse::<usize>().expect(&format!(
+                        Some(params[1].parse::<routing::NodeId>().expect(&format!(
                             "Parse id ({:?}) from fmi-file into usize.",
-                            params[0]
-                        )),
-                        Some(params[1].parse::<usize>().expect(&format!(
-                            "Parse osm-id ({:?}) from fmi-file into usize.",
                             params[1]
                         ))),
                         params[2].parse::<f64>().expect(&format!(
@@ -124,13 +120,12 @@ impl Parser {
                     let line_string = line.split_whitespace();
                     let params: Vec<&str> = line_string.collect();
                     graph_builder.push_edge(
-                        edge_id,
                         None,
-                        params[0].parse::<usize>().expect(&format!(
+                        params[0].parse::<routing::NodeId>().expect(&format!(
                             "Parse src ({:?}) from fmi-file into usize.",
                             params[0]
                         )),
-                        params[1].parse::<usize>().expect(&format!(
+                        params[1].parse::<routing::NodeId>().expect(&format!(
                             "Parse dst ({:?}) from fmi-file into usize.",
                             params[1]
                         )),
