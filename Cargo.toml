@@ -26,10 +26,6 @@ env_logger = "*"
 
 
 [[example]]
-name = "logging"
-path = "examples/playground/logging.rs"
-
-[[example]]
 name = "xml_reader"
 path = "examples/playground/xml_reader.rs"
 
