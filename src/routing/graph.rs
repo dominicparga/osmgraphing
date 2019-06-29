@@ -1,65 +1,46 @@
 use std::fmt;
 
 //--------------------------------------------------------------------------------------------------
-// definitions
+// graphbuilder
 
-pub struct GraphBuilder {
-    graph: Graph,
-}
-
-pub struct Graph {
-    nodes: Vec<Node>,
-    edges: Vec<Edge>,
-    offsets: Vec<usize>,
-}
-
-pub struct Node {
-    id: usize,
-    osm_id: Option<usize>,
+struct ProtoNode {
+    id: Option<i64>,
     lat: f64,
     lon: f64,
 }
 
-pub struct Edge {
-    id: usize,
-    osm_id: Option<usize>,
-    src: usize,
-    dst: usize,
+struct ProtoEdge {
+    id: Option<i64>,
+    src_id: i64,
+    dst_id: i64,
     meters: u64,
     maxspeed: u16,
 }
 
-//--------------------------------------------------------------------------------------------------
-// implementations
-
+pub struct GraphBuilder {
+    nodes: Vec<ProtoNode>,
+    edges: Vec<ProtoEdge>,
+}
 impl GraphBuilder {
     //----------------------------------------------------------------------------------------------
     // init self
 
     pub fn new() -> Self {
         GraphBuilder {
-            graph: Graph::new(),
+            nodes: Vec::new(),
+            edges: Vec::new(),
         }
     }
 
     pub fn with_capacity(node_capacity: usize, edge_capacity: usize) -> Self {
-        // offsets -> n+1 due to method `leaving_edges(...)`
         GraphBuilder {
-            graph: Graph {
-                nodes: Vec::with_capacity(node_capacity),
-                edges: Vec::with_capacity(edge_capacity),
-                offsets: Vec::with_capacity(node_capacity + 1),
-            },
+            nodes: Vec::with_capacity(node_capacity),
+            edges: Vec::with_capacity(edge_capacity),
         }
     }
 
     //----------------------------------------------------------------------------------------------
     // build graph
-
-    pub fn new_graph(&mut self) -> &mut Self {
-        self.graph = Graph::new();
-        self
-    }
 
     pub fn reserve(&mut self, additional_nodes: usize, additional_edges: usize) -> &mut Self {
         self.reserve_nodes(additional_nodes)
@@ -67,40 +48,32 @@ impl GraphBuilder {
     }
 
     pub fn reserve_nodes(&mut self, additional: usize) -> &mut Self {
-        self.graph.nodes.reserve(additional);
-        self.graph.offsets.reserve(additional);
+        self.nodes.reserve(additional);
         self
     }
 
     pub fn reserve_edges(&mut self, additional: usize) -> &mut Self {
-        self.graph.edges.reserve(additional);
+        self.edges.reserve(additional);
         self
     }
 
-    pub fn push_node(&mut self, id: usize, osm_id: Option<usize>, lat: f64, lon: f64) -> &mut Self {
-        self.graph.nodes.push(Node {
-            id,
-            osm_id,
-            lat,
-            lon,
-        });
+    pub fn push_node(&mut self, id: Option<i64>, lat: f64, lon: f64) -> &mut Self {
+        self.nodes.push(ProtoNode { id, lat, lon });
         self
     }
 
     pub fn push_edge(
         &mut self,
-        id: usize,
-        osm_id: Option<usize>,
-        src: usize,
-        dst: usize,
+        id: Option<i64>,
+        src_id: i64,
+        dst_id: i64,
         meters: u64,
         maxspeed: u16,
     ) -> &mut Self {
-        self.graph.edges.push(Edge {
+        self.edges.push(ProtoEdge {
             id,
-            osm_id,
-            src,
-            dst,
+            src_id,
+            dst_id,
             meters,
             maxspeed,
         });
@@ -109,42 +82,259 @@ impl GraphBuilder {
 
     pub fn finalize(mut self) -> Graph {
         //------------------------------------------------------------------------------------------
-        // sort edges by ascending src, then by ascending dst
+        // init graph and reserve capacity for (hopefully) better performance
 
-        self.graph
-            .edges
-            .sort_by(|e0, e1| e0.src.cmp(&e1.src).then_with(|| e0.dst.cmp(&e1.dst)));
+        let node_count = self.nodes.len();
+        let edge_count = self.edges.len();
+        let mut graph = Graph::new();
+        graph.edges.reserve(edge_count);
+        // offsets -> n+1 due to method `leaving_edges(...)`
+        graph.offsets.reserve(node_count + 1);
+
+        //------------------------------------------------------------------------------------------
+        // apply IDs if given one is None (TODO check for uniqueness)
+        // sort nodes by ascending id
+
+        let mut i = -1;
+        graph.nodes = self
+            .nodes
+            .iter()
+            .map(|proto_node| Node {
+                id: match proto_node.id {
+                    Some(id) => id,
+                    None => {
+                        i += 1;
+                        i
+                    }
+                },
+                lat: proto_node.lat,
+                lon: proto_node.lon,
+            })
+            .collect();
+        graph.nodes.sort_by(|n0, n1| n0.id.cmp(&n1.id));
+
+        //------------------------------------------------------------------------------------------
+        // sort edges by ascending src-id, then by ascending dst-id -> offset-array
+        // then give edges IDs
+
+        self.edges.sort_by(|e0, e1| {
+            e0.src_id
+                .cmp(&e1.src_id)
+                .then_with(|| e0.dst_id.cmp(&e1.dst_id))
+        });
 
         //------------------------------------------------------------------------------------------
         // build offset-array
 
-        // i is node_idx, j is edge_idx
-        let mut i = 0;
+        let mut node_idx = 0;
         let mut offset = 0;
-        self.graph.offsets.push(0);
-        for j in 0..self.graph.edge_count() {
-            let edge = &self.graph.edges[j];
+        graph.offsets.push(offset);
+        // high-level-idea: count offset for each proto_edge and apply if src changes
+        for edge_idx in 0..edge_count {
+            let proto_edge = &self.edges[edge_idx];
+            // set id to index - TODO: uniqueness not guaranteed if only some (small) IDs are given
+            let edge_id = match proto_edge.id {
+                Some(id) => id,
+                None => edge_idx as i64,
+            };
+            // find source-index in sorted vec of nodes
+            let src_idx = match graph.node_idx_from(proto_edge.src_id) {
+                Ok(idx) => idx,
+                Err(_) => panic!(
+                    "The given source-id `{:?}` of edge-id `{:?}` doesn't exist as node.",
+                    proto_edge.src_id, proto_edge.id
+                ),
+            };
+            // find destination-index in sorted vec of nodes
+            let dst_idx = match graph.node_idx_from(proto_edge.dst_id) {
+                Ok(idx) => idx,
+                Err(_) => panic!(
+                    "The given destination-id `{:?}` of edge-id `{:?}` doesn't exist as node.",
+                    proto_edge.dst_id, proto_edge.id
+                ),
+            };
+
+            // add new edge to graph
+            let edge = Edge {
+                id: edge_id,
+                src_idx,
+                dst_idx,
+                meters: proto_edge.meters,
+                maxspeed: proto_edge.maxspeed,
+            };
+
             // if coming edges have new src
             // then update offset of new src
-            if i != edge.src {
-                i += 1;
-                self.graph.offsets.push(offset);
+            if node_idx != src_idx {
+                node_idx += 1;
+                graph.offsets.push(offset);
             }
+            graph.edges.push(edge);
             offset += 1;
         }
         // last node needs an upper bound as well for `leaving_edges(...)`
-        self.graph.offsets.push(offset);
+        graph.offsets.push(offset);
 
-        self.graph
+        graph
+    }
+
+    // pub fn finalize(mut self) -> Graph {
+    //     //------------------------------------------------------------------------------------------
+    //     // apply IDs if given one is None (TODO check for uniqueness)
+    //     // sort nodes by ascending id
+
+    //     let mut i = 0;
+    //     for proto_node in self.nodes {
+    //         if proto_node.id.is_none() {
+    //             proto_node.id = Some(i);
+    //         }
+    //         i += 1;
+    //     };
+    //     self.nodes.sort_by(|n0, n1| n0.id.cmp(&n1.id));
+
+    //     //------------------------------------------------------------------------------------------
+    //     // sort edges by ascending src-id, then by ascending dst-id -> offset-array
+    //     // then give edges IDs
+
+    //     self.edges.sort_by(|e0, e1| {
+    //         e0.src_id
+    //             .cmp(&e1.src_id)
+    //             .then_with(|| e0.dst_id.cmp(&e1.dst_id))
+    //     });
+    //     let mut j = 0;
+    //     for proto_edge in self.edges {
+    //         if proto_edge.id.is_none() {
+    //             proto_edge.id = Some(j);
+    //         }
+    //         j += 1;
+    //     };
+
+    //     //------------------------------------------------------------------------------------------
+    //     // init graph and reserve capacity for (hopefully) better performance
+
+    //     let node_count = self.nodes.len();
+    //     let edge_count = self.edges.len();
+    //     let mut graph = Graph::new();
+    //     graph.nodes = self.nodes.iter().map(|proto_node| {
+    //         Node {
+    //             id: proto_node.id.expect("IDs should already have been set."),
+    //             lat: proto_node.lat,
+    //             lon: proto_node.lon,
+    //         }
+    //     }).collect();
+    //     graph.edges.reserve(edge_count);
+    //     // offsets -> n+1 due to method `leaving_edges(...)`
+    //     graph.offsets.reserve(node_count + 1);
+
+    //     //------------------------------------------------------------------------------------------
+    //     // build offset-array
+
+    //     // i for node-idx, j for edge-idx
+    //     let mut i = 0;
+    //     let mut offset = 0;
+    //     graph.offsets.push(offset);
+    //     for j in 0..edge_count {
+    //         // init needed attributes
+    //         let node_idx = i;
+    //         let proto_edge = &self.edges[j];
+
+    //         // add new edge to graph
+    //         let edge = Edge {
+    //             id: proto_edge.id,
+    //             src_idx: node_idx,
+    //             dst_idx: match graph.node_idx_from(proto_edge.dst_id) {
+    //                 Ok(idx) => idx,
+    //                 Err(_) => panic!(
+    //                     "The given destination-id `{:?}` of edge-id `{:?}` doesn't exist as node.",
+    //                     proto_edge.dst_id, proto_edge.id
+    //                 ),
+    //             },
+    //             meters: proto_edge.meters,
+    //             maxspeed: proto_edge.maxspeed,
+    //         };
+
+    //         // if coming edges have new src
+    //         // then update offset of new src
+    //         if node_idx != edge.src_idx {
+    //             i += 1;
+    //             graph.offsets.push(offset);
+    //         }
+    //         graph.edges.push(edge);
+    //         offset += 1;
+    //     }
+    //     // last node needs an upper bound as well for `leaving_edges(...)`
+    //     graph.offsets.push(offset);
+
+    //     graph
+    // }
+}
+
+//--------------------------------------------------------------------------------------------------
+// original graph
+
+pub struct Node {
+    id: i64,
+    lat: f64,
+    lon: f64,
+}
+impl Node {
+    pub fn id(&self) -> i64 {
+        self.id
+    }
+    pub fn lat(&self) -> f64 {
+        self.lat
+    }
+    pub fn lon(&self) -> f64 {
+        self.lon
     }
 }
 
+pub struct Edge {
+    id: i64,
+    src_idx: usize,
+    dst_idx: usize,
+    meters: u64,
+    maxspeed: u16,
+}
+impl Edge {
+    pub fn id(&self) -> i64 {
+        self.id
+    }
+    pub fn src_idx(&self) -> usize {
+        self.src_idx
+    }
+    pub fn dst_idx(&self) -> usize {
+        self.dst_idx
+    }
+    pub fn meters(&self) -> u64 {
+        self.meters
+    }
+    pub fn maxspeed(&self) -> u16 {
+        self.maxspeed
+    }
+}
+
+pub struct Graph {
+    nodes: Vec<Node>,
+    edges: Vec<Edge>,
+    offsets: Vec<usize>,
+}
 impl Graph {
     fn new() -> Graph {
         Graph {
             nodes: Vec::new(),
             edges: Vec::new(),
             offsets: Vec::new(),
+        }
+    }
+
+    //----------------------------------------------------------------------------------------------
+    // id <-> idx
+
+    pub fn node_idx_from(&self, id: i64) -> Result<usize, usize> {
+        match self.nodes.binary_search_by(|node| node.id.cmp(&id)) {
+            Ok(idx) => Ok(idx),
+            Err(idx) => Err(idx),
         }
     }
 
@@ -159,59 +349,26 @@ impl Graph {
         self.edges.len()
     }
 
-    pub fn node(&self, id: usize) -> &Node {
-        &self.nodes[id]
+    pub fn node(&self, idx: usize) -> &Node {
+        &self.nodes[idx]
     }
 
-    pub fn edge(&self, src: usize, dst: usize) -> &Edge {
-        let edges = self.leaving_edges(src);
-        let j = match edges.binary_search_by(|edge| edge.dst.cmp(&dst)) {
+    pub fn edge(&self, src_idx: usize, dst_idx: usize) -> &Edge {
+        let edges = self.leaving_edges(src_idx);
+        let j = match edges.binary_search_by(|edge| edge.dst_idx.cmp(&dst_idx)) {
             Ok(j) => j,
-            Err(_) => panic!("Edge (({})->({})) doesn't exist in the graph.", src, dst),
+            Err(_) => panic!(
+                "Edge (({})->({})) doesn't exist in the graph.",
+                src_idx, dst_idx
+            ),
         };
         &self.edges[j]
     }
 
-    pub fn leaving_edges(&self, node_id: usize) -> &[Edge] {
-        let i0 = self.offsets[node_id];
-        let i1 = self.offsets[node_id + 1]; // guaranteed by array-length
+    pub fn leaving_edges(&self, node_idx: usize) -> &[Edge] {
+        let i0 = self.offsets[node_idx];
+        let i1 = self.offsets[node_idx + 1]; // guaranteed by array-length
         &self.edges[i0..i1]
-    }
-}
-
-impl Node {
-    pub fn id(&self) -> usize {
-        self.id
-    }
-    pub fn osm_id(&self) -> Option<usize> {
-        self.osm_id
-    }
-    pub fn lat(&self) -> f64 {
-        self.lat
-    }
-    pub fn lon(&self) -> f64 {
-        self.lon
-    }
-}
-
-impl Edge {
-    pub fn id(&self) -> usize {
-        self.id
-    }
-    pub fn osm_id(&self) -> Option<usize> {
-        self.osm_id
-    }
-    pub fn src(&self) -> usize {
-        self.src
-    }
-    pub fn dst(&self) -> usize {
-        self.dst
-    }
-    pub fn meters(&self) -> u64 {
-        self.meters
-    }
-    pub fn maxspeed(&self) -> u16 {
-        self.maxspeed
     }
 }
 
@@ -244,7 +401,12 @@ impl fmt::Display for Graph {
                     // print last node
                     i = self.node_count() - 1;
                 }
-                writeln!(f, "{}", self.nodes[i])?;
+                let node = self.node(i);
+                writeln!(
+                    f,
+                    "Node: {{ idx: {}, id: {}, (lat, lon): ({:.6}, {:.6}) }}",
+                    i, node.id, node.lat, node.lon,
+                )?;
             } else {
                 break;
             }
@@ -264,7 +426,12 @@ impl fmt::Display for Graph {
                     // print last edge
                     j = self.edge_count() - 1;
                 }
-                writeln!(f, "{}", self.edges[j])?;
+                let edge = &self.edges[j];
+                writeln!(
+                    f,
+                    "Edge: {{ idx: {}, id: {}, ({})-{}->({}) }}",
+                    j, edge.id, self.node(edge.src_idx).id, edge.meters, self.node(edge.dst_idx).id,
+                )?;
             } else {
                 break;
             }
@@ -312,7 +479,7 @@ impl fmt::Display for Edge {
         write!(
             f,
             "Edge: {{ id: {}, ({})-{}->({}) }}",
-            self.id, self.src, self.meters, self.dst,
+            self.id, self.src_idx, self.meters, self.dst_idx,
         )
     }
 }

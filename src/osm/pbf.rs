@@ -4,11 +4,12 @@ use std::path::Path;
 
 use crate::routing;
 use routing::Graph;
+use routing::GraphBuilder;
 
 mod pbf {
     pub use osmpbfreader::reader::Iter;
     pub use osmpbfreader::reader::OsmPbfReader as Reader;
-    pub use osmpbfreader::{OsmObj, OsmPbfReader, RelationId};
+    pub use osmpbfreader::{OsmObj, Way};
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -148,6 +149,21 @@ impl WayTag {
 pub struct Parser;
 
 impl Parser {
+    fn build_edges_from_way(obj: &pbf::OsmObj) -> Vec<routing::Edge> {
+        let mut new_edges = Vec::new();
+
+        // match obj.tags().get("highway") {
+        //     Some(_) => {
+        //         println!("{:?}", obj);
+        //         panic!()
+        //         // Some(way)
+        //     }
+        //     None => None,
+        // }
+
+        new_edges
+    }
+
     pub fn parse<S: AsRef<OsStr> + ?Sized>(&self, path: &S) -> Graph {
         //------------------------------------------------------------------------------------------
         // get reader
@@ -158,21 +174,69 @@ impl Parser {
         let mut reader = pbf::Reader::new(file);
 
         //------------------------------------------------------------------------------------------
-        // filter
+        // init graphbuilder
 
-        let ways: Vec<pbf::OsmObj> = reader
+        let mut graph_builder = GraphBuilder::new();
+
+        //------------------------------------------------------------------------------------------
+        // collect all ways from file and generate edges from them
+
+        reader
             .iter()
-            .map(|obj| obj.expect("File is corrupted."))
-            .filter(|obj| obj.is_way())
-            .filter_map(|way| {
-                // now: "way" really is a way
-                // check if it's a street
-                println!("{:?}", way.tags().get("highway")); // WIP: just barely added maxspeed in graph
-                panic!(")")
-                // Some(obj)
+            .filter_map(|obj| {
+                if let pbf::OsmObj::Way(way) = obj.expect("pbf-File is corrupted.") {
+                    Some(way)
+                } else {
+                    None
+                }
             })
-            .collect();
+            .filter(|way| way.tags.get("highway").is_some())
+            .filter(|way| way.nodes.len() > 1)
+            .map(|way| {
+                let mut nodes_iter = way.nodes.iter();
+                let mut src = nodes_iter.next();
+                for dst in nodes_iter {
+                    // TODO implement after
+                    // refactoring graphbuilder to generate internal IDs (= array-idx) by itself
+                    // graph_builder.push_edge(id: usize, osm_id: Option<usize>, src: usize, dst: usize, meters: u64, maxspeed: u16);
+                }
+            });
 
+        // old
+        // let highways: Vec<pbf::Way> = reader
+        //     .iter()
+        //     .filter_map(|obj| {
+        //         if let pbf::OsmObj::Way(way) = obj.expect("pbf-File is corrupted.") {
+        //             Some(way)
+        //         } else {
+        //             None
+        //         }
+        //     })
+        //     .filter(|way| way.tags.get("highway").is_some())
+        //     .flat_map(|way| {
+        //         let mut edges = Vec::new();
+
+        //         if way.nodes.len() > 1 {
+        //             let nodes_iter = way.nodes.iter();
+        //             let mut src = nodes_iter.next();
+        //             for dst in nodes_iter {
+        //                 edges.push(routing::Edge)
+        //             }
+        //         }
+
+        //         edges.iter()
+        //     })
+        //     .flatten()
+        //     .collect();
+
+        //------------------------------------------------------------------------------------------
+        // create edges from preselected highways
+
+        //------------------------------------------------------------------------------------------
+        // check and remove intermediate nodes with only one incoming and one leaving edge
+        // like (... -> a -> ...)
+
+        // TODO
         // - Get all Ways
         // - Filter Ways
         //   - WayId -> osm_id

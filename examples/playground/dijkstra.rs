@@ -40,7 +40,7 @@ fn main() {
             now.elapsed().as_secs()
         );
         println!(
-            "Distance from (id:{}) to (id:{}): {}",
+            "Distance from (idx:{}) to (idx:{}): {}",
             src, dst, path.cost[dst]
         );
     }
