@@ -21,6 +21,10 @@ travis-ci = { repository = "dominicparga/osmgraphing", branch = "master" }
 quick-xml = "*"
 osmpbfreader = "*"
 
+futures = "0.1"
+hyper = "0.12"
+lazy_static = "1.3.0"
+maplit = "1.0.1"
 
 [[example]]
 name = "xml_reader"
@@ -41,3 +45,7 @@ path = "examples/playground/graph.rs"
 [[example]]
 name = "dijkstra"
 path = "examples/playground/dijkstra.rs"
+
+[[example]]
+name = "server"
+path = "examples/playground/server.rs"
