@@ -11,9 +11,9 @@ pub mod routing;
 #[macro_use]
 extern crate log;
 
-use std::io::Write;
-use chrono::Local;
+// use chrono::Local;
 use env_logger::Builder;
+// use std::io::Write;
 // use log::LevelFilter;
 
 pub struct Logging;
@@ -24,14 +24,15 @@ impl Logging {
         // -> comma-separated `path::to::module=level`
         // where `path::to::module` is rooted in the name of the crate it was compiled for.
         Builder::from_env("RUST_LOG")
-            .format(|buf, record| {
-                writeln!(buf,
-                    "{} [{}] - {}",
-                    Local::now().format("%Y-%m-%dT%H:%M:%S"),
-                    record.level(),
-                    record.args()
-                )
-            })
+            // .format(|buf, record| {
+            //     writeln!(
+            //         buf,
+            //         "{} [{}] - {}",
+            //         Local::now().format("%Y-%m-%dT%H:%M:%S"),
+            //         record.level(),
+            //         record.args()
+            //     )
+            // })
             // .filter(None, LevelFilter::Error)
             .init();
 
