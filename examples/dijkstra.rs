@@ -65,7 +65,7 @@ fn main() {
         );
         info!(
             "Distance {} m from ({}) to ({}).",
-            path.cost[dst_idx], src.lat(), dst
+            path.cost[dst_idx], src.id(), dst.id()
         );
     }
 }
