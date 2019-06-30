@@ -186,7 +186,7 @@ impl GraphBuilder {
 
             // if coming edges have new src
             // then update offset of new src
-            if node_idx != src_idx {
+            while node_idx != src_idx {
                 node_idx += 1;
                 graph.offsets.push(offset);
             }
@@ -335,7 +335,7 @@ impl fmt::Display for Graph {
                     // print last node
                     i = self.node_count() - 1;
                 }
-                let node = self.node(i);
+                let node = &self.nodes[i];
                 writeln!(f, "Node: {{ idx: {}, id: {}, {} }}", i, node.id, node.coord,)?;
             } else {
                 break;
