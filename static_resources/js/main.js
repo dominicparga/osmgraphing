@@ -49,7 +49,7 @@ map.on("click", function(e){
     $.ajax({
         url: "/routing",
         //contentType: "application/json; charset=utf-8",
-        data: {"a": 10, "b": 10},
+        data: {"a": 10, "b": 42},
         success: function() {
             console.log("sent")
         },

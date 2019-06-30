@@ -45,7 +45,7 @@ fn serve_static_files(req: Request<Body>) -> BoxFut {
             /* let body = req.into_body().concat2().wait().unwrap();
             println!("{:?}", body);  */
             /* let o : Coordinates = serde_json::from_slice(&body).unwrap();
-            println!("{:?}", o); */           
+            println!("{:?}", o); */
         }
         (&Method::GET, path) => {
             // first, we serve static files
