@@ -17,8 +17,8 @@ impl Coordinate {
 
     pub fn from(lat: f64, lon: f64) -> Coordinate {
         Coordinate {
-            decimicro_lat: (lat * 1e-7) as i32,
-            decimicro_lon: (lon * 1e-7) as i32,
+            decimicro_lat: (lat * 1e7) as i32,
+            decimicro_lon: (lon * 1e7) as i32,
         }
     }
 
