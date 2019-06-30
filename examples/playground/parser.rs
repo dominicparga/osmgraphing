@@ -15,7 +15,6 @@ fn main() {
         None => OsString::from("resources/osm/small.fmi"),
     };
 
-    info!("Start parsing...");
     let now = Instant::now();
     let graph = match osm::Support::from_path(&path) {
         Ok(osm::Support::PBF) => {
@@ -30,7 +29,7 @@ fn main() {
         Err(e) => panic!("{:}", e),
     };
     info!(
-        "Finished in {} seconds ({} ms).",
+        "Finished parsing in {} seconds ({} ms).",
         now.elapsed().as_secs(),
         now.elapsed().as_micros(),
     );

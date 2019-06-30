@@ -21,7 +21,6 @@ travis-ci = { repository = "dominicparga/osmgraphing", branch = "master" }
 quick-xml = "*"
 osmpbfreader = "*"
 log = "*"
-chrono = "*"
 env_logger = "*"
 
 

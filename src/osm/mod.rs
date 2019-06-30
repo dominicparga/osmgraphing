@@ -7,6 +7,8 @@ pub mod fmi;
 pub mod pbf;
 pub mod xml;
 
+pub mod geo;
+
 //--------------------------------------------------------------------------------------------------
 
 #[derive(Debug, PartialEq)]

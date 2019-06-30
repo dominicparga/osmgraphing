@@ -1,19 +1,20 @@
 use std::fmt;
 
+use crate::osm::geo;
+
 //--------------------------------------------------------------------------------------------------
 // graphbuilder
 
 struct ProtoNode {
     id: Option<i64>,
-    lat: f64,
-    lon: f64,
+    coord: geo::Coordinate,
 }
 
 struct ProtoEdge {
     id: Option<i64>,
     src_id: i64,
     dst_id: i64,
-    meters: u64,
+    meters: Option<u64>,
     maxspeed: u16,
 }
 
@@ -57,8 +58,8 @@ impl GraphBuilder {
         self
     }
 
-    pub fn push_node(&mut self, id: Option<i64>, lat: f64, lon: f64) -> &mut Self {
-        self.nodes.push(ProtoNode { id, lat, lon });
+    pub fn push_node(&mut self, id: Option<i64>, coord: geo::Coordinate) -> &mut Self {
+        self.nodes.push(ProtoNode { id, coord });
         self
     }
 
@@ -67,7 +68,7 @@ impl GraphBuilder {
         id: Option<i64>,
         src_id: i64,
         dst_id: i64,
-        meters: u64,
+        meters: Option<u64>,
         maxspeed: u16,
     ) -> &mut Self {
         self.edges.push(ProtoEdge {
@@ -86,6 +87,10 @@ impl GraphBuilder {
 
         let node_count = self.nodes.len();
         let edge_count = self.edges.len();
+        info!(
+            "Start finalizing graph ({} nodes and {} edges)..",
+            node_count, edge_count
+        );
         let mut graph = Graph::new();
         graph.edges.reserve(edge_count);
         // offsets -> n+1 due to method `leaving_edges(...)`
@@ -95,6 +100,7 @@ impl GraphBuilder {
         // apply IDs if given one is None (TODO check for uniqueness)
         // sort nodes by ascending id
 
+        info!("Start sorting nodes by ID..");
         let mut i = -1;
         graph.nodes = self
             .nodes
@@ -107,25 +113,28 @@ impl GraphBuilder {
                         i
                     }
                 },
-                lat: proto_node.lat,
-                lon: proto_node.lon,
+                coord: proto_node.coord,
             })
             .collect();
         graph.nodes.sort_by(|n0, n1| n0.id.cmp(&n1.id));
+        info!("Finished sorting nodes.");
 
         //------------------------------------------------------------------------------------------
         // sort edges by ascending src-id, then by ascending dst-id -> offset-array
         // then give edges IDs
 
+        info!("Start sorting edges by their src/dst-IDs..");
         self.edges.sort_by(|e0, e1| {
             e0.src_id
                 .cmp(&e1.src_id)
                 .then_with(|| e0.dst_id.cmp(&e1.dst_id))
         });
+        info!("Finished sorting edges.");
 
         //------------------------------------------------------------------------------------------
-        // build offset-array
+        // build offset-array and edges
 
+        info!("Start creating the offset-array..");
         let mut node_idx = 0;
         let mut offset = 0;
         graph.offsets.push(offset);
@@ -137,6 +146,7 @@ impl GraphBuilder {
                 Some(id) => id,
                 None => edge_idx as i64,
             };
+
             // find source-index in sorted vec of nodes
             let src_idx = match graph.node_idx_from(proto_edge.src_id) {
                 Ok(idx) => idx,
@@ -145,6 +155,7 @@ impl GraphBuilder {
                     proto_edge.src_id, proto_edge.id
                 ),
             };
+
             // find destination-index in sorted vec of nodes
             let dst_idx = match graph.node_idx_from(proto_edge.dst_id) {
                 Ok(idx) => idx,
@@ -154,12 +165,22 @@ impl GraphBuilder {
                 ),
             };
 
+            // calculate distance if not provided
+            let meters = match proto_edge.meters {
+                Some(meters) => meters,
+                None => {
+                    let src = graph.node(src_idx);
+                    let dst = graph.node(dst_idx);
+                    (geo::haversine_distance(&src.coord, &dst.coord) * 1_000.0) as u64
+                }
+            };
+
             // add new edge to graph
             let edge = Edge {
                 id: edge_id,
                 src_idx,
                 dst_idx,
-                meters: proto_edge.meters,
+                meters,
                 maxspeed: proto_edge.maxspeed,
             };
 
@@ -174,6 +195,7 @@ impl GraphBuilder {
         }
         // last node needs an upper bound as well for `leaving_edges(...)`
         graph.offsets.push(offset);
+        info!("Finished creating offset-array.");
 
         graph
     }
@@ -184,18 +206,20 @@ impl GraphBuilder {
 
 pub struct Node {
     id: i64,
-    lat: f64,
-    lon: f64,
+    coord: geo::Coordinate,
 }
 impl Node {
     pub fn id(&self) -> i64 {
         self.id
     }
+    pub fn coord(&self) -> &geo::Coordinate {
+        &self.coord
+    }
     pub fn lat(&self) -> f64 {
-        self.lat
+        self.coord.lat()
     }
     pub fn lon(&self) -> f64 {
-        self.lon
+        self.coord.lon()
     }
 }
 
@@ -312,11 +336,7 @@ impl fmt::Display for Graph {
                     i = self.node_count() - 1;
                 }
                 let node = self.node(i);
-                writeln!(
-                    f,
-                    "Node: {{ idx: {}, id: {}, (lat, lon): ({:.6}, {:.6}) }}",
-                    i, node.id, node.lat, node.lon,
-                )?;
+                writeln!(f, "Node: {{ idx: {}, id: {}, {} }}", i, node.id, node.coord,)?;
             } else {
                 break;
             }
@@ -380,11 +400,7 @@ impl fmt::Display for Graph {
 
 impl fmt::Display for Node {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "Node: {{ id: {}, (lat, lon): ({:.6}, {:.6}) }}",
-            self.id, self.lat, self.lon,
-        )
+        write!(f, "Node: {{ id: {}, {} }}", self.id, self.coord,)
     }
 }
 

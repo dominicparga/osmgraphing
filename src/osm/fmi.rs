@@ -5,6 +5,7 @@ use std::io::BufRead;
 use std::io::Read;
 use std::path::Path;
 
+use crate::osm::geo;
 use crate::routing;
 use routing::Graph;
 use routing::GraphBuilder;
@@ -28,7 +29,6 @@ impl Parser {
 
         let mut node_count = None;
         let mut edge_count = None;
-        let mut edge_id = 0;
         let mut graph_builder = GraphBuilder::new();
 
         //------------------------------------------------------------------------------------------
@@ -105,14 +105,16 @@ impl Parser {
                             "Parse id ({:?}) from fmi-file into usize.",
                             params[1]
                         ))),
-                        params[2].parse::<f64>().expect(&format!(
-                            "Parse lat ({:?}) from fmi-file into f64.",
-                            params[2]
-                        )),
-                        params[3].parse::<f64>().expect(&format!(
-                            "Parse lon ({:?}) from fmi-file into f64.",
-                            params[3]
-                        )),
+                        geo::Coordinate::from(
+                            params[2].parse::<f64>().expect(&format!(
+                                "Parse lat ({:?}) from fmi-file into f64.",
+                                params[2]
+                            )),
+                            params[3].parse::<f64>().expect(&format!(
+                                "Parse lon ({:?}) from fmi-file into f64.",
+                                params[3]
+                            )),
+                        ),
                     );
                 }
                 // edges
@@ -129,16 +131,15 @@ impl Parser {
                             "Parse dst ({:?}) from fmi-file into usize.",
                             params[1]
                         )),
-                        params[2].parse::<u64>().expect(&format!(
-                            "Parse kilometers ({:?}) from fmi-file into u64.",
-                            params[2]
-                        )) * 1_000, // in m
+                        match params[2].parse::<u64>() {
+                            Ok(kilometers) => Some(kilometers * 1_000),
+                            Err(_) => None,
+                        },
                         params[4].parse::<u16>().expect(&format!(
                             "Parse maxspeed in km/h ({:?}) from fmi-file into u16.",
                             params[4]
                         )),
                     );
-                    edge_id += 1;
                 }
                 _ => (),
             }

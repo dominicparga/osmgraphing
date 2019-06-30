@@ -1,3 +1,12 @@
 fn main() {
-    println!("Please use 'cargo run --example' for all supported example files.")
+    println!("For all supported example files, please use");
+    println!("");
+    println!("    'cargo run --example'");
+    println!("");
+    println!("");
+    println!("You can set up the logger by setting RUST_LOG, e.g. to");
+    println!("");
+    println!("    export RUST_LOG='warn,osmgraphing=info,parser=info'");
+    println!("");
+    println!("for getting warnings per default, but info about osmgraphing and the 'parser'-example.");
 }
