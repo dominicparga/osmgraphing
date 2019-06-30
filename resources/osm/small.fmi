@@ -4,14 +4,14 @@
 # edge_count
 12
 
-# nodes: (ignored) id lat lon
-_   26033921 48.9840100 9.4589188 # Oppenweiler
-_   26160028 48.9416023 9.4332023 # Backnang
-_  298249467 48.8108510 9.3679493 # Endersbach
-_  252787940 48.8271096 9.3098661 # Waiblingen
-_ 2933335353 48.7701757 9.1565768 # Stuttgart (Schwabstraße)
+# nodes: id osm-id(ignored) lat lon
+  26033921   26033921 48.9840100 9.4589188 # Oppenweiler
+  26160028   26160028 48.9416023 9.4332023 # Backnang
+ 298249467  298249467 48.8108510 9.3679493 # Endersbach
+ 252787940  252787940 48.8271096 9.3098661 # Waiblingen
+2933335353 2933335353 48.7701757 9.1565768 # Stuttgart (Schwabstraße)
 
-# edges: src dst distance ? maxspeed
+# edges: src-id dst-id distance ? maxspeed
   26033921   26160028  8 _  50 # Oppenweiler -> Backnang
 
   26160028   26033921  8 _  50 # Backnang -> Oppenweiler

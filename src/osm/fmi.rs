@@ -16,6 +16,8 @@ pub struct Parser;
 
 impl Parser {
     pub fn parse<S: AsRef<OsStr> + ?Sized>(&self, path: &S) -> Graph {
+        info!("Start parsing..");
+
         //------------------------------------------------------------------------------------------
         // get reader
 
@@ -50,6 +52,7 @@ impl Parser {
         // # src dst distance ??? maxspeed
         // ...
 
+        info!("Start processing given fmi-file..");
         let mut i = 0;
         for line in reader.by_ref().lines().map(Result::unwrap) {
             if line == "" || line.chars().next() == Some('#') {
@@ -100,9 +103,9 @@ impl Parser {
                     let line_string = line.split_whitespace();
                     let params: Vec<&str> = line_string.collect();
                     graph_builder.push_node(
-                        params[1].parse::<i64>().expect(&format!(
+                        params[0].parse::<i64>().expect(&format!(
                             "Parse id ({:?}) from fmi-file into usize.",
-                            params[1]
+                            params[0]
                         )),
                         geo::Coordinate::from(
                             params[2].parse::<f64>().expect(&format!(
@@ -144,6 +147,7 @@ impl Parser {
             }
             i += 1;
         }
+        info!("Finish processing given fmi-file.");
 
         graph_builder.finalize()
     }
