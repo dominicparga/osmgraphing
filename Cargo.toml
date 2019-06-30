@@ -20,6 +20,8 @@ travis-ci = { repository = "dominicparga/osmgraphing", branch = "master" }
 [dependencies]
 quick-xml = "*"
 osmpbfreader = "*"
+log = "*"
+env_logger = "*"
 
 futures = "0.1"
 hyper = "0.12"
@@ -29,12 +31,16 @@ serde_json = "1.0.39"
 serde = { version = "1.0", features = ["derive"] }
 
 [[example]]
-name = "xml_reader"
-path = "examples/playground/xml_reader.rs"
+name = "parser"
+path = "examples/parser.rs"
 
 [[example]]
-name = "parser"
-path = "examples/playground/parser.rs"
+name = "dijkstra"
+path = "examples/dijkstra.rs"
+
+[[example]]
+name = "xml_reader"
+path = "examples/playground/xml_reader.rs"
 
 [[example]]
 name = "pipes_and_filters"
@@ -43,10 +49,6 @@ path = "examples/playground/pipes_and_filters.rs"
 [[example]]
 name = "graph"
 path = "examples/playground/graph.rs"
-
-[[example]]
-name = "dijkstra"
-path = "examples/playground/dijkstra.rs"
 
 [[example]]
 name = "server"

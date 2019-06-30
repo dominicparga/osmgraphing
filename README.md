@@ -6,9 +6,14 @@ Goal of this student project is parsing [openstreetmap][www_openstreetmap] data 
 
 ## News
 
-The project setup has been finished.
-Examples can be added easily, which helps a lot when implementing.
-We are currently working on the parser with focus on pbf-files and the logic, i.e. graph structure and routing.
+The project setup has been finished and examples can be added easily, which helps a lot when implementing.
+The parser is able to parse pbf-files and currently just prints them.
+The routing kind of works, but it has to get aligned with the parser.
+
+Now, the bridge between parser and routing is in creation-process by @dominicparga.
+Further, we want to visualize the routing via a small Rust-backend/JS-frontend application, where @PraiseTheFun is working on.
+
+We have to submit our project in 1 week and the university is quite stressful these weeks, but test cases (and probably needed cleanup) will follow. :)
 
 ## Setup and usage
 
