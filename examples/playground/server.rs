@@ -1,4 +1,4 @@
-use futures::{future, Future, Stream};
+use futures::{future, Future};
 use hyper::header::{HeaderName, HeaderValue};
 use hyper::service::service_fn;
 use hyper::{Body, Request, Response, Server};
@@ -38,7 +38,7 @@ fn serve_static_files(req: Request<Body>) -> BoxFut {
     match (req.method(), req.uri().path()) {
         (&Method::GET, "/routing") => {
             println!("hi");
-            let (mut parts, body) = req.into_parts();
+            let (parts, body) = req.into_parts();
             println!("{:?}", parts);
             println!("{:?}", body);
             //let body = req.into_body().concat2().wait().unwrap().into_bytes();
