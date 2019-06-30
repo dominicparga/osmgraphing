@@ -43,6 +43,20 @@ createSource();
  * Handles node identification and marker generation on click
  */
 map.on("click", function(e){
+    /* $.get("/routing", {"a": 10, "b": 10}, function(data) {
+        console.log("sent")
+    }) */
+    $.ajax({
+        url: "/routing",
+        //contentType: "application/json; charset=utf-8",
+        data: {"a": 10, "b": 10},
+        success: function() {
+            console.log("sent")
+        },
+        error: function() {
+            console.log("didnt work");
+        }
+    });
     let coord = map.mouseEventToLatLng(e.originalEvent);
     //let data = getClosestNode(coord.lat, coord.lng);
     //dummy markers

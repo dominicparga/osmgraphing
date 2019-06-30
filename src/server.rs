@@ -1,12 +1,13 @@
 use futures::{future, Future, Stream};
 use hyper::header::{HeaderName, HeaderValue};
 use hyper::service::service_fn;
-use hyper::{Body, Request, Response, Server, Chunk};
+use hyper::{Body, Request, Response, Server};
 use hyper::{Method, StatusCode};
 use lazy_static::lazy_static;
 use maplit::btreemap;
 use std::collections::BTreeMap;
 use std::path::Path;
+use serde::{Serialize, Deserialize};
 
 lazy_static! {
     static ref MIME_BY_EXTENSION: BTreeMap<String, String> = {
@@ -25,10 +26,27 @@ lazy_static! {
 // Just a simple type alias
 type BoxFut = Box<Future<Item = Response<Body>, Error = hyper::Error> + Send>;
 
+#[derive(Serialize, Deserialize, Debug)]
+struct Coordinates {
+    lat: u64,
+    lng: u64,
+}
+
 fn serve_static_files(req: Request<Body>) -> BoxFut {
     let mut response = Response::new(Body::empty());
 
     match (req.method(), req.uri().path()) {
+        (&Method::GET, "/routing") => {
+            println!("hi");
+            let (mut parts, body) = req.into_parts();
+            println!("{:?}", parts);
+            println!("{:?}", body);
+            //let body = req.into_body().concat2().wait().unwrap().into_bytes();
+            /* let body = req.into_body().concat2().wait().unwrap();
+            println!("{:?}", body);  */
+            /* let o : Coordinates = serde_json::from_slice(&body).unwrap();
+            println!("{:?}", o); */           
+        }
         (&Method::GET, path) => {
             // first, we serve static files
             let fs_path = match path {
