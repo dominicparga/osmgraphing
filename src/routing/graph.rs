@@ -6,12 +6,12 @@ use crate::osm::geo;
 // graphbuilder
 
 struct ProtoNode {
-    id: Option<i64>,
+    id: i64,
     coord: geo::Coordinate,
 }
 
 struct ProtoEdge {
-    id: Option<i64>,
+    way_id: Option<i64>,
     src_id: i64,
     dst_id: i64,
     meters: Option<u64>,
@@ -19,8 +19,8 @@ struct ProtoEdge {
 }
 
 pub struct GraphBuilder {
-    nodes: Vec<ProtoNode>,
-    edges: Vec<ProtoEdge>,
+    proto_nodes: Vec<ProtoNode>,
+    proto_edges: Vec<ProtoEdge>,
 }
 impl GraphBuilder {
     //----------------------------------------------------------------------------------------------
@@ -28,15 +28,15 @@ impl GraphBuilder {
 
     pub fn new() -> Self {
         GraphBuilder {
-            nodes: Vec::new(),
-            edges: Vec::new(),
+            proto_nodes: Vec::new(),
+            proto_edges: Vec::new(),
         }
     }
 
     pub fn with_capacity(node_capacity: usize, edge_capacity: usize) -> Self {
         GraphBuilder {
-            nodes: Vec::with_capacity(node_capacity),
-            edges: Vec::with_capacity(edge_capacity),
+            proto_nodes: Vec::with_capacity(node_capacity),
+            proto_edges: Vec::with_capacity(edge_capacity),
         }
     }
 
@@ -49,30 +49,30 @@ impl GraphBuilder {
     }
 
     pub fn reserve_nodes(&mut self, additional: usize) -> &mut Self {
-        self.nodes.reserve(additional);
+        self.proto_nodes.reserve(additional);
         self
     }
 
     pub fn reserve_edges(&mut self, additional: usize) -> &mut Self {
-        self.edges.reserve(additional);
+        self.proto_edges.reserve(additional);
         self
     }
 
-    pub fn push_node(&mut self, id: Option<i64>, coord: geo::Coordinate) -> &mut Self {
-        self.nodes.push(ProtoNode { id, coord });
+    pub fn push_node(&mut self, id: i64, coord: geo::Coordinate) -> &mut Self {
+        self.proto_nodes.push(ProtoNode { id, coord });
         self
     }
 
     pub fn push_edge(
         &mut self,
-        id: Option<i64>,
+        way_id: Option<i64>,
         src_id: i64,
         dst_id: i64,
         meters: Option<u64>,
         maxspeed: u16,
     ) -> &mut Self {
-        self.edges.push(ProtoEdge {
-            id,
+        self.proto_edges.push(ProtoEdge {
+            way_id,
             src_id,
             dst_id,
             meters,
@@ -85,10 +85,10 @@ impl GraphBuilder {
         //------------------------------------------------------------------------------------------
         // init graph and reserve capacity for (hopefully) better performance
 
-        let node_count = self.nodes.len();
-        let edge_count = self.edges.len();
+        let node_count = self.proto_nodes.len();
+        let edge_count = self.proto_edges.len();
         info!(
-            "Start finalizing graph ({} nodes and {} edges)..",
+            "Start finalizing graph ({} proto-nodes and {} proto-edges)..",
             node_count, edge_count
         );
         let mut graph = Graph::new();
@@ -100,36 +100,29 @@ impl GraphBuilder {
         // apply IDs if given one is None (TODO check for uniqueness)
         // sort nodes by ascending id
 
-        info!("Start sorting nodes by ID..");
-        let mut i = -1;
+        info!("Start sorting proto-nodes by ID..");
         graph.nodes = self
-            .nodes
+            .proto_nodes
             .iter()
             .map(|proto_node| Node {
-                id: match proto_node.id {
-                    Some(id) => id,
-                    None => {
-                        i += 1;
-                        i
-                    }
-                },
+                id: proto_node.id,
                 coord: proto_node.coord,
             })
             .collect();
         graph.nodes.sort_by(|n0, n1| n0.id.cmp(&n1.id));
-        info!("Finished sorting nodes.");
+        info!("Finished sorting proto-nodes.");
 
         //------------------------------------------------------------------------------------------
         // sort edges by ascending src-id, then by ascending dst-id -> offset-array
         // then give edges IDs
 
-        info!("Start sorting edges by their src/dst-IDs..");
-        self.edges.sort_by(|e0, e1| {
+        info!("Start sorting proto-edges by their src/dst-IDs..");
+        self.proto_edges.sort_by(|e0, e1| {
             e0.src_id
                 .cmp(&e1.src_id)
                 .then_with(|| e0.dst_id.cmp(&e1.dst_id))
         });
-        info!("Finished sorting edges.");
+        info!("Finished sorting proto-edges.");
 
         //------------------------------------------------------------------------------------------
         // build offset-array and edges
@@ -140,9 +133,9 @@ impl GraphBuilder {
         graph.offsets.push(offset);
         // high-level-idea: count offset for each proto_edge and apply if src changes
         for edge_idx in 0..edge_count {
-            let proto_edge = &self.edges[edge_idx];
+            let proto_edge = &self.proto_edges[edge_idx];
             // set id to index - TODO: uniqueness not guaranteed if only some (small) IDs are given
-            let edge_id = match proto_edge.id {
+            let edge_way_id = match proto_edge.way_id {
                 Some(id) => id,
                 None => edge_idx as i64,
             };
@@ -152,7 +145,7 @@ impl GraphBuilder {
                 Ok(idx) => idx,
                 Err(_) => panic!(
                     "The given source-id `{:?}` of edge-id `{:?}` doesn't exist as node.",
-                    proto_edge.src_id, proto_edge.id
+                    proto_edge.src_id, proto_edge.way_id
                 ),
             };
 
@@ -161,7 +154,7 @@ impl GraphBuilder {
                 Ok(idx) => idx,
                 Err(_) => panic!(
                     "The given destination-id `{:?}` of edge-id `{:?}` doesn't exist as node.",
-                    proto_edge.dst_id, proto_edge.id
+                    proto_edge.dst_id, proto_edge.way_id
                 ),
             };
 
@@ -177,7 +170,7 @@ impl GraphBuilder {
 
             // add new edge to graph
             let edge = Edge {
-                id: edge_id,
+                id: edge_way_id,
                 src_idx,
                 dst_idx,
                 meters,

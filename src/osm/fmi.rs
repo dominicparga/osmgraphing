@@ -101,10 +101,10 @@ impl Parser {
                     let line_string = line.split_whitespace();
                     let params: Vec<&str> = line_string.collect();
                     graph_builder.push_node(
-                        Some(params[1].parse::<i64>().expect(&format!(
+                        params[1].parse::<i64>().expect(&format!(
                             "Parse id ({:?}) from fmi-file into usize.",
                             params[1]
-                        ))),
+                        )),
                         geo::Coordinate::from(
                             params[2].parse::<f64>().expect(&format!(
                                 "Parse lat ({:?}) from fmi-file into f64.",

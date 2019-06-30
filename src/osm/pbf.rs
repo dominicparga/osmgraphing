@@ -278,7 +278,7 @@ impl Parser {
                 pbf::OsmObj::Node(node) => {
                     debug!("{:?}", node);
                     graph_builder.push_node(
-                        Some(node.id.0),
+                        node.id.0,
                         geo::Coordinate::new(node.decimicro_lat, node.decimicro_lon),
                     );
                 }
