@@ -83,11 +83,10 @@ impl Parser {
             Some(c) => c,
             None => panic!("The given fmi-file misses the node-count."),
         };
-        let edge_count = match edge_count {
+        let _edge_count = match edge_count {
             Some(c) => c,
             None => panic!("The given fmi-file misses the edge-count."),
         };
-        graph_builder.reserve(node_count, edge_count);
 
         // loop over elements
         for line in reader.lines().map(Result::unwrap) {
@@ -131,7 +130,7 @@ impl Parser {
                             "Parse dst ({:?}) from fmi-file into usize.",
                             params[1]
                         )),
-                        match params[2].parse::<u64>() {
+                        match params[2].parse::<u32>() {
                             Ok(kilometers) => Some(kilometers * 1_000),
                             Err(_) => None,
                         },

@@ -1,3 +1,4 @@
+use std::cmp::Ordering;
 use std::fmt;
 
 #[derive(Copy, Clone)]
@@ -27,6 +28,15 @@ impl Coordinate {
 
     pub fn lon(&self) -> f64 {
         self.decimicro_lon as f64 * 1e-7
+    }
+}
+
+impl Eq for Coordinate {}
+
+impl PartialEq for Coordinate {
+    fn eq(&self, other: &Coordinate) -> bool {
+        self.decimicro_lat.cmp(&other.decimicro_lat) == Ordering::Equal
+            && self.decimicro_lon.cmp(&other.decimicro_lon) == Ordering::Equal
     }
 }
 

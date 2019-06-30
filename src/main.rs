@@ -8,5 +8,7 @@ fn main() {
     println!("");
     println!("    export RUST_LOG='warn,osmgraphing=info,parser=info'");
     println!("");
-    println!("for getting warnings per default, but info about osmgraphing and the 'parser'-example.");
+    println!(
+        "for getting warnings per default, but info about osmgraphing and the 'parser'-example."
+    );
 }

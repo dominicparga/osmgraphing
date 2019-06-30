@@ -1,3 +1,5 @@
+use std::cmp::Ordering;
+use std::collections::BTreeMap;
 use std::fmt;
 
 use crate::osm::geo;
@@ -7,59 +9,70 @@ use crate::osm::geo;
 
 struct ProtoNode {
     id: i64,
-    coord: geo::Coordinate,
+    coord: Option<geo::Coordinate>,
+    is_edge_node: bool,
+}
+
+impl Ord for ProtoNode {
+    fn cmp(&self, other: &ProtoNode) -> Ordering {
+        // inverse order since BinaryHeap is max-heap, but min-heap is needed
+        other.id.cmp(&self.id)
+    }
+}
+
+impl PartialOrd for ProtoNode {
+    fn partial_cmp(&self, other: &ProtoNode) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Eq for ProtoNode {}
+
+impl PartialEq for ProtoNode {
+    fn eq(&self, other: &ProtoNode) -> bool {
+        self.cmp(other) == Ordering::Equal
+    }
 }
 
 struct ProtoEdge {
     way_id: Option<i64>,
     src_id: i64,
     dst_id: i64,
-    meters: Option<u64>,
+    meters: Option<u32>,
     maxspeed: u16,
 }
 
 pub struct GraphBuilder {
-    proto_nodes: Vec<ProtoNode>,
+    proto_nodes: BTreeMap<i64, ProtoNode>,
     proto_edges: Vec<ProtoEdge>,
 }
+
 impl GraphBuilder {
     //----------------------------------------------------------------------------------------------
     // init self
 
     pub fn new() -> Self {
         GraphBuilder {
-            proto_nodes: Vec::new(),
+            proto_nodes: BTreeMap::new(),
             proto_edges: Vec::new(),
         }
     }
 
-    pub fn with_capacity(node_capacity: usize, edge_capacity: usize) -> Self {
-        GraphBuilder {
-            proto_nodes: Vec::with_capacity(node_capacity),
-            proto_edges: Vec::with_capacity(edge_capacity),
-        }
-    }
-
-    //----------------------------------------------------------------------------------------------
-    // build graph
-
-    pub fn reserve(&mut self, additional_nodes: usize, additional_edges: usize) -> &mut Self {
-        self.reserve_nodes(additional_nodes)
-            .reserve_edges(additional_edges)
-    }
-
-    pub fn reserve_nodes(&mut self, additional: usize) -> &mut Self {
-        self.proto_nodes.reserve(additional);
-        self
-    }
-
-    pub fn reserve_edges(&mut self, additional: usize) -> &mut Self {
-        self.proto_edges.reserve(additional);
-        self
-    }
-
     pub fn push_node(&mut self, id: i64, coord: geo::Coordinate) -> &mut Self {
-        self.proto_nodes.push(ProtoNode { id, coord });
+        // if already added -> update coord
+        // if not -> add new node
+        if let Some(proto_node) = self.proto_nodes.get_mut(&id) {
+            proto_node.coord = Some(coord);
+        } else {
+            self.proto_nodes.insert(
+                id,
+                ProtoNode {
+                    id,
+                    coord: Some(coord),
+                    is_edge_node: false,
+                },
+            );
+        }
         self
     }
 
@@ -68,9 +81,10 @@ impl GraphBuilder {
         way_id: Option<i64>,
         src_id: i64,
         dst_id: i64,
-        meters: Option<u64>,
+        meters: Option<u32>,
         maxspeed: u16,
     ) -> &mut Self {
+        // add edge
         self.proto_edges.push(ProtoEdge {
             way_id,
             src_id,
@@ -78,12 +92,41 @@ impl GraphBuilder {
             meters,
             maxspeed,
         });
+
+        // add or update src-node
+        if let Some(proto_node) = self.proto_nodes.get_mut(&src_id) {
+            proto_node.is_edge_node = true;
+        } else {
+            self.proto_nodes.insert(
+                src_id,
+                ProtoNode {
+                    id: src_id,
+                    coord: None,
+                    is_edge_node: true,
+                },
+            );
+        }
+
+        // add or update dst-node
+        if let Some(proto_node) = self.proto_nodes.get_mut(&dst_id) {
+            proto_node.is_edge_node = true;
+        } else {
+            self.proto_nodes.insert(
+                dst_id,
+                ProtoNode {
+                    id: dst_id,
+                    coord: None,
+                    is_edge_node: true,
+                },
+            );
+        }
+
         self
     }
 
     pub fn finalize(mut self) -> Graph {
         //------------------------------------------------------------------------------------------
-        // init graph and reserve capacity for (hopefully) better performance
+        // init graph
 
         let node_count = self.proto_nodes.len();
         let edge_count = self.proto_edges.len();
@@ -92,25 +135,33 @@ impl GraphBuilder {
             node_count, edge_count
         );
         let mut graph = Graph::new();
-        graph.edges.reserve(edge_count);
-        // offsets -> n+1 due to method `leaving_edges(...)`
-        graph.offsets.reserve(node_count + 1);
 
         //------------------------------------------------------------------------------------------
-        // apply IDs if given one is None (TODO check for uniqueness)
-        // sort nodes by ascending id
+        // add nodes to graph which belong to edges (sorted by asc id)
 
-        info!("Start sorting proto-nodes by ID..");
-        graph.nodes = self
-            .proto_nodes
-            .iter()
-            .map(|proto_node| Node {
-                id: proto_node.id,
-                coord: proto_node.coord,
-            })
-            .collect();
-        graph.nodes.sort_by(|n0, n1| n0.id.cmp(&n1.id));
-        info!("Finished sorting proto-nodes.");
+        info!("Start adding nodes (sorted) which belongs to an edge..");
+        // BTreeMap's iter returns sorted by key (asc)
+        for (_id, proto_node) in self.proto_nodes.iter() {
+            // add nodes only if they belong to an edge
+            if !proto_node.is_edge_node {
+                continue;
+            }
+
+            // add new node
+            if let Some(coord) = proto_node.coord {
+                graph.nodes.push(Node {
+                    id: proto_node.id,
+                    coord,
+                });
+            } else {
+                // should not happen if file is okay
+                error!(
+                    "Proto-node (id: {}) has no coordinates, but belongs to an edge.",
+                    proto_node.id
+                );
+            }
+        }
+        info!("Finished adding nodes.");
 
         //------------------------------------------------------------------------------------------
         // sort edges by ascending src-id, then by ascending dst-id -> offset-array
@@ -134,7 +185,7 @@ impl GraphBuilder {
         // high-level-idea: count offset for each proto_edge and apply if src changes
         for edge_idx in 0..edge_count {
             let proto_edge = &self.proto_edges[edge_idx];
-            // set id to index - TODO: uniqueness not guaranteed if only some (small) IDs are given
+            // set way-id to index
             let edge_way_id = match proto_edge.way_id {
                 Some(id) => id,
                 None => edge_idx as i64,
@@ -164,7 +215,7 @@ impl GraphBuilder {
                 None => {
                     let src = graph.node(src_idx);
                     let dst = graph.node(dst_idx);
-                    (geo::haversine_distance(&src.coord, &dst.coord) * 1_000.0) as u64
+                    (geo::haversine_distance(&src.coord, &dst.coord) * 1_000.0) as u32
                 }
             };
 
@@ -220,7 +271,7 @@ pub struct Edge {
     id: i64,
     src_idx: usize,
     dst_idx: usize,
-    meters: u64,
+    meters: u32,
     maxspeed: u16,
 }
 impl Edge {
@@ -233,7 +284,7 @@ impl Edge {
     pub fn dst_idx(&self) -> usize {
         self.dst_idx
     }
-    pub fn meters(&self) -> u64 {
+    pub fn meters(&self) -> u32 {
         self.meters
     }
     pub fn maxspeed(&self) -> u16 {
