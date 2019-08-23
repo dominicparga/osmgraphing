@@ -8,7 +8,7 @@ authors = [
     "dominicparga <dominic.parga@gmail.com>",
     "jenasat <jena.s@outlook.de>"
 ]
-repository = "www.github.com/dominicparga/osmgraphing"
+repository = "https://github.com/dominicparga/osmgraphing"
 readme = "README.md"
 keywords = ["osm", "route", "routing", "pbf", "xml"]
 categories = ["algorithms", "data-structures", "parser-implementations", "parsing", ""]
