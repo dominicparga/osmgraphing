@@ -19,8 +19,8 @@ travis-ci = { repository = "dominicparga/osmgraphing", branch = "master" }
 
 
 [dependencies]
-quick-xml = "*"
-osmpbfreader = "*"
+quick-xml = "0.14.0"
+osmpbfreader = "0.13.0"
 
 
 [[example]]
