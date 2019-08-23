@@ -1,6 +1,8 @@
 # osmgraphing
 
-[![Build Status][www_travis_build_status]][www_travis_builds]
+[![Build Status][www_travis_builds_badge]][www_travis_builds]
+[![Crates.io][www_crates_io]][www_crates_io]
+[![Docs][www_docs_badge]][www_docs]
 
 Goal of this student project is parsing [openstreetmap][www_openstreetmap] data to calculate traffic routes on it.
 
@@ -19,8 +21,13 @@ We have to submit our project in 1 week and the university is quite stressful th
 
 Please refer to [setup and usage][www_osmgraphing_usage] to get details about the project setup and how to run the code.
 
-[www_travis_build_status]: https://travis-ci.com/dominicparga/osmgraphing.svg?branch=master
+[www_travis_builds_badge]: https://travis-ci.com/dominicparga/osmgraphing.svg?branch=master
 [www_travis_builds]: https://travis-ci.com/dominicparga/osmgraphing
+
+[www_crates_io]: https://img.shields.io/crates/v/osmgraphing
+
+[www_docs_badge]: https://docs.rs/osmgraphing/badge.svg
+[www_docs]: https://docs.rs/osmgraphing/
 
 [www_openstreetmap]: https://openstreetmap.org
 [www_osmgraphing_usage]: https://github.com/dominicparga/osmgraphing/wiki/Usage
