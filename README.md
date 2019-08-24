@@ -8,18 +8,22 @@ Goal of this student project is parsing [openstreetmap][www_openstreetmap] data 
 
 ## News
 
-Since automated deployment to `crates.io` is currently (Aug 24th) under work-in-progress, the crate is very unstable and changes a lot.
-Of course, this should be finished soon (hopefully Aug 25th o_O).
+The automatic deployment to [crates.io][www_cratesio_osmgraphing] is working.
 
 A lot of repo-work (creating issues, labels, deployments) has been done the past week.
 Several branches contain great work (e.g. finished, but unoptimized parser), that has to be merged into the master.
 This will be done immediately after the automated deployment is working.
 
+After cleaning up and working off some issues (e.g. multi-stage-parsing), this project will try to find potential bottlenecks in street-networks.
+Documentation and info follows. :)
+
 ## Setup and usage
 
 Please refer to [setup and usage][www_osmgraphing_usage] to get details about the project setup and how to run the code.
 
-[www_travis_builds_badge]: https://travis-ci.com/dominicparga/osmgraphing.svg?branch=testing/version_check
+[www_cratesio_osmgraphing]: https://crates.io/crates/osmgraphing
+
+[www_travis_builds_badge]: https://travis-ci.com/dominicparga/osmgraphing.svg
 [www_travis_builds]: https://travis-ci.com/dominicparga/osmgraphing
 
 [www_crates_io]: https://img.shields.io/crates/v/osmgraphing
