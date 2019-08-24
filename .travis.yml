@@ -10,17 +10,19 @@ matrix:
 jobs:
   include:
     - stage: builds
-      rust:
-        - stable
-        - beta
-        - nightly
+      rust: stable
+      script: ./scripts/travis.sh build
+    - rust: beta
+      script: ./scripts/travis.sh build
+    - rust: nightly
       script: ./scripts/travis.sh build
 
     - stage: tests
-      rust:
-        - stable
-        - beta
-        - nightly
+      rust: stable
+      script: ./scripts/travis.sh test
+    - rust: beta
+      script: ./scripts/travis.sh test
+    - rust: nightly
       script: ./scripts/travis.sh test
 
     - stage: deployments
