@@ -1,6 +1,6 @@
 [package]
 name = "osmgraphing"
-version = "0.1.1"
+version = "0.1.2"
 description = "Playing around with graphs created via parsing OpenStreetMap data"
 edition = "2018"
 

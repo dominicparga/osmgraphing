@@ -12,5 +12,10 @@ matrix:
     - rust: nightly
   fast_finish: true
 
-script: ./scripts/travis/script.sh
-deploy: ./scripts/travis/deploy.sh
+script: './scripts/travis/script.sh'
+
+deploy:
+  provider: script
+  script: './scripts/travis/deploy.sh'
+  on:
+    tags: true
