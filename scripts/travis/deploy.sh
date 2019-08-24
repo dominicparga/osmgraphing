@@ -1,10 +1,9 @@
 #!/bin/bash
 
-# exit as soon as non-zero exit-code occurs
-set -ev
+source ./scripts/travis/helper.sh
 
 #------------------------------------------------------------------------------#
-# cargo build and test
+# deploy to cargo.io
 
 cargo login "${CRATES_TOKEN}"
 cargo publish

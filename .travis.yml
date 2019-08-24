@@ -2,25 +2,33 @@ language: rust
 cache: cargo
 sudo: false
 
-rust:
-  - stable
-  - beta
-  - nightly
-
 matrix:
   allow_failures:
     - rust: nightly
   fast_finish: true
 
-- stage: build
-  script: ./scripts/travis/build.sh
-- stage: test
-  script: ./scripts/travis/test.sh
-
 jobs:
   include:
-    - stage: deploy
+    - stage: builds
       rust: stable
+      script: ./scripts/travis/build.sh
+    - rust: beta
+      script: ./scripts/travis/build.sh
+    - rust: nightly
+      script: ./scripts/travis/build.sh
+
+    - stage: tests
+      rust: stable
+      script: ./scripts/travis/test.sh
+    - rust: beta
+      script: ./scripts/travis/test.sh
+    - rust: nightly
+      script: ./scripts/travis/test.sh
+
+    - stage: deployments
+      rust: stable
+      install: skip
+      script: skip
       deploy:
         provider: cargo
         token: "${CRATES_TOKEN}"

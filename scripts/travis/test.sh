@@ -1,7 +1,6 @@
 #!/bin/bash
 
-# exit as soon as non-zero exit-code occurs
-set -ev
+source ./scripts/travis/helper.sh
 
 #------------------------------------------------------------------------------#
 # run all cargo-tests
