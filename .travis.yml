@@ -12,12 +12,18 @@ matrix:
     - rust: nightly
   fast_finish: true
 
-script: ./scripts/travis/script.sh
+- stage: build
+  script: ./scripts/travis/build.sh
+- stage: test
+  script: ./scripts/travis/test.sh
 
-deploy:
-  provider: script
-  script: ./scripts/travis/deploy.sh
-  on:
-    rust: stable
-    branch: testing/version_check
-    tags: true
+jobs:
+  include:
+    - stage: deploy
+      rust: stable
+      deploy:
+        provider: cargo
+        token: "${CRATES_TOKEN}"
+        on:
+          branch: testing/version_check
+          tags: true

@@ -4,7 +4,6 @@
 set -ev
 
 #------------------------------------------------------------------------------#
-# cargo build and test
+# run all cargo-tests
 
-cargo login "${CRATES_TOKEN}"
-cargo publish
+cargo test --verbose --all
