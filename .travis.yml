@@ -27,11 +27,8 @@ jobs:
 
     - stage: deployments
       rust: stable
-      install: skip
-      script: skip
       deploy:
         provider: cargo
         token: "${CRATES_TOKEN}"
         on:
-          branch: testing/version_check
           tags: true
