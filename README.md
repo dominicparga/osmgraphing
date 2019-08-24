@@ -8,20 +8,18 @@ Goal of this student project is parsing [openstreetmap][www_openstreetmap] data 
 
 ## News
 
-The project setup has been finished and examples can be added easily, which helps a lot when implementing.
-The parser is able to parse pbf-files and currently just prints them.
-The routing kind of works, but it has to get aligned with the parser.
+Since automated deployment to `crates.io` is currently (Aug 24th) under work-in-progress, the crate is very unstable and changes a lot.
+Of course, this should be finished soon (hopefully Aug 25th o_O).
 
-Now, the bridge between parser and routing is in creation-process by @dominicparga.
-Further, we want to visualize the routing via a small Rust-backend/JS-frontend application, where @PraiseTheFun is working on.
-
-We have to submit our project in 1 week and the university is quite stressful these weeks, but test cases (and probably needed cleanup) will follow. :)
+A lot of repo-work (creating issues, labels, deployments) has been done the past week.
+Several branches contain great work (e.g. finished, but unoptimized parser), that has to be merged into the master.
+This will be done immediately after the automated deployment is working.
 
 ## Setup and usage
 
 Please refer to [setup and usage][www_osmgraphing_usage] to get details about the project setup and how to run the code.
 
-[www_travis_builds_badge]: https://travis-ci.com/dominicparga/osmgraphing.svg?branch=master
+[www_travis_builds_badge]: https://travis-ci.com/dominicparga/osmgraphing.svg?branch=testing/version_check
 [www_travis_builds]: https://travis-ci.com/dominicparga/osmgraphing
 
 [www_crates_io]: https://img.shields.io/crates/v/osmgraphing
