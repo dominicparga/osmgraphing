@@ -11,7 +11,7 @@ source ./scripts/travis/helper.sh
 if [[ -n "${TRAVIS_TAG}" ]]; then
     OSMGRAPHING_VERSION="v$(cat ./Cargo.toml | grep 'version' | sed 's_.*version.*"\(.*\)".*_\1_')"
     if [[ "${TRAVIS_TAG}" != "${OSMGRAPHING_VERSION}" ]]; then
-        echo "The version in 'Cargo.toml' doesn't match the provided tag '${TRAVIS_TAG}'."
+        echo -e "${RED}The version in 'Cargo.toml' doesn't match the provided tag '${TRAVIS_TAG}'.${NC}"
         exit 1
     fi
 fi
