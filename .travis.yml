@@ -13,3 +13,4 @@ matrix:
   fast_finish: true
 
 script: ./scripts/travis/script.sh
+deploy: ./scripts/travis/deploy.sh

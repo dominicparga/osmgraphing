@@ -12,4 +12,6 @@ cargo test --verbose --all
 #------------------------------------------------------------------------------#
 # check version
 
-echo "TODO: check version"
+echo 'TODO: check version'
+echo "TRAVIS_TAG=${TRAVIS_TAG}"
+export BLUB='omg'
