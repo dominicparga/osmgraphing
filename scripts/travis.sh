@@ -50,20 +50,39 @@ _c_light_purple='\033[1;35m'
 _c_light_cyan='\033[1;36m'
 _c_white='\033[1;37m'
 
-_c_info="${_c_cyan}"
+_c_info="${_c_blue}"
 _c_warn="${_c_yellow}"
 _c_error="${_c_red}"
 _c_nice="${_c_green}"
 
 #------------------------------------------------------------------------------#
+# logging
+
+__echo_info() {
+    echo -e "${_c_blue}INFO: ${@}${_c_nc}"
+}
+
+__echo_warn() {
+    echo -e "${_c_yellow}WARNING: ${@}${_c_nc}"
+}
+
+__echo_error() {
+    echo -e "${_c_red}ERROR: ${@}${_c_nc}"
+}
+
+__echo_nice() {
+    echo -e "${_c_green}NICE: ${@}${_c_nc}"
+}
+
+#------------------------------------------------------------------------------#
 # helper functions
 
 __help() {
-    echo -e "${_c_info}${_usage}${_c_nc}"
+    echo -e "${_c_yellow}${_usage}${_c_nc}"
 }
 
 __build() {
-    echo -e "${_c_info}Starting${_c_nc} build phase"
+    __echo_info 'Starting build phase'
 
     #--------------------------------------------------------------------------#
     # check version
@@ -72,47 +91,59 @@ __build() {
     # -> deploy later
     # -> check versions before everything to save runtime
     if [[ -n "${TRAVIS_TAG}" ]]; then
-        echo -e "${_c_info}Checking${_c_nc} tag and version"
+        __echo_info 'Checking tag and version ..'
         _osmgraphing_version="v$(cat ./Cargo.toml | grep 'version = ".*"' | sed 's_.*version.*"\(.*\)".*_\1_')"
         if [[ "${TRAVIS_TAG}" != "${_osmgraphing_version}" ]]; then
-            echo -e "${_c_error}ERROR:${_c_nc} The version ${_c_info}${_osmgraphing_version}${_c_nc} in 'Cargo.toml' doesn't match the provided tag ${_c_info}${TRAVIS_TAG}${_c_nc}."
+            __echo_error "The version '${_osmgraphing_version}' in 'Cargo.toml' doesn't match the provided tag '${TRAVIS_TAG}'."
             _errcode=1
             return
         fi
+        __echo_nice 'Tag (git) and version (Cargo.toml) are matching.'
     fi
 
     #--------------------------------------------------------------------------#
     # cargo build
 
-    echo -e "${_c_info}Starting${_c_nc} build"
-    cargo --color always build --verbose --all
+    __echo_info 'Building with cargo ..'
+    cargo --color auto build --verbose --all
+    __echo_nice 'Finished building with cargo'
 
     #--------------------------------------------------------------------------#
     # check deployment
 
     if [[ -n "${TRAVIS_TAG}" ]]; then
-        echo -e "${_c_info}Starting${_c_nc} dry-publish"
-        cargo --color always publish --dry-run
+        __echo_info 'Dry-publishing ..'
+        cargo --color auto publish --dry-run
+        __echo_nice 'Finished dry-publishing'
     fi
+
+    __echo_nice 'Finished build phase'
 }
 
 __test() {
-    echo -e "${_c_info}Starting${_c_nc} test phase"
-    cargo --color always test --verbose --all
+    __echo_info 'Starting test phase'
+    cargo --color auto test --verbose --all
+    __echo_nice 'Finished test phase'
 }
 
 __deploy() {
-    echo -e "${_c_info}Starting${_c_nc} deploy to cargo.io"
+    __echo_info 'Starting deploy phase'
 
     if [[ -z "${CRATES_TOKEN}" ]]; then
-        echo -e "${_c_error}ERROR:${_c_nc} \${CRATES_TOKEN} is zero."
+        __echo_error "\${CRATES_TOKEN} is zero."
         _errcode=1
         return
     fi
 
-    cargo --color always doc
-    # deploy to cargo.io
-    cargo --color always publish --token "${CRATES_TOKEN}"
+    __echo_info 'Building documentation ..'
+    cargo --color auto doc
+    __echo_nice 'Finished building documentation'
+
+    __echo_info 'Deployment to cargo.io ..'
+    cargo --color auto publish --token "${CRATES_TOKEN}"
+    __echo_nice 'Finished deployment to cargo.io'
+
+    __echo_nice 'Finished deploy phase'
 }
 
 #------------------------------------------------------------------------------#
@@ -143,7 +174,7 @@ while [[ "${#}" -gt 0 ]]; do
         __deploy
         ;;
     *)
-        echo -e "${_c_error}ERROR:${_c_nc} unknown argument '${1}'."
+        __echo_error "unknown argument '${1}'."
         echo
         _errcode=1
     esac
