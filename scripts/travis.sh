@@ -65,7 +65,7 @@ __build() {
     if [[ -n "${TRAVIS_TAG}" ]]; then
         _osmgraphing_version="v$(cat ./Cargo.toml | grep 'version = ".*"' | sed 's_.*version.*"\(.*\)".*_\1_')"
         if [[ "${TRAVIS_TAG}" != "${_osmgraphing_version}" ]]; then
-            echo -e "${_red}Error: The version '${_osmgraphing_version}' in 'Cargo.toml' doesn't match the provided tag '${TRAVIS_TAG}'.${_nc}"
+            echo -e "${_red}ERROR: The version '${_osmgraphing_version}' in 'Cargo.toml' doesn't match the provided tag '${TRAVIS_TAG}'.${_nc}"
             _errcode=1
             return
         fi
@@ -89,8 +89,10 @@ __test() {
 }
 
 __deploy() {
+    echo -e "${_yellow}INFO: Start deploying..${_nc}"
+
     if [[ -z "${CRATES_TOKEN}" ]]; then
-        echo -e "${_red}Error: \${CRATES_TOKEN} is zero.${_nc}"
+        echo -e "${_red}ERROR: \${CRATES_TOKEN} is zero.${_nc}"
         _errcode=1
         return
     fi
@@ -128,7 +130,7 @@ while [[ "${#}" -gt 0 ]]; do
         __deploy
         ;;
     *)
-        echo -e "${_red}Error: unknown argument '${1}'.${_nc}"
+        echo -e "${_red}ERROR: unknown argument '${1}'.${_nc}"
         echo
         _errcode=1
     esac

@@ -104,7 +104,7 @@ impl Parser {
                     let params: Vec<&str> = line_string.collect();
                     graph_builder.push_node(
                         params[0].parse::<i64>().expect(&format!(
-                            "Parse id ({:?}) from fmi-file into usize.",
+                            "Parse id ({:?}) from fmi-file into i64.",
                             params[0]
                         )),
                         geo::Coordinate::from(
@@ -126,11 +126,11 @@ impl Parser {
                     graph_builder.push_edge(
                         None,
                         params[0].parse::<i64>().expect(&format!(
-                            "Parse src ({:?}) from fmi-file into usize.",
+                            "Parse src ({:?}) from fmi-file into i64.",
                             params[0]
                         )),
                         params[1].parse::<i64>().expect(&format!(
-                            "Parse dst ({:?}) from fmi-file into usize.",
+                            "Parse dst ({:?}) from fmi-file into i64.",
                             params[1]
                         )),
                         match params[2].parse::<u32>() {
