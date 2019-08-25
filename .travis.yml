@@ -29,7 +29,6 @@ jobs:
       rust: stable
       deploy:
         provider: cargo
-        token:
-          - secure: "${CRATES_TOKEN_ENCRYPTED}"
+        token: "${CRATES_TOKEN}"
         on:
           tags: true
