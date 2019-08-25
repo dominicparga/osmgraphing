@@ -27,7 +27,7 @@ DESCRIPTION
 # general setup
 
 # exit as soon as non-zero exit-code occurs
-set -ev
+set -e
 
 # colors
 _nc='\033[0m'
