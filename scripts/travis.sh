@@ -63,7 +63,7 @@ __build() {
     # -> deploy later
     # -> check versions before everything to save runtime
     if [[ -n "${TRAVIS_TAG}" ]]; then
-        _osmgraphing_version="v$(cat ./Cargo.toml | grep 'version' | sed 's_.*version.*"\(.*\)".*_\1_')"
+        _osmgraphing_version="v$(cat ./Cargo.toml | grep 'version = ".*"' | sed 's_.*version.*"\(.*\)".*_\1_')"
         if [[ "${TRAVIS_TAG}" != "${_osmgraphing_version}" ]]; then
             echo -e "${_red}Error: The version '${_osmgraphing_version}' in 'Cargo.toml' doesn't match the provided tag '${TRAVIS_TAG}'.${_nc}"
             _errcode=1
@@ -96,8 +96,7 @@ __deploy() {
     fi
 
     # deploy to cargo.io
-    cargo login "${CRATES_TOKEN}"
-    cargo publish
+    cargo publish --token "${CRATES_TOKEN}"
 }
 
 #------------------------------------------------------------------------------#
