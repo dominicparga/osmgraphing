@@ -95,6 +95,7 @@ __deploy() {
         return
     fi
 
+    cargo doc
     # deploy to cargo.io
     cargo publish --token "${CRATES_TOKEN}"
 }

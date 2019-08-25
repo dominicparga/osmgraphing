@@ -27,6 +27,7 @@ jobs:
 
     - stage: deployments
       rust: stable
+      before_deploy: cargo doc
       deploy:
         provider: cargo
         token: "${CRATES_TOKEN}"
