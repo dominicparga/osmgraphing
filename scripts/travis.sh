@@ -71,7 +71,7 @@ __echo_error() {
 }
 
 __echo_nice() {
-    echo -e "${_c_green}NICE: ${@}${_c_nc}"
+    echo -e "${_c_light_green}NICE: ${@}${_c_nc}"
 }
 
 #------------------------------------------------------------------------------#
@@ -105,7 +105,7 @@ __build() {
     # cargo build
 
     __echo_info 'Building with cargo ..'
-    cargo --color auto build --verbose --all
+    cargo build --verbose --all
     __echo_nice 'Finished building with cargo'
 
     #--------------------------------------------------------------------------#
@@ -113,7 +113,7 @@ __build() {
 
     if [[ -n "${TRAVIS_TAG}" ]]; then
         __echo_info 'Dry-publishing ..'
-        cargo --color auto publish --dry-run
+        cargo publish --dry-run
         __echo_nice 'Finished dry-publishing'
     fi
 
@@ -122,7 +122,7 @@ __build() {
 
 __test() {
     __echo_info 'Starting test phase'
-    cargo --color auto test --verbose --all
+    cargo test --verbose --all
     __echo_nice 'Finished test phase'
 }
 
@@ -136,11 +136,11 @@ __deploy() {
     fi
 
     __echo_info 'Building documentation ..'
-    cargo --color auto doc
+    cargo doc
     __echo_nice 'Finished building documentation'
 
     __echo_info 'Deployment to cargo.io ..'
-    cargo --color auto publish --token "${CRATES_TOKEN}"
+    cargo publish --token "${CRATES_TOKEN}"
     __echo_nice 'Finished deployment to cargo.io'
 
     __echo_nice 'Finished deploy phase'
