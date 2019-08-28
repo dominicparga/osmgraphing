@@ -10,7 +10,7 @@ use crate::routing;
 use routing::Graph;
 use routing::GraphBuilder;
 
-//--------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------//
 
 pub struct Parser;
 
@@ -18,7 +18,7 @@ impl Parser {
     pub fn parse<S: AsRef<OsStr> + ?Sized>(&self, path: &S) -> Graph {
         info!("Start parsing..");
 
-        //------------------------------------------------------------------------------------------
+        //----------------------------------------------------------------------------------------//
         // get reader
 
         let path = Path::new(&path);
@@ -26,14 +26,14 @@ impl Parser {
             File::open(&path).expect(&format!("Expects the given path {:?} to exist.", path));
         let mut reader = io::BufReader::new(file);
 
-        //------------------------------------------------------------------------------------------
+        //----------------------------------------------------------------------------------------//
         // graph
 
         let mut node_count = None;
         let mut edge_count = None;
         let mut graph_builder = GraphBuilder::new();
 
-        //------------------------------------------------------------------------------------------
+        //----------------------------------------------------------------------------------------//
         // Parsing a `.fmi`-file of following structure, where empty lines and comment lines (#) can
         // be addes everywhere.
         //

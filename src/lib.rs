@@ -3,7 +3,7 @@ pub mod err;
 pub mod osm;
 pub mod routing;
 
-//--------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------//
 // logging
 // from https://rust-lang-nursery.github.io/rust-cookbook/development_tools/debugging/config_log.html#include-timestamp-in-log-messages
 // and https://doc.servo.org/env_logger/struct.Builder.html#examples-2
