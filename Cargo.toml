@@ -21,8 +21,8 @@ travis-ci = { repository = "dominicparga/osmgraphing", branch = "master" }
 [dependencies]
 quick-xml = "0.14"
 osmpbfreader = "0.13"
-log = "0.4"
-env_logger = "0.6"
+log = "0.4"        # for internal use, e.g. lib.rs
+env_logger = "0.6" # for external use, e.g. main.rs and examples
 
 
 [[example]]

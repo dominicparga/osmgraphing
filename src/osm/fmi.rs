@@ -5,6 +5,8 @@ use std::io::BufRead;
 use std::io::Read;
 use std::path::Path;
 
+use log::{info};
+
 use crate::osm::geo;
 use crate::routing;
 use routing::Graph;
@@ -16,7 +18,7 @@ pub struct Parser;
 
 impl Parser {
     pub fn parse<S: AsRef<OsStr> + ?Sized>(&self, path: &S) -> Graph {
-        info!("Start parsing..");
+        info!("Starting parsing..");
 
         //----------------------------------------------------------------------------------------//
         // get reader
@@ -52,7 +54,7 @@ impl Parser {
         // # src dst distance ??? maxspeed
         // ...
 
-        info!("Start processing given fmi-file..");
+        info!("Starting processing given fmi-file..");
         let mut i = 0;
         for line in reader.by_ref().lines().map(Result::unwrap) {
             if line == "" || line.chars().next() == Some('#') {
@@ -147,7 +149,7 @@ impl Parser {
             }
             i += 1;
         }
-        info!("Finish processing given fmi-file.");
+        info!("Finished processing given fmi-file.");
 
         graph_builder.finalize()
     }

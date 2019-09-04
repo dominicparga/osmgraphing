@@ -1,14 +1,11 @@
-#[macro_use]
-extern crate log;
-
 use std::ffi::OsString;
 use std::time::Instant;
 
 use osmgraphing::osm;
-use osmgraphing::Logging;
 
 fn main() {
-    Logging::init();
+    env_logger::Builder::from_env("RUST_LOG").init();
+    println!("Executing example: dijkstra");
 
     let path = match std::env::args_os().nth(1) {
         Some(path) => path,
@@ -28,11 +25,11 @@ fn main() {
         Ok(osm::Support::XML) => unimplemented!(),
         Err(e) => panic!("{:}", e),
     };
-    info!(
+    println!(
         "Finished parsing in {} seconds ({} ms).",
         now.elapsed().as_secs(),
         now.elapsed().as_micros(),
     );
-    info!("");
-    info!("{}", graph);
+    println!("");
+    println!("{}", graph);
 }

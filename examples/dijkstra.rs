@@ -1,18 +1,15 @@
-#[macro_use]
-extern crate log;
-
 use std::ffi::OsString;
 use std::time::Instant;
 
 use osmgraphing::osm;
 use osmgraphing::routing;
-use osmgraphing::Logging;
 
 fn main() {
+    env_logger::Builder::from_env("RUST_LOG").init();
+    println!("Executing example: dijkstra");
+
     //----------------------------------------------------------------------------------------------
     // parsing
-
-    Logging::init();
 
     let path = match std::env::args_os().nth(1) {
         Some(path) => path,
@@ -32,13 +29,13 @@ fn main() {
         Ok(osm::Support::XML) => unimplemented!(),
         Err(e) => panic!("{:}", e),
     };
-    info!(
+    println!(
         "Finished parsing in {} seconds ({} ms).",
         now.elapsed().as_secs(),
         now.elapsed().as_micros(),
     );
-    info!("");
-    info!("{}", graph);
+    println!("");
+    println!("{}", graph);
 
     //----------------------------------------------------------------------------------------------
     // dijkstra
@@ -54,16 +51,16 @@ fn main() {
     for dst_idx in dsts {
         let dst = graph.node(dst_idx);
 
-        info!("");
+        println!("");
 
         let now = Instant::now();
         let path = dijkstra.compute_shortest_path(src_idx, dst_idx);
-        info!(
+        println!(
             "Ran Dijkstra in {} microseconds a.k.a {} seconds",
             now.elapsed().as_micros(),
             now.elapsed().as_secs()
         );
-        info!(
+        println!(
             "Distance {} m from ({}) to ({}).",
             path.cost[dst_idx],
             src.lat(),

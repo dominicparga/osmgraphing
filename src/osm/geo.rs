@@ -1,7 +1,7 @@
 use std::cmp::Ordering;
 use std::fmt;
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct Coordinate {
     pub decimicro_lat: i32,
     pub decimicro_lon: i32,

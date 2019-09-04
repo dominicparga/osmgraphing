@@ -1,4 +1,6 @@
 fn main() {
+    env_logger::Builder::from_env("RUST_LOG").init();
+
     println!("For all supported example files, please use");
     println!("");
     println!("    'cargo run --example'");

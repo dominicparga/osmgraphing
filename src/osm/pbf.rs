@@ -4,6 +4,8 @@ use std::fs::File;
 use std::path;
 use std::str;
 
+use log::{trace, debug, info, error};
+
 use crate::err;
 use crate::osm::geo;
 use crate::routing;
@@ -97,7 +99,7 @@ impl HighwayTag {
         }
     }
 
-    fn is_for_vehicles(&self, is_suitable: bool) -> bool {
+    fn _is_for_vehicles(&self, is_suitable: bool) -> bool {
         match self {
             HighwayTag::Motorway => true,
             HighwayTag::MotorwayLink => true,
@@ -123,7 +125,7 @@ impl HighwayTag {
         }
     }
 
-    fn is_for_bicycles(&self, is_suitable: bool) -> bool {
+    fn _is_for_bicycles(&self, is_suitable: bool) -> bool {
         match self {
             HighwayTag::Motorway => false,
             HighwayTag::MotorwayLink => false,
@@ -149,7 +151,7 @@ impl HighwayTag {
         }
     }
 
-    fn is_for_pedestrians(&self, is_suitable: bool) -> bool {
+    fn _is_for_pedestrians(&self, is_suitable: bool) -> bool {
         match self {
             HighwayTag::Motorway => false,
             HighwayTag::MotorwayLink => false,
@@ -247,7 +249,7 @@ pub struct Parser;
 
 impl Parser {
     pub fn parse<S: AsRef<OsStr> + ?Sized>(&self, path: &S) -> Graph {
-        info!("Start parsing..");
+        info!("Starting parsing..");
 
         //----------------------------------------------------------------------------------------//
         // get reader
@@ -265,7 +267,7 @@ impl Parser {
         //----------------------------------------------------------------------------------------//
         // collect all nodes and ways
 
-        info!("Start processing given pbf-file..");
+        info!("Starting processing given pbf-file..");
         for obj in reader.par_iter().filter_map(|obj| match obj {
             Ok(obj) => Some(obj),
             Err(_) => {
