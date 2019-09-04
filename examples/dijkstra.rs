@@ -4,9 +4,9 @@ extern crate log;
 use std::ffi::OsString;
 use std::time::Instant;
 
-use osmgraphing::Logging;
 use osmgraphing::osm;
 use osmgraphing::routing;
+use osmgraphing::Logging;
 
 fn main() {
     //----------------------------------------------------------------------------------------------
@@ -65,7 +65,9 @@ fn main() {
         );
         info!(
             "Distance {} m from ({}) to ({}).",
-            path.cost[dst_idx], src.lat(), dst
+            path.cost[dst_idx],
+            src.lat(),
+            dst
         );
     }
 }
