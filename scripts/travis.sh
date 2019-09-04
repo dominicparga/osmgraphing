@@ -98,7 +98,7 @@ __build() {
             _errcode=1
             return
         fi
-        __echo_nice 'Tag (git) and version (Cargo.toml) are matching.'
+        __echo_info 'Tag (git) and version (Cargo.toml) are matching.'
     fi
 
     #--------------------------------------------------------------------------#
@@ -106,7 +106,7 @@ __build() {
 
     __echo_info 'Building with cargo ..'
     cargo build --verbose --all
-    __echo_nice 'Finished building with cargo'
+    __echo_info 'Finished building with cargo'
 
     #--------------------------------------------------------------------------#
     # check deployment
@@ -114,16 +114,21 @@ __build() {
     if [[ -n "${TRAVIS_TAG}" ]]; then
         __echo_info 'Dry-publishing ..'
         cargo publish --dry-run
-        __echo_nice 'Finished dry-publishing'
+        __echo_info 'Finished dry-publishing'
     fi
 
-    __echo_nice 'Finished build phase'
+    __echo_info 'Finished build phase'
 }
 
 __test() {
+    __echo_info 'Starting executing examples'
+    cargo run --example parser
+    cargo run --example dijkstra
+    __echo_info 'Finished executing examples'
+
     __echo_info 'Starting test phase'
     cargo test --verbose --all
-    __echo_nice 'Finished test phase'
+    __echo_info 'Finished test phase'
 }
 
 __deploy() {
@@ -137,13 +142,13 @@ __deploy() {
 
     __echo_info 'Building documentation ..'
     cargo doc
-    __echo_nice 'Finished building documentation'
+    __echo_info 'Finished building documentation'
 
     __echo_info 'Deployment to cargo.io ..'
     cargo publish --token "${CRATES_TOKEN}"
-    __echo_nice 'Finished deployment to cargo.io'
+    __echo_info 'Finished deployment to cargo.io'
 
-    __echo_nice 'Finished deploy phase'
+    __echo_info 'Finished deploy phase'
 }
 
 #------------------------------------------------------------------------------#
