@@ -5,7 +5,7 @@ use std::io::BufRead;
 use std::io::Read;
 use std::path::Path;
 
-use log::{info};
+use log::info;
 
 use crate::osm::geo;
 use crate::routing;

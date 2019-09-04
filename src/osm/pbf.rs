@@ -4,7 +4,7 @@ use std::fs::File;
 use std::path;
 use std::str;
 
-use log::{trace, debug, info, error};
+use log::{debug, error, info, trace};
 
 use crate::err;
 use crate::osm::geo;
