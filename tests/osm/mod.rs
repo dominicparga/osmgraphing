@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------------------------//
 // test following mods by mentioning them here
 
-mod graph;
+mod fmi;
 mod support;
 
 //------------------------------------------------------------------------------------------------//
@@ -10,17 +10,6 @@ use osmgraphing::osm;
 use std::ffi::OsString;
 
 //------------------------------------------------------------------------------------------------//
-
-#[test]
-#[ignore]
-fn parse_fmi() {
-    let path = OsString::from("resources/osm/small.fmi");
-    let parser = osm::fmi::Parser;
-    let _graph = parser.parse(&path);
-
-    // check graph structure
-    unimplemented!()
-}
 
 #[test]
 #[ignore]
