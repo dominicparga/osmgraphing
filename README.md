@@ -3,6 +3,7 @@
 [![Build Status][www_travis_builds_badge]][www_travis_builds]
 [![Crates.io][www_crates_io]][www_crates_io]
 [![Docs][www_docs_badge]][www_docs]
+[![License][www_license_badge]][www_license]
 
 Goal of this student project is parsing [openstreetmap][www_openstreetmap] data to calculate traffic routes on it.
 
@@ -30,6 +31,9 @@ Please refer to [setup and usage][www_osmgraphing_usage] to get details about th
 
 [www_docs_badge]: https://docs.rs/osmgraphing/badge.svg
 [www_docs]: https://docs.rs/osmgraphing/
+
+[www_license_badge]: https://img.shields.io/github/license/dominicparga/osmgraphing
+[www_license]: https://github.com/dominicparga/osmgraphing/blob/master/LICENSE
 
 [www_openstreetmap]: https://openstreetmap.org
 [www_osmgraphing_usage]: https://github.com/dominicparga/osmgraphing/wiki/Usage
