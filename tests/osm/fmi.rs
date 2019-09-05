@@ -82,7 +82,11 @@ impl TestEdge {
     }
 
     fn assert(&self, graph: &routing::Graph) {
-        let edge = graph.edge(self.src_idx, self.dst_idx);
+        let edge = graph.edge(self.src_idx, self.dst_idx).expect(&format!(
+            "Edge (src_idx, dst_idx): ({}, {}) does not exist.",
+            self.src_idx, self.dst_idx
+        ));
+
         assert_eq!(
             edge.id(),
             self.id,
@@ -135,6 +139,10 @@ fn parsing() {
     // testing graph
 
     // TODO test graph.edge(...) if edge is not in graph
+    assert!(
+        graph.edge(24, 42).is_none(),
+        "Edge doesn't exist, so graph should return None."
+    );
 
     //--------------------------------------------------------------------------------------------//
     // setup correct data
@@ -149,54 +157,12 @@ fn parsing() {
 
     // Due to the offset-array, the edge-ids should match with sorting by src-id, then by dst-id.
     // name, id, src, dst, meters, maxspeed
-    let edge_opp_bac = TestEdge::from(
-        "Oppenweiler->Backnang",
-        0,
-        &node_opp,
-        &node_bac,
-        8_000,
-        50,
-    );
-    let edge_bac_opp = TestEdge::from(
-        "Backnang->Oppenweiler",
-        1,
-        &node_bac,
-        &node_opp,
-        8_000,
-        50,
-    );
-    let edge_bac_wai = TestEdge::from(
-        "Backnang->Waiblingen",
-        2,
-        &node_bac,
-        &node_wai,
-        23_000,
-        120,
-    );
-    let edge_bac_end = TestEdge::from(
-        "Backnang->Endersbach",
-        3,
-        &node_bac,
-        &node_end,
-        22_000,
-        80,
-    );
-    let edge_wai_bac = TestEdge::from(
-        "Waiblingen->Backnang",
-        4,
-        &node_wai,
-        &node_bac,
-        23_000,
-        120,
-    );
-    let edge_wai_end = TestEdge::from(
-        "Waiblingen->Endersbach",
-        5,
-        &node_wai,
-        &node_end,
-        8_000,
-        50,
-    );
+    let edge_opp_bac = TestEdge::from("Oppenweiler->Backnang", 0, &node_opp, &node_bac, 8_000, 50);
+    let edge_bac_opp = TestEdge::from("Backnang->Oppenweiler", 1, &node_bac, &node_opp, 8_000, 50);
+    let edge_bac_wai = TestEdge::from("Backnang->Waiblingen", 2, &node_bac, &node_wai, 23_000, 120);
+    let edge_bac_end = TestEdge::from("Backnang->Endersbach", 3, &node_bac, &node_end, 22_000, 80);
+    let edge_wai_bac = TestEdge::from("Waiblingen->Backnang", 4, &node_wai, &node_bac, 23_000, 120);
+    let edge_wai_end = TestEdge::from("Waiblingen->Endersbach", 5, &node_wai, &node_end, 8_000, 50);
     let edge_wai_stu = TestEdge::from(
         "Waiblingen->Stuttgart",
         6,
@@ -205,30 +171,9 @@ fn parsing() {
         17_000,
         100,
     );
-    let edge_end_bac = TestEdge::from(
-        "Endersbach->Backnang",
-        7,
-        &node_end,
-        &node_bac,
-        22_000,
-        80,
-    );
-    let edge_end_wai = TestEdge::from(
-        "Endersbach->Waiblingen",
-        8,
-        &node_end,
-        &node_wai,
-        8_000,
-        50,
-    );
-    let edge_end_stu = TestEdge::from(
-        "Endersbach->Stuttgart",
-        9,
-        &node_end,
-        &node_stu,
-        21_000,
-        80,
-    );
+    let edge_end_bac = TestEdge::from("Endersbach->Backnang", 7, &node_end, &node_bac, 22_000, 80);
+    let edge_end_wai = TestEdge::from("Endersbach->Waiblingen", 8, &node_end, &node_wai, 8_000, 50);
+    let edge_end_stu = TestEdge::from("Endersbach->Stuttgart", 9, &node_end, &node_stu, 21_000, 80);
     let edge_stu_wai = TestEdge::from(
         "Stuttgart->Waiblingen",
         10,

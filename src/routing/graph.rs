@@ -336,22 +336,36 @@ impl Graph {
         &self.nodes[idx]
     }
 
-    pub fn edge(&self, src_idx: usize, dst_idx: usize) -> &Edge {
-        let leaving_edges = self.leaving_edges(src_idx);
-        let j = match leaving_edges.binary_search_by(|edge| edge.dst_idx.cmp(&dst_idx)) {
-            Ok(j) => j,
-            Err(_) => panic!(
-                "Edge (({})->({})) doesn't exist in the graph.",
-                src_idx, dst_idx
-            ),
-        };
-        &leaving_edges[j]
+    pub fn edge(&self, src_idx: usize, dst_idx: usize) -> Option<&Edge> {
+        match self.leaving_edges(src_idx) {
+            Some(leaving_edges) => {
+                match leaving_edges.binary_search_by(|edge| edge.dst_idx.cmp(&dst_idx)) {
+                    Ok(j) => Some(&leaving_edges[j]),
+                    Err(_) => None,
+                }
+            }
+            None => None,
+        }
     }
 
-    pub fn leaving_edges(&self, node_idx: usize) -> &[Edge] {
-        let i0 = self.offsets[node_idx];
-        let i1 = self.offsets[node_idx + 1]; // guaranteed by array-length
-        &self.edges[i0..i1]
+    pub fn leaving_edges(&self, node_idx: usize) -> Option<&[Edge]> {
+        // Use offset-array to get indices for the graph's edges belonging to the given node
+        match self.offsets.get(node_idx) {
+            // (idx + 1) guaranteed by offset-array-length
+            Some(&i0) => match self.offsets.get(node_idx + 1) {
+                Some(&i1) => {
+                    // check if i0 and i1 are equal
+                    // <-> if node has leaving edges
+                    if i0 < i1 {
+                        Some(&self.edges[i0..i1])
+                    } else {
+                        None
+                    }
+                },
+                None => None,
+            },
+            None => None,
+        }
     }
 }
 

@@ -99,18 +99,20 @@ impl<'a> Dijkstra<'a> {
                 continue;
             }
 
-            // if not -> update "official" cost
-            // and add successors
-            for edge in self.graph.leaving_edges(idx) {
-                let new_cost = cost + edge.meters();
+            if let Some(leaving_edges) = self.graph.leaving_edges(idx) {
+                // if not -> update "official" cost
+                // and add successors
+                for edge in leaving_edges {
+                    let new_cost = cost + edge.meters();
 
-                if new_cost < self.path.cost[edge.dst_idx()] {
-                    self.path.predecessors[edge.dst_idx()] = Some(&edge);
-                    self.path.cost[edge.dst_idx()] = new_cost;
-                    queue.push(CostNode {
-                        idx: edge.dst_idx(),
-                        cost: new_cost,
-                    });
+                    if new_cost < self.path.cost[edge.dst_idx()] {
+                        self.path.predecessors[edge.dst_idx()] = Some(&edge);
+                        self.path.cost[edge.dst_idx()] = new_cost;
+                        queue.push(CostNode {
+                            idx: edge.dst_idx(),
+                            cost: new_cost,
+                        });
+                    }
                 }
             }
         }
