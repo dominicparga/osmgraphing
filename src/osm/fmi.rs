@@ -5,7 +5,7 @@ use std::io::BufRead;
 use std::io::Read;
 use std::path::Path;
 
-use log::info;
+use log::{info, warn};
 
 use crate::osm::geo;
 use crate::routing;
@@ -61,25 +61,22 @@ impl Parser {
                 continue;
             }
 
-            match i {
-                // first functional line -> number of nodes
-                0 => {
-                    node_count = Some(line.parse::<usize>().expect(&format!(
-                        "Parse node_count ({:?}) from fmi-file into usize.",
-                        line
-                    )));
-                    i += 1;
-                }
-                // second functional line -> number of edges
-                1 => {
-                    edge_count = Some(line.parse::<usize>().expect(&format!(
-                        "Parse edge_count ({:?}) from fmi-file into usize.",
-                        line
-                    )));
-                    i += 1;
-                    break;
-                }
-                _ => (),
+            // first functional line -> number of nodes
+            if i == 0 {
+                node_count = Some(line.parse::<usize>().expect(&format!(
+                    "Parse node_count ({:?}) from fmi-file into usize.",
+                    line
+                )));
+                i += 1;
+            }
+            // second functional line -> number of edges
+            else if i == 1 {
+                edge_count = Some(line.parse::<usize>().expect(&format!(
+                    "Parse edge_count ({:?}) from fmi-file into usize.",
+                    line
+                )));
+                i += 1;
+                break;
             }
         }
 
@@ -99,56 +96,60 @@ impl Parser {
                 continue;
             }
 
-            match i {
-                // nodes
-                _ if (1 < i) && (i < node_count + 2) => {
-                    let line_string = line.split_whitespace();
-                    let params: Vec<&str> = line_string.collect();
-                    graph_builder.push_node(
-                        params[0].parse::<i64>().expect(&format!(
-                            "Parsing id ({:?}) from fmi-file, which is not i64.",
-                            params[0]
-                        )),
-                        geo::Coordinate::from(
-                            params[2].parse::<f64>().expect(&format!(
-                                "Parsing lat ({:?}) from fmi-file, which is not f64.",
+            // nodes
+            if (1 < i) && (i < node_count + 2) {
+                let line_string = line.split_whitespace();
+                let params: Vec<&str> = line_string.collect();
+
+                // parse file
+                let id = params[0].parse::<i64>().expect(&format!(
+                    "Parsing id '{:?}' from fmi-file, which is not i64.",
+                    params[0]
+                ));
+                let lat = params[2].parse::<f64>().expect(&format!(
+                    "Parsing lat '{:?}' from fmi-file, which is not f64.",
+                    params[2]
+                ));
+                let lon = params[3].parse::<f64>().expect(&format!(
+                    "Parsing lon '{:?}' from fmi-file, which is not f64.",
+                    params[3]
+                ));
+                graph_builder.push_node(id, geo::Coordinate::from(lat, lon));
+            }
+            // edges
+            else if node_count + 2 <= i {
+                let line_string = line.split_whitespace();
+                let params: Vec<&str> = line_string.collect();
+
+                // parse file
+                let way_id = None;
+                let src_id = params[0].parse::<i64>().expect(&format!(
+                    "Parsing src-id '{:?}' from fmi-file, which is not i64.",
+                    params[0]
+                ));
+                let dst_id = params[1].parse::<i64>().expect(&format!(
+                    "Parsing dst-id '{:?}' from fmi-file, which is not i64.",
+                    params[1]
+                ));
+                let meters = match params[2].parse::<u32>() {
+                    Ok(kilometers) => Some(kilometers * 1_000),
+                    Err(_) => match params[2].parse::<f64>() {
+                        Ok(kilometers) => Some((kilometers * 1_000.0) as u32),
+                        Err(_) => {
+                            warn!(
+                                "Parsing length '{}' of edge didn't work, \
+                                so straight-line is taken.",
                                 params[2]
-                            )),
-                            params[3].parse::<f64>().expect(&format!(
-                                "Parsing lon ({:?}) from fmi-file, which is not f64.",
-                                params[3]
-                            )),
-                        ),
-                    );
-                }
-                // edges
-                _ if (node_count + 2 <= i) => {
-                    let line_string = line.split_whitespace();
-                    let params: Vec<&str> = line_string.collect();
-                    graph_builder.push_edge(
-                        None,
-                        params[0].parse::<i64>().expect(&format!(
-                            "Parsing src ({:?}) from fmi-file, which is not i64.",
-                            params[0]
-                        )),
-                        params[1].parse::<i64>().expect(&format!(
-                            "Parsing dst ({:?}) from fmi-file, which is not i64.",
-                            params[1]
-                        )),
-                        match params[2].parse::<u32>() {
-                            Ok(kilometers) => Some(kilometers * 1_000),
-                            Err(_) => match params[2].parse::<f64>() {
-                                Ok(kilometers) => Some((kilometers * 1_000.0) as u32),
-                                Err(_) => None,
-                            },
-                        },
-                        params[4].parse::<u16>().expect(&format!(
-                            "Parse maxspeed in km/h ({:?}) from fmi-file into u16.",
-                            params[4]
-                        )),
-                    );
-                }
-                _ => (),
+                            );
+                            None
+                        }
+                    },
+                };
+                let maxspeed = params[4].parse::<u16>().expect(&format!(
+                    "Parse maxspeed in km/h '{:?}' from fmi-file into u16.",
+                    params[4]
+                ));
+                graph_builder.push_edge(way_id, src_id, dst_id, meters, maxspeed);
             }
             i += 1;
         }
