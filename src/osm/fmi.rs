@@ -106,16 +106,16 @@ impl Parser {
                     let params: Vec<&str> = line_string.collect();
                     graph_builder.push_node(
                         params[0].parse::<i64>().expect(&format!(
-                            "Parse id ({:?}) from fmi-file into i64.",
+                            "Parsing id ({:?}) from fmi-file, which is not i64.",
                             params[0]
                         )),
                         geo::Coordinate::from(
                             params[2].parse::<f64>().expect(&format!(
-                                "Parse lat ({:?}) from fmi-file into f64.",
+                                "Parsing lat ({:?}) from fmi-file, which is not f64.",
                                 params[2]
                             )),
                             params[3].parse::<f64>().expect(&format!(
-                                "Parse lon ({:?}) from fmi-file into f64.",
+                                "Parsing lon ({:?}) from fmi-file, which is not f64.",
                                 params[3]
                             )),
                         ),
@@ -128,16 +128,19 @@ impl Parser {
                     graph_builder.push_edge(
                         None,
                         params[0].parse::<i64>().expect(&format!(
-                            "Parse src ({:?}) from fmi-file into i64.",
+                            "Parsing src ({:?}) from fmi-file, which is not i64.",
                             params[0]
                         )),
                         params[1].parse::<i64>().expect(&format!(
-                            "Parse dst ({:?}) from fmi-file into i64.",
+                            "Parsing dst ({:?}) from fmi-file, which is not i64.",
                             params[1]
                         )),
                         match params[2].parse::<u32>() {
                             Ok(kilometers) => Some(kilometers * 1_000),
-                            Err(_) => None,
+                            Err(_) => match params[2].parse::<f64>() {
+                                Ok(kilometers) => Some((kilometers * 1_000.0) as u32),
+                                Err(_) => None,
+                            },
                         },
                         params[4].parse::<u16>().expect(&format!(
                             "Parse maxspeed in km/h ({:?}) from fmi-file into u16.",
