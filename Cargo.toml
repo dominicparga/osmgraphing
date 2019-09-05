@@ -1,6 +1,6 @@
 [package]
 name = "osmgraphing"
-version = "0.2.0"
+version = "0.3.0"
 description = "Playing around with graphs created via parsing OpenStreetMap data"
 edition = "2018"
 
@@ -19,17 +19,23 @@ travis-ci = { repository = "dominicparga/osmgraphing", branch = "master" }
 
 
 [dependencies]
-quick-xml = "0.14.0"
-osmpbfreader = "0.13.0"
+quick-xml = "0.14"
+osmpbfreader = "0.13"
+log = "0.4"        # for internal use, e.g. lib.rs
+env_logger = "0.6" # for external use, e.g. main.rs and examples
 
+
+[[example]]
+name = "parser"
+path = "examples/parser.rs"
+
+[[example]]
+name = "dijkstra"
+path = "examples/dijkstra.rs"
 
 [[example]]
 name = "xml_reader"
 path = "examples/playground/xml_reader.rs"
-
-[[example]]
-name = "parser"
-path = "examples/playground/parser.rs"
 
 [[example]]
 name = "pipes_and_filters"
@@ -38,7 +44,3 @@ path = "examples/playground/pipes_and_filters.rs"
 [[example]]
 name = "graph"
 path = "examples/playground/graph.rs"
-
-[[example]]
-name = "dijkstra"
-path = "examples/playground/dijkstra.rs"

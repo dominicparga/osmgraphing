@@ -11,7 +11,7 @@ labels: testing, documentation
 
 > Note: Add the case, that could occur (and its potential damage?)
 
-## Test to detect it
+## Test to detect the problem-case
 
 > Note: Add why this testing-request helps here with above problem-case.
 > Does it find a seldom case?

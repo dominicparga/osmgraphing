@@ -6,13 +6,13 @@ use crate::routing;
 use routing::Edge;
 use routing::Graph;
 
-//--------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------//
 // nodes
 
 #[derive(Copy, Clone)]
 struct CostNode {
-    pub id: usize,
-    pub cost: u64,
+    pub idx: usize,
+    pub cost: u32,
 }
 
 impl Ord for CostNode {
@@ -22,7 +22,7 @@ impl Ord for CostNode {
         other
             .cost
             .cmp(&self.cost)
-            .then_with(|| other.id.cmp(&self.id))
+            .then_with(|| other.idx.cmp(&self.idx))
     }
 }
 
@@ -40,16 +40,16 @@ impl PartialEq for CostNode {
     }
 }
 
-//--------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------//
 // Dijkstra's type of path
 
 #[derive(Clone)]
 pub struct Path<'a> {
-    pub cost: Vec<u64>,
+    pub cost: Vec<u32>,
     pub predecessors: Vec<Option<&'a Edge>>,
 }
 
-//--------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------//
 // Dijkstra
 
 pub struct Dijkstra<'a> {
@@ -62,7 +62,7 @@ impl<'a> Dijkstra<'a> {
         Dijkstra {
             graph,
             path: Path {
-                cost: vec![std::u64::MAX; graph.node_count()],
+                cost: vec![std::u32::MAX; graph.node_count()],
                 predecessors: vec![None; graph.node_count()],
             },
         }
@@ -70,44 +70,49 @@ impl<'a> Dijkstra<'a> {
 }
 
 impl<'a> Dijkstra<'a> {
-    pub fn compute_shortest_path(&mut self, src: usize, dst: usize) -> Cow<Path> {
-        //------------------------------------------------------------------------------------------
+    pub fn compute_shortest_path(&mut self, src_idx: usize, dst_idx: usize) -> Cow<Path> {
+        //----------------------------------------------------------------------------------------//
         // initialize, but check path-"cache" before
 
-        self.path.cost = vec![std::u64::MAX; self.graph.node_count()];
+        self.path.cost = vec![std::u32::MAX; self.graph.node_count()];
         self.path.predecessors = vec![None; self.graph.node_count()];
         let mut queue = BinaryHeap::new(); // max-heap, but CostNode's natural order is reversed
 
         // prepare first iteration
-        queue.push(CostNode { id: src, cost: 0 });
-        self.path.cost[src] = 0;
+        queue.push(CostNode {
+            idx: src_idx,
+            cost: 0,
+        });
+        self.path.cost[src_idx] = 0;
 
-        //------------------------------------------------------------------------------------------
+        //----------------------------------------------------------------------------------------//
         // compute
 
-        while let Some(CostNode { id, cost }) = queue.pop() {
+        while let Some(CostNode { idx, cost }) = queue.pop() {
             // shortest path found
-            if id == dst {
+            if idx == dst_idx {
                 break;
             }
 
             // if node has already been visited
-            if cost > self.path.cost[id] {
+            if cost > self.path.cost[idx] {
                 continue;
             }
 
-            // if not -> update "official" cost
-            // and add successors
-            for edge in self.graph.leaving_edges(id) {
-                let new_cost = cost + edge.weight();
+            if let Some(leaving_edges) = self.graph.leaving_edges(idx) {
+                // if not -> update "official" cost
+                // and add successors
+                for edge in leaving_edges {
+                    let new_cost = cost + edge.meters();
 
-                if new_cost < self.path.cost[edge.dst()] {
-                    self.path.predecessors[edge.dst()] = Some(&edge);
-                    self.path.cost[edge.dst()] = new_cost;
-                    queue.push(CostNode {
-                        id: edge.dst(),
-                        cost: new_cost,
-                    });
+                    if new_cost < self.path.cost[edge.dst_idx()] {
+                        self.path.predecessors[edge.dst_idx()] = Some(&edge);
+                        self.path.cost[edge.dst_idx()] = new_cost;
+                        queue.push(CostNode {
+                            idx: edge.dst_idx(),
+                            cost: new_cost,
+                        });
+                    }
                 }
             }
         }
