@@ -241,3 +241,19 @@ fn parsing() {
 
     // TODO
 }
+
+#[test]
+fn file_support() {
+    assert!(
+        osm::Support::from_path(&OsString::from("foo.asdf")).is_err(),
+        "File-extension 'asdf' should not be supported."
+    );
+
+    let support = osm::Support::from_path(&OsString::from("foo.fmi"));
+    assert!(support.is_ok(), "File-extension 'fmi' is not supported.");
+    let support = support.unwrap();
+
+    assert_eq!(support, osm::Support::FMI);
+    assert_ne!(support, osm::Support::PBF);
+    assert_ne!(support, osm::Support::XML);
+}

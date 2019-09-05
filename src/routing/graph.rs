@@ -361,7 +361,7 @@ impl Graph {
                     } else {
                         None
                     }
-                },
+                }
                 None => None,
             },
             None => None,
