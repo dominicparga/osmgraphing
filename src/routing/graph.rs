@@ -337,15 +337,15 @@ impl Graph {
     }
 
     pub fn edge(&self, src_idx: usize, dst_idx: usize) -> &Edge {
-        let edges = self.leaving_edges(src_idx);
-        let j = match edges.binary_search_by(|edge| edge.dst_idx.cmp(&dst_idx)) {
+        let leaving_edges = self.leaving_edges(src_idx);
+        let j = match leaving_edges.binary_search_by(|edge| edge.dst_idx.cmp(&dst_idx)) {
             Ok(j) => j,
             Err(_) => panic!(
                 "Edge (({})->({})) doesn't exist in the graph.",
                 src_idx, dst_idx
             ),
         };
-        &self.edges[j]
+        &leaving_edges[j]
     }
 
     pub fn leaving_edges(&self, node_idx: usize) -> &[Edge] {
