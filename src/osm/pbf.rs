@@ -67,8 +67,6 @@ enum StreetType {
     Road,
     Cycleway,
     Pedestrian,
-    Footway,
-    Steps,
     Path,
 }
 
@@ -96,9 +94,7 @@ impl StreetType {
             StreetType::Road => 50,
             StreetType::Cycleway => 25,
             StreetType::Pedestrian => 5,
-            StreetType::Footway => 5,
-            StreetType::Steps => 5,
-            StreetType::Path => 5,
+            StreetType::Path => 15,
         }
     }
 
@@ -122,8 +118,6 @@ impl StreetType {
             StreetType::Road => !is_suitable,
             StreetType::Cycleway => false,
             StreetType::Pedestrian => false,
-            StreetType::Footway => false,
-            StreetType::Steps => false,
             StreetType::Path => false,
         }
     }
@@ -146,10 +140,8 @@ impl StreetType {
             StreetType::Service => true,
             StreetType::Track => !is_suitable,
             StreetType::Road => !is_suitable,
-            StreetType::Cycleway => false,
+            StreetType::Cycleway => true,
             StreetType::Pedestrian => !is_suitable,
-            StreetType::Footway => false,
-            StreetType::Steps => false,
             StreetType::Path => !is_suitable,
         }
     }
@@ -174,8 +166,6 @@ impl StreetType {
             StreetType::Road => !is_suitable,
             StreetType::Cycleway => false,
             StreetType::Pedestrian => true,
-            StreetType::Footway => true,
-            StreetType::Steps => true,
             StreetType::Path => true,
         }
     }
@@ -187,11 +177,10 @@ impl StreetType {
         // read highway-tag from way
         way.tags.get("highway").and_then(|highway_tag_value| {
             // and parse the value if valid
-            highway_tag_value.parse::<StreetType>().ok()
+            format!("highway:{}", highway_tag_value)
+                .parse::<StreetType>()
+                .ok()
         })
-
-        // TODO "cycleway" and others
-        // see https://wiki.openstreetmap.org/wiki/Key:highway
     }
 
     fn parse_maxspeed(&self, way: &pbf::Way) -> u16 {
@@ -231,6 +220,7 @@ impl StreetType {
                 // walk (<= 15 kmh)
                 "10 mph"
                 | "5 mph"
+                | "3 mph"
                 | "1ß"
                 | "4-7"
                 | "4-6"
@@ -270,29 +260,31 @@ impl str::FromStr for StreetType {
         let normalized_s = s.trim().to_ascii_lowercase();
 
         match normalized_s.as_ref() {
-            "motorway" => Ok(StreetType::Motorway),
-            "motorway_link" => Ok(StreetType::MotorwayLink),
-            "trunk" => Ok(StreetType::Trunk),
-            "trunk_link" => Ok(StreetType::TrunkLink),
-            "primary" => Ok(StreetType::Primary),
-            "primary_link" => Ok(StreetType::PrimaryLink),
-            "secondary" => Ok(StreetType::Secondary),
-            "secondary_link" => Ok(StreetType::SecondaryLink),
-            "tertiary" => Ok(StreetType::Tertiary),
-            "tertiary_link" => Ok(StreetType::TertiaryLink),
-            "unclassified" => Ok(StreetType::Unclassified),
-            "residential" => Ok(StreetType::Residential),
-            "living_street" => Ok(StreetType::LivingStreet),
-            "service" => Ok(StreetType::Service),
-            "track" => Ok(StreetType::Track),
-            "road" => Ok(StreetType::Road),
-            "cycleway" => Ok(StreetType::Cycleway),
-            "pedestrian" => Ok(StreetType::Pedestrian),
-            "footway" => Ok(StreetType::Footway),
-            "steps" => Ok(StreetType::Steps),
-            "path" | "bridleway" => Ok(StreetType::Path),
+            // known and used
+            "highway:motorway" => Ok(StreetType::Motorway),
+            "highway:motorway_link" => Ok(StreetType::MotorwayLink),
+            "highway:trunk" => Ok(StreetType::Trunk),
+            "highway:trunk_link" => Ok(StreetType::TrunkLink),
+            "highway:primary" => Ok(StreetType::Primary),
+            "highway:primary_link" => Ok(StreetType::PrimaryLink),
+            "highway:secondary" => Ok(StreetType::Secondary),
+            "highway:secondary_link" => Ok(StreetType::SecondaryLink),
+            "highway:tertiary" => Ok(StreetType::Tertiary),
+            "highway:tertiary_link" => Ok(StreetType::TertiaryLink),
+            "highway:unclassified" => Ok(StreetType::Unclassified),
+            "highway:residential" => Ok(StreetType::Residential),
+            "highway:living_street" => Ok(StreetType::LivingStreet),
+            "highway:service" => Ok(StreetType::Service),
+            "highway:track" => Ok(StreetType::Track),
+            "highway:road" => Ok(StreetType::Road),
+            "highway:cycleway" | "highway:bridleway" => Ok(StreetType::Cycleway),
+            "highway:pedestrian" | "highway:footway" | "highway:steps" => {
+                Ok(StreetType::Pedestrian)
+            }
+            "highway:path" => Ok(StreetType::Path),
             // ignored
-            "byway"|"raceway" => Err(normalized_s),
+            "highway:byway" | "highway:bus_stop" | "highway:raceway" => Err(normalized_s),
+            // unknown
             _ => {
                 warn!("Could not parse highway-tag `{}`", s);
                 Err(normalized_s)
@@ -325,8 +317,6 @@ impl fmt::Display for StreetType {
                 StreetType::Road => "road",
                 StreetType::Cycleway => "cycleway",
                 StreetType::Pedestrian => "pedestrian",
-                StreetType::Footway => "footway",
-                StreetType::Steps => "steps",
                 StreetType::Path => "path",
             }
         )
@@ -340,6 +330,9 @@ pub struct Parser;
 impl Parser {
     pub fn parse<S: AsRef<OsStr> + ?Sized>(&self, path: &S) -> Graph {
         info!("Starting parsing ..");
+
+        // TODO parse "cycleway" and others
+        // see https://wiki.openstreetmap.org/wiki/Key:highway
 
         //----------------------------------------------------------------------------------------//
         // get reader
