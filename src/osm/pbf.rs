@@ -6,8 +6,8 @@ use std::str;
 
 use log::{error, info, trace, warn};
 
-use crate::err;
-use crate::osm::geo;
+use crate::osm;
+use osm::geo;
 use crate::routing;
 use routing::Graph;
 use routing::GraphBuilder;
@@ -17,33 +17,6 @@ mod pbf {
     pub use osmpbfreader::reader::OsmPbfReader as Reader;
     pub use osmpbfreader::NodeId;
     pub use osmpbfreader::{OsmObj, Way};
-}
-
-//------------------------------------------------------------------------------------------------//
-
-#[derive(Debug)]
-pub enum ParseError {
-    Custom(err::Error),
-    UnknownHighway(String),
-}
-
-impl ParseError {
-    pub fn new(msg: &str) -> Self {
-        ParseError::Custom(err::Error::new(msg))
-    }
-
-    pub fn unknown_highway(highway: &str) -> Self {
-        ParseError::UnknownHighway(String::from(highway))
-    }
-}
-
-impl fmt::Display for ParseError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            ParseError::Custom(e) => e.fmt(f),
-            ParseError::UnknownHighway(highway) => highway.fmt(f),
-        }
-    }
 }
 
 //------------------------------------------------------------------------------------------------//
