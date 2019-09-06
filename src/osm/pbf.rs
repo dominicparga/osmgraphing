@@ -324,6 +324,36 @@ impl Parser {
         // collect all nodes and ways
 
         info!("Starting processing given pbf-file ..");
+        info!("Finished processing given pbf-file");
+
+        let graph = graph_builder.finalize();
+        info!("Finished parsing");
+        graph
+    }
+
+    pub fn _parse<S: AsRef<OsStr> + ?Sized>(&self, path: &S) -> Graph {
+        info!("Starting parsing ..");
+
+        // TODO parse "cycleway" and others
+        // see https://wiki.openstreetmap.org/wiki/Key:highway
+
+        //----------------------------------------------------------------------------------------//
+        // get reader
+
+        let path = path::Path::new(&path);
+        let file =
+            File::open(&path).expect(&format!("Expects the given path {:?} to exist.", path));
+        let mut reader = pbf::Reader::new(file);
+
+        //----------------------------------------------------------------------------------------//
+        // init graphbuilder
+
+        let mut graph_builder = GraphBuilder::new();
+
+        //----------------------------------------------------------------------------------------//
+        // collect all nodes and ways
+
+        info!("Starting processing given pbf-file ..");
         for obj in reader.par_iter().filter_map(|obj| match obj {
             Ok(obj) => Some(obj),
             Err(_) => {
@@ -406,7 +436,7 @@ impl Parser {
                 }
             }
         }
-        info!("Finished processing given pbf-file.");
+        info!("Finished processing given pbf-file");
 
         let graph = graph_builder.finalize();
         info!("Finished parsing");
