@@ -189,21 +189,15 @@ impl HighwayTag {
             // and parse the value if valid
             highway_tag_value.parse::<HighwayTag>().ok()
         })
+
+        // TODO "cycleway" and others
+        // see https://wiki.openstreetmap.org/wiki/Key:highway
     }
 
     fn parse_maxspeed(&self, way: &pbf::Way) -> u16 {
         let snippet = match way.tags.get("maxspeed") {
             Some(snippet) => snippet,
-            None => {
-                trace!(
-                    "Taking default-maxspeed {} km/h for highway-tag `{:}` \
-                     since no maxspeed in way-id `{}`.",
-                    self.maxspeed(),
-                    self,
-                    way.id.0
-                );
-                return self.maxspeed();
-            }
+            None => return self.maxspeed(),
         };
 
         // parse given maxspeed and return
@@ -212,48 +206,56 @@ impl HighwayTag {
             Err(_) => match snippet.to_ascii_lowercase().as_ref() {
                 // motorway
                 "de:motorway" => HighwayTag::Motorway.maxspeed(),
-                // urban
-                "de:urban" | "de:rural" | "at:urban" | "at:rural" => {
-                    HighwayTag::Tertiary.maxspeed()
-                }
+
+                // // urban
+                // "de:urban" | "de:rural" | "at:urban" | "at:rural" => {
+                //     HighwayTag::Tertiary.maxspeed()
+                // }
+
+                // 100 kmh
+                "60 mph" => 100,
+                // 80 kmh
+                "50 mph" => 80,
+                // 70 kmh
+                "40 mph" => 70,
                 // 50 kmh
-                "30 mph" | "maxspeed=50" | "50b" => HighwayTag::Residential.maxspeed(),
+                "30 mph" | "maxspeed=50" | "50b" => 50,
                 // 30 kmh
-                "de:zone30" | "30 kph" => HighwayTag::Track.maxspeed(),
+                "20 mph" | "de:zone30" | "30 kph" => 30,
+                // 25 kmh
+                "15 mph" => 25,
+                // 20 kmh
+                "2ß" => 20,
                 // bicycle
                 "de:bicycle_road" => HighwayTag::Cycleway.maxspeed(),
-                // walk
-                "Schrittgeschwindigkeit"
+                // walk (<= 15 kmh)
+                "10 mph"
+                | "5 mph"
+                | "1ß"
+                | "4-7"
+                | "4-6"
+                | "Schrittgeschwindigkeit"
                 | "de:living_street"
                 | "de:walk"
-                | "walk"
-                | "5 mph"
-                | "10 mph"
-                | "4-6"
-                | "4-7" => HighwayTag::LivingStreet.maxspeed(),
-                // default
+                | "walk" => HighwayTag::LivingStreet.maxspeed(),
+                // known defaults
                 "none"
                 | "signals"
                 | "*"
                 | "variable"
                 | "fixme:höchster üblicher Wert"
                 | "posted time dependent"
-                | "1ß"
-                | "2ß"
                 | "de" => self.maxspeed(),
-                // unknown or unhandled
-                unknown_maxspeed => {
-                    match unknown_maxspeed {
-                        "15 mph" | "20 mph" => (),
-                        _ => warn!(
-                            "Unknown maxspeed `{}` of way-id `{}` \
-                             -> default: (`{}`,`{}`)",
-                            snippet,
-                            way.id.0,
-                            self,
-                            self.maxspeed()
-                        ),
-                    };
+                // unknown
+                _ => {
+                    warn!(
+                        "Unknown maxspeed `{}` of way-id `{}` \
+                         -> default: (`{}`,`{}`)",
+                        snippet,
+                        way.id.0,
+                        self,
+                        self.maxspeed()
+                    );
                     self.maxspeed()
                 }
             },
@@ -288,9 +290,11 @@ impl str::FromStr for HighwayTag {
             "pedestrian" => Ok(HighwayTag::Pedestrian),
             "footway" => Ok(HighwayTag::Footway),
             "steps" => Ok(HighwayTag::Steps),
-            "path" => Ok(HighwayTag::Path),
+            "path" | "bridleway" => Ok(HighwayTag::Path),
+            // ignored
+            "byway"|"raceway" => Err(normalized_s),
             _ => {
-                error!("Could not parse highway-tag `{}`", s);
+                warn!("Could not parse highway-tag `{}`", s);
                 Err(normalized_s)
             }
         }
