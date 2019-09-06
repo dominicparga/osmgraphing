@@ -73,6 +73,9 @@ enum HighwayTag {
 }
 
 impl HighwayTag {
+    //--------------------------------------------------------------------------------------------//
+    // defaults
+
     fn maxspeed(&self) -> u16 {
         match self {
             HighwayTag::Motorway => 130,
@@ -174,6 +177,84 @@ impl HighwayTag {
             HighwayTag::Footway => true,
             HighwayTag::Steps => true,
             HighwayTag::Path => true,
+        }
+    }
+
+    //--------------------------------------------------------------------------------------------//
+    // parsing
+
+    fn parse_maxspeed(&self, way: &pbf::Way) -> u16 {
+        let snippet = match way.tags.get("maxspeed") {
+            Some(snippet) => snippet,
+            None => {
+                trace!(
+                    "Taking default-maxspeed {} km/h for highway-tag `{:}` \
+                        since no maxspeed in way-id `{}`.",
+                    self.maxspeed(),
+                    self,
+                    way.id.0
+                );
+                return self.maxspeed()
+            }
+        };
+
+        // parse given maxspeed and return
+        match snippet.parse::<u16>() {
+            Ok(maxspeed) => maxspeed,
+            Err(_) => match snippet.to_ascii_lowercase().as_ref() {
+                // motorway
+                "de:motorway"
+                => HighwayTag::Motorway.maxspeed(),
+                // urban
+                "de:urban"
+                | "de:rural"
+                | "at:urban"
+                | "at:rural"
+                => HighwayTag::Tertiary.maxspeed(),
+                // 50 kmh
+                "30 mph" | "maxspeed=50" | "50b"
+                => HighwayTag::Residential.maxspeed(),
+                // 30 kmh
+                "de:zone30" | "30 kph"
+                => HighwayTag::Track.maxspeed(),
+                // bicycle
+                "de:bicycle_road" => HighwayTag::Cycleway.maxspeed(),
+                // walk
+                "Schrittgeschwindigkeit"
+                | "de:living_street"
+                | "de:walk"
+                | "walk"
+                | "5 mph"
+                | "10 mph"
+                | "4-6"
+                | "4-7" => HighwayTag::LivingStreet.maxspeed(),
+                // default
+                "none"
+                | "signals"
+                | "*"
+                | "variable"
+                | "fixme:höchster üblicher Wert"
+                | "posted time dependent"
+                | "1ß"
+                | "2ß"
+                | "de" => self.maxspeed(),
+                // unknown or unhandled
+                unknown_maxspeed => {
+                    match unknown_maxspeed {
+                        "15 mph"
+                        | "20 mph" => (),
+                        _ => debug!(
+                            "Unknown maxspeed `{}` of way-id `{}` \
+                            -> default: (`{}`,`{}`)",
+                            snippet,
+                            way.id.0,
+                            self,
+                            self.maxspeed()
+                        )
+                    };
+                    self.maxspeed()
+                }
+            },
         }
     }
 }
@@ -278,7 +359,6 @@ impl Parser {
             match obj {
                 // if node -> just add every node to filter them out later
                 pbf::OsmObj::Node(node) => {
-                    debug!("{:?}", node);
                     graph_builder.push_node(
                         node.id.0,
                         geo::Coordinate::new(node.decimicro_lat, node.decimicro_lon),
@@ -306,67 +386,7 @@ impl Parser {
                     };
 
                     // maxspeed
-                    let maxspeed = match way.tags.get("maxspeed") {
-                        Some(s) => {
-                            // parse given maxspeed
-                            match s.parse::<u16>() {
-                                Ok(maxspeed) => maxspeed,
-                                Err(_) => match s.to_ascii_lowercase().as_ref() {
-                                    // motorway
-                                    "de:motorway" => HighwayTag::Motorway.maxspeed(),
-                                    // urban
-                                    "de:urban" | "de:rural" | "at:urban" | "at:rural" => 70,
-                                    // 50 kmh
-                                    "30 mph" | "maxspeed=50" | "50b" => 50,
-                                    // 30 kmh
-                                    "de:zone30" | "30 kph" => 30,
-                                    // bicycle
-                                    "de:bicycle_road" => HighwayTag::Cycleway.maxspeed(),
-                                    // walk
-                                    "Schrittgeschwindigkeit"
-                                    | "de:living_street"
-                                    | "de:walk"
-                                    | "walk"
-                                    | "5 mph"
-                                    | "10 mph"
-                                    | "4-6"
-                                    | "4-7" => HighwayTag::LivingStreet.maxspeed(),
-                                    // default
-                                    "none"
-                                    | "signals"
-                                    | "*"
-                                    | "variable"
-                                    | "fixme:höchster üblicher Wert"
-                                    | "posted time dependent"
-                                    | "1ß"
-                                    | "2ß"
-                                    | "de" => highway_tag.maxspeed(),
-                                    // unknown or unhandled
-                                    _ => {
-                                        debug!(
-                                            "Unknown maxspeed `{}` of way-id `{}` \
-                                             -> default: (`{}`,`{}`)",
-                                            s,
-                                            way.id.0,
-                                            highway_tag,
-                                            highway_tag.maxspeed()
-                                        );
-                                        highway_tag.maxspeed()
-                                    }
-                                },
-                            }
-                        }
-                        None => {
-                            trace!(
-                                "Take default-maxspeed {} km/h for highway-tag `{:}` \
-                                 since no maxspeed in way-id `{}`.",
-                                highway_tag.maxspeed(),
-                                highway_tag,
-                                way.id.0
-                            );
-                            highway_tag.maxspeed()
-                        }
-                    };
+                    let maxspeed = highway_tag.parse_maxspeed(&way);
 
                     let mut is_both_way = false;
                     // and process tag `oneway`
@@ -418,6 +438,7 @@ impl Parser {
                     }
                 }
                 _ => {
+                    debug!("");
                     debug!("Unused object in pbf-file: {:?}", obj);
                 }
             }
