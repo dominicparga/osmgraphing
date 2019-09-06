@@ -408,6 +408,8 @@ impl Parser {
         }
         info!("Finished processing given pbf-file.");
 
-        graph_builder.finalize()
+        let graph = graph_builder.finalize();
+        info!("Finished parsing");
+        graph
     }
 }
