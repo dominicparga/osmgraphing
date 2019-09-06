@@ -18,7 +18,7 @@ pub struct Parser;
 
 impl Parser {
     pub fn parse<S: AsRef<OsStr> + ?Sized>(&self, path: &S) -> Graph {
-        info!("Starting parsing..");
+        info!("Starting parsing ..");
 
         //----------------------------------------------------------------------------------------//
         // get reader
@@ -54,7 +54,7 @@ impl Parser {
         // # src dst distance ??? maxspeed
         // ...
 
-        info!("Starting processing given fmi-file..");
+        info!("Starting processing given fmi-file ..");
         let mut i = 0;
         for line in reader.by_ref().lines().map(Result::unwrap) {
             if line == "" || line.chars().next() == Some('#') {

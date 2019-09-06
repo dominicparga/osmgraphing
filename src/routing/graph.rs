@@ -133,7 +133,7 @@ impl GraphBuilder {
         let node_count = self.proto_nodes.len();
         let edge_count = self.proto_edges.len();
         info!(
-            "Starting finalizing graph ({} proto-nodes and {} proto-edges)..",
+            "Starting finalizing graph ({} proto-nodes and {} proto-edges) ..",
             node_count, edge_count
         );
         let mut graph = Graph::new();
@@ -141,7 +141,7 @@ impl GraphBuilder {
         //----------------------------------------------------------------------------------------//
         // add nodes to graph which belong to edges (sorted by asc id)
 
-        info!("Starting adding nodes (sorted) which belongs to an edge..");
+        info!("Starting adding nodes (sorted) which belongs to an edge ..");
         // BTreeMap's iter returns sorted by key (asc)
         for (_id, proto_node) in self.proto_nodes.iter() {
             // add nodes only if they belong to an edge
@@ -169,7 +169,7 @@ impl GraphBuilder {
         // sort edges by ascending src-id, then by ascending dst-id -> offset-array
         // then give edges IDs
 
-        info!("Starting sorting proto-edges by their src/dst-IDs..");
+        info!("Starting sorting proto-edges by their src/dst-IDs ..");
         self.proto_edges.sort_by(|e0, e1| {
             e0.src_id
                 .cmp(&e1.src_id)
@@ -180,7 +180,7 @@ impl GraphBuilder {
         //----------------------------------------------------------------------------------------//
         // build offset-array and edges
 
-        info!("Starting creating the offset-array..");
+        info!("Starting creating the offset-array ..");
         let mut node_idx = 0;
         let mut offset = 0;
         graph.offsets.push(offset);

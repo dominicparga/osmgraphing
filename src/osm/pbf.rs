@@ -249,7 +249,7 @@ pub struct Parser;
 
 impl Parser {
     pub fn parse<S: AsRef<OsStr> + ?Sized>(&self, path: &S) -> Graph {
-        info!("Starting parsing..");
+        info!("Starting parsing ..");
 
         //----------------------------------------------------------------------------------------//
         // get reader
@@ -267,7 +267,7 @@ impl Parser {
         //----------------------------------------------------------------------------------------//
         // collect all nodes and ways
 
-        info!("Starting processing given pbf-file..");
+        info!("Starting processing given pbf-file ..");
         for obj in reader.par_iter().filter_map(|obj| match obj {
             Ok(obj) => Some(obj),
             Err(_) => {
