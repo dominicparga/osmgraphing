@@ -301,34 +301,11 @@ impl fmt::Display for StreetType {
 pub struct Parser;
 
 impl Parser {
-    pub fn parse<S: AsRef<OsStr> + ?Sized>(&self, path: &S) -> Graph {
-        info!("Starting parsing ..");
-
-        // TODO parse "cycleway" and others
-        // see https://wiki.openstreetmap.org/wiki/Key:highway
-
-        //----------------------------------------------------------------------------------------//
-        // get reader
-
+    pub fn open_reader<S: AsRef<OsStr> + ?Sized>(&self, path: &S) -> pbf::Reader<File> {
         let path = path::Path::new(&path);
         let file =
             File::open(&path).expect(&format!("Expects the given path {:?} to exist.", path));
-        let mut reader = pbf::Reader::new(file);
-
-        //----------------------------------------------------------------------------------------//
-        // init graphbuilder
-
-        let mut graph_builder = GraphBuilder::new();
-
-        //----------------------------------------------------------------------------------------//
-        // collect all nodes and ways
-
-        info!("Starting processing given pbf-file ..");
-        info!("Finished processing given pbf-file");
-
-        let graph = graph_builder.finalize();
-        info!("Finished parsing");
-        graph
+        pbf::Reader::new(file)
     }
 
     pub fn _parse<S: AsRef<OsStr> + ?Sized>(&self, path: &S) -> Graph {
@@ -337,16 +314,34 @@ impl Parser {
         // TODO parse "cycleway" and others
         // see https://wiki.openstreetmap.org/wiki/Key:highway
 
-        //----------------------------------------------------------------------------------------//
-        // get reader
-
-        let path = path::Path::new(&path);
-        let file =
-            File::open(&path).expect(&format!("Expects the given path {:?} to exist.", path));
-        let mut reader = pbf::Reader::new(file);
+        let mut graph_builder = GraphBuilder::new();
 
         //----------------------------------------------------------------------------------------//
-        // init graphbuilder
+        // collect all nodes and ways
+
+        info!("Starting processing given pbf-file ..");
+        info!("Starting edge-creation using ways ..");
+        for obj in self.open_reader(&path).par_iter().filter_map(Result::ok) {
+
+        }
+        info!("Finished edge-creation using ways");
+        info!("Starting node-creation using ways ..");
+        for obj in self.open_reader(&path).par_iter().filter_map(Result::ok) {
+
+        }
+        info!("Finished node-creation using ways");
+        info!("Finished processing given pbf-file");
+
+        let graph = graph_builder.finalize();
+        info!("Finished parsing");
+        graph
+    }
+
+    pub fn parse<S: AsRef<OsStr> + ?Sized>(&self, path: &S) -> Graph {
+        info!("Starting parsing ..");
+
+        // TODO parse "cycleway" and others
+        // see https://wiki.openstreetmap.org/wiki/Key:highway
 
         let mut graph_builder = GraphBuilder::new();
 
@@ -354,13 +349,7 @@ impl Parser {
         // collect all nodes and ways
 
         info!("Starting processing given pbf-file ..");
-        for obj in reader.par_iter().filter_map(|obj| match obj {
-            Ok(obj) => Some(obj),
-            Err(_) => {
-                error!("pbf-File is corrupted. Skipping obj {:?}", obj);
-                None
-            }
-        }) {
+        for obj in self.open_reader(&path).par_iter().filter_map(Result::ok) {
             match obj {
                 // if node -> just add every node to filter them out later
                 pbf::OsmObj::Node(node) => {
