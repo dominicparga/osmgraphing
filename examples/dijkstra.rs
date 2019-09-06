@@ -62,9 +62,7 @@ fn main() {
         );
         println!(
             "Distance {} m from ({}) to ({}).",
-            path.cost[dst_idx],
-            src,
-            dst
+            path.cost[dst_idx], src, dst
         );
     }
 }

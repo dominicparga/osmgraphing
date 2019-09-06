@@ -138,7 +138,7 @@ impl Parser {
                         Err(_) => {
                             warn!(
                                 "Parsing length '{}' of edge didn't work, \
-                                so straight-line is taken.",
+                                 so straight-line is taken.",
                                 params[2]
                             );
                             None

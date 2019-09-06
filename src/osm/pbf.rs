@@ -4,7 +4,7 @@ use std::fs::File;
 use std::path;
 use std::str;
 
-use log::{debug, error, info, trace};
+use log::{error, info, trace, warn};
 
 use crate::err;
 use crate::osm::geo;
@@ -183,18 +183,26 @@ impl HighwayTag {
     //--------------------------------------------------------------------------------------------//
     // parsing
 
+    fn from(way: &pbf::Way) -> Option<HighwayTag> {
+        // read highway-tag from way
+        way.tags.get("highway").and_then(|highway_tag_value| {
+            // and parse the value if valid
+            highway_tag_value.parse::<HighwayTag>().ok()
+        })
+    }
+
     fn parse_maxspeed(&self, way: &pbf::Way) -> u16 {
         let snippet = match way.tags.get("maxspeed") {
             Some(snippet) => snippet,
             None => {
                 trace!(
                     "Taking default-maxspeed {} km/h for highway-tag `{:}` \
-                        since no maxspeed in way-id `{}`.",
+                     since no maxspeed in way-id `{}`.",
                     self.maxspeed(),
                     self,
                     way.id.0
                 );
-                return self.maxspeed()
+                return self.maxspeed();
             }
         };
 
@@ -203,20 +211,15 @@ impl HighwayTag {
             Ok(maxspeed) => maxspeed,
             Err(_) => match snippet.to_ascii_lowercase().as_ref() {
                 // motorway
-                "de:motorway"
-                => HighwayTag::Motorway.maxspeed(),
+                "de:motorway" => HighwayTag::Motorway.maxspeed(),
                 // urban
-                "de:urban"
-                | "de:rural"
-                | "at:urban"
-                | "at:rural"
-                => HighwayTag::Tertiary.maxspeed(),
+                "de:urban" | "de:rural" | "at:urban" | "at:rural" => {
+                    HighwayTag::Tertiary.maxspeed()
+                }
                 // 50 kmh
-                "30 mph" | "maxspeed=50" | "50b"
-                => HighwayTag::Residential.maxspeed(),
+                "30 mph" | "maxspeed=50" | "50b" => HighwayTag::Residential.maxspeed(),
                 // 30 kmh
-                "de:zone30" | "30 kph"
-                => HighwayTag::Track.maxspeed(),
+                "de:zone30" | "30 kph" => HighwayTag::Track.maxspeed(),
                 // bicycle
                 "de:bicycle_road" => HighwayTag::Cycleway.maxspeed(),
                 // walk
@@ -241,16 +244,15 @@ impl HighwayTag {
                 // unknown or unhandled
                 unknown_maxspeed => {
                     match unknown_maxspeed {
-                        "15 mph"
-                        | "20 mph" => (),
-                        _ => debug!(
+                        "15 mph" | "20 mph" => (),
+                        _ => warn!(
                             "Unknown maxspeed `{}` of way-id `{}` \
-                            -> default: (`{}`,`{}`)",
+                             -> default: (`{}`,`{}`)",
                             snippet,
                             way.id.0,
                             self,
                             self.maxspeed()
-                        )
+                        ),
                     };
                     self.maxspeed()
                 }
@@ -260,12 +262,12 @@ impl HighwayTag {
 }
 
 impl str::FromStr for HighwayTag {
-    type Err = ParseError;
+    type Err = String;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let s = s.trim().to_ascii_lowercase();
+        let normalized_s = s.trim().to_ascii_lowercase();
 
-        match s.as_ref() {
+        match normalized_s.as_ref() {
             "motorway" => Ok(HighwayTag::Motorway),
             "motorway_link" => Ok(HighwayTag::MotorwayLink),
             "trunk" => Ok(HighwayTag::Trunk),
@@ -287,7 +289,10 @@ impl str::FromStr for HighwayTag {
             "footway" => Ok(HighwayTag::Footway),
             "steps" => Ok(HighwayTag::Steps),
             "path" => Ok(HighwayTag::Path),
-            unknown => Err(ParseError::unknown_highway(unknown)),
+            _ => {
+                error!("Could not parse highway-tag `{}`", s);
+                Err(normalized_s)
+            }
         }
     }
 }
@@ -370,22 +375,11 @@ impl Parser {
                         continue;
                     }
 
-                    // read highway-tag from way
-                    let highway_tag_value = match way.tags.get("highway") {
-                        Some(value) => value,
+                    let highway_tag = match HighwayTag::from(&way) {
+                        Some(highway_tag) => highway_tag,
                         None => continue,
                     };
 
-                    // get highway tag for defaults
-                    let highway_tag = match highway_tag_value.parse::<HighwayTag>() {
-                        Ok(highway_tag) => highway_tag,
-                        Err(e) => {
-                            debug!("Ignored highway-tag `{}`", e);
-                            continue;
-                        }
-                    };
-
-                    // maxspeed
                     let maxspeed = highway_tag.parse_maxspeed(&way);
 
                     let mut is_both_way = false;
@@ -438,8 +432,7 @@ impl Parser {
                     }
                 }
                 _ => {
-                    debug!("");
-                    debug!("Unused object in pbf-file: {:?}", obj);
+                    trace!("\nUnused object in pbf-file: {:?}", obj);
                 }
             }
         }
