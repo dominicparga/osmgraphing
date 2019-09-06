@@ -48,7 +48,7 @@ impl fmt::Display for ParseError {
 
 //------------------------------------------------------------------------------------------------//
 
-enum HighwayTag {
+enum StreetType {
     Motorway,
     MotorwayLink,
     Trunk,
@@ -72,122 +72,122 @@ enum HighwayTag {
     Path,
 }
 
-impl HighwayTag {
+impl StreetType {
     //--------------------------------------------------------------------------------------------//
     // defaults
 
     fn maxspeed(&self) -> u16 {
         match self {
-            HighwayTag::Motorway => 130,
-            HighwayTag::MotorwayLink => 50,
-            HighwayTag::Trunk => 100,
-            HighwayTag::TrunkLink => 50,
-            HighwayTag::Primary => 100,
-            HighwayTag::PrimaryLink => 30,
-            HighwayTag::Secondary => 70,
-            HighwayTag::SecondaryLink => 30,
-            HighwayTag::Tertiary => 70,
-            HighwayTag::TertiaryLink => 30,
-            HighwayTag::Unclassified => 50,
-            HighwayTag::Residential => 50,
-            HighwayTag::LivingStreet => 15,
-            HighwayTag::Service => 20,
-            HighwayTag::Track => 30,
-            HighwayTag::Road => 50,
-            HighwayTag::Cycleway => 25,
-            HighwayTag::Pedestrian => 5,
-            HighwayTag::Footway => 5,
-            HighwayTag::Steps => 5,
-            HighwayTag::Path => 5,
+            StreetType::Motorway => 130,
+            StreetType::MotorwayLink => 50,
+            StreetType::Trunk => 100,
+            StreetType::TrunkLink => 50,
+            StreetType::Primary => 100,
+            StreetType::PrimaryLink => 30,
+            StreetType::Secondary => 70,
+            StreetType::SecondaryLink => 30,
+            StreetType::Tertiary => 70,
+            StreetType::TertiaryLink => 30,
+            StreetType::Unclassified => 50,
+            StreetType::Residential => 50,
+            StreetType::LivingStreet => 15,
+            StreetType::Service => 20,
+            StreetType::Track => 30,
+            StreetType::Road => 50,
+            StreetType::Cycleway => 25,
+            StreetType::Pedestrian => 5,
+            StreetType::Footway => 5,
+            StreetType::Steps => 5,
+            StreetType::Path => 5,
         }
     }
 
     fn _is_for_vehicles(&self, is_suitable: bool) -> bool {
         match self {
-            HighwayTag::Motorway => true,
-            HighwayTag::MotorwayLink => true,
-            HighwayTag::Trunk => true,
-            HighwayTag::TrunkLink => true,
-            HighwayTag::Primary => true,
-            HighwayTag::PrimaryLink => true,
-            HighwayTag::Secondary => true,
-            HighwayTag::SecondaryLink => true,
-            HighwayTag::Tertiary => true,
-            HighwayTag::TertiaryLink => true,
-            HighwayTag::Unclassified => true,
-            HighwayTag::Residential => true,
-            HighwayTag::LivingStreet => true,
-            HighwayTag::Service => !is_suitable,
-            HighwayTag::Track => !is_suitable,
-            HighwayTag::Road => !is_suitable,
-            HighwayTag::Cycleway => false,
-            HighwayTag::Pedestrian => false,
-            HighwayTag::Footway => false,
-            HighwayTag::Steps => false,
-            HighwayTag::Path => false,
+            StreetType::Motorway => true,
+            StreetType::MotorwayLink => true,
+            StreetType::Trunk => true,
+            StreetType::TrunkLink => true,
+            StreetType::Primary => true,
+            StreetType::PrimaryLink => true,
+            StreetType::Secondary => true,
+            StreetType::SecondaryLink => true,
+            StreetType::Tertiary => true,
+            StreetType::TertiaryLink => true,
+            StreetType::Unclassified => true,
+            StreetType::Residential => true,
+            StreetType::LivingStreet => true,
+            StreetType::Service => !is_suitable,
+            StreetType::Track => !is_suitable,
+            StreetType::Road => !is_suitable,
+            StreetType::Cycleway => false,
+            StreetType::Pedestrian => false,
+            StreetType::Footway => false,
+            StreetType::Steps => false,
+            StreetType::Path => false,
         }
     }
 
     fn _is_for_bicycles(&self, is_suitable: bool) -> bool {
         match self {
-            HighwayTag::Motorway => false,
-            HighwayTag::MotorwayLink => false,
-            HighwayTag::Trunk => false,
-            HighwayTag::TrunkLink => false,
-            HighwayTag::Primary => !is_suitable,
-            HighwayTag::PrimaryLink => !is_suitable,
-            HighwayTag::Secondary => !is_suitable,
-            HighwayTag::SecondaryLink => !is_suitable,
-            HighwayTag::Tertiary => true,
-            HighwayTag::TertiaryLink => true,
-            HighwayTag::Unclassified => true,
-            HighwayTag::Residential => true,
-            HighwayTag::LivingStreet => true,
-            HighwayTag::Service => true,
-            HighwayTag::Track => !is_suitable,
-            HighwayTag::Road => !is_suitable,
-            HighwayTag::Cycleway => false,
-            HighwayTag::Pedestrian => !is_suitable,
-            HighwayTag::Footway => false,
-            HighwayTag::Steps => false,
-            HighwayTag::Path => !is_suitable,
+            StreetType::Motorway => false,
+            StreetType::MotorwayLink => false,
+            StreetType::Trunk => false,
+            StreetType::TrunkLink => false,
+            StreetType::Primary => !is_suitable,
+            StreetType::PrimaryLink => !is_suitable,
+            StreetType::Secondary => !is_suitable,
+            StreetType::SecondaryLink => !is_suitable,
+            StreetType::Tertiary => true,
+            StreetType::TertiaryLink => true,
+            StreetType::Unclassified => true,
+            StreetType::Residential => true,
+            StreetType::LivingStreet => true,
+            StreetType::Service => true,
+            StreetType::Track => !is_suitable,
+            StreetType::Road => !is_suitable,
+            StreetType::Cycleway => false,
+            StreetType::Pedestrian => !is_suitable,
+            StreetType::Footway => false,
+            StreetType::Steps => false,
+            StreetType::Path => !is_suitable,
         }
     }
 
     fn _is_for_pedestrians(&self, is_suitable: bool) -> bool {
         match self {
-            HighwayTag::Motorway => false,
-            HighwayTag::MotorwayLink => false,
-            HighwayTag::Trunk => false,
-            HighwayTag::TrunkLink => false,
-            HighwayTag::Primary => false,
-            HighwayTag::PrimaryLink => false,
-            HighwayTag::Secondary => false,
-            HighwayTag::SecondaryLink => false,
-            HighwayTag::Tertiary => false,
-            HighwayTag::TertiaryLink => false,
-            HighwayTag::Unclassified => false,
-            HighwayTag::Residential => true,
-            HighwayTag::LivingStreet => true,
-            HighwayTag::Service => true,
-            HighwayTag::Track => true,
-            HighwayTag::Road => !is_suitable,
-            HighwayTag::Cycleway => false,
-            HighwayTag::Pedestrian => true,
-            HighwayTag::Footway => true,
-            HighwayTag::Steps => true,
-            HighwayTag::Path => true,
+            StreetType::Motorway => false,
+            StreetType::MotorwayLink => false,
+            StreetType::Trunk => false,
+            StreetType::TrunkLink => false,
+            StreetType::Primary => false,
+            StreetType::PrimaryLink => false,
+            StreetType::Secondary => false,
+            StreetType::SecondaryLink => false,
+            StreetType::Tertiary => false,
+            StreetType::TertiaryLink => false,
+            StreetType::Unclassified => false,
+            StreetType::Residential => true,
+            StreetType::LivingStreet => true,
+            StreetType::Service => true,
+            StreetType::Track => true,
+            StreetType::Road => !is_suitable,
+            StreetType::Cycleway => false,
+            StreetType::Pedestrian => true,
+            StreetType::Footway => true,
+            StreetType::Steps => true,
+            StreetType::Path => true,
         }
     }
 
     //--------------------------------------------------------------------------------------------//
     // parsing
 
-    fn from(way: &pbf::Way) -> Option<HighwayTag> {
+    fn from(way: &pbf::Way) -> Option<StreetType> {
         // read highway-tag from way
         way.tags.get("highway").and_then(|highway_tag_value| {
             // and parse the value if valid
-            highway_tag_value.parse::<HighwayTag>().ok()
+            highway_tag_value.parse::<StreetType>().ok()
         })
 
         // TODO "cycleway" and others
@@ -205,11 +205,11 @@ impl HighwayTag {
             Ok(maxspeed) => maxspeed,
             Err(_) => match snippet.to_ascii_lowercase().as_ref() {
                 // motorway
-                "de:motorway" => HighwayTag::Motorway.maxspeed(),
+                "de:motorway" => StreetType::Motorway.maxspeed(),
 
                 // // urban
                 // "de:urban" | "de:rural" | "at:urban" | "at:rural" => {
-                //     HighwayTag::Tertiary.maxspeed()
+                //     StreetType::Tertiary.maxspeed()
                 // }
 
                 // 100 kmh
@@ -227,7 +227,7 @@ impl HighwayTag {
                 // 20 kmh
                 "2ß" => 20,
                 // bicycle
-                "de:bicycle_road" => HighwayTag::Cycleway.maxspeed(),
+                "de:bicycle_road" => StreetType::Cycleway.maxspeed(),
                 // walk (<= 15 kmh)
                 "10 mph"
                 | "5 mph"
@@ -237,7 +237,7 @@ impl HighwayTag {
                 | "Schrittgeschwindigkeit"
                 | "de:living_street"
                 | "de:walk"
-                | "walk" => HighwayTag::LivingStreet.maxspeed(),
+                | "walk" => StreetType::LivingStreet.maxspeed(),
                 // known defaults
                 "none"
                 | "signals"
@@ -263,34 +263,34 @@ impl HighwayTag {
     }
 }
 
-impl str::FromStr for HighwayTag {
+impl str::FromStr for StreetType {
     type Err = String;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let normalized_s = s.trim().to_ascii_lowercase();
 
         match normalized_s.as_ref() {
-            "motorway" => Ok(HighwayTag::Motorway),
-            "motorway_link" => Ok(HighwayTag::MotorwayLink),
-            "trunk" => Ok(HighwayTag::Trunk),
-            "trunk_link" => Ok(HighwayTag::TrunkLink),
-            "primary" => Ok(HighwayTag::Primary),
-            "primary_link" => Ok(HighwayTag::PrimaryLink),
-            "secondary" => Ok(HighwayTag::Secondary),
-            "secondary_link" => Ok(HighwayTag::SecondaryLink),
-            "tertiary" => Ok(HighwayTag::Tertiary),
-            "tertiary_link" => Ok(HighwayTag::TertiaryLink),
-            "unclassified" => Ok(HighwayTag::Unclassified),
-            "residential" => Ok(HighwayTag::Residential),
-            "living_street" => Ok(HighwayTag::LivingStreet),
-            "service" => Ok(HighwayTag::Service),
-            "track" => Ok(HighwayTag::Track),
-            "road" => Ok(HighwayTag::Road),
-            "cycleway" => Ok(HighwayTag::Cycleway),
-            "pedestrian" => Ok(HighwayTag::Pedestrian),
-            "footway" => Ok(HighwayTag::Footway),
-            "steps" => Ok(HighwayTag::Steps),
-            "path" | "bridleway" => Ok(HighwayTag::Path),
+            "motorway" => Ok(StreetType::Motorway),
+            "motorway_link" => Ok(StreetType::MotorwayLink),
+            "trunk" => Ok(StreetType::Trunk),
+            "trunk_link" => Ok(StreetType::TrunkLink),
+            "primary" => Ok(StreetType::Primary),
+            "primary_link" => Ok(StreetType::PrimaryLink),
+            "secondary" => Ok(StreetType::Secondary),
+            "secondary_link" => Ok(StreetType::SecondaryLink),
+            "tertiary" => Ok(StreetType::Tertiary),
+            "tertiary_link" => Ok(StreetType::TertiaryLink),
+            "unclassified" => Ok(StreetType::Unclassified),
+            "residential" => Ok(StreetType::Residential),
+            "living_street" => Ok(StreetType::LivingStreet),
+            "service" => Ok(StreetType::Service),
+            "track" => Ok(StreetType::Track),
+            "road" => Ok(StreetType::Road),
+            "cycleway" => Ok(StreetType::Cycleway),
+            "pedestrian" => Ok(StreetType::Pedestrian),
+            "footway" => Ok(StreetType::Footway),
+            "steps" => Ok(StreetType::Steps),
+            "path" | "bridleway" => Ok(StreetType::Path),
             // ignored
             "byway"|"raceway" => Err(normalized_s),
             _ => {
@@ -301,33 +301,33 @@ impl str::FromStr for HighwayTag {
     }
 }
 
-impl fmt::Display for HighwayTag {
+impl fmt::Display for StreetType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
             "{}",
             match &self {
-                HighwayTag::Motorway => "motorway",
-                HighwayTag::MotorwayLink => "motorway_link",
-                HighwayTag::Trunk => "trunk",
-                HighwayTag::TrunkLink => "trunk_link",
-                HighwayTag::Primary => "primary",
-                HighwayTag::PrimaryLink => "primary_link",
-                HighwayTag::Secondary => "secondary",
-                HighwayTag::SecondaryLink => "secondary_link",
-                HighwayTag::Tertiary => "tertiary",
-                HighwayTag::TertiaryLink => "tertiary_link",
-                HighwayTag::Unclassified => "unclassified",
-                HighwayTag::Residential => "residential",
-                HighwayTag::LivingStreet => "living_street",
-                HighwayTag::Service => "service",
-                HighwayTag::Track => "track",
-                HighwayTag::Road => "road",
-                HighwayTag::Cycleway => "cycleway",
-                HighwayTag::Pedestrian => "pedestrian",
-                HighwayTag::Footway => "footway",
-                HighwayTag::Steps => "steps",
-                HighwayTag::Path => "path",
+                StreetType::Motorway => "motorway",
+                StreetType::MotorwayLink => "motorway_link",
+                StreetType::Trunk => "trunk",
+                StreetType::TrunkLink => "trunk_link",
+                StreetType::Primary => "primary",
+                StreetType::PrimaryLink => "primary_link",
+                StreetType::Secondary => "secondary",
+                StreetType::SecondaryLink => "secondary_link",
+                StreetType::Tertiary => "tertiary",
+                StreetType::TertiaryLink => "tertiary_link",
+                StreetType::Unclassified => "unclassified",
+                StreetType::Residential => "residential",
+                StreetType::LivingStreet => "living_street",
+                StreetType::Service => "service",
+                StreetType::Track => "track",
+                StreetType::Road => "road",
+                StreetType::Cycleway => "cycleway",
+                StreetType::Pedestrian => "pedestrian",
+                StreetType::Footway => "footway",
+                StreetType::Steps => "steps",
+                StreetType::Path => "path",
             }
         )
     }
@@ -379,7 +379,7 @@ impl Parser {
                         continue;
                     }
 
-                    let highway_tag = match HighwayTag::from(&way) {
+                    let highway_tag = match StreetType::from(&way) {
                         Some(highway_tag) => highway_tag,
                         None => continue,
                     };
