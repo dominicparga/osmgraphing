@@ -407,10 +407,12 @@ impl Parser {
                 _ => None,
             })
         {
-            graph_builder.push_node(
-                node.id.0,
-                geo::Coordinate::new(node.decimicro_lat, node.decimicro_lon),
-            );
+            if graph_builder.is_node_in_edge(node.id.0) {
+                graph_builder.push_node(
+                    node.id.0,
+                    geo::Coordinate::new(node.decimicro_lat, node.decimicro_lon),
+                );
+            }
         }
         info!("Finished node-creation using ways");
     }

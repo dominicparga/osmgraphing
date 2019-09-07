@@ -78,6 +78,14 @@ impl GraphBuilder {
         self
     }
 
+    pub fn is_node_in_edge(&self, id: i64) -> bool {
+        if let Some(proto_node) = self.proto_nodes.get(&id) {
+            proto_node.is_edge_node
+        } else {
+            false
+        }
+    }
+
     pub fn push_edge(
         &mut self,
         way_id: Option<i64>,
