@@ -4,11 +4,11 @@ use std::fs::File;
 use std::path;
 use std::str;
 
-use log::{error, info, trace, warn};
+use log::{error, info, warn};
 
 use crate::osm;
-use osm::geo;
 use crate::routing;
+use osm::geo;
 use routing::Graph;
 use routing::GraphBuilder;
 
@@ -16,7 +16,7 @@ mod pbf {
     pub use osmpbfreader::reader::Iter;
     pub use osmpbfreader::reader::OsmPbfReader as Reader;
     pub use osmpbfreader::NodeId;
-    pub use osmpbfreader::{OsmObj, Way};
+    pub use osmpbfreader::{Node, OsmObj, Way};
 }
 
 //------------------------------------------------------------------------------------------------//
@@ -41,6 +41,76 @@ enum StreetType {
     Cycleway,
     Pedestrian,
     Path,
+}
+
+impl str::FromStr for StreetType {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let normalized_s = s.trim().to_ascii_lowercase();
+
+        match normalized_s.as_ref() {
+            // known and used
+            "highway:motorway" => Ok(StreetType::Motorway),
+            "highway:motorway_link" => Ok(StreetType::MotorwayLink),
+            "highway:trunk" => Ok(StreetType::Trunk),
+            "highway:trunk_link" => Ok(StreetType::TrunkLink),
+            "highway:primary" => Ok(StreetType::Primary),
+            "highway:primary_link" => Ok(StreetType::PrimaryLink),
+            "highway:secondary" => Ok(StreetType::Secondary),
+            "highway:secondary_link" => Ok(StreetType::SecondaryLink),
+            "highway:tertiary" => Ok(StreetType::Tertiary),
+            "highway:tertiary_link" => Ok(StreetType::TertiaryLink),
+            "highway:unclassified" => Ok(StreetType::Unclassified),
+            "highway:residential" => Ok(StreetType::Residential),
+            "highway:living_street" => Ok(StreetType::LivingStreet),
+            "highway:service" => Ok(StreetType::Service),
+            "highway:track" => Ok(StreetType::Track),
+            "highway:road" => Ok(StreetType::Road),
+            "highway:cycleway" | "highway:bridleway" => Ok(StreetType::Cycleway),
+            "highway:pedestrian" | "highway:footway" | "highway:steps" => {
+                Ok(StreetType::Pedestrian)
+            }
+            "highway:path" => Ok(StreetType::Path),
+            // ignored
+            "highway:byway" | "highway:bus_stop" | "highway:raceway" => Err(normalized_s),
+            // unknown
+            _ => {
+                warn!("Could not parse highway-tag `{}`", s);
+                Err(normalized_s)
+            }
+        }
+    }
+}
+
+impl fmt::Display for StreetType {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "{}",
+            match &self {
+                StreetType::Motorway => "motorway",
+                StreetType::MotorwayLink => "motorway_link",
+                StreetType::Trunk => "trunk",
+                StreetType::TrunkLink => "trunk_link",
+                StreetType::Primary => "primary",
+                StreetType::PrimaryLink => "primary_link",
+                StreetType::Secondary => "secondary",
+                StreetType::SecondaryLink => "secondary_link",
+                StreetType::Tertiary => "tertiary",
+                StreetType::TertiaryLink => "tertiary_link",
+                StreetType::Unclassified => "unclassified",
+                StreetType::Residential => "residential",
+                StreetType::LivingStreet => "living_street",
+                StreetType::Service => "service",
+                StreetType::Track => "track",
+                StreetType::Road => "road",
+                StreetType::Cycleway => "cycleway",
+                StreetType::Pedestrian => "pedestrian",
+                StreetType::Path => "path",
+            }
+        )
+    }
 }
 
 impl StreetType {
@@ -224,75 +294,45 @@ impl StreetType {
             },
         }
     }
-}
 
-impl str::FromStr for StreetType {
-    type Err = String;
+    // return (is_oneway, is_reverse)
+    fn parse_oneway(&self, way: &pbf::Way) -> (bool, bool) {
+        let is_oneway = true;
+        let is_reverse = true;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let normalized_s = s.trim().to_ascii_lowercase();
-
-        match normalized_s.as_ref() {
-            // known and used
-            "highway:motorway" => Ok(StreetType::Motorway),
-            "highway:motorway_link" => Ok(StreetType::MotorwayLink),
-            "highway:trunk" => Ok(StreetType::Trunk),
-            "highway:trunk_link" => Ok(StreetType::TrunkLink),
-            "highway:primary" => Ok(StreetType::Primary),
-            "highway:primary_link" => Ok(StreetType::PrimaryLink),
-            "highway:secondary" => Ok(StreetType::Secondary),
-            "highway:secondary_link" => Ok(StreetType::SecondaryLink),
-            "highway:tertiary" => Ok(StreetType::Tertiary),
-            "highway:tertiary_link" => Ok(StreetType::TertiaryLink),
-            "highway:unclassified" => Ok(StreetType::Unclassified),
-            "highway:residential" => Ok(StreetType::Residential),
-            "highway:living_street" => Ok(StreetType::LivingStreet),
-            "highway:service" => Ok(StreetType::Service),
-            "highway:track" => Ok(StreetType::Track),
-            "highway:road" => Ok(StreetType::Road),
-            "highway:cycleway" | "highway:bridleway" => Ok(StreetType::Cycleway),
-            "highway:pedestrian" | "highway:footway" | "highway:steps" => {
-                Ok(StreetType::Pedestrian)
+        match way.tags.get("oneway") {
+            Some(oneway_value) => {
+                let oneway_value = oneway_value
+                    .split_whitespace()
+                    .next()
+                    .expect("`oneway_value has already been matched, so it should match again.");
+                match oneway_value.as_ref() {
+                    // yes
+                    "yes" | "1" | "recommended" | "left;through" | "shelter"
+                    => (is_oneway, !is_reverse),
+                    // yes but reverse
+                    "-1" | "-1;no" => (is_oneway, is_reverse),
+                    // no
+                    "no" | "reversible" | "alternating" | "fixme" | "undefined"
+                    | "unknown" | "cycle_barrier"
+                    // for bicycle, e.g. WayId(3701112)
+                    // -> secondary
+                    // -> handled by highway_tag above
+                    | "use_sidepath"
+                    //
+                    | "bicycle" => (!is_oneway, !is_reverse),
+                    // unknown or unhandled
+                    _ => {
+                        error!(
+                            "Setting `oneway=no` for unknown value of way {:?}",
+                            way
+                        );
+                        (!is_oneway, !is_reverse)
+                    }
+                }
             }
-            "highway:path" => Ok(StreetType::Path),
-            // ignored
-            "highway:byway" | "highway:bus_stop" | "highway:raceway" => Err(normalized_s),
-            // unknown
-            _ => {
-                warn!("Could not parse highway-tag `{}`", s);
-                Err(normalized_s)
-            }
+            None => (!is_oneway, !is_reverse),
         }
-    }
-}
-
-impl fmt::Display for StreetType {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "{}",
-            match &self {
-                StreetType::Motorway => "motorway",
-                StreetType::MotorwayLink => "motorway_link",
-                StreetType::Trunk => "trunk",
-                StreetType::TrunkLink => "trunk_link",
-                StreetType::Primary => "primary",
-                StreetType::PrimaryLink => "primary_link",
-                StreetType::Secondary => "secondary",
-                StreetType::SecondaryLink => "secondary_link",
-                StreetType::Tertiary => "tertiary",
-                StreetType::TertiaryLink => "tertiary_link",
-                StreetType::Unclassified => "unclassified",
-                StreetType::Residential => "residential",
-                StreetType::LivingStreet => "living_street",
-                StreetType::Service => "service",
-                StreetType::Track => "track",
-                StreetType::Road => "road",
-                StreetType::Cycleway => "cycleway",
-                StreetType::Pedestrian => "pedestrian",
-                StreetType::Path => "path",
-            }
-        )
     }
 }
 
@@ -301,40 +341,78 @@ impl fmt::Display for StreetType {
 pub struct Parser;
 
 impl Parser {
-    pub fn open_reader<S: AsRef<OsStr> + ?Sized>(&self, path: &S) -> pbf::Reader<File> {
+    fn open_reader<S: AsRef<OsStr> + ?Sized>(&self, path: &S) -> pbf::Reader<File> {
         let path = path::Path::new(&path);
         let file =
             File::open(&path).expect(&format!("Expects the given path {:?} to exist.", path));
         pbf::Reader::new(file)
     }
 
-    pub fn _parse<S: AsRef<OsStr> + ?Sized>(&self, path: &S) -> Graph {
-        info!("Starting parsing ..");
-
-        // TODO parse "cycleway" and others
-        // see https://wiki.openstreetmap.org/wiki/Key:highway
-
-        let mut graph_builder = GraphBuilder::new();
-
-        //----------------------------------------------------------------------------------------//
-        // collect all nodes and ways
-
-        info!("Starting processing given pbf-file ..");
+    fn parse_ways<S: AsRef<OsStr> + ?Sized>(&self, path: &S, graph_builder: &mut GraphBuilder) {
         info!("Starting edge-creation using ways ..");
-        for obj in self.open_reader(&path).par_iter().filter_map(Result::ok) {
+        for mut way in self
+            .open_reader(&path)
+            .par_iter()
+            .filter_map(Result::ok)
+            .filter_map(|obj| match obj {
+                pbf::OsmObj::Way(way) => Some(way),
+                _ => None,
+            })
+        {
+            if way.nodes.len() < 2 {
+                continue;
+            }
 
+            // collect relevant data from file
+            let highway_tag = match StreetType::from(&way) {
+                Some(highway_tag) => highway_tag,
+                None => continue,
+            };
+            let maxspeed = highway_tag.parse_maxspeed(&way);
+            let (is_oneway, is_reverse) = highway_tag.parse_oneway(&way);
+
+            // create (proto-)edges
+            if is_reverse {
+                way.nodes.reverse();
+            }
+            let iter_range = if is_oneway {
+                0..0
+            } else {
+                // if not oneway
+                // -> add node-IDs reversed to generate edges forwards and backwards
+                0..way.nodes.len() - 1
+            };
+            let mut nodes_iter = way.nodes.iter().chain(way.nodes[iter_range].iter().rev());
+
+            // add edges, one per node-pair in way.nodes
+            let mut src_id = nodes_iter
+                .next()
+                .expect(format!("Way.nodes.len()={} but should be >1.", way.nodes.len()).as_ref());
+            for dst_id in nodes_iter {
+                graph_builder.push_edge(Some(way.id.0), src_id.0, dst_id.0, None, maxspeed);
+                src_id = dst_id;
+            }
         }
         info!("Finished edge-creation using ways");
-        info!("Starting node-creation using ways ..");
-        for obj in self.open_reader(&path).par_iter().filter_map(Result::ok) {
+    }
 
+    fn parse_nodes<S: AsRef<OsStr> + ?Sized>(&self, path: &S, graph_builder: &mut GraphBuilder) {
+        info!("Starting node-creation using ways ..");
+        for node in self
+            .open_reader(&path)
+            .par_iter()
+            .filter_map(Result::ok)
+            .filter_map(|obj| match obj {
+                pbf::OsmObj::Node(node) => Some(node),
+                _ => None,
+            })
+        {
+            graph_builder.push_node(
+                node.id.0,
+                geo::Coordinate::new(node.decimicro_lat, node.decimicro_lon),
+            );
         }
         info!("Finished node-creation using ways");
-        info!("Finished processing given pbf-file");
-
-        let graph = graph_builder.finalize();
-        info!("Finished parsing");
-        graph
     }
 
     pub fn parse<S: AsRef<OsStr> + ?Sized>(&self, path: &S) -> Graph {
@@ -345,86 +423,9 @@ impl Parser {
 
         let mut graph_builder = GraphBuilder::new();
 
-        //----------------------------------------------------------------------------------------//
-        // collect all nodes and ways
-
         info!("Starting processing given pbf-file ..");
-        for obj in self.open_reader(&path).par_iter().filter_map(Result::ok) {
-            match obj {
-                // if node -> just add every node to filter them out later
-                pbf::OsmObj::Node(node) => {
-                    graph_builder.push_node(
-                        node.id.0,
-                        geo::Coordinate::new(node.decimicro_lat, node.decimicro_lon),
-                    );
-                }
-                // if edge -> filter and push as edge
-                pbf::OsmObj::Way(mut way) => {
-                    if way.nodes.len() < 2 {
-                        continue;
-                    }
-
-                    let highway_tag = match StreetType::from(&way) {
-                        Some(highway_tag) => highway_tag,
-                        None => continue,
-                    };
-
-                    let maxspeed = highway_tag.parse_maxspeed(&way);
-
-                    let mut is_both_way = false;
-                    // and process tag `oneway`
-                    match way.tags.get("oneway") {
-                        Some(oneway_value) => {
-                            let oneway_value = oneway_value.split_whitespace().next().expect(
-                                "`oneway_value has already been matched, so it should match again.",
-                            );
-                            match oneway_value.as_ref() {
-                                // yes
-                                "yes" | "1" | "recommended" | "left;through" | "shelter" => (),
-                                // yes but reverse
-                                "-1" | "-1;no" => way.nodes.reverse(),
-                                // no
-                                "no" | "reversible" | "alternating" | "fixme" | "undefined"
-                                | "unknown" | "cycle_barrier" => is_both_way = true,
-                                // for bicycle, e.g. WayId(3701112)
-                                // -> secondary
-                                // -> handled by highway_tag above
-                                "use_sidepath" => (),
-                                "bicycle" => is_both_way = true,
-                                // unknown or unhandled
-                                _ => {
-                                    error!(
-                                        "Setting `oneway=no` for unknown value of way {:?}",
-                                        way
-                                    );
-                                }
-                            }
-                        }
-                        None => is_both_way = true,
-                    }
-
-                    // if both way -> add node-IDs reversed to generate edges forwards and backwards
-                    let iter_range = if is_both_way {
-                        0..way.nodes.len() - 1
-                    } else {
-                        0..0
-                    };
-                    let mut nodes_iter = way.nodes.iter().chain(way.nodes[iter_range].iter().rev());
-
-                    // add edges per node-pair in way.nodes
-                    let mut src_id = nodes_iter.next().expect(
-                        format!("Way.nodes.len()={} but should be >1.", way.nodes.len()).as_ref(),
-                    );
-                    for dst_id in nodes_iter {
-                        graph_builder.push_edge(Some(way.id.0), src_id.0, dst_id.0, None, maxspeed);
-                        src_id = dst_id;
-                    }
-                }
-                _ => {
-                    trace!("\nUnused object in pbf-file: {:?}", obj);
-                }
-            }
-        }
+        self.parse_ways(&path, &mut graph_builder);
+        self.parse_nodes(&path, &mut graph_builder);
         info!("Finished processing given pbf-file");
 
         let graph = graph_builder.finalize();
