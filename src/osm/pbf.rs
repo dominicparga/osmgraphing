@@ -4,11 +4,11 @@ use std::fs::File;
 use std::path;
 use std::str;
 
-use log::{debug, error, info, trace};
+use log::{info, warn};
 
-use crate::err;
-use crate::osm::geo;
+use crate::osm;
 use crate::routing;
+use osm::geo;
 use routing::Graph;
 use routing::GraphBuilder;
 
@@ -16,39 +16,12 @@ mod pbf {
     pub use osmpbfreader::reader::Iter;
     pub use osmpbfreader::reader::OsmPbfReader as Reader;
     pub use osmpbfreader::NodeId;
-    pub use osmpbfreader::{OsmObj, Way};
+    pub use osmpbfreader::{Node, OsmObj, Way};
 }
 
 //------------------------------------------------------------------------------------------------//
 
-#[derive(Debug)]
-pub enum ParseError {
-    Custom(err::Error),
-    UnknownHighway(String),
-}
-
-impl ParseError {
-    pub fn new(msg: &str) -> Self {
-        ParseError::Custom(err::Error::new(msg))
-    }
-
-    pub fn unknown_highway(highway: &str) -> Self {
-        ParseError::UnknownHighway(String::from(highway))
-    }
-}
-
-impl fmt::Display for ParseError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            ParseError::Custom(e) => e.fmt(f),
-            ParseError::UnknownHighway(highway) => highway.fmt(f),
-        }
-    }
-}
-
-//------------------------------------------------------------------------------------------------//
-
-enum HighwayTag {
+enum StreetType {
     Motorway,
     MotorwayLink,
     Trunk,
@@ -67,179 +40,458 @@ enum HighwayTag {
     Road,
     Cycleway,
     Pedestrian,
-    Footway,
-    Steps,
     Path,
 }
 
-impl HighwayTag {
-    fn maxspeed(&self) -> u16 {
-        match self {
-            HighwayTag::Motorway => 130,
-            HighwayTag::MotorwayLink => 50,
-            HighwayTag::Trunk => 100,
-            HighwayTag::TrunkLink => 50,
-            HighwayTag::Primary => 100,
-            HighwayTag::PrimaryLink => 30,
-            HighwayTag::Secondary => 70,
-            HighwayTag::SecondaryLink => 30,
-            HighwayTag::Tertiary => 70,
-            HighwayTag::TertiaryLink => 30,
-            HighwayTag::Unclassified => 50,
-            HighwayTag::Residential => 50,
-            HighwayTag::LivingStreet => 15,
-            HighwayTag::Service => 20,
-            HighwayTag::Track => 30,
-            HighwayTag::Road => 50,
-            HighwayTag::Cycleway => 25,
-            HighwayTag::Pedestrian => 5,
-            HighwayTag::Footway => 5,
-            HighwayTag::Steps => 5,
-            HighwayTag::Path => 5,
-        }
-    }
-
-    fn _is_for_vehicles(&self, is_suitable: bool) -> bool {
-        match self {
-            HighwayTag::Motorway => true,
-            HighwayTag::MotorwayLink => true,
-            HighwayTag::Trunk => true,
-            HighwayTag::TrunkLink => true,
-            HighwayTag::Primary => true,
-            HighwayTag::PrimaryLink => true,
-            HighwayTag::Secondary => true,
-            HighwayTag::SecondaryLink => true,
-            HighwayTag::Tertiary => true,
-            HighwayTag::TertiaryLink => true,
-            HighwayTag::Unclassified => true,
-            HighwayTag::Residential => true,
-            HighwayTag::LivingStreet => true,
-            HighwayTag::Service => !is_suitable,
-            HighwayTag::Track => !is_suitable,
-            HighwayTag::Road => !is_suitable,
-            HighwayTag::Cycleway => false,
-            HighwayTag::Pedestrian => false,
-            HighwayTag::Footway => false,
-            HighwayTag::Steps => false,
-            HighwayTag::Path => false,
-        }
-    }
-
-    fn _is_for_bicycles(&self, is_suitable: bool) -> bool {
-        match self {
-            HighwayTag::Motorway => false,
-            HighwayTag::MotorwayLink => false,
-            HighwayTag::Trunk => false,
-            HighwayTag::TrunkLink => false,
-            HighwayTag::Primary => !is_suitable,
-            HighwayTag::PrimaryLink => !is_suitable,
-            HighwayTag::Secondary => !is_suitable,
-            HighwayTag::SecondaryLink => !is_suitable,
-            HighwayTag::Tertiary => true,
-            HighwayTag::TertiaryLink => true,
-            HighwayTag::Unclassified => true,
-            HighwayTag::Residential => true,
-            HighwayTag::LivingStreet => true,
-            HighwayTag::Service => true,
-            HighwayTag::Track => !is_suitable,
-            HighwayTag::Road => !is_suitable,
-            HighwayTag::Cycleway => false,
-            HighwayTag::Pedestrian => !is_suitable,
-            HighwayTag::Footway => false,
-            HighwayTag::Steps => false,
-            HighwayTag::Path => !is_suitable,
-        }
-    }
-
-    fn _is_for_pedestrians(&self, is_suitable: bool) -> bool {
-        match self {
-            HighwayTag::Motorway => false,
-            HighwayTag::MotorwayLink => false,
-            HighwayTag::Trunk => false,
-            HighwayTag::TrunkLink => false,
-            HighwayTag::Primary => false,
-            HighwayTag::PrimaryLink => false,
-            HighwayTag::Secondary => false,
-            HighwayTag::SecondaryLink => false,
-            HighwayTag::Tertiary => false,
-            HighwayTag::TertiaryLink => false,
-            HighwayTag::Unclassified => false,
-            HighwayTag::Residential => true,
-            HighwayTag::LivingStreet => true,
-            HighwayTag::Service => true,
-            HighwayTag::Track => true,
-            HighwayTag::Road => !is_suitable,
-            HighwayTag::Cycleway => false,
-            HighwayTag::Pedestrian => true,
-            HighwayTag::Footway => true,
-            HighwayTag::Steps => true,
-            HighwayTag::Path => true,
-        }
-    }
-}
-
-impl str::FromStr for HighwayTag {
-    type Err = ParseError;
+impl str::FromStr for StreetType {
+    type Err = bool;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let s = s.trim().to_ascii_lowercase();
-
-        match s.as_ref() {
-            "motorway" => Ok(HighwayTag::Motorway),
-            "motorway_link" => Ok(HighwayTag::MotorwayLink),
-            "trunk" => Ok(HighwayTag::Trunk),
-            "trunk_link" => Ok(HighwayTag::TrunkLink),
-            "primary" => Ok(HighwayTag::Primary),
-            "primary_link" => Ok(HighwayTag::PrimaryLink),
-            "secondary" => Ok(HighwayTag::Secondary),
-            "secondary_link" => Ok(HighwayTag::SecondaryLink),
-            "tertiary" => Ok(HighwayTag::Tertiary),
-            "tertiary_link" => Ok(HighwayTag::TertiaryLink),
-            "unclassified" => Ok(HighwayTag::Unclassified),
-            "residential" => Ok(HighwayTag::Residential),
-            "living_street" => Ok(HighwayTag::LivingStreet),
-            "service" => Ok(HighwayTag::Service),
-            "track" => Ok(HighwayTag::Track),
-            "road" => Ok(HighwayTag::Road),
-            "cycleway" => Ok(HighwayTag::Cycleway),
-            "pedestrian" => Ok(HighwayTag::Pedestrian),
-            "footway" => Ok(HighwayTag::Footway),
-            "steps" => Ok(HighwayTag::Steps),
-            "path" => Ok(HighwayTag::Path),
-            unknown => Err(ParseError::unknown_highway(unknown)),
+        let is_unknown = true;
+        match s.trim().to_ascii_lowercase().as_ref() {
+            // known and used
+            "highway:motorway"
+            => Ok(StreetType::Motorway),
+            "highway:motorway_link"
+            => Ok(StreetType::MotorwayLink),
+            "highway:trunk"
+            => Ok(StreetType::Trunk),
+            "highway:trunk_link"
+            => Ok(StreetType::TrunkLink),
+            "highway:primary"
+            => Ok(StreetType::Primary),
+            "highway:primary_link"
+            => Ok(StreetType::PrimaryLink),
+            "highway:secondary"
+            => Ok(StreetType::Secondary),
+            "highway:secondary_link"
+            => Ok(StreetType::SecondaryLink),
+            "highway:tertiary"
+            => Ok(StreetType::Tertiary),
+            "highway:tertiary_link"
+            | "highway:unclassified_link" // way-id: 460413095
+            => Ok(StreetType::TertiaryLink),
+            "highway:unclassified"
+            => Ok(StreetType::Unclassified),
+            "highway:residential"
+            | "highway:junction" // way-id: 589935900
+            => Ok(StreetType::Residential),
+            "highway:living_street"
+            => Ok(StreetType::LivingStreet),
+            "highway:service"
+            | "highway:service;yes" // way-id: 170702046
+            => Ok(StreetType::Service),
+            "highway:historic" // way-id: 192265844
+            | "highway:path;unclassified" // way-id: 38480982
+            | "highway:tra#" // way-id: 721881475
+            | "highway:track"
+            | "highway:track;path" // way-id: 640616710
+            | "highway:trank" // way-id: 685079101
+            => Ok(StreetType::Track),
+            "highway:bridge" // way-id: 696697784
+            | "highway:road"
+            | "highway:yes" // way-id: 684234513
+            => Ok(StreetType::Road),
+            "highway:cycleway"
+            | "highway:bridleway" // way-id: 3617168
+            => Ok(StreetType::Cycleway),
+            "highway:access" // way-id: 357086739
+            | "highway:access_ramp" // way-id: 24975340
+            | "highway:alley" // way-id: 24453717
+            | "highway:corridor" // way-id: 210464225
+            | "highway:crossing" // way-id: 679590652
+            | "highway:footway"
+            | "highway:footway;service" // way-id: 245106042
+            | "highway:pa" // way-id: 193668915
+            | "highway:pedestrian"
+            | "highway:private_footway" // way-id: 61557441
+            | "highway:ramp" // way-id: 60561495
+            | "highway:sidewalk" // way-id: 492983410
+            | "highway:stairs" // way-id: 698856376
+            | "highway:steps"
+            | "highway:trail" // way-id: 606170671
+            | "highway:vitrual" // way-id: 699685919
+            | "highway:virtual" // way-id: 612194863
+            | "highway:yes;footway" // way-id: 634213443
+            => Ok(StreetType::Pedestrian),
+            "highway:informal_path" // way-id: 27849992
+            | "highway:ladder" // way-id: 415352091
+            | "highway:path"
+            | "highway:path/cycleway" // way-id: 152848247
+            => Ok(StreetType::Path),
+            // ignored
+            "highway:85" // way-id: 28682800
+            | "highway:abandoned" // way-id: 551167806
+            | "highway:abandoned:highway" // way-id: 243670918
+            | "highway:abandoned:path" // way-id: 659187494
+            | "highway:abandoned:service" // way-id: 668073809
+            | "highway:bus" // way-id: 653176966
+            | "highway:bus_guideway" // way-id: 659097872
+            | "highway:bus_stop" // way-id: 551048594
+            | "highway:centre_line" // way-id: 131730185
+            | "highway:climbing_access" // way-id: 674680967
+            | "highway:common" // way-id: 680432920
+            | "highway:construction" // way-id: 23692144
+            | "highway:demolished" // way-id: 146859260
+            | "highway:dismantled" // way-id: 138717422
+            | "highway:disused" // way-id: 4058936
+            | "highway:disused:track" // way-id: 660999751
+            | "highway:elevator" // way-id: 166960177
+            | "highway:emergency_access_point" // way-id: 124039649
+            | "highway:emergency_bay" // way-id: 510872933
+            | "highway:escape" // way-id: 166519327
+            | "highway:foot" // way-id: 675407702
+            | "highway:fuel" // way-id: 385074661
+            | "highway:in planung" // way-id: 713888400
+            | "highway:island" // way-id: 670953148
+            | "highway:layby" // way-id: 171879602
+            | "highway:loading_place" // way-id: 473983427
+            | "highway:lohwiese" // way-id: 699398300
+            | "highway:never_built" // way-id: 310787147
+            | "highway:nicht mehr in benutzung" // way-id: 477193801
+            | "highway:no" // way-id: 23605191
+            | "highway:none" // way-id: 144657573
+            | "highway:passing_place" // way-id: 678674065
+            | "highway:place" // way-id: 228745170
+            | "highway:planned" // way-id: 509400222
+            | "highway:platform" // way-id: 552088750
+            | "highway:piste" // way-id: 299032574
+            | "highway:private" // way-id: 707015329
+            | "highway:project" // way-id: 698166909
+            | "highway:projected" // way-id: 698166910
+            | "highway:proposed" // way-id: 23551790
+            | "highway:raceway" // way-id: 550503761
+            | "highway:razed" // way-id: 23653804
+            | "highway:removed" // way-id: 667029512
+            | "highway:rest_area" // way-id: 23584797
+            | "highway:sere" // way-id: 167276926
+            | "highway:ser" // way-id: 27215798
+            | "highway:services" // way-id: 111251693
+            | "highway:stop" // way-id: 669234427
+            | "highway:stop_line" // way-id: 569603293
+            | "highway:street_lamp" // way-id: 614573217
+            | "highway:traffic_signals" // way-id: 300419851
+            | "highway:tidal_path" // way-id: 27676473
+            | "highway:traffic_island" // way-id: 263644518
+            | "highway:turning_circle" // way-id: 669184618
+            | "highway:turning_loop" // way-id: 31516941
+            | "highway:via_ferrata" // way-id: 23939968
+            => Err(!is_unknown),
+            // unknown
+            _ => Err(is_unknown),
         }
     }
 }
 
-impl fmt::Display for HighwayTag {
+impl fmt::Display for StreetType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
             "{}",
             match &self {
-                HighwayTag::Motorway => "motorway",
-                HighwayTag::MotorwayLink => "motorway_link",
-                HighwayTag::Trunk => "trunk",
-                HighwayTag::TrunkLink => "trunk_link",
-                HighwayTag::Primary => "primary",
-                HighwayTag::PrimaryLink => "primary_link",
-                HighwayTag::Secondary => "secondary",
-                HighwayTag::SecondaryLink => "secondary_link",
-                HighwayTag::Tertiary => "tertiary",
-                HighwayTag::TertiaryLink => "tertiary_link",
-                HighwayTag::Unclassified => "unclassified",
-                HighwayTag::Residential => "residential",
-                HighwayTag::LivingStreet => "living_street",
-                HighwayTag::Service => "service",
-                HighwayTag::Track => "track",
-                HighwayTag::Road => "road",
-                HighwayTag::Cycleway => "cycleway",
-                HighwayTag::Pedestrian => "pedestrian",
-                HighwayTag::Footway => "footway",
-                HighwayTag::Steps => "steps",
-                HighwayTag::Path => "path",
+                StreetType::Motorway => "motorway",
+                StreetType::MotorwayLink => "motorway_link",
+                StreetType::Trunk => "trunk",
+                StreetType::TrunkLink => "trunk_link",
+                StreetType::Primary => "primary",
+                StreetType::PrimaryLink => "primary_link",
+                StreetType::Secondary => "secondary",
+                StreetType::SecondaryLink => "secondary_link",
+                StreetType::Tertiary => "tertiary",
+                StreetType::TertiaryLink => "tertiary_link",
+                StreetType::Unclassified => "unclassified",
+                StreetType::Residential => "residential",
+                StreetType::LivingStreet => "living_street",
+                StreetType::Service => "service",
+                StreetType::Track => "track",
+                StreetType::Road => "road",
+                StreetType::Cycleway => "cycleway",
+                StreetType::Pedestrian => "pedestrian",
+                StreetType::Path => "path",
             }
         )
+    }
+}
+
+impl StreetType {
+    //--------------------------------------------------------------------------------------------//
+    // defaults
+
+    fn maxspeed(&self) -> u16 {
+        match self {
+            StreetType::Motorway => 130,
+            StreetType::MotorwayLink => 50,
+            StreetType::Trunk => 100,
+            StreetType::TrunkLink => 50,
+            StreetType::Primary => 100,
+            StreetType::PrimaryLink => 30,
+            StreetType::Secondary => 70,
+            StreetType::SecondaryLink => 30,
+            StreetType::Tertiary => 70,
+            StreetType::TertiaryLink => 30,
+            StreetType::Unclassified => 50,
+            StreetType::Residential => 50,
+            StreetType::LivingStreet => 15,
+            StreetType::Service => 20,
+            StreetType::Track => 30,
+            StreetType::Road => 50,
+            StreetType::Cycleway => 25,
+            StreetType::Pedestrian => 5,
+            StreetType::Path => 15,
+        }
+    }
+
+    fn _is_for_vehicles(&self, is_suitable: bool) -> bool {
+        match self {
+            StreetType::Motorway => true,
+            StreetType::MotorwayLink => true,
+            StreetType::Trunk => true,
+            StreetType::TrunkLink => true,
+            StreetType::Primary => true,
+            StreetType::PrimaryLink => true,
+            StreetType::Secondary => true,
+            StreetType::SecondaryLink => true,
+            StreetType::Tertiary => true,
+            StreetType::TertiaryLink => true,
+            StreetType::Unclassified => true,
+            StreetType::Residential => true,
+            StreetType::LivingStreet => true,
+            StreetType::Service => !is_suitable,
+            StreetType::Track => !is_suitable,
+            StreetType::Road => !is_suitable,
+            StreetType::Cycleway => false,
+            StreetType::Pedestrian => false,
+            StreetType::Path => false,
+        }
+    }
+
+    fn _is_for_bicycles(&self, is_suitable: bool) -> bool {
+        match self {
+            StreetType::Motorway => false,
+            StreetType::MotorwayLink => false,
+            StreetType::Trunk => false,
+            StreetType::TrunkLink => false,
+            StreetType::Primary => !is_suitable,
+            StreetType::PrimaryLink => !is_suitable,
+            StreetType::Secondary => !is_suitable,
+            StreetType::SecondaryLink => !is_suitable,
+            StreetType::Tertiary => true,
+            StreetType::TertiaryLink => true,
+            StreetType::Unclassified => true,
+            StreetType::Residential => true,
+            StreetType::LivingStreet => true,
+            StreetType::Service => true,
+            StreetType::Track => !is_suitable,
+            StreetType::Road => !is_suitable,
+            StreetType::Cycleway => true,
+            StreetType::Pedestrian => !is_suitable,
+            StreetType::Path => !is_suitable,
+        }
+    }
+
+    fn _is_for_pedestrians(&self, is_suitable: bool) -> bool {
+        match self {
+            StreetType::Motorway => false,
+            StreetType::MotorwayLink => false,
+            StreetType::Trunk => false,
+            StreetType::TrunkLink => false,
+            StreetType::Primary => false,
+            StreetType::PrimaryLink => false,
+            StreetType::Secondary => false,
+            StreetType::SecondaryLink => false,
+            StreetType::Tertiary => false,
+            StreetType::TertiaryLink => false,
+            StreetType::Unclassified => false,
+            StreetType::Residential => true,
+            StreetType::LivingStreet => true,
+            StreetType::Service => true,
+            StreetType::Track => true,
+            StreetType::Road => !is_suitable,
+            StreetType::Cycleway => false,
+            StreetType::Pedestrian => true,
+            StreetType::Path => true,
+        }
+    }
+
+    //--------------------------------------------------------------------------------------------//
+    // parsing
+
+    fn from(way: &pbf::Way) -> Option<StreetType> {
+        // read highway-tag from way
+        way.tags.get("highway").and_then(|highway_tag_value| {
+            // and parse the value if valid
+            match format!("highway:{}", highway_tag_value).parse::<StreetType>() {
+                Ok(highway_tag) => Some(highway_tag),
+                Err(is_unknown) => {
+                    if is_unknown {
+                        warn!(
+                            "Unknown highway-tag `highway:{}` of way-id `{}` -> ignored",
+                            highway_tag_value, way.id.0
+                        );
+                    }
+                    None
+                }
+            }
+        })
+    }
+
+    fn parse_maxspeed(&self, way: &pbf::Way) -> u16 {
+        let snippet = match way.tags.get("maxspeed") {
+            Some(snippet) => snippet,
+            None => return self.maxspeed(),
+        };
+
+        // parse given maxspeed and return
+        match snippet.parse::<u16>() {
+            Ok(maxspeed) => maxspeed,
+            Err(_) => match snippet.trim().to_ascii_lowercase().as_ref() {
+                // motorway
+                "de:motorway"
+                => StreetType::Motorway.maxspeed(),
+                // 100 kmh
+                "100, 70" // way-id: 319046425
+                | "100;70" // way-id: 130006647
+                | "100;70;50" // way-id: 313097404
+                | "100|70" // way-id: 118245446
+                | "100; 50" // way-id: 130880229
+                | "60 mph"
+                | "50;100" // way-id: 266299302
+                | "50; 100" // way-id: 152374728
+                => 100,
+                // 80 kmh
+                "80;60" // way-id: 25154358
+                | "60;80" // way-id: 24441573
+                | "50 mph"
+                => 80,
+                // 70 kmh
+                "70; 50" // way-id: 260835537
+                | "50;70" // way-id: 48581258
+                | "50; 70" // way-id: 20600128
+                | "40 mph"
+                => 70,
+                // 60 kmh
+                "60;50" // way-id: 48453714
+                => 60,
+                // 50 kmh
+                "20; 50" // way-id: 308645778
+                | "30;50" // way-id: 4954059
+                | "30; 50" // way-id: 305677124
+                | "30,50" // way-id: 28293340
+                | "30 mph"
+                | "50;30" // way-id: 25616305
+                | "50; 30" // way-id: 28494183
+                | "50b"
+                | "de:urban" // way-id: 111446158
+                | "maxspeed=50"
+                => 50,
+                // 30 kmh
+                "20 mph"
+                | "30 kph"
+                | "30;10" // way-id: 111450904
+                | "30 @ (mo-fr 06:00-18:00)" // way-id: 558224330
+                | "conditional=30 @ (mo-fr 06:00-22:00)" // way-id: 612333030
+                | "de:zone30"
+                | "de:zone:30" // way-id: 32657912
+                | "zone:maxspeed=de:30" // way-id: 26521170
+                => 30,
+                // 25 kmh
+                "15 mph"
+                => 25,
+                // 20 kmh
+                "2ß"
+                => 20,
+                // bicycle
+                "de:bicycle_road"
+                => StreetType::Cycleway.maxspeed(),
+                // walk (<= 15 kmh)
+                "3 mph"
+                | "4-7"
+                | "4-6"
+                | "5 mph"
+                | "6,5" // way-id: 27172163
+                | "7-10" // way-id: 60805930
+                | "10 mph"
+                | "1ß"
+                | "de:living_street"
+                | "de:walk"
+                | "schrittgeschwindigkeit" // way-id: 212487477
+                | "walk"
+                => StreetType::LivingStreet.maxspeed(),
+                // known defaults/weirdos
+                "*" // way-id: 4682329
+                | "20:forward" // way-id: 24215081
+                | "30+" // way-id: 87765739
+                | "at:urban" // way-id: 30504860
+                | "at:rural" // way-id: 23622533
+                | "de:rural" // way-id: 15558598
+                | "de" // way-id: 180794115
+                | "fixme:höchster üblicher wert" // way-id: 8036120
+                | "nome" // way-id: 67659840
+                | "none" // way-id: 3061397
+                | "posted time dependent" // way-id: 168135218
+                | "signals" // way-id: 3996833
+                | "variable" // way-id: 461169632
+                => self.maxspeed(),
+                // unknown
+                _ => {
+                    warn!(
+                        "Unknown maxspeed `{}` of way-id `{}` -> default: (`{}`,`{}`)",
+                        snippet,
+                        way.id.0,
+                        self,
+                        self.maxspeed()
+                    );
+                    self.maxspeed()
+                }
+            },
+        }
+    }
+
+    // return (is_oneway, is_reverse)
+    fn parse_oneway(&self, way: &pbf::Way) -> (bool, bool) {
+        let is_oneway = true;
+        let is_reverse = true;
+
+        match way.tags.get("oneway") {
+            Some(oneway_value) => {
+                match oneway_value.trim().to_ascii_lowercase().as_ref() {
+                    // yes
+                    "1"
+                    | "left;through"
+                    | "recommended"
+                    | "shelter"
+                    | "yes"
+                    => (is_oneway, !is_reverse),
+                    // yes but reverse
+                    "´-1" // way-id: 721848168
+                    | "-1"
+                    | "-1;no"
+                    => (is_oneway, is_reverse),
+                    // no
+                    "alternating"
+                    | "bicycle"
+                    | "cycle_barrier"
+                    | "fixme"
+                    | "no"
+                    | "reversible"
+                    | "undefined"
+                    | "unknown"
+                    | "use_sidepath" // way-id: 3701112
+                    | "yes @ (2018 aug 0 - 2018 dec 21)" // way-id: 24379239
+                    | "yes;no" // way-id: 158249443
+                    => (!is_oneway, !is_reverse),
+                    // unknown or unhandled
+                    _ => {
+                        warn!(
+                            "Unknown oneway `{}` of way-id `{}` -> default: `oneway=no`",
+                            oneway_value, way.id.0
+                        );
+                        (!is_oneway, !is_reverse)
+                    }
+                }
+            }
+            None => (!is_oneway, !is_reverse),
+        }
     }
 }
 
@@ -248,182 +500,97 @@ impl fmt::Display for HighwayTag {
 pub struct Parser;
 
 impl Parser {
-    pub fn parse<S: AsRef<OsStr> + ?Sized>(&self, path: &S) -> Graph {
-        info!("Starting parsing..");
-
-        //----------------------------------------------------------------------------------------//
-        // get reader
-
+    fn open_reader<S: AsRef<OsStr> + ?Sized>(&self, path: &S) -> pbf::Reader<File> {
         let path = path::Path::new(&path);
         let file =
             File::open(&path).expect(&format!("Expects the given path {:?} to exist.", path));
-        let mut reader = pbf::Reader::new(file);
+        pbf::Reader::new(file)
+    }
 
-        //----------------------------------------------------------------------------------------//
-        // init graphbuilder
+    fn parse_ways<S: AsRef<OsStr> + ?Sized>(&self, path: &S, graph_builder: &mut GraphBuilder) {
+        info!("Starting edge-creation using ways ..");
+        for mut way in self
+            .open_reader(&path)
+            .par_iter()
+            .filter_map(Result::ok)
+            .filter_map(|obj| match obj {
+                pbf::OsmObj::Way(way) => Some(way),
+                _ => None,
+            })
+        {
+            if way.nodes.len() < 2 {
+                continue;
+            }
+
+            // collect relevant data from file
+            let highway_tag = match StreetType::from(&way) {
+                Some(highway_tag) => highway_tag,
+                None => continue,
+            };
+            let maxspeed = highway_tag.parse_maxspeed(&way);
+            let (is_oneway, is_reverse) = highway_tag.parse_oneway(&way);
+
+            // create (proto-)edges
+            if is_reverse {
+                way.nodes.reverse();
+            }
+            let iter_range = if is_oneway {
+                0..0
+            } else {
+                // if not oneway
+                // -> add node-IDs reversed to generate edges forwards and backwards
+                0..way.nodes.len() - 1
+            };
+            let mut nodes_iter = way.nodes.iter().chain(way.nodes[iter_range].iter().rev());
+
+            // add edges, one per node-pair in way.nodes
+            let mut src_id = nodes_iter
+                .next()
+                .expect(format!("Way.nodes.len()={} but should be >1.", way.nodes.len()).as_ref());
+            for dst_id in nodes_iter {
+                graph_builder.push_edge(Some(way.id.0), src_id.0, dst_id.0, None, maxspeed);
+                src_id = dst_id;
+            }
+        }
+        info!("Finished edge-creation using ways");
+    }
+
+    fn parse_nodes<S: AsRef<OsStr> + ?Sized>(&self, path: &S, graph_builder: &mut GraphBuilder) {
+        info!("Starting node-creation using ways ..");
+        for node in self
+            .open_reader(&path)
+            .par_iter()
+            .filter_map(Result::ok)
+            .filter_map(|obj| match obj {
+                pbf::OsmObj::Node(node) => Some(node),
+                _ => None,
+            })
+        {
+            if graph_builder.is_node_in_edge(node.id.0) {
+                graph_builder.push_node(
+                    node.id.0,
+                    geo::Coordinate::new(node.decimicro_lat, node.decimicro_lon),
+                );
+            }
+        }
+        info!("Finished node-creation using ways");
+    }
+
+    pub fn parse<S: AsRef<OsStr> + ?Sized>(&self, path: &S) -> Graph {
+        info!("Starting parsing ..");
+
+        // TODO parse "cycleway" and others
+        // see https://wiki.openstreetmap.org/wiki/Key:highway
 
         let mut graph_builder = GraphBuilder::new();
 
-        //----------------------------------------------------------------------------------------//
-        // collect all nodes and ways
+        info!("Starting processing given pbf-file ..");
+        self.parse_ways(&path, &mut graph_builder);
+        self.parse_nodes(&path, &mut graph_builder);
+        info!("Finished processing given pbf-file");
 
-        info!("Starting processing given pbf-file..");
-        for obj in reader.par_iter().filter_map(|obj| match obj {
-            Ok(obj) => Some(obj),
-            Err(_) => {
-                error!("pbf-File is corrupted. Skipping obj {:?}", obj);
-                None
-            }
-        }) {
-            match obj {
-                // if node -> just add every node to filter them out later
-                pbf::OsmObj::Node(node) => {
-                    debug!("{:?}", node);
-                    graph_builder.push_node(
-                        node.id.0,
-                        geo::Coordinate::new(node.decimicro_lat, node.decimicro_lon),
-                    );
-                }
-                // if edge -> filter and push as edge
-                pbf::OsmObj::Way(mut way) => {
-                    if way.nodes.len() < 2 {
-                        continue;
-                    }
-
-                    // read highway-tag from way
-                    let highway_tag_value = match way.tags.get("highway") {
-                        Some(value) => value,
-                        None => continue,
-                    };
-
-                    // get highway tag for defaults
-                    let highway_tag = match highway_tag_value.parse::<HighwayTag>() {
-                        Ok(highway_tag) => highway_tag,
-                        Err(e) => {
-                            debug!("Ignored highway-tag `{}`", e);
-                            continue;
-                        }
-                    };
-
-                    // maxspeed
-                    let maxspeed = match way.tags.get("maxspeed") {
-                        Some(s) => {
-                            // parse given maxspeed
-                            match s.parse::<u16>() {
-                                Ok(maxspeed) => maxspeed,
-                                Err(_) => match s.to_ascii_lowercase().as_ref() {
-                                    // motorway
-                                    "de:motorway" => HighwayTag::Motorway.maxspeed(),
-                                    // urban
-                                    "de:urban" | "de:rural" | "at:urban" | "at:rural" => 70,
-                                    // 50 kmh
-                                    "30 mph" | "maxspeed=50" | "50b" => 50,
-                                    // 30 kmh
-                                    "de:zone30" | "30 kph" => 30,
-                                    // bicycle
-                                    "de:bicycle_road" => HighwayTag::Cycleway.maxspeed(),
-                                    // walk
-                                    "Schrittgeschwindigkeit"
-                                    | "de:living_street"
-                                    | "de:walk"
-                                    | "walk"
-                                    | "5 mph"
-                                    | "10 mph"
-                                    | "4-6"
-                                    | "4-7" => HighwayTag::LivingStreet.maxspeed(),
-                                    // default
-                                    "none"
-                                    | "signals"
-                                    | "*"
-                                    | "variable"
-                                    | "fixme:höchster üblicher Wert"
-                                    | "posted time dependent"
-                                    | "1ß"
-                                    | "2ß"
-                                    | "de" => highway_tag.maxspeed(),
-                                    // unknown or unhandled
-                                    _ => {
-                                        debug!(
-                                            "Unknown maxspeed `{}` of way-id `{}` \
-                                             -> default: (`{}`,`{}`)",
-                                            s,
-                                            way.id.0,
-                                            highway_tag,
-                                            highway_tag.maxspeed()
-                                        );
-                                        highway_tag.maxspeed()
-                                    }
-                                },
-                            }
-                        }
-                        None => {
-                            trace!(
-                                "Take default-maxspeed {} km/h for highway-tag `{:}` \
-                                 since no maxspeed in way-id `{}`.",
-                                highway_tag.maxspeed(),
-                                highway_tag,
-                                way.id.0
-                            );
-                            highway_tag.maxspeed()
-                        }
-                    };
-
-                    let mut is_both_way = false;
-                    // and process tag `oneway`
-                    match way.tags.get("oneway") {
-                        Some(oneway_value) => {
-                            let oneway_value = oneway_value.split_whitespace().next().expect(
-                                "`oneway_value has already been matched, so it should match again.",
-                            );
-                            match oneway_value.as_ref() {
-                                // yes
-                                "yes" | "1" | "recommended" | "left;through" | "shelter" => (),
-                                // yes but reverse
-                                "-1" | "-1;no" => way.nodes.reverse(),
-                                // no
-                                "no" | "reversible" | "alternating" | "fixme" | "undefined"
-                                | "unknown" | "cycle_barrier" => is_both_way = true,
-                                // for bicycle, e.g. WayId(3701112)
-                                // -> secondary
-                                // -> handled by highway_tag above
-                                "use_sidepath" => (),
-                                "bicycle" => is_both_way = true,
-                                // unknown or unhandled
-                                _ => {
-                                    error!(
-                                        "Setting `oneway=no` for unknown value of way {:?}",
-                                        way
-                                    );
-                                }
-                            }
-                        }
-                        None => is_both_way = true,
-                    }
-
-                    // if both way -> add node-IDs reversed to generate edges forwards and backwards
-                    let iter_range = if is_both_way {
-                        0..way.nodes.len() - 1
-                    } else {
-                        0..0
-                    };
-                    let mut nodes_iter = way.nodes.iter().chain(way.nodes[iter_range].iter().rev());
-
-                    // add edges per node-pair in way.nodes
-                    let mut src_id = nodes_iter.next().expect(
-                        format!("Way.nodes.len()={} but should be >1.", way.nodes.len()).as_ref(),
-                    );
-                    for dst_id in nodes_iter {
-                        graph_builder.push_edge(Some(way.id.0), src_id.0, dst_id.0, None, maxspeed);
-                        src_id = dst_id;
-                    }
-                }
-                _ => {
-                    debug!("Unused object in pbf-file: {:?}", obj);
-                }
-            }
-        }
-        info!("Finished processing given pbf-file.");
-
-        graph_builder.finalize()
+        let graph = graph_builder.finalize();
+        info!("Finished parsing");
+        graph
     }
 }

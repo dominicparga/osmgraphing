@@ -78,6 +78,14 @@ impl GraphBuilder {
         self
     }
 
+    pub fn is_node_in_edge(&self, id: i64) -> bool {
+        if let Some(proto_node) = self.proto_nodes.get(&id) {
+            proto_node.is_edge_node
+        } else {
+            false
+        }
+    }
+
     pub fn push_edge(
         &mut self,
         way_id: Option<i64>,
@@ -133,7 +141,7 @@ impl GraphBuilder {
         let node_count = self.proto_nodes.len();
         let edge_count = self.proto_edges.len();
         info!(
-            "Starting finalizing graph ({} proto-nodes and {} proto-edges)..",
+            "Starting finalizing graph ({} proto-nodes and {} proto-edges) ..",
             node_count, edge_count
         );
         let mut graph = Graph::new();
@@ -141,7 +149,7 @@ impl GraphBuilder {
         //----------------------------------------------------------------------------------------//
         // add nodes to graph which belong to edges (sorted by asc id)
 
-        info!("Starting adding nodes (sorted) which belongs to an edge..");
+        info!("Starting adding nodes (sorted) which belongs to an edge ..");
         // BTreeMap's iter returns sorted by key (asc)
         for (_id, proto_node) in self.proto_nodes.iter() {
             // add nodes only if they belong to an edge
@@ -158,29 +166,29 @@ impl GraphBuilder {
             } else {
                 // should not happen if file is okay
                 error!(
-                    "Proto-node (id: {}) has no coordinates, but belongs to an edge.",
+                    "Proto-node (id: {}) has no coordinates, but belongs to an edge",
                     proto_node.id
                 );
             }
         }
-        info!("Finished adding nodes.");
+        info!("Finished adding nodes");
 
         //----------------------------------------------------------------------------------------//
         // sort edges by ascending src-id, then by ascending dst-id -> offset-array
         // then give edges IDs
 
-        info!("Starting sorting proto-edges by their src/dst-IDs..");
+        info!("Starting sorting proto-edges by their src/dst-IDs ..");
         self.proto_edges.sort_by(|e0, e1| {
             e0.src_id
                 .cmp(&e1.src_id)
                 .then_with(|| e0.dst_id.cmp(&e1.dst_id))
         });
-        info!("Finished sorting proto-edges.");
+        info!("Finished sorting proto-edges");
 
         //----------------------------------------------------------------------------------------//
         // build offset-array and edges
 
-        info!("Starting creating the offset-array..");
+        info!("Starting creating the offset-array ..");
         let mut node_idx = 0;
         let mut offset = 0;
         graph.offsets.push(offset);
@@ -197,7 +205,7 @@ impl GraphBuilder {
             let src_idx = match graph.node_idx_from(proto_edge.src_id) {
                 Ok(idx) => idx,
                 Err(_) => panic!(
-                    "The given source-id `{:?}` of edge-id `{:?}` doesn't exist as node.",
+                    "The given source-id `{:?}` of edge-id `{:?}` doesn't exist as node",
                     proto_edge.src_id, proto_edge.way_id
                 ),
             };
@@ -206,7 +214,7 @@ impl GraphBuilder {
             let dst_idx = match graph.node_idx_from(proto_edge.dst_id) {
                 Ok(idx) => idx,
                 Err(_) => panic!(
-                    "The given destination-id `{:?}` of edge-id `{:?}` doesn't exist as node.",
+                    "The given destination-id `{:?}` of edge-id `{:?}` doesn't exist as node",
                     proto_edge.dst_id, proto_edge.way_id
                 ),
             };
@@ -241,7 +249,7 @@ impl GraphBuilder {
         }
         // last node needs an upper bound as well for `leaving_edges(...)`
         graph.offsets.push(offset);
-        info!("Finished creating offset-array.");
+        info!("Finished creating offset-array");
 
         graph
     }
