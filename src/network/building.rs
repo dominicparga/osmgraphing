@@ -3,8 +3,7 @@ use std::collections::BTreeMap;
 
 use log::{error, info};
 
-use crate::osm::geo;
-use crate::routing::{Edge, Graph, Node};
+use super::{geo, Edge, Graph, Node};
 
 //------------------------------------------------------------------------------------------------//
 

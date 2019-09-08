@@ -1,14 +1,10 @@
 use std::ffi::OsStr;
 use std::fmt;
-use std::fs::File;
-use std::path;
 use std::str;
 
 use log::{info, warn};
 
-use crate::osm::geo;
-use crate::routing::Graph;
-use crate::routing::GraphBuilder;
+use crate::network::{geo, GraphBuilder};
 
 mod pbf {
     pub use osmpbfreader::reader::Iter;
@@ -496,18 +492,10 @@ impl StreetType {
 //------------------------------------------------------------------------------------------------//
 
 pub struct Parser;
-
-impl Parser {
-    fn open_reader<S: AsRef<OsStr> + ?Sized>(path: &S) -> pbf::Reader<File> {
-        let path = path::Path::new(&path);
-        let file =
-            File::open(&path).expect(&format!("Expects the given path {:?} to exist.", path));
-        pbf::Reader::new(file)
-    }
-
+impl super::Parsing for Parser {
     fn parse_ways<S: AsRef<OsStr> + ?Sized>(path: &S, graph_builder: &mut GraphBuilder) {
         info!("Starting edge-creation using ways ..");
-        for mut way in Self::open_reader(&path)
+        for mut way in pbf::Reader::new(Self::open_file(&path))
             .par_iter()
             .filter_map(Result::ok)
             .filter_map(|obj| match obj {
@@ -554,7 +542,7 @@ impl Parser {
 
     fn parse_nodes<S: AsRef<OsStr> + ?Sized>(path: &S, graph_builder: &mut GraphBuilder) {
         info!("Starting node-creation using ways ..");
-        for node in Self::open_reader(&path)
+        for node in pbf::Reader::new(Self::open_file(&path))
             .par_iter()
             .filter_map(Result::ok)
             .filter_map(|obj| match obj {
@@ -570,23 +558,5 @@ impl Parser {
             }
         }
         info!("Finished node-creation using ways");
-    }
-
-    pub fn parse<S: AsRef<OsStr> + ?Sized>(path: &S) -> Graph {
-        info!("Starting parsing ..");
-
-        // TODO parse "cycleway" and others
-        // see https://wiki.openstreetmap.org/wiki/Key:highway
-
-        let mut graph_builder = GraphBuilder::new();
-
-        info!("Starting processing given pbf-file ..");
-        Self::parse_ways(&path, &mut graph_builder);
-        Self::parse_nodes(&path, &mut graph_builder);
-        info!("Finished processing given pbf-file");
-
-        let graph = graph_builder.finalize();
-        info!("Finished parsing");
-        graph
     }
 }

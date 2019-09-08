@@ -5,7 +5,7 @@ pub use building::{GraphBuilder, ProtoEdge, ProtoNode};
 
 use std::fmt;
 
-use crate::osm::geo;
+pub mod geo;
 
 //------------------------------------------------------------------------------------------------//
 

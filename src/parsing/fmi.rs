@@ -1,12 +1,8 @@
 use std::ffi::OsStr;
-use std::fs::File;
-use std::path;
 
-use log::{info, warn};
+use log::warn;
 
-use crate::routing;
-use routing::Graph;
-use routing::GraphBuilder;
+use crate::network::GraphBuilder;
 
 //------------------------------------------------------------------------------------------------//
 
@@ -15,9 +11,9 @@ mod fmi {
     use log::warn;
     use std::str;
 
-    use crate::osm::geo;
-
     pub use std::io::BufReader as Reader;
+
+    use crate::network::geo;
 
     pub struct ProtoNode {
         pub id: i64,
@@ -154,21 +150,14 @@ mod fmi {
 //------------------------------------------------------------------------------------------------//
 
 pub struct Parser;
-
 impl Parser {
-    fn open_reader<S: AsRef<OsStr> + ?Sized>(path: &S) -> fmi::Reader<File> {
-        let path = path::Path::new(&path);
-        let file =
-            File::open(&path).expect(&format!("Expects the given path {:?} to exist.", path));
-        fmi::Reader::new(file)
-    }
-
     fn is_line_functional(line: &String) -> bool {
         line != "" && line.chars().next() != Some('#')
     }
-
+}
+impl super::Parsing for Parser {
     fn parse_ways<S: AsRef<OsStr> + ?Sized>(path: &S, graph_builder: &mut GraphBuilder) {
-        for line in Self::open_reader(&path)
+        for line in fmi::Reader::new(Self::open_file(&path))
             .lines()
             .map(Result::unwrap)
             .filter(Self::is_line_functional)
@@ -190,7 +179,7 @@ impl Parser {
     }
 
     fn parse_nodes<S: AsRef<OsStr> + ?Sized>(path: &S, graph_builder: &mut GraphBuilder) {
-        for line in Self::open_reader(&path)
+        for line in fmi::Reader::new(Self::open_file(&path))
             .lines()
             .map(Result::unwrap)
             .filter(Self::is_line_functional)
@@ -199,20 +188,5 @@ impl Parser {
                 graph_builder.push_node(proto_node.id, proto_node.coord);
             }
         }
-    }
-
-    pub fn parse<S: AsRef<OsStr> + ?Sized>(path: &S) -> Graph {
-        info!("Starting parsing ..");
-
-        let mut graph_builder = GraphBuilder::new();
-
-        info!("Starting processing given fmi-file ..");
-        Self::parse_ways(&path, &mut graph_builder);
-        Self::parse_nodes(&path, &mut graph_builder);
-        info!("Finished processing given fmi-file");
-
-        let graph = graph_builder.finalize();
-        info!("Finished parsing");
-        graph
     }
 }

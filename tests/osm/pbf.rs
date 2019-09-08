@@ -1,29 +1,21 @@
 use std::ffi::OsString;
 
-use osmgraphing::osm;
+use osmgraphing::{Parser, Parsing};
 
 #[test]
 #[ignore]
 fn parsing() {
     let path = OsString::from("resources/osm/small.pbf"); // file missing
-    let _graph = osm::pbf::Parser::parse(&path);
+    let _graph = Parser::parse(&path);
 
     // check graph structure
     unimplemented!()
 }
 
 #[test]
-fn file_support() {
+fn parsing_wrong_extension() {
     assert!(
-        osm::Support::from_path(&OsString::from("foo.asdf")).is_err(),
+        Parser::parse(&OsString::from("foo.asdf")).is_err(),
         "File-extension 'asdf' should not be supported."
     );
-
-    let support = osm::Support::from_path(&OsString::from("foo.pbf"));
-    assert!(support.is_ok(), "File-extension 'pbf' is not supported.");
-    let support = support.unwrap();
-
-    assert_ne!(support, osm::Support::FMI);
-    assert_eq!(support, osm::Support::PBF);
-    assert_ne!(support, osm::Support::XML);
 }
