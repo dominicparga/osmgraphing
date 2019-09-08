@@ -70,6 +70,7 @@ impl super::Parsing for Parser {
                 _ => None,
             })
         {
+            // add node to graph if it's part of an edge
             if graph_builder.is_node_in_edge(node.id.0) {
                 graph_builder.push_node(
                     node.id.0,
