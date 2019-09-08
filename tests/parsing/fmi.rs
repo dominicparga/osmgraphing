@@ -131,9 +131,20 @@ impl TestEdge {
 // tests
 
 #[test]
-fn parsing() {
+fn small() {
     let path = OsString::from("resources/osm/small.fmi");
+    let _graph = match Parser::parse(&path) {
+        Ok(graph) => graph,
+        Err(msg) => {
+            error!("{}", msg);
+            return;
+        }
+    };
+}
 
+#[test]
+fn graph_construction() {
+    let path = OsString::from("resources/osm/small.fmi");
     let graph = match Parser::parse(&path) {
         Ok(graph) => graph,
         Err(msg) => {
@@ -244,12 +255,4 @@ fn parsing() {
     edge_end_stu.assert(&graph);
     edge_stu_wai.assert(&graph);
     edge_stu_end.assert(&graph);
-}
-
-#[test]
-fn parsing_wrong_extension() {
-    assert!(
-        Parser::parse(&OsString::from("foo.asdf")).is_err(),
-        "File-extension 'asdf' should not be supported."
-    );
 }
