@@ -156,7 +156,7 @@ mod fmi {
 pub struct Parser;
 
 impl Parser {
-    fn open_reader<S: AsRef<OsStr> + ?Sized>(&self, path: &S) -> fmi::Reader<File> {
+    fn open_reader<S: AsRef<OsStr> + ?Sized>(path: &S) -> fmi::Reader<File> {
         let path = path::Path::new(&path);
         let file =
             File::open(&path).expect(&format!("Expects the given path {:?} to exist.", path));
@@ -167,9 +167,8 @@ impl Parser {
         line != "" && line.chars().next() != Some('#')
     }
 
-    fn parse_ways<S: AsRef<OsStr> + ?Sized>(&self, path: &S, graph_builder: &mut GraphBuilder) {
-        for line in self
-            .open_reader(&path)
+    fn parse_ways<S: AsRef<OsStr> + ?Sized>(path: &S, graph_builder: &mut GraphBuilder) {
+        for line in Self::open_reader(&path)
             .lines()
             .map(Result::unwrap)
             .filter(Self::is_line_functional)
@@ -190,9 +189,8 @@ impl Parser {
         }
     }
 
-    fn parse_nodes<S: AsRef<OsStr> + ?Sized>(&self, path: &S, graph_builder: &mut GraphBuilder) {
-        for line in self
-            .open_reader(&path)
+    fn parse_nodes<S: AsRef<OsStr> + ?Sized>(path: &S, graph_builder: &mut GraphBuilder) {
+        for line in Self::open_reader(&path)
             .lines()
             .map(Result::unwrap)
             .filter(Self::is_line_functional)
@@ -203,14 +201,14 @@ impl Parser {
         }
     }
 
-    pub fn parse<S: AsRef<OsStr> + ?Sized>(&self, path: &S) -> Graph {
+    pub fn parse<S: AsRef<OsStr> + ?Sized>(path: &S) -> Graph {
         info!("Starting parsing ..");
 
         let mut graph_builder = GraphBuilder::new();
 
         info!("Starting processing given fmi-file ..");
-        self.parse_ways(&path, &mut graph_builder);
-        self.parse_nodes(&path, &mut graph_builder);
+        Self::parse_ways(&path, &mut graph_builder);
+        Self::parse_nodes(&path, &mut graph_builder);
         info!("Finished processing given fmi-file");
 
         let graph = graph_builder.finalize();

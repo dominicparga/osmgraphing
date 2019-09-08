@@ -6,11 +6,9 @@ use std::str;
 
 use log::{info, warn};
 
-use crate::osm;
-use crate::routing;
-use osm::geo;
-use routing::Graph;
-use routing::GraphBuilder;
+use crate::osm::geo;
+use crate::routing::Graph;
+use crate::routing::GraphBuilder;
 
 mod pbf {
     pub use osmpbfreader::reader::Iter;
@@ -500,17 +498,16 @@ impl StreetType {
 pub struct Parser;
 
 impl Parser {
-    fn open_reader<S: AsRef<OsStr> + ?Sized>(&self, path: &S) -> pbf::Reader<File> {
+    fn open_reader<S: AsRef<OsStr> + ?Sized>(path: &S) -> pbf::Reader<File> {
         let path = path::Path::new(&path);
         let file =
             File::open(&path).expect(&format!("Expects the given path {:?} to exist.", path));
         pbf::Reader::new(file)
     }
 
-    fn parse_ways<S: AsRef<OsStr> + ?Sized>(&self, path: &S, graph_builder: &mut GraphBuilder) {
+    fn parse_ways<S: AsRef<OsStr> + ?Sized>(path: &S, graph_builder: &mut GraphBuilder) {
         info!("Starting edge-creation using ways ..");
-        for mut way in self
-            .open_reader(&path)
+        for mut way in Self::open_reader(&path)
             .par_iter()
             .filter_map(Result::ok)
             .filter_map(|obj| match obj {
@@ -555,10 +552,9 @@ impl Parser {
         info!("Finished edge-creation using ways");
     }
 
-    fn parse_nodes<S: AsRef<OsStr> + ?Sized>(&self, path: &S, graph_builder: &mut GraphBuilder) {
+    fn parse_nodes<S: AsRef<OsStr> + ?Sized>(path: &S, graph_builder: &mut GraphBuilder) {
         info!("Starting node-creation using ways ..");
-        for node in self
-            .open_reader(&path)
+        for node in Self::open_reader(&path)
             .par_iter()
             .filter_map(Result::ok)
             .filter_map(|obj| match obj {
@@ -576,7 +572,7 @@ impl Parser {
         info!("Finished node-creation using ways");
     }
 
-    pub fn parse<S: AsRef<OsStr> + ?Sized>(&self, path: &S) -> Graph {
+    pub fn parse<S: AsRef<OsStr> + ?Sized>(path: &S) -> Graph {
         info!("Starting parsing ..");
 
         // TODO parse "cycleway" and others
@@ -585,8 +581,8 @@ impl Parser {
         let mut graph_builder = GraphBuilder::new();
 
         info!("Starting processing given pbf-file ..");
-        self.parse_ways(&path, &mut graph_builder);
-        self.parse_nodes(&path, &mut graph_builder);
+        Self::parse_ways(&path, &mut graph_builder);
+        Self::parse_nodes(&path, &mut graph_builder);
         info!("Finished processing given pbf-file");
 
         let graph = graph_builder.finalize();

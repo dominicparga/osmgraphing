@@ -132,8 +132,7 @@ impl TestEdge {
 fn parsing() {
     let path = OsString::from("resources/osm/small.fmi");
 
-    let parser = osm::fmi::Parser;
-    let graph = parser.parse(&path);
+    let graph = osm::fmi::Parser::parse(&path);
 
     //--------------------------------------------------------------------------------------------//
     // setup correct data

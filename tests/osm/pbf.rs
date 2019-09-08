@@ -6,8 +6,7 @@ use osmgraphing::osm;
 #[ignore]
 fn parsing() {
     let path = OsString::from("resources/osm/small.pbf"); // file missing
-    let parser = osm::pbf::Parser;
-    let _graph = parser.parse(&path);
+    let _graph = osm::pbf::Parser::parse(&path);
 
     // check graph structure
     unimplemented!()

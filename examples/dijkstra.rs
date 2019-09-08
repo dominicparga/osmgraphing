@@ -18,14 +18,8 @@ fn main() {
 
     let now = Instant::now();
     let graph = match osm::Support::from_path(&path) {
-        Ok(osm::Support::PBF) => {
-            let parser = osm::pbf::Parser;
-            parser.parse(&path)
-        }
-        Ok(osm::Support::FMI) => {
-            let parser = osm::fmi::Parser;
-            parser.parse(&path)
-        }
+        Ok(osm::Support::PBF) => osm::pbf::Parser::parse(&path),
+        Ok(osm::Support::FMI) => osm::fmi::Parser::parse(&path),
         Ok(osm::Support::XML) => unimplemented!(),
         Err(e) => panic!("{:}", e),
     };
