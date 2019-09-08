@@ -1,15 +1,21 @@
 use std::ffi::OsString;
 
+use log::error;
+
 use osmgraphing::{Parser, Parsing};
 
 #[test]
-#[ignore]
 fn parsing() {
-    let path = OsString::from("resources/osm/small.pbf"); // file missing
-    let _graph = Parser::parse(&path);
+    let path = OsString::from("resources/osm/isle-of-man_2019-09-05.osm.pbf");
+    let _graph = match Parser::parse(&path) {
+        Ok(graph) => graph,
+        Err(msg) => {
+            error!("{}", msg);
+            return;
+        }
+    };
 
-    // check graph structure
-    unimplemented!()
+    // TODO check graph structure
 }
 
 #[test]
