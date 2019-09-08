@@ -12,22 +12,18 @@ pub struct ProtoNode {
     coord: Option<geo::Coordinate>,
     is_edge_node: bool,
 }
-
 impl Ord for ProtoNode {
     fn cmp(&self, other: &ProtoNode) -> Ordering {
         // inverse order since BinaryHeap is max-heap, but min-heap is needed
         other.id.cmp(&self.id)
     }
 }
-
 impl PartialOrd for ProtoNode {
     fn partial_cmp(&self, other: &ProtoNode) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
-
 impl Eq for ProtoNode {}
-
 impl PartialEq for ProtoNode {
     fn eq(&self, other: &ProtoNode) -> bool {
         self.cmp(other) == Ordering::Equal
@@ -50,7 +46,6 @@ pub struct GraphBuilder {
     proto_nodes: BTreeMap<i64, ProtoNode>,
     proto_edges: Vec<ProtoEdge>,
 }
-
 impl GraphBuilder {
     pub fn new() -> Self {
         Self {

@@ -1,4 +1,5 @@
 use std::ffi::OsStr;
+use std::io::BufRead;
 
 use log::warn;
 
@@ -6,14 +7,17 @@ use crate::network::GraphBuilder;
 
 //------------------------------------------------------------------------------------------------//
 
-use std::io::BufRead;
 mod fmi {
+    pub use std::io::BufReader as Reader;
+
+    //--------------------------------------------------------------------------------------------//
+
     use log::warn;
     use std::str;
 
-    pub use std::io::BufReader as Reader;
-
     use crate::network::geo;
+
+    //--------------------------------------------------------------------------------------------//
 
     pub struct ProtoNode {
         pub id: i64,
@@ -69,6 +73,8 @@ mod fmi {
             })
         }
     }
+
+    //--------------------------------------------------------------------------------------------//
 
     pub struct ProtoEdge {
         pub way_id: Option<i64>,

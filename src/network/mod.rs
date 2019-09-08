@@ -1,11 +1,12 @@
 mod building;
 pub use building::{GraphBuilder, ProtoEdge, ProtoNode};
+mod defaults;
+pub mod geo;
+pub use defaults::StreetType;
 
 //------------------------------------------------------------------------------------------------//
 
 use std::fmt;
-
-pub mod geo;
 
 //------------------------------------------------------------------------------------------------//
 
@@ -14,7 +15,6 @@ pub struct Node {
     id: i64,
     coord: geo::Coordinate,
 }
-
 impl Node {
     pub fn id(&self) -> i64 {
         self.id
@@ -29,7 +29,6 @@ impl Node {
         self.coord.lon()
     }
 }
-
 impl fmt::Display for Node {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "Node: {{ id: {}, {} }}", self.id, self.coord,)
@@ -46,7 +45,6 @@ pub struct Edge {
     meters: u32,
     maxspeed: u16,
 }
-
 impl Edge {
     pub fn id(&self) -> i64 {
         self.id
@@ -64,7 +62,6 @@ impl Edge {
         self.maxspeed
     }
 }
-
 impl fmt::Display for Edge {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
@@ -83,7 +80,6 @@ pub struct Graph {
     edges: Vec<Edge>,
     offsets: Vec<usize>,
 }
-
 impl Graph {
     fn new() -> Graph {
         Graph {
@@ -150,7 +146,6 @@ impl Graph {
         }
     }
 }
-
 impl fmt::Display for Graph {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         writeln!(
