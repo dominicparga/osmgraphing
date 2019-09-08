@@ -1,7 +1,6 @@
-mod graph;
-pub use graph::Graph;
-pub use graph::GraphBuilder;
-pub use graph::{Edge, Node};
+mod network;
+pub use network::{Edge, Graph, Node};
+pub use network::{GraphBuilder, ProtoEdge, ProtoNode};
 
 mod pathfinding;
 pub use pathfinding::Dijkstra;
