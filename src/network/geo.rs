@@ -6,7 +6,6 @@ pub struct Coordinate {
     pub decimicro_lat: i32,
     pub decimicro_lon: i32,
 }
-
 impl Coordinate {
     pub fn new(decimicro_lat: i32, decimicro_lon: i32) -> Coordinate {
         Coordinate {
@@ -30,16 +29,13 @@ impl Coordinate {
         self.decimicro_lon as f64 * 1e-7
     }
 }
-
 impl Eq for Coordinate {}
-
 impl PartialEq for Coordinate {
     fn eq(&self, other: &Coordinate) -> bool {
         self.decimicro_lat.cmp(&other.decimicro_lat) == Ordering::Equal
             && self.decimicro_lon.cmp(&other.decimicro_lon) == Ordering::Equal
     }
 }
-
 impl fmt::Display for Coordinate {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(

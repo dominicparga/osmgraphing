@@ -2,9 +2,7 @@ use std::borrow::Cow;
 use std::cmp::Ordering;
 use std::collections::BinaryHeap;
 
-use crate::routing;
-use routing::Edge;
-use routing::Graph;
+use crate::network::{Edge, Graph};
 
 //------------------------------------------------------------------------------------------------//
 // nodes

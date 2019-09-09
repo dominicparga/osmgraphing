@@ -1,11 +1,11 @@
 use std::ffi::OsString;
 
-use osmgraphing::osm;
-use osmgraphing::osm::geo;
-use osmgraphing::routing;
+use log::error;
+
+use osmgraphing::network::{geo, Graph};
+use osmgraphing::{Parser, Parsing};
 
 //------------------------------------------------------------------------------------------------//
-// helpers
 
 struct TestNode {
     name: String,
@@ -20,7 +20,7 @@ impl TestNode {
         id: i64,
         decimicro_lat: i32,
         decimicro_lon: i32,
-        graph: &routing::Graph,
+        graph: &Graph,
     ) -> TestNode {
         let idx = graph
             .node_idx_from(id)
@@ -34,7 +34,7 @@ impl TestNode {
         }
     }
 
-    fn assert(&self, graph: &routing::Graph) {
+    fn assert(&self, graph: &Graph) {
         let node = graph.node(self.idx);
         let coord = geo::Coordinate::new(self.decimicro_lat, self.decimicro_lon);
         assert_eq!(
@@ -53,6 +53,8 @@ impl TestNode {
         );
     }
 }
+
+//------------------------------------------------------------------------------------------------//
 
 struct TestEdge {
     name: String,
@@ -81,7 +83,7 @@ impl TestEdge {
         }
     }
 
-    fn assert(&self, graph: &routing::Graph) {
+    fn assert(&self, graph: &Graph) {
         let edge = graph.edge(self.src_idx, self.dst_idx).expect(&format!(
             "Edge (src_idx, dst_idx): ({}, {}) does not exist.",
             self.src_idx, self.dst_idx
@@ -129,11 +131,27 @@ impl TestEdge {
 // tests
 
 #[test]
-fn parsing() {
+fn small() {
     let path = OsString::from("resources/osm/small.fmi");
+    let _graph = match Parser::parse(&path) {
+        Ok(graph) => graph,
+        Err(msg) => {
+            error!("{}", msg);
+            return;
+        }
+    };
+}
 
-    let parser = osm::fmi::Parser;
-    let graph = parser.parse(&path);
+#[test]
+fn graph_construction() {
+    let path = OsString::from("resources/osm/small.fmi");
+    let graph = match Parser::parse(&path) {
+        Ok(graph) => graph,
+        Err(msg) => {
+            error!("{}", msg);
+            return;
+        }
+    };
 
     //--------------------------------------------------------------------------------------------//
     // setup correct data
@@ -237,20 +255,4 @@ fn parsing() {
     edge_end_stu.assert(&graph);
     edge_stu_wai.assert(&graph);
     edge_stu_end.assert(&graph);
-}
-
-#[test]
-fn file_support() {
-    assert!(
-        osm::Support::from_path(&OsString::from("foo.asdf")).is_err(),
-        "File-extension 'asdf' should not be supported."
-    );
-
-    let support = osm::Support::from_path(&OsString::from("foo.fmi"));
-    assert!(support.is_ok(), "File-extension 'fmi' is not supported.");
-    let support = support.unwrap();
-
-    assert_eq!(support, osm::Support::FMI);
-    assert_ne!(support, osm::Support::PBF);
-    assert_ne!(support, osm::Support::XML);
 }

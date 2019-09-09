@@ -3,7 +3,7 @@
 
 # Ignore line ending conversion for binary files
 *.jar   binary
+*.jpg   binary
+*.pbf   binary
 *.pdf   binary
 *.png   binary
-*.jpg   binary
-*.note  binary
