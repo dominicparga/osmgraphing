@@ -1,48 +1,5 @@
-use actix_web::{web, HttpResponse, HttpServer};
 use clap;
-
-//------------------------------------------------------------------------------------------------//
-
-mod api {
-    use actix_web::{web, HttpResponse, Responder};
-
-    fn sth() -> impl Responder {
-        HttpResponse::Ok().body("sth")
-    }
-
-    fn foo() -> impl Responder {
-        HttpResponse::Ok().body("foo")
-    }
-
-    pub fn config(cfg: &mut web::ServiceConfig) {
-        cfg.route("/foo", web::get().to(foo)).service(
-            web::resource("/{sth}")
-                .route(web::get().to(sth))
-                .route(web::head().to(|| HttpResponse::MethodNotAllowed())),
-        );
-    }
-}
-
-fn config(cfg: &mut web::ServiceConfig) {
-    cfg.service(
-        web::resource("/app")
-            .route(web::get().to(|| HttpResponse::Ok().body("app")))
-            .route(web::head().to(|| HttpResponse::MethodNotAllowed())),
-    );
-}
-
-fn run_server() {
-    HttpServer::new(|| {
-        actix_web::App::new()
-            .configure(config)
-            .service(web::scope("/api").configure(api::config))
-            .route("/", web::get().to(|| HttpResponse::Ok().body("/")))
-    })
-    .bind("localhost:8080")
-    .unwrap()
-    .run()
-    .unwrap();
-}
+use osmgraphing::ui;
 
 //------------------------------------------------------------------------------------------------//
 
@@ -71,5 +28,5 @@ fn parse_cmdline<'a>() -> clap::ArgMatches<'a> {
 fn main() {
     env_logger::Builder::from_env("RUST_LOG").init();
     let _matches = parse_cmdline();
-    run_server();
+    ui::server::run();
 }
