@@ -36,13 +36,17 @@ name = "dijkstra"
 path = "examples/dijkstra.rs"
 
 [[example]]
-name = "xml_reader"
-path = "examples/playground/xml_reader.rs"
+name = "actix"
+path = "examples/playground/actix.rs"
+
+[[example]]
+name = "graph"
+path = "examples/playground/graph.rs"
 
 [[example]]
 name = "pipes_and_filters"
 path = "examples/playground/pipes_and_filters.rs"
 
 [[example]]
-name = "graph"
-path = "examples/playground/graph.rs"
+name = "xml_reader"
+path = "examples/playground/xml_reader.rs"
