@@ -1,9 +1,9 @@
-use std::sync::mpsc;
-use std::thread;
+// use std::sync::mpsc;
+// use std::thread;
 
 use actix_web::{web, HttpResponse, HttpServer};
 use clap;
-use futures::future::Future;
+// use futures::future::Future;
 
 //------------------------------------------------------------------------------------------------//
 
@@ -42,54 +42,54 @@ fn config(cfg: &mut web::ServiceConfig) {
 }
 
 fn run_server() {
-    let (tx, rx) = mpsc::channel();
-    thread::spawn(move || {
-        let addr = "127.0.0.1:8080";
-        let sys = actix_rt::System::new("http-server");
+    // let (tx, rx) = mpsc::channel();
+    // thread::spawn(move || {
+    let addr = "127.0.0.1:8080";
+    let sys = actix_rt::System::new("http-server");
 
-        let server = HttpServer::new(|| {
-            actix_web::App::new()
-                .configure(config)
-                .service(web::scope("/api").configure(api::config))
-                .route("/", web::get().to(|| HttpResponse::Ok().body("/")))
-        })
-        .bind(addr)
-        .unwrap()
-        .shutdown_timeout(60)
-        .start();
+    let _server = HttpServer::new(|| {
+        actix_web::App::new()
+            .configure(config)
+            .service(web::scope("/api").configure(api::config))
+            .route("/", web::get().to(|| HttpResponse::Ok().body("/")))
+    })
+    .bind(addr)
+    .unwrap()
+    .shutdown_timeout(60)
+    .start();
 
-        println!(
-            "{}",
-            &[
-                "Server is available.".to_owned(),
-                format!("Try {}", addr),
-                format!("Try {}/app", addr),
-                format!("Try {}/api", addr),
-                format!("Try {}/api/YOUR_NAME", addr),
-            ]
-            .join("\n")
-        );
+    println!(
+        "{}",
+        &[
+            "Server is available.".to_owned(),
+            format!("Try {}", addr),
+            format!("Try {}/app", addr),
+            format!("Try {}/api", addr),
+            format!("Try {}/api/YOUR_NAME", addr),
+        ]
+        .join("\n")
+    );
 
-        tx.send(server).unwrap();
-        sys.run().unwrap();
-    });
+    // tx.send(server).unwrap();
+    sys.run().unwrap();
+    // });
 
-    let server = rx.recv().unwrap();
-    server
-        .pause()
-        .wait()
-        .map(|_| println!("actix_server::ServerCommand::Pause"))
-        .unwrap();
-    server
-        .resume()
-        .wait()
-        .map(|_| println!("actix_server::ServerCommand::Resume"))
-        .unwrap();
-    server
-        .stop(true)
-        .wait()
-        .map(|_| println!("actix_server::ServerCommand::Stop"))
-        .unwrap();
+    // let server = rx.recv().unwrap();
+    // server
+    //     .pause()
+    //     .wait()
+    //     .map(|_| println!("actix_server::ServerCommand::Pause"))
+    //     .unwrap();
+    // server
+    //     .resume()
+    //     .wait()
+    //     .map(|_| println!("actix_server::ServerCommand::Resume"))
+    //     .unwrap();
+    // server
+    //     .stop(true)
+    //     .wait()
+    //     .map(|_| println!("actix_server::ServerCommand::Stop"))
+    //     .unwrap();
 }
 
 //------------------------------------------------------------------------------------------------//
