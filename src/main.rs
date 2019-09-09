@@ -28,5 +28,6 @@ fn parse_cmdline<'a>() -> clap::ArgMatches<'a> {
 fn main() {
     env_logger::Builder::from_env("RUST_LOG").init();
     let _matches = parse_cmdline();
+    println!("Starting server (localhost:8080)");
     ui::server::run();
 }
