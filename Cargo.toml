@@ -19,11 +19,12 @@ travis-ci = { repository = "dominicparga/osmgraphing", branch = "master" }
 
 
 [dependencies]
-clap = "2.33"
+actix-web = "1.0" # backend-server
+clap = "2.33" # cmdline-parsing
 env_logger = "0.6" # logging for external use, e.g. main.rs and examples
 log = "0.4"        # logging for internal use, e.g. lib.rs
-osmpbfreader = "0.13"
-quick-xml = "0.14"
+osmpbfreader = "0.13" # read osm.pbf-files
+quick-xml = "0.14" # read xml-files
 
 
 [[example]]

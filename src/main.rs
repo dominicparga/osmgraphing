@@ -1,4 +1,39 @@
+use actix_web::{web, HttpResponse, HttpServer, Responder};
 use clap;
+
+//------------------------------------------------------------------------------------------------//
+
+fn index() -> impl Responder {
+    HttpResponse::Ok().body("Hello world!")
+}
+
+fn index2() -> impl Responder {
+    HttpResponse::Ok().body("Hello world again!")
+}
+
+fn index3() -> impl Responder {
+    HttpResponse::Ok().body("Hey there!")
+}
+
+fn run_server() {
+    HttpServer::new(|| {
+        actix_web::App::new()
+            .route("/", web::get().to(|| HttpResponse::Ok()))
+            .service(
+                web::scope("/blub")
+                    .route("", web::to(index))
+                    .route("/", web::to(index))
+                    .route("/again", web::to(index2))
+                    .route("/hello", web::to(index3)),
+            )
+    })
+    .bind("localhost:8088")
+    .unwrap()
+    .run()
+    .unwrap();
+}
+
+//------------------------------------------------------------------------------------------------//
 
 fn parse_cmdline<'a>() -> clap::ArgMatches<'a> {
     clap::App::new(env!("CARGO_PKG_NAME"))
@@ -24,7 +59,6 @@ fn parse_cmdline<'a>() -> clap::ArgMatches<'a> {
 
 fn main() {
     env_logger::Builder::from_env("RUST_LOG").init();
-
     let _matches = parse_cmdline();
-    println!("{:?}", _matches);
+    run_server();
 }
