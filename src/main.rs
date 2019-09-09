@@ -38,7 +38,7 @@ fn run_server() {
             .service(web::scope("/api").configure(api::config))
             .route("/", web::get().to(|| HttpResponse::Ok().body("/")))
     })
-    .bind("localhost:8088")
+    .bind("localhost:8080")
     .unwrap()
     .run()
     .unwrap();
