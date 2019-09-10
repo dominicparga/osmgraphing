@@ -10,12 +10,14 @@ Goal of this student project is parsing [openstreetmap][www_openstreetmap] data 
 ## News
 
 The automatic deployment to [crates.io][www_cratesio_osmgraphing] is working.
+The parser has been finished and can parse Germany in ±8 minutes on a common machine.
 
-A lot of repo-work (creating issues, labels, deployments) has been done the past week.
-Several branches contain great work (e.g. finished, but unoptimized parser), that has to be merged into the master.
-This will be done immediately after the automated deployment is working.
+Next step will be trying to find potential bottlenecks in street-networks.
+The idea is to calculate some routes via selfish routing (e.g. fastest path), resulting in routes and theoretical costs.
+With these selfish-routes, actual route-costs are calculated.
+These actual costs could be very different to the theoretical costs, since selfish routing leads to bad coverage of the streetgraph.
+The goal is to reduce the actual costs by removing edges from the streetgraph using the number of routes per edge.
 
-After cleaning up and working off some issues (e.g. multi-stage-parsing), this project will try to find potential bottlenecks in street-networks.
 Documentation and info follows. :)
 
 ## Setup and usage

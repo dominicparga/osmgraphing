@@ -1,5 +1,4 @@
 use clap;
-use osmgraphing::ui;
 
 //------------------------------------------------------------------------------------------------//
 
@@ -21,12 +20,6 @@ fn parse_cmdline<'a>() -> clap::ArgMatches<'a> {
             ]
             .join("\n"))
                 .as_ref(),
-        )
-        .arg(
-            clap::Arg::with_name("server")
-                .short("s")
-                .long("server")
-                .help("Runs as server"),
         )
         .arg(
             clap::Arg::with_name("verbose")
@@ -67,7 +60,7 @@ fn main() {
     let matches = parse_cmdline();
     setup_logging(matches.is_present("verbose"));
 
-    if matches.is_present("server") {
-        ui::server::run();
+    if matches.args.len() == 0 {
+        println!("Execute `cargo run -- -h` (or `.../osmgraphing -h`) for more info.");
     }
 }
