@@ -2,7 +2,7 @@ use std::ffi::OsString;
 
 use log::error;
 
-use osmgraphing::{Parser, Parsing};
+use osmgraphing::Parser;
 
 #[test]
 fn isle_of_man() {

@@ -1,4 +1,4 @@
-use std::ffi::OsStr;
+use std::fs::File;
 
 use log::info;
 
@@ -13,9 +13,9 @@ mod pbf {
 
 pub struct Parser;
 impl super::Parsing for Parser {
-    fn parse_ways<S: AsRef<OsStr> + ?Sized>(path: &S, graph_builder: &mut GraphBuilder) {
+    fn parse_ways(file: File, graph_builder: &mut GraphBuilder) {
         info!("Starting edge-creation using ways ..");
-        for mut way in pbf::Reader::new(Self::open_file(&path))
+        for mut way in pbf::Reader::new(file)
             .par_iter()
             .filter_map(Result::ok)
             .filter_map(|obj| match obj {
@@ -60,9 +60,9 @@ impl super::Parsing for Parser {
         info!("Finished edge-creation using ways");
     }
 
-    fn parse_nodes<S: AsRef<OsStr> + ?Sized>(path: &S, graph_builder: &mut GraphBuilder) {
+    fn parse_nodes(file: File, graph_builder: &mut GraphBuilder) {
         info!("Starting node-creation using ways ..");
-        for node in pbf::Reader::new(Self::open_file(&path))
+        for node in pbf::Reader::new(file)
             .par_iter()
             .filter_map(Result::ok)
             .filter_map(|obj| match obj {

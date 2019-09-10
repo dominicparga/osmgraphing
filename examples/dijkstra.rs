@@ -1,13 +1,33 @@
 use std::ffi::OsString;
 use std::time::Instant;
 
-use log::error;
+use log::{error, info};
 
-use osmgraphing::{routing, Parser, Parsing};
+use osmgraphing::{routing, Parser};
+
+fn init_logging(verbosely: bool) {
+    let mut builder = env_logger::Builder::new();
+    // minimum filter-level: `warn`
+    builder.filter(None, log::LevelFilter::Warn);
+    // if verbose logging: log `info` for the server and this repo
+    if verbosely {
+        builder.filter(Some("dijkstra"), log::LevelFilter::Info);
+        builder.filter(Some("osmgraphing"), log::LevelFilter::Info);
+    }
+    // overwrite default with environment-variables
+    if let Ok(filters) = std::env::var("RUST_LOG") {
+        builder.parse_filters(&filters);
+    }
+    if let Ok(write_style) = std::env::var("RUST_LOG_STYLE") {
+        builder.parse_write_style(&write_style);
+    }
+    // init
+    builder.init();
+}
 
 fn main() {
-    env_logger::Builder::from_env("RUST_LOG").init();
-    println!("Executing example: dijkstra");
+    init_logging(true);
+    info!("Executing example: dijkstra");
 
     //----------------------------------------------------------------------------------------------
     // parsing
@@ -25,13 +45,13 @@ fn main() {
             return;
         }
     };
-    println!(
-        "Finished parsing in {} seconds ({} ms).",
+    info!(
+        "Finished parsing in {} seconds ({} µs).",
         now.elapsed().as_secs(),
         now.elapsed().as_micros(),
     );
-    println!("");
-    println!("{}", graph);
+    info!("");
+    info!("{}", graph);
 
     //----------------------------------------------------------------------------------------------
     // dijkstra
@@ -47,16 +67,16 @@ fn main() {
     for dst_idx in dsts {
         let dst = graph.node(dst_idx);
 
-        println!("");
+        info!("");
 
         let now = Instant::now();
         let path = dijkstra.compute_shortest_path(src_idx, dst_idx);
-        println!(
-            "Ran Dijkstra in {} microseconds a.k.a {} seconds",
+        info!(
+            "Ran Dijkstra in {} µs a.k.a {} seconds",
             now.elapsed().as_micros(),
             now.elapsed().as_secs()
         );
-        println!(
+        info!(
             "Distance {} m from ({}) to ({}).",
             path.cost[dst_idx], src, dst
         );

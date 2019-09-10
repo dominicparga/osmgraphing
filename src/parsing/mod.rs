@@ -7,24 +7,27 @@ use std::ffi::OsStr;
 use std::fs::File;
 use std::path::Path;
 
-use log::{error, info};
+use log::info;
 
 use crate::network::{Graph, GraphBuilder};
 
 //------------------------------------------------------------------------------------------------//
 
-pub trait Parsing {
-    fn open_file<S: AsRef<OsStr> + ?Sized>(path: &S) -> File {
+trait Parsing {
+    fn open_file<S: AsRef<OsStr> + ?Sized>(path: &S) -> Result<File, String> {
         let path = Path::new(&path);
-        File::open(&path).expect(&format!("File {:?} not found.", &path))
+        match File::open(&path) {
+            Ok(file) => Ok(file),
+            Err(_) => Err(format!("No such file {:?}", path)),
+        }
     }
 
-    fn parse_ways<S: AsRef<OsStr> + ?Sized>(path: &S, graph_builder: &mut GraphBuilder);
+    fn parse_ways(file: File, graph_builder: &mut GraphBuilder);
 
-    fn parse_nodes<S: AsRef<OsStr> + ?Sized>(path: &S, graph_builder: &mut GraphBuilder);
+    fn parse_nodes(file: File, graph_builder: &mut GraphBuilder);
 
     fn parse<S: AsRef<OsStr> + ?Sized>(path: &S) -> Result<Graph, String> {
-        info!("Starting parsing ..");
+        info!("Starting parsing given path {:?} ..", &Path::new(&path));
 
         // TODO parse "cycleway" and others
         // see https://wiki.openstreetmap.org/wiki/Key:highway
@@ -32,8 +35,14 @@ pub trait Parsing {
         let mut graph_builder = GraphBuilder::new();
 
         info!("Starting processing given pbf-file ..");
-        Self::parse_ways(&path, &mut graph_builder);
-        Self::parse_nodes(&path, &mut graph_builder);
+        match Self::open_file(&path) {
+            Ok(file) => Self::parse_ways(file, &mut graph_builder),
+            Err(msg) => return Err(msg),
+        }
+        match Self::open_file(&path) {
+            Ok(file) => Self::parse_nodes(file, &mut graph_builder),
+            Err(msg) => return Err(msg),
+        }
         info!("Finished processing given pbf-file");
 
         let graph = graph_builder.finalize();
@@ -71,30 +80,17 @@ impl Type {
                 Err(String::from("Filename is invalid Unicode."))
             }
         } else {
-            Err(format!("The file `{:?}` has no extension.", &path))
+            Err(format!(
+                "The file {:?} has no extension. Supported extensions are {:?}",
+                &path, supported_exts
+            ))
         }
     }
 }
 
 pub struct Parser;
-impl Parsing for Parser {
-    fn parse_ways<S: AsRef<OsStr> + ?Sized>(path: &S, graph_builder: &mut GraphBuilder) {
-        match Type::from_path(path) {
-            Ok(Type::PBF) => pbf::Parser::parse_ways(path, graph_builder),
-            Ok(Type::FMI) => fmi::Parser::parse_ways(path, graph_builder),
-            Err(msg) => error!("{}", msg),
-        }
-    }
-
-    fn parse_nodes<S: AsRef<OsStr> + ?Sized>(path: &S, graph_builder: &mut GraphBuilder) {
-        match Type::from_path(path) {
-            Ok(Type::PBF) => pbf::Parser::parse_nodes(path, graph_builder),
-            Ok(Type::FMI) => fmi::Parser::parse_nodes(path, graph_builder),
-            Err(msg) => error!("{}", msg),
-        }
-    }
-
-    fn parse<S: AsRef<OsStr> + ?Sized>(path: &S) -> Result<Graph, String> {
+impl Parser {
+    pub fn parse<S: AsRef<OsStr> + ?Sized>(path: &S) -> Result<Graph, String> {
         match Type::from_path(path) {
             Ok(Type::PBF) => pbf::Parser::parse(path),
             Ok(Type::FMI) => fmi::Parser::parse(path),
