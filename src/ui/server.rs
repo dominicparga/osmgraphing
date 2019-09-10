@@ -1,4 +1,17 @@
-use actix_web::{middleware, web, HttpResponse, HttpServer};
+use actix_files;
+use actix_web::guard;
+use actix_web::http::StatusCode;
+use actix_web::{middleware, web, HttpRequest, HttpResponse, HttpServer, Result};
+
+//------------------------------------------------------------------------------------------------//
+
+fn _index(_req: HttpRequest) -> Result<HttpResponse> {
+    // println!("{:?}", _req);
+
+    Ok(HttpResponse::build(StatusCode::OK)
+        .content_type("text/html; charset=utf-8")
+        .body(include_str!("client/index.html")))
+}
 
 //------------------------------------------------------------------------------------------------//
 
@@ -28,24 +41,35 @@ mod api {
     }
 }
 
-fn index() -> HttpResponse {
-    HttpResponse::Ok()
-        .content_type("text/html; charset=utf-8")
-        .body(include_str!("client/index.html"))
+fn code404() -> Result<actix_files::NamedFile> {
+    let f = actix_files::NamedFile::open("src/ui/client/code404.html");
+    if f.is_err() {
+        log::error!("code404-file not found");
+    }
+    Ok(f?.set_status_code(StatusCode::NOT_FOUND))
 }
 
 pub fn run() {
     let domain = std::env::var("DOMAIN").unwrap_or("localhost:8080".to_owned());
 
-    // let static_files = fs::StaticFiles::new("client/")
-    //     .expect("failed constructing static files handler");
-
     HttpServer::new(|| {
         actix_web::App::new()
-            .wrap(middleware::Logger::default())
-            .route("/", web::get().to(index))
-            // .resource("/").handler("/client", static_files)
+            .wrap(middleware::Logger::default()) // always last
+            // https://stackoverflow.com/questions/57500023/served-javascript-file-is-blank
             .service(web::scope("/api").configure(api::config))
+            .service(actix_files::Files::new("", "./src/ui/").index_file("client/index.html"))
+            // default service
+            .default_service(
+                // 404 for GET request
+                web::resource("")
+                    .route(web::get().to(code404))
+                    // all requests that are not `GET`
+                    .route(
+                        web::route()
+                            .guard(guard::Not(guard::Get()))
+                            .to(HttpResponse::MethodNotAllowed),
+                    ),
+            )
     })
     .bind(domain)
     .unwrap()
