@@ -19,10 +19,15 @@ travis-ci = { repository = "dominicparga/osmgraphing", branch = "master" }
 
 
 [dependencies]
-quick-xml = "0.14"
-osmpbfreader = "0.13"
-log = "0.4"        # for internal use, e.g. lib.rs
-env_logger = "0.6" # for external use, e.g. main.rs and examples
+actix-rt = "0.2" # backend-server
+actix-web = "1.0" # backend-server
+clap = "2.33" # cmdline-parsing
+env_logger = "0.6" # logging for external use, e.g. main.rs and examples
+futures = "0.1" # backend-server
+log = "0.4"        # logging for internal use, e.g. lib.rs
+osmpbfreader = "0.13" # read osm.pbf-files
+quick-xml = "0.14" # read xml-files
+serde = "1.0" # serialization
 
 
 [[example]]
@@ -34,13 +39,17 @@ name = "dijkstra"
 path = "examples/dijkstra.rs"
 
 [[example]]
-name = "xml_reader"
-path = "examples/playground/xml_reader.rs"
+name = "actix"
+path = "examples/playground/actix.rs"
+
+[[example]]
+name = "graph"
+path = "examples/playground/graph.rs"
 
 [[example]]
 name = "pipes_and_filters"
 path = "examples/playground/pipes_and_filters.rs"
 
 [[example]]
-name = "graph"
-path = "examples/playground/graph.rs"
+name = "xml_reader"
+path = "examples/playground/xml_reader.rs"
