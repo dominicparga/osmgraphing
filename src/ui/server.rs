@@ -1,4 +1,4 @@
-use actix_web::{web, HttpResponse, HttpServer};
+use actix_web::{middleware, web, HttpResponse, HttpServer};
 
 //------------------------------------------------------------------------------------------------//
 
@@ -35,13 +35,19 @@ fn index() -> HttpResponse {
 }
 
 pub fn run() {
+    let domain = std::env::var("DOMAIN").unwrap_or("localhost:8080".to_owned());
+
+    // let static_files = fs::StaticFiles::new("client/")
+    //     .expect("failed constructing static files handler");
+
     HttpServer::new(|| {
         actix_web::App::new()
-            // .route("", web::get().to(index))
+            .wrap(middleware::Logger::default())
             .route("/", web::get().to(index))
+            // .resource("/").handler("/client", static_files)
             .service(web::scope("/api").configure(api::config))
     })
-    .bind("127.0.0.1:8080")
+    .bind(domain)
     .unwrap()
     .run()
     .unwrap();
