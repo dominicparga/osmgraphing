@@ -139,22 +139,22 @@ fn small() {
     // Due to the offset-array, the edge-ids should match with sorting by src-id, then by dst-id.
     // -> testing offset-array
     // name, id, src, dst, meters, maxspeed
-    let edge_b_a = TestEdge::from(None, 0, &node_b, &node_a, 1_000, 30);
-    let edge_b_c = TestEdge::from(None, 1, &node_b, &node_c, 1_000, 30);
-    let edge_c_a = TestEdge::from(None, 2, &node_c, &node_a, 1_000, 30);
-    let edge_c_b = TestEdge::from(None, 3, &node_c, &node_b, 1_000, 30);
-    let edge_d_b = TestEdge::from(None, 4, &node_d, &node_b, 1_000, 30);
-    let edge_d_e = TestEdge::from(None, 5, &node_d, &node_e, 2_000, 30);
-    let edge_d_h = TestEdge::from(None, 6, &node_d, &node_h, 1_000, 30);
-    let edge_e_d = TestEdge::from(None, 7, &node_e, &node_d, 2_000, 30);
-    let edge_e_f = TestEdge::from(None, 8, &node_e, &node_f, 1_000, 30);
-    let edge_f_e = TestEdge::from(None, 9, &node_f, &node_e, 1_000, 30);
-    let edge_f_h = TestEdge::from(None, 10, &node_f, &node_h, 1_000, 30);
-    let edge_g_e = TestEdge::from(None, 11, &node_g, &node_e, 1_000, 30);
-    let edge_g_f = TestEdge::from(None, 12, &node_g, &node_f, 1_000, 30);
-    let edge_h_c = TestEdge::from(None, 13, &node_h, &node_c, 4_000, 30);
-    let edge_h_d = TestEdge::from(None, 14, &node_h, &node_d, 1_000, 30);
-    let edge_h_f = TestEdge::from(None, 15, &node_h, &node_f, 1_000, 30);
+    let edge_b_a = TestEdge::from(None, 0, &node_b, &node_a, 1, 30);
+    let edge_b_c = TestEdge::from(None, 1, &node_b, &node_c, 1, 30);
+    let edge_c_a = TestEdge::from(None, 2, &node_c, &node_a, 1, 30);
+    let edge_c_b = TestEdge::from(None, 3, &node_c, &node_b, 1, 30);
+    let edge_d_b = TestEdge::from(None, 4, &node_d, &node_b, 1, 30);
+    let edge_d_e = TestEdge::from(None, 5, &node_d, &node_e, 2, 30);
+    let edge_d_h = TestEdge::from(None, 6, &node_d, &node_h, 1, 30);
+    let edge_e_d = TestEdge::from(None, 7, &node_e, &node_d, 2, 30);
+    let edge_e_f = TestEdge::from(None, 8, &node_e, &node_f, 1, 30);
+    let edge_f_e = TestEdge::from(None, 9, &node_f, &node_e, 1, 30);
+    let edge_f_h = TestEdge::from(None, 10, &node_f, &node_h, 1, 30);
+    let edge_g_e = TestEdge::from(None, 11, &node_g, &node_e, 1, 30);
+    let edge_g_f = TestEdge::from(None, 12, &node_g, &node_f, 1, 30);
+    let edge_h_c = TestEdge::from(None, 13, &node_h, &node_c, 4, 30);
+    let edge_h_d = TestEdge::from(None, 14, &node_h, &node_d, 1, 30);
+    let edge_h_f = TestEdge::from(None, 15, &node_h, &node_f, 1, 30);
 
     //--------------------------------------------------------------------------------------------//
     // testing graph

@@ -118,18 +118,15 @@ mod fmi {
                 }
             };
             let meters = match params[2].parse::<u32>() {
-                Ok(kilometers) => Some(kilometers * 1_000),
-                Err(_) => match params[2].parse::<f64>() {
-                    Ok(kilometers) => Some((kilometers * 1_000.0) as u32),
-                    Err(_) => {
-                        warn!(
-                            "Parsing length '{}' of edge didn't work, \
-                             so straight-line is taken.",
-                            params[2]
-                        );
-                        None
-                    }
-                },
+                Ok(meters) => Some(meters),
+                Err(_) => {
+                    warn!(
+                        "Parsing length '{}' of edge didn't work, \
+                         so straight-line is taken.",
+                        params[2]
+                    );
+                    None
+                }
             };
             let maxspeed = match params[4].parse::<u16>() {
                 Ok(maxspeed) => maxspeed,
