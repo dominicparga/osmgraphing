@@ -1,34 +1,41 @@
 # node_count
-6
+8
 
 # edge_count
-13
+16
 
 # nodes
 #       id     osm-id        lat       lon
-  26033921   26033921 48.9840100 9.4589188 # Oppenweiler
-  26160028   26160028 48.9416023 9.4332023 # Backnang
-1621605361 1621605361 48.9396327 9.4188681 # Dead-end in Backnang
- 298249467  298249467 48.8108510 9.3679493 # Endersbach
- 252787940  252787940 48.8271096 9.3098661 # Waiblingen
-2933335353 2933335353 48.7701757 9.1565768 # Stuttgart (Schwabstraße)
+         0       -     0_1234567 0_1234567 # a
+         1       -     1_2345678 1_2345678 # b
+         2       -     2_3456789 2_3456789 # c
+         3       -     3_4567890 3_4567890 # d
+         4       -     4_5678901 4_5678901 # e
+         5       -     5_6789012 5_6789012 # f
+         6       -     6_7890123 6_7890123 # g
+         7       -     7_8901234 7_8901234 # h
 
 # edges
 #   src-id     dst-id distance ? maxspeed
-  26033921   26160028        8 _       50 # Oppenweiler -> Backnang
+         1          0        1 _       30 # b -> a
+         1          2        1 _       30 # b -> c
 
-  26160028 1621605361  "trash" _       30 # Backnang -> Dead-end
-  26160028   26033921      8.0 _       50 # Backnang -> Oppenweiler
-  26160028  298249467       22 _       80 # Backnang -> Endersbach
-  26160028  252787940       23 _      120 # Backnang -> Waiblingen
+         2          0        1 _       30 # c -> a
+         2          1        1 _       30 # c -> b
 
- 298249467   26160028       22 _       80 # Endersbach -> Backnang
- 298249467  252787940        8 _       50 # Endersbach -> Waiblingen
- 298249467 2933335353       21 _       80 # Endersbach -> Stuttgart (Schwabstraße)
+         3          1        1 _       30 # d -> b
+         3          4        2 _       30 # d -> e
+         3          7        1 _       30 # d -> h
 
- 252787940   26160028       23 _      120 # Waiblingen -> Backnang
- 252787940  298249467        8 _       50 # Waiblingen -> Endersbach
- 252787940 2933335353       17 _      100 # Waiblingen -> Stuttgart (Schwabstraße)
+         4          3        2 _       30 # e -> d
+         4          5        1 _       30 # e -> f
 
-2933335353  298249467       21 _       80 # Stuttgart (Schwabstraße) -> Endersbach
-2933335353  252787940       17 _      100 # Stuttgart (Schwabstraße) -> Waiblingen
+         5          4        1 _       30 # f -> e
+         5          7        1 _       30 # f -> h
+
+         6          4        1 _       30 # g -> e
+         6          5        1 _       30 # g -> f
+
+         7          2        4 _       30 # h -> c
+         7          3        1 _       30 # h -> d
+         7          5        1 _       30 # h -> f

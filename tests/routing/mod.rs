@@ -1,0 +1,3 @@
+#[test]
+#[ignore]
+fn dijkstra() {}
