@@ -45,48 +45,20 @@ fn graph_construction() {
     // Due to the offset-array, the edge-ids should match with sorting by src-id, then by dst-id.
     // -> testing offset-array
     // name, id, src, dst, meters, maxspeed
-    let edge_opp_bac = TestEdge::from("Oppenweiler->Backnang", 0, &node_opp, &node_bac, 8_000, 50);
-    let edge_bac_opp = TestEdge::from("Backnang->Oppenweiler", 1, &node_bac, &node_opp, 8_000, 50);
-    let edge_bac_wai = TestEdge::from("Backnang->Waiblingen", 2, &node_bac, &node_wai, 23_000, 120);
-    let edge_bac_end = TestEdge::from("Backnang->Endersbach", 3, &node_bac, &node_end, 22_000, 80);
+    let edge_opp_bac = TestEdge::from(None, 0, &node_opp, &node_bac, 8_000, 50);
+    let edge_bac_opp = TestEdge::from(None, 1, &node_bac, &node_opp, 8_000, 50);
+    let edge_bac_wai = TestEdge::from(None, 2, &node_bac, &node_wai, 23_000, 120);
+    let edge_bac_end = TestEdge::from(None, 3, &node_bac, &node_end, 22_000, 80);
     // 1_069 is the length of a straight line, since the file contains trash in there.
-    let edge_bac_dea = TestEdge::from("Backnang->Dead-end", 4, &node_bac, &node_dea, 1_069, 30);
-    let edge_wai_bac = TestEdge::from("Waiblingen->Backnang", 5, &node_wai, &node_bac, 23_000, 120);
-    let edge_wai_end = TestEdge::from("Waiblingen->Endersbach", 6, &node_wai, &node_end, 8_000, 50);
-    let edge_wai_stu = TestEdge::from(
-        "Waiblingen->Stuttgart",
-        7,
-        &node_wai,
-        &node_stu,
-        17_000,
-        100,
-    );
-    let edge_end_bac = TestEdge::from("Endersbach->Backnang", 8, &node_end, &node_bac, 22_000, 80);
-    let edge_end_wai = TestEdge::from("Endersbach->Waiblingen", 9, &node_end, &node_wai, 8_000, 50);
-    let edge_end_stu = TestEdge::from(
-        "Endersbach->Stuttgart",
-        10,
-        &node_end,
-        &node_stu,
-        21_000,
-        80,
-    );
-    let edge_stu_wai = TestEdge::from(
-        "Stuttgart->Waiblingen",
-        11,
-        &node_stu,
-        &node_wai,
-        17_000,
-        100,
-    );
-    let edge_stu_end = TestEdge::from(
-        "Stuttgart->Endersbach",
-        12,
-        &node_stu,
-        &node_end,
-        21_000,
-        80,
-    );
+    let edge_bac_dea = TestEdge::from(None, 4, &node_bac, &node_dea, 1_069, 30);
+    let edge_wai_bac = TestEdge::from(None, 5, &node_wai, &node_bac, 23_000, 120);
+    let edge_wai_end = TestEdge::from(None, 6, &node_wai, &node_end, 8_000, 50);
+    let edge_wai_stu = TestEdge::from(None, 7, &node_wai, &node_stu, 17_000, 100);
+    let edge_end_bac = TestEdge::from(None, 8, &node_end, &node_bac, 22_000, 80);
+    let edge_end_wai = TestEdge::from(None, 9, &node_end, &node_wai, 8_000, 50);
+    let edge_end_stu = TestEdge::from(None, 10, &node_end, &node_stu, 21_000, 80);
+    let edge_stu_wai = TestEdge::from(None, 11, &node_stu, &node_wai, 17_000, 100);
+    let edge_stu_end = TestEdge::from(None, 12, &node_stu, &node_end, 21_000, 80);
 
     //--------------------------------------------------------------------------------------------//
     // testing graph

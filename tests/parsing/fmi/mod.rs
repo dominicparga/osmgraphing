@@ -1,3 +1,4 @@
+mod routing;
 mod small;
 
 //------------------------------------------------------------------------------------------------//
@@ -65,7 +66,7 @@ struct TestEdge {
 }
 impl TestEdge {
     fn from(
-        name: &str,
+        name: Option<&str>,
         id: i64,
         src: &TestNode,
         dst: &TestNode,
@@ -73,7 +74,7 @@ impl TestEdge {
         maxspeed: u16,
     ) -> TestEdge {
         TestEdge {
-            name: String::from(name),
+            name: (name.unwrap_or(&format!("{}->{}", src.name, dst.name))).to_owned(),
             id,
             src_idx: src.idx,
             dst_idx: dst.idx,
