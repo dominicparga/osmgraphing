@@ -128,7 +128,7 @@ impl GraphBuilder {
         self
     }
 
-    pub fn finalize(mut self) -> Graph {
+    pub fn finalize(mut self) -> Result<Graph, String> {
         //----------------------------------------------------------------------------------------//
         // init graph
 
@@ -198,19 +198,23 @@ impl GraphBuilder {
             // find source-index in sorted vec of nodes
             let src_idx = match graph.node_idx_from(proto_edge.src_id) {
                 Ok(idx) => idx,
-                Err(_) => panic!(
-                    "The given source-id `{:?}` of edge-id `{:?}` doesn't exist as node",
-                    proto_edge.src_id, proto_edge.way_id
-                ),
+                Err(_) => {
+                    return Err(format!(
+                        "The given src-id `{:?}` of edge-id `{:?}` doesn't exist as node",
+                        proto_edge.src_id, proto_edge.way_id
+                    ))
+                }
             };
 
             // find destination-index in sorted vec of nodes
             let dst_idx = match graph.node_idx_from(proto_edge.dst_id) {
                 Ok(idx) => idx,
-                Err(_) => panic!(
-                    "The given destination-id `{:?}` of edge-id `{:?}` doesn't exist as node",
-                    proto_edge.dst_id, proto_edge.way_id
-                ),
+                Err(_) => {
+                    return Err(format!(
+                        "The given dst-id `{:?}` of edge-id `{:?}` doesn't exist as node",
+                        proto_edge.dst_id, proto_edge.way_id
+                    ))
+                }
             };
 
             // calculate distance if not provided
@@ -245,6 +249,6 @@ impl GraphBuilder {
         graph.offsets.push(offset);
         info!("Finished creating offset-array");
 
-        graph
+        Ok(graph)
     }
 }

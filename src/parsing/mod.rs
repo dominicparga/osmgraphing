@@ -45,9 +45,9 @@ trait Parsing {
         }
         info!("Finished processing given pbf-file");
 
-        let graph = graph_builder.finalize();
+        let result = graph_builder.finalize();
         info!("Finished parsing");
-        Ok(graph)
+        result
     }
 }
 
