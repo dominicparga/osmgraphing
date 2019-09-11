@@ -1,7 +1,7 @@
 use std::fs::File;
 use std::io::BufRead;
 
-use log::warn;
+use log::{info, warn};
 
 use crate::network::GraphBuilder;
 
@@ -162,6 +162,7 @@ impl Parser {
 }
 impl super::Parsing for Parser {
     fn parse_ways(file: File, graph_builder: &mut GraphBuilder) {
+        info!("Starting edge-creation ..");
         for line in fmi::Reader::new(file)
             .lines()
             .map(Result::unwrap)
@@ -181,9 +182,11 @@ impl super::Parsing for Parser {
                 }
             }
         }
+        info!("Finished edge-creation");
     }
 
     fn parse_nodes(file: File, graph_builder: &mut GraphBuilder) {
+        info!("Starting node-creation ..");
         for line in fmi::Reader::new(file)
             .lines()
             .map(Result::unwrap)
@@ -193,5 +196,6 @@ impl super::Parsing for Parser {
                 graph_builder.push_node(proto_node.id, proto_node.coord);
             }
         }
+        info!("Finished node-creation");
     }
 }
