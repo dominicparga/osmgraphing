@@ -1,4 +1,4 @@
-use std::ffi::OsStr;
+use std::fs::File;
 use std::io::BufRead;
 
 use log::warn;
@@ -162,8 +162,8 @@ impl Parser {
     }
 }
 impl super::Parsing for Parser {
-    fn parse_ways<S: AsRef<OsStr> + ?Sized>(path: &S, graph_builder: &mut GraphBuilder) {
-        for line in fmi::Reader::new(Self::open_file(&path))
+    fn parse_ways(file: File, graph_builder: &mut GraphBuilder) {
+        for line in fmi::Reader::new(file)
             .lines()
             .map(Result::unwrap)
             .filter(Self::is_line_functional)
@@ -184,8 +184,8 @@ impl super::Parsing for Parser {
         }
     }
 
-    fn parse_nodes<S: AsRef<OsStr> + ?Sized>(path: &S, graph_builder: &mut GraphBuilder) {
-        for line in fmi::Reader::new(Self::open_file(&path))
+    fn parse_nodes(file: File, graph_builder: &mut GraphBuilder) {
+        for line in fmi::Reader::new(file)
             .lines()
             .map(Result::unwrap)
             .filter(Self::is_line_functional)

@@ -3,7 +3,7 @@ use std::ffi::OsString;
 use log::error;
 
 use osmgraphing::network::{geo, Graph};
-use osmgraphing::{Parser, Parsing};
+use osmgraphing::Parser;
 
 //------------------------------------------------------------------------------------------------//
 

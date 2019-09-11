@@ -5,7 +5,7 @@ mod pbf;
 
 use std::ffi::OsString;
 
-use osmgraphing::{Parser, Parsing};
+use osmgraphing::Parser;
 
 #[test]
 fn wrong_extension() {

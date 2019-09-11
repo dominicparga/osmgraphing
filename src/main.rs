@@ -1,5 +1,4 @@
 use clap;
-use osmgraphing::ui;
 
 //------------------------------------------------------------------------------------------------//
 
@@ -22,12 +21,46 @@ fn parse_cmdline<'a>() -> clap::ArgMatches<'a> {
             .join("\n"))
                 .as_ref(),
         )
+        .arg(
+            clap::Arg::with_name("verbose")
+                .short("v")
+                .long("verbose")
+                .help(
+                    &[
+                        "Logs `info` in addition to `warn` and `error`.",
+                        "Env-variable `RUST_LOG` is set, this flag is ignored.",
+                    ]
+                    .join("\n"),
+                ),
+        )
         .get_matches()
 }
 
+fn setup_logging(verbosely: bool) {
+    let mut builder = env_logger::Builder::new();
+    // minimum filter-level: `warn`
+    builder.filter(None, log::LevelFilter::Warn);
+    // if verbose logging: log `info` for the server and this repo
+    if verbosely {
+        builder.filter(Some("actix"), log::LevelFilter::Info);
+        builder.filter(Some("osmgraphing"), log::LevelFilter::Info);
+    }
+    // overwrite default with environment-variables
+    if let Ok(filters) = std::env::var("RUST_LOG") {
+        builder.parse_filters(&filters);
+    }
+    if let Ok(write_style) = std::env::var("RUST_LOG_STYLE") {
+        builder.parse_write_style(&write_style);
+    }
+    // init
+    builder.init();
+}
+
 fn main() {
-    env_logger::Builder::from_env("RUST_LOG").init();
-    let _matches = parse_cmdline();
-    println!("Starting server (localhost:8080)");
-    ui::server::run();
+    let matches = parse_cmdline();
+    setup_logging(matches.is_present("verbose"));
+
+    if matches.args.len() == 0 {
+        println!("Execute `cargo run -- -h` (or `.../osmgraphing -h`) for more info.");
+    }
 }
