@@ -1,8 +1,8 @@
 // use std::sync::mpsc;
 // use std::thread;
 
-use actix_web::{web, HttpResponse, HttpServer};
 use actix_rt;
+use actix_web::{web, HttpResponse, HttpServer};
 use clap;
 // use futures::future::Future;
 
@@ -103,22 +103,56 @@ fn parse_cmdline<'a>() -> clap::ArgMatches<'a> {
         .long_about(
             (&[
                 "",
-                "For all supported example files, please use",
-                "    `cargo run --example`",
-                "",
                 "You can set up the logger by setting RUST_LOG, e.g. to",
                 "    export RUST_LOG='warn,osmgraphing=info,parser=info,dijkstra=info'",
+                "for getting 'warn's per default, but 'info' about the others (e.g. 'parser').",
+                "Consider the flag '--verbose', so you don't have to mess around with RUST_LOG,",
+                "setting RUST_LOG to 'info' for relevant parts of the software.",
                 "",
-                "for getting `warn`s per default, but `info` about the others (e.g. `parser`).",
+                "In case you're using cargo, please use",
+                "    cargo run --example",
+                "for all supported example files",
             ]
             .join("\n"))
                 .as_ref(),
         )
+        .arg(
+            clap::Arg::with_name("verbose")
+                .short("v")
+                .long("verbose")
+                .help(
+                    &[
+                        "Logs `info` in addition to `warn` and `error`.",
+                        "The env-variable `RUST_LOG` has precedence."
+                    ]
+                    .join("\n"),
+                ),
+        )
         .get_matches()
 }
 
+fn setup_logging(verbosely: bool) {
+    let mut builder = env_logger::Builder::new();
+    // minimum filter-level: `warn`
+    builder.filter(None, log::LevelFilter::Warn);
+    // if verbose logging: log `info` for the server and this repo
+    if verbosely {
+        builder.filter(Some("actix"), log::LevelFilter::Info);
+        builder.filter(Some("osmgraphing"), log::LevelFilter::Info);
+    }
+    // overwrite default with environment-variables
+    if let Ok(filters) = std::env::var("RUST_LOG") {
+        builder.parse_filters(&filters);
+    }
+    if let Ok(write_style) = std::env::var("RUST_LOG_STYLE") {
+        builder.parse_write_style(&write_style);
+    }
+    // init
+    builder.init();
+}
+
 fn main() {
-    env_logger::Builder::from_env("RUST_LOG").init();
-    let _matches = parse_cmdline();
+    let matches = parse_cmdline();
+    setup_logging(matches.is_present("verbose"));
     run_server();
 }
