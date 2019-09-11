@@ -132,7 +132,7 @@ impl TestEdge {
 
 #[test]
 fn small() {
-    let path = OsString::from("resources/osm/small.fmi");
+    let path = OsString::from("resources/maps/small.fmi");
     let _graph = match Parser::parse(&path) {
         Ok(graph) => graph,
         Err(msg) => {
@@ -144,7 +144,7 @@ fn small() {
 
 #[test]
 fn graph_construction() {
-    let path = OsString::from("resources/osm/small.fmi");
+    let path = OsString::from("resources/maps/small.fmi");
     let graph = match Parser::parse(&path) {
         Ok(graph) => graph,
         Err(msg) => {

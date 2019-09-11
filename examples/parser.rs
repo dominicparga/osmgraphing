@@ -31,7 +31,7 @@ fn main() {
 
     let path = match std::env::args_os().nth(1) {
         Some(path) => path,
-        None => OsString::from("resources/osm/isle-of-man_2019-09-05.osm.pbf"),
+        None => OsString::from("resources/maps/isle-of-man_2019-09-05.osm.pbf"),
     };
 
     let now = Instant::now();

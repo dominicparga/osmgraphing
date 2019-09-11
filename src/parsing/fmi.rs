@@ -99,7 +99,6 @@ mod fmi {
                 ));
             }
 
-            let way_id = None;
             let src_id = match params[0].parse::<i64>() {
                 Ok(src_id) => src_id,
                 Err(_) => {
@@ -143,7 +142,7 @@ mod fmi {
             };
 
             Ok(ProtoEdge {
-                way_id,
+                way_id: None,
                 src_id,
                 dst_id,
                 meters,
