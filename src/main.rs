@@ -30,7 +30,7 @@ fn parse_cmdline<'a>() -> clap::ArgMatches<'a> {
                 .help(
                     &[
                         "Logs 'info' in addition to 'warn' and 'error'.",
-                        "The env-variable 'RUST_LOG' has precedence."
+                        "The env-variable 'RUST_LOG' has precedence.",
                     ]
                     .join("\n"),
                 ),

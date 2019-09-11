@@ -5,7 +5,7 @@ use log::error;
 use osmgraphing::Parser;
 
 #[test]
-fn isle_of_man() {
+fn parse() {
     let path = OsString::from("resources/maps/isle-of-man_2019-09-05.osm.pbf");
     let _graph = match Parser::parse(&path) {
         Ok(graph) => graph,
