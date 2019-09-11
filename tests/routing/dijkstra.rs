@@ -238,9 +238,9 @@ fn small() {
         assert_eq!(
             option_path.is_some(),
             option_test_path.is_some(),
-            "Path from idx={} to idx={} should be {}",
-            idx(src),
-            idx(dst),
+            "Path from (idx,id)={:?} to (idx,id)={:?} should be {}",
+            src,
+            dst,
             if option_test_path.is_some() {
                 "Some"
             } else {

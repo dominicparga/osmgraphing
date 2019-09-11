@@ -94,7 +94,8 @@ pub fn compute_shortest_path(src_id: i64, dst_id: i64, graph: &Graph) -> Option<
     //--------------------------------------------------------------------------------------------//
     // initialization-stuff
 
-    let mut predecessors: HashMap<usize, Option<usize>> = HashMap::new();
+    let mut visited: Vec<bool> = vec![false; graph.node_count()];
+    let mut predecessors: Vec<Option<usize>> = vec![None; graph.node_count()];
     let mut queue = BinaryHeap::new(); // max-heap, but CostNode's natural order is reversed
 
     // use graph-structure (offset-array) and work with idx instead of id
@@ -128,10 +129,12 @@ pub fn compute_shortest_path(src_id: i64, dst_id: i64, graph: &Graph) -> Option<
     while let Some(current) = queue.pop() {
         // first occurrence has lowest cost
         // -> check if current has already been visited
-        if predecessors.contains_key(&current.idx) {
+        if visited[current.idx] {
             continue;
+        } else {
+            visited[current.idx] = true;
         }
-        predecessors.insert(current.idx, current.pred_idx);
+        predecessors[current.idx] = current.pred_idx;
 
         // if shortest path found
         // -> create path
@@ -140,7 +143,7 @@ pub fn compute_shortest_path(src_id: i64, dst_id: i64, graph: &Graph) -> Option<
 
             let mut path = Path::new(src_idx, dst_idx);
             path.cost = current.cost;
-            while let Some(&Some(pred_idx)) = predecessors.get(&cur_idx) {
+            while let Some(pred_idx) = predecessors[cur_idx] {
                 path.predecessors.insert(cur_idx, pred_idx);
                 path.successors.insert(pred_idx, cur_idx);
                 cur_idx = pred_idx;
@@ -156,7 +159,7 @@ pub fn compute_shortest_path(src_id: i64, dst_id: i64, graph: &Graph) -> Option<
             for leaving_edge in leaving_edges {
                 let new_cost = current.cost + leaving_edge.meters();
 
-                if !predecessors.contains_key(&leaving_edge.dst_idx()) {
+                if predecessors[leaving_edge.dst_idx()].is_none() {
                     queue.push(CostNode {
                         idx: leaving_edge.dst_idx(),
                         cost: new_cost,
