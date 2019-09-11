@@ -1,8 +1,9 @@
-use std::borrow::Cow;
 use std::cmp::Ordering;
-use std::collections::BinaryHeap;
+use std::collections::{BinaryHeap, HashMap};
 
-use crate::network::{Edge, Graph};
+use log::debug;
+
+use crate::network::Graph;
 
 //------------------------------------------------------------------------------------------------//
 // nodes
@@ -11,27 +12,24 @@ use crate::network::{Edge, Graph};
 struct CostNode {
     pub idx: usize,
     pub cost: u32,
+    pub estimation: u32,
+    pub pred_idx: Option<usize>,
 }
-
 impl Ord for CostNode {
     fn cmp(&self, other: &CostNode) -> Ordering {
         // (1) cost in float, but cmp uses only m, which is ok
         // (2) inverse order since BinaryHeap is max-heap, but min-heap is needed
-        other
-            .cost
-            .cmp(&self.cost)
+        (other.cost + other.estimation)
+            .cmp(&(self.cost + self.estimation))
             .then_with(|| other.idx.cmp(&self.idx))
     }
 }
-
 impl PartialOrd for CostNode {
     fn partial_cmp(&self, other: &CostNode) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
-
 impl Eq for CostNode {}
-
 impl PartialEq for CostNode {
     fn eq(&self, other: &CostNode) -> bool {
         self.cmp(other) == Ordering::Equal
@@ -42,96 +40,133 @@ impl PartialEq for CostNode {
 // Dijkstra's type of path
 
 #[derive(Clone)]
-pub struct Path<'a> {
-    pub cost: Vec<u32>,
-    pub predecessors: Vec<Option<&'a Edge>>,
+pub struct Path {
+    src_idx: usize,
+    dst_idx: usize,
+    cost: u32,
+    predecessors: HashMap<usize, usize>,
+    successors: HashMap<usize, usize>,
+}
+impl Path {
+    fn new(src_idx: usize, dst_idx: usize) -> Path {
+        Path {
+            src_idx,
+            dst_idx,
+            cost: 0,
+            predecessors: HashMap::new(),
+            successors: HashMap::new(),
+        }
+    }
+
+    pub fn src_idx(&self) -> usize {
+        return self.src_idx;
+    }
+
+    pub fn dst_idx(&self) -> usize {
+        return self.dst_idx;
+    }
+
+    pub fn cost(&self) -> u32 {
+        return self.cost;
+    }
+
+    /// Return idx of predecessor
+    pub fn predecessor(&self, idx: usize) -> Option<usize> {
+        match self.predecessors.get(&idx) {
+            Some(&pred) => Some(pred),
+            None => None,
+        }
+    }
+
+    /// Return idx of successor
+    pub fn successor(&self, idx: usize) -> Option<usize> {
+        match self.successors.get(&idx) {
+            Some(&succ) => Some(succ),
+            None => None,
+        }
+    }
 }
 
 //------------------------------------------------------------------------------------------------//
 // Dijkstra
 
-pub struct Dijkstra<'a> {
-    pub graph: &'a Graph,
-    pub path: Path<'a>,
-}
+pub fn compute_shortest_path(src_id: i64, dst_id: i64, graph: &Graph) -> Option<Path> {
+    //--------------------------------------------------------------------------------------------//
+    // initialization-stuff
 
-impl<'a> Dijkstra<'a> {
-    pub fn new(graph: &'a Graph) -> Dijkstra {
-        Dijkstra {
-            graph,
-            path: Path {
-                cost: vec![std::u32::MAX; graph.node_count()],
-                predecessors: vec![None; graph.node_count()],
-            },
+    let mut predecessors: HashMap<usize, Option<usize>> = HashMap::new();
+    let mut queue = BinaryHeap::new(); // max-heap, but CostNode's natural order is reversed
+
+    // use graph-structure (offset-array) and work with idx instead of id
+    let src_idx = match graph.node_idx_from(src_id) {
+        Ok(idx) => idx,
+        Err(_) => {
+            debug!("Src-id {} is not in graph.", src_id);
+            return None;
         }
-    }
-}
+    };
+    let dst_idx = match graph.node_idx_from(dst_id) {
+        Ok(idx) => idx,
+        Err(_) => {
+            debug!("Dst-id {} is not in graph.", dst_id);
+            return None;
+        }
+    };
 
-impl<'a> Dijkstra<'a> {
-    pub fn compute_shortest_path(&mut self, src_idx: usize, dst_idx: usize) -> Cow<Path> {
-        //----------------------------------------------------------------------------------------//
-        // initialize, but check path-"cache" before
+    //--------------------------------------------------------------------------------------------//
+    // compute
 
-        self.path.cost = vec![std::u32::MAX; self.graph.node_count()];
-        self.path.predecessors = vec![None; self.graph.node_count()];
-        let mut queue = BinaryHeap::new(); // max-heap, but CostNode's natural order is reversed
+    // prepare first iteration
+    queue.push(CostNode {
+        idx: src_idx,
+        cost: 0,
+        estimation: 0,
+        pred_idx: None,
+    });
 
-        // prepare first iteration
-        queue.push(CostNode {
-            idx: src_idx,
-            cost: 0,
-        });
-        self.path.cost[src_idx] = 0;
+    // while let Some(current) = queue.pop().filter(|current| predecessors.contains_key(&current.idx)) {
+    while let Some(current) = queue.pop() {
+        // first occurrence has lowest cost
+        // -> check if current has already been visited
+        if predecessors.contains_key(&current.idx) {
+            continue;
+        }
+        predecessors.insert(current.idx, current.pred_idx);
 
-        //----------------------------------------------------------------------------------------//
-        // compute
+        // if shortest path found
+        // -> create path
+        if current.idx == dst_idx {
+            let mut cur_idx = current.idx;
 
-        while let Some(CostNode { idx, cost }) = queue.pop() {
-            // shortest path found
-            if idx == dst_idx {
-                break;
+            let mut path = Path::new(src_idx, dst_idx);
+            path.cost = current.cost;
+            while let Some(&Some(pred_idx)) = predecessors.get(&cur_idx) {
+                path.predecessors.insert(cur_idx, pred_idx);
+                path.successors.insert(pred_idx, cur_idx);
+                cur_idx = pred_idx;
             }
+            // predecessor of src is not set
+            // successor of dst is not set
+            return Some(path);
+        }
 
-            // if node has already been visited
-            if cost > self.path.cost[idx] {
-                continue;
-            }
+        if let Some(leaving_edges) = graph.leaving_edges(current.idx) {
+            // update cost and add predecessors
+            // to nodes, that are dst of current's leaving edges
+            for leaving_edge in leaving_edges {
+                let new_cost = current.cost + leaving_edge.meters();
 
-            if let Some(leaving_edges) = self.graph.leaving_edges(idx) {
-                // if not -> update "official" cost
-                // and add successors
-                for edge in leaving_edges {
-                    let new_cost = cost + edge.meters();
-
-                    if new_cost < self.path.cost[edge.dst_idx()] {
-                        self.path.predecessors[edge.dst_idx()] = Some(&edge);
-                        self.path.cost[edge.dst_idx()] = new_cost;
-                        queue.push(CostNode {
-                            idx: edge.dst_idx(),
-                            cost: new_cost,
-                        });
-                    }
+                if !predecessors.contains_key(&leaving_edge.dst_idx()) {
+                    queue.push(CostNode {
+                        idx: leaving_edge.dst_idx(),
+                        cost: new_cost,
+                        estimation: 0,
+                        pred_idx: Some(current.idx),
+                    });
                 }
             }
         }
-
-        Cow::Borrowed(&self.path)
     }
 
-    // TODO
-    // pub fn get_path(&mut self, src: usize, dst: usize) -> std::vec::Vec<usize> {
-    //     if src >= self.graph.node_count() || dst >= self.graph.node_count() {
-    //         let result = vec![];
-    //         result
-    //     } else {
-    //         let mut shortest_path = Vec::new();
-    //         let mut current_predec = dst;
-    //         while current_predec != src {
-    //             let edge = self.graph.edge(self.path.predecessors[current_predec]);
-    //             shortest_path.push(edge.id);
-    //             current_predec = edge.src;
-    //         }
-    //         shortest_path
-    //     }
-    // }
+    None
 }

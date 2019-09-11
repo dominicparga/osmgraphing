@@ -58,7 +58,7 @@ impl StreetType {
         }
     }
 
-    fn _is_for_vehicles(&self, is_suitable: bool) -> bool {
+    pub fn is_for_vehicles(&self, is_suitable: bool) -> bool {
         match self {
             StreetType::Motorway => true,
             StreetType::MotorwayLink => true,

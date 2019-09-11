@@ -32,6 +32,10 @@ impl super::Parsing for Parser {
                 Some(highway_tag) => highway_tag,
                 None => continue,
             };
+            // todo: get via json
+            if !highway_tag.is_for_vehicles(false) {
+                continue;
+            }
             let maxspeed = highway_tag.parse_maxspeed(&way);
             let (is_oneway, is_reverse) = highway_tag.parse_oneway(&way);
 

@@ -57,7 +57,6 @@ fn main() {
     // dijkstra
 
     // routing
-    let mut dijkstra = routing::Dijkstra::new(&graph);
     let src_idx = 0;
     let dsts: Vec<usize> = (0..graph.node_count()).collect();
     // let dsts: Vec<usize> = vec![80]; problem on baden-wuerttemberg.osm.pbf
@@ -70,15 +69,16 @@ fn main() {
         info!("");
 
         let now = Instant::now();
-        let path = dijkstra.compute_shortest_path(src_idx, dst_idx);
+        let option_path = routing::dijkstra::compute_shortest_path(src.id(), dst.id(), &graph);
         info!(
             "Ran Dijkstra in {} µs a.k.a {} seconds",
             now.elapsed().as_micros(),
             now.elapsed().as_secs()
         );
-        info!(
-            "Distance {} m from ({}) to ({}).",
-            path.cost[dst_idx], src, dst
-        );
+        if let Some(path) = option_path {
+            info!("Distance {} m from ({}) to ({}).", path.cost(), src, dst);
+        } else {
+            info!("No path from ({}) to ({}).", src, dst);
+        }
     }
 }
