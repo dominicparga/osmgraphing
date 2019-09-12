@@ -47,7 +47,7 @@ impl fmt::Display for Coordinate {
 }
 
 // TODO enum/struct Distance
-// return value is in kilometers
+/// return value is in kilometers
 pub fn haversine_distance(from: &Coordinate, to: &Coordinate) -> f64 {
     let earth_mean_radius = 6_371.0; // kilometers
 

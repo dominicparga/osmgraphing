@@ -3,7 +3,7 @@ use std::collections::{BinaryHeap, HashMap};
 
 use log::debug;
 
-use crate::network::Graph;
+use crate::network::{geo, Graph};
 
 //------------------------------------------------------------------------------------------------//
 // nodes
@@ -94,7 +94,7 @@ pub fn compute_shortest_path(src_id: i64, dst_id: i64, graph: &Graph) -> Option<
     //--------------------------------------------------------------------------------------------//
     // initialization-stuff
 
-    let mut visited: Vec<bool> = vec![false; graph.node_count()];
+    let mut cost: Vec<u32> = vec![std::u32::MAX; graph.node_count()];
     let mut predecessors: Vec<Option<usize>> = vec![None; graph.node_count()];
     let mut queue = BinaryHeap::new(); // max-heap, but CostNode's natural order is reversed
 
@@ -113,6 +113,7 @@ pub fn compute_shortest_path(src_id: i64, dst_id: i64, graph: &Graph) -> Option<
             return None;
         }
     };
+    let dst = graph.node(dst_idx);
 
     //--------------------------------------------------------------------------------------------//
     // compute
@@ -124,18 +125,10 @@ pub fn compute_shortest_path(src_id: i64, dst_id: i64, graph: &Graph) -> Option<
         estimation: 0,
         pred_idx: None,
     });
+    cost[src_idx] = 0;
 
     // while let Some(current) = queue.pop().filter(|current| predecessors.contains_key(&current.idx)) {
     while let Some(current) = queue.pop() {
-        // first occurrence has lowest cost
-        // -> check if current has already been visited
-        if visited[current.idx] {
-            continue;
-        } else {
-            visited[current.idx] = true;
-        }
-        predecessors[current.idx] = current.pred_idx;
-
         // if shortest path found
         // -> create path
         if current.idx == dst_idx {
@@ -153,17 +146,29 @@ pub fn compute_shortest_path(src_id: i64, dst_id: i64, graph: &Graph) -> Option<
             return Some(path);
         }
 
+        // first occurrence has lowest cost
+        // -> check if current has already been visited
+        if current.cost > cost[current.idx] {
+            continue;
+        }
+
         if let Some(leaving_edges) = graph.leaving_edges(current.idx) {
             // update cost and add predecessors
             // to nodes, that are dst of current's leaving edges
             for leaving_edge in leaving_edges {
                 let new_cost = current.cost + leaving_edge.meters();
+                let leaving_edge_dst = graph.node(leaving_edge.dst_idx());
+                let estimation = (geo::haversine_distance(leaving_edge_dst.coord(), dst.coord())
+                    * 1_000.0) as u32;
+                let estimation = 0; // TODO test-case
 
-                if predecessors[leaving_edge.dst_idx()].is_none() {
+                if new_cost < cost[leaving_edge.dst_idx()] {
+                    predecessors[leaving_edge.dst_idx()] = Some(current.idx);
+                    cost[leaving_edge.dst_idx()] = new_cost;
                     queue.push(CostNode {
                         idx: leaving_edge.dst_idx(),
                         cost: new_cost,
-                        estimation: 0,
+                        estimation: estimation,
                         pred_idx: Some(current.idx),
                     });
                 }
