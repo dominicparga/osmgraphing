@@ -35,6 +35,64 @@ fn assert_correct(
 // tests
 
 #[test]
+fn simple_stuttgart() {
+    // (idx, id)
+    let opp = TestNode::from(0, 26_033_921);
+    let bac = TestNode::from(1, 26_160_028);
+    let wai = TestNode::from(2, 252_787_940);
+    let end = TestNode::from(3, 298_249_467);
+    let dea = TestNode::from(4, 1_621_605_361);
+    let stu = TestNode::from(5, 2_933_335_353);
+
+    let expected_paths = vec![
+        // opp
+        (opp, opp, Some((0, vec![vec![]]))),
+        (opp, bac, Some((8_000, vec![vec![opp, bac]]))),
+        (opp, wai, Some((31_000, vec![vec![opp, bac, wai]]))),
+        (opp, end, Some((30_000, vec![vec![opp, bac, end]]))),
+        (opp, dea, Some((9_069, vec![vec![opp, bac, dea]]))),
+        (opp, stu, Some((48_000, vec![vec![opp, bac, wai, stu]]))),
+        // bac
+        (bac, opp, Some((8_000, vec![vec![bac, opp]]))),
+        (bac, bac, Some((0, vec![vec![]]))),
+        (bac, wai, Some((23_000, vec![vec![bac, wai]]))),
+        (bac, end, Some((22_000, vec![vec![bac, end]]))),
+        (bac, dea, Some((1_069, vec![vec![bac, dea]]))),
+        (bac, stu, Some((40_000, vec![vec![bac, wai, stu]]))),
+        // wai
+        (wai, opp, Some((31_000, vec![vec![wai, bac, opp]]))),
+        (wai, bac, Some((23_000, vec![vec![wai, bac]]))),
+        (wai, wai, Some((0, vec![vec![]]))),
+        (wai, end, Some((8_000, vec![vec![wai, end]]))),
+        (wai, dea, Some((24_069, vec![vec![wai, bac, dea]]))),
+        (wai, stu, Some((17_000, vec![vec![wai, stu]]))),
+        // end
+        (end, opp, Some((30_000, vec![vec![end, bac, opp]]))),
+        (end, bac, Some((22_000, vec![vec![end, bac]]))),
+        (end, wai, Some((8_000, vec![vec![end, wai]]))),
+        (end, end, Some((0, vec![vec![]]))),
+        (end, dea, Some((23_069, vec![vec![end, bac, dea]]))),
+        (end, stu, Some((21_000, vec![vec![end, stu]]))),
+        // dea
+        (dea, opp, None),
+        (dea, bac, None),
+        (dea, wai, None),
+        (dea, end, None),
+        (dea, dea, Some((0, vec![vec![]]))),
+        (dea, stu, None),
+        // stu
+        (stu, opp, Some((48_000, vec![vec![stu, wai, bac, opp]]))),
+        (stu, bac, Some((40_000, vec![vec![stu, wai, bac]]))),
+        (stu, wai, Some((17_000, vec![vec![stu, wai]]))),
+        (stu, end, Some((21_000, vec![vec![stu, end]]))),
+        (stu, dea, Some((41_069, vec![vec![stu, wai, bac, dea]]))),
+        (stu, stu, Some((0, vec![vec![]]))),
+    ];
+
+    assert_correct(expected_paths, "resources/maps/simple_stuttgart.fmi");
+}
+
+#[test]
 fn small() {
     // (idx, id)
     let a = TestNode::from(0, 0);
@@ -122,62 +180,4 @@ fn small() {
     ];
 
     assert_correct(expected_paths, "resources/maps/small.fmi");
-}
-
-#[test]
-fn simple_stuttgart() {
-    // (idx, id)
-    let opp = TestNode::from(0, 26_033_921);
-    let bac = TestNode::from(1, 26_160_028);
-    let wai = TestNode::from(2, 252_787_940);
-    let end = TestNode::from(3, 298_249_467);
-    let dea = TestNode::from(4, 1_621_605_361);
-    let stu = TestNode::from(5, 2_933_335_353);
-
-    let expected_paths = vec![
-        // opp
-        (opp, opp, Some((0, vec![vec![]]))),
-        (opp, bac, Some((8_000, vec![vec![opp, bac]]))),
-        (opp, wai, Some((31_000, vec![vec![opp, bac, wai]]))),
-        (opp, end, Some((30_000, vec![vec![opp, bac, end]]))),
-        (opp, dea, Some((9_069, vec![vec![opp, bac, dea]]))),
-        (opp, stu, Some((48_000, vec![vec![opp, bac, wai, stu]]))),
-        // bac
-        (bac, opp, Some((8_000, vec![vec![bac, opp]]))),
-        (bac, bac, Some((0, vec![vec![]]))),
-        (bac, wai, Some((23_000, vec![vec![bac, wai]]))),
-        (bac, end, Some((22_000, vec![vec![bac, end]]))),
-        (bac, dea, Some((1_069, vec![vec![bac, dea]]))),
-        (bac, stu, Some((40_000, vec![vec![bac, wai, stu]]))),
-        // wai
-        (wai, opp, Some((31_000, vec![vec![wai, bac, opp]]))),
-        (wai, bac, Some((23_000, vec![vec![wai, bac]]))),
-        (wai, wai, Some((0, vec![vec![]]))),
-        (wai, end, Some((8_000, vec![vec![wai, end]]))),
-        (wai, dea, Some((24_069, vec![vec![wai, bac, dea]]))),
-        (wai, stu, Some((17_000, vec![vec![wai, stu]]))),
-        // end
-        (end, opp, Some((30_000, vec![vec![end, bac, opp]]))),
-        (end, bac, Some((22_000, vec![vec![end, bac]]))),
-        (end, wai, Some((8_000, vec![vec![end, wai]]))),
-        (end, end, Some((0, vec![vec![]]))),
-        (end, dea, Some((23_069, vec![vec![end, bac, dea]]))),
-        (end, stu, Some((21_000, vec![vec![end, stu]]))),
-        // dea
-        (dea, opp, None),
-        (dea, bac, None),
-        (dea, wai, None),
-        (dea, end, None),
-        (dea, dea, Some((0, vec![vec![]]))),
-        (dea, stu, None),
-        // stu
-        (stu, opp, Some((48_000, vec![vec![stu, wai, bac, opp]]))),
-        (stu, bac, Some((40_000, vec![vec![stu, wai, bac]]))),
-        (stu, wai, Some((17_000, vec![vec![stu, wai]]))),
-        (stu, end, Some((21_000, vec![vec![stu, end]]))),
-        (stu, dea, Some((41_069, vec![vec![stu, wai, bac, dea]]))),
-        (stu, stu, Some((0, vec![vec![]]))),
-    ];
-
-    assert_correct(expected_paths, "resources/maps/simple_stuttgart.fmi");
 }
