@@ -56,7 +56,8 @@ fn main() {
     //----------------------------------------------------------------------------------------------
     // astar
 
-    // routing
+    let mut astar = routing::Astar::new();
+
     let src_idx = 0;
     let dsts: Vec<usize> = (0..graph.node_count()).collect();
     // let dsts: Vec<usize> = vec![80]; problem on baden-wuerttemberg.osm.pbf
@@ -69,7 +70,7 @@ fn main() {
         info!("");
 
         let now = Instant::now();
-        let option_path = routing::astar::compute_shortest_path(src.id(), dst.id(), &graph);
+        let option_path = astar.compute_shortest_path(src.id(), dst.id(), &graph);
         info!(
             "Ran A* in {} µs a.k.a {} seconds",
             now.elapsed().as_micros(),

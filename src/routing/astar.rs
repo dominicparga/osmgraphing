@@ -90,90 +90,120 @@ impl Path {
 //------------------------------------------------------------------------------------------------//
 // Astar
 
-pub fn compute_shortest_path(src_id: i64, dst_id: i64, graph: &Graph) -> Option<Path> {
-    //--------------------------------------------------------------------------------------------//
-    // initialization-stuff
-
-    let mut cost: Vec<u32> = vec![std::u32::MAX; graph.node_count()];
-    let mut predecessors: Vec<Option<usize>> = vec![None; graph.node_count()];
-    let mut queue = BinaryHeap::new(); // max-heap, but CostNode's natural order is reversed
-
-    // use graph-structure (offset-array) and work with idx instead of id
-    let src_idx = match graph.node_idx_from(src_id) {
-        Ok(idx) => idx,
-        Err(_) => {
-            debug!("Src-id {} is not in graph.", src_id);
-            return None;
-        }
-    };
-    let dst_idx = match graph.node_idx_from(dst_id) {
-        Ok(idx) => idx,
-        Err(_) => {
-            debug!("Dst-id {} is not in graph.", dst_id);
-            return None;
-        }
-    };
-    let dst = graph.node(dst_idx);
-
-    //--------------------------------------------------------------------------------------------//
-    // compute
-
-    // prepare first iteration
-    queue.push(CostNode {
-        idx: src_idx,
-        cost: 0,
-        estimation: 0,
-        pred_idx: None,
-    });
-    cost[src_idx] = 0;
-
-    // while let Some(current) = queue.pop().filter(|current| predecessors.contains_key(&current.idx)) {
-    while let Some(current) = queue.pop() {
-        // if shortest path found
-        // -> create path
-        if current.idx == dst_idx {
-            let mut cur_idx = current.idx;
-
-            let mut path = Path::new(src_idx, dst_idx);
-            path.cost = current.cost;
-            while let Some(pred_idx) = predecessors[cur_idx] {
-                path.predecessors.insert(cur_idx, pred_idx);
-                path.successors.insert(pred_idx, cur_idx);
-                cur_idx = pred_idx;
-            }
-            // predecessor of src is not set
-            // successor of dst is not set
-            return Some(path);
-        }
-
-        // first occurrence has lowest cost
-        // -> check if current has already been visited
-        if current.cost > cost[current.idx] {
-            continue;
-        }
-
-        if let Some(leaving_edges) = graph.leaving_edges(current.idx) {
-            // update cost and add predecessors
-            // to nodes, that are dst of current's leaving edges
-            for leaving_edge in leaving_edges {
-                let new_cost = current.cost + leaving_edge.meters();
-                let leaving_edge_dst = graph.node(leaving_edge.dst_idx());
-                let estimation = (geo::haversine_distance(leaving_edge_dst.coord(), dst.coord())
-                    * 1_000.0) as u32;
-
-                if new_cost < cost[leaving_edge.dst_idx()] {
-                    predecessors[leaving_edge.dst_idx()] = Some(current.idx);
-                    cost[leaving_edge.dst_idx()] = new_cost;
-                    queue.push(CostNode {
-                        idx: leaving_edge.dst_idx(),
-                        cost: new_cost,
-                        estimation: estimation,
-                        pred_idx: Some(current.idx),
-                    });
-                }
-            }
+pub struct Astar {
+    cost: Vec<u32>,
+    predecessors: Vec<Option<usize>>,
+    queue: BinaryHeap<CostNode>, // max-heap, but CostNode's natural order is reversed
+}
+impl Astar {
+    pub fn new() -> Astar {
+        Astar {
+            cost: vec![std::u32::MAX; 0],
+            predecessors: vec![None; 0],
+            queue: BinaryHeap::new(),
         }
     }
 
-    None
+    fn resize(&mut self, new_len: usize) {
+        let old_len = self.cost.len();
+        let min_len = std::cmp::min(old_len, new_len);
+        for i in 0..min_len {
+            self.cost[i] = std::u32::MAX;
+            self.predecessors[i] = None;
+        }
+        self.cost.resize(new_len, std::u32::MAX);
+        self.predecessors.resize(new_len, None);
+
+        self.queue = BinaryHeap::new();
+    }
+
+    pub fn compute_shortest_path(
+        &mut self,
+        src_id: i64,
+        dst_id: i64,
+        graph: &Graph,
+    ) -> Option<Path> {
+        //----------------------------------------------------------------------------------------//
+        // initialization-stuff
+        self.resize(graph.node_count());
+
+        // use graph-structure (offset-array) and work with idx instead of id
+        let src_idx = match graph.node_idx_from(src_id) {
+            Ok(idx) => idx,
+            Err(_) => {
+                debug!("Src-id {} is not in graph.", src_id);
+                return None;
+            }
+        };
+        let dst_idx = match graph.node_idx_from(dst_id) {
+            Ok(idx) => idx,
+            Err(_) => {
+                debug!("Dst-id {} is not in graph.", dst_id);
+                return None;
+            }
+        };
+        let dst = graph.node(dst_idx);
+
+        //----------------------------------------------------------------------------------------//
+        // compute
+
+        // prepare first iteration
+        self.queue.push(CostNode {
+            idx: src_idx,
+            cost: 0,
+            estimation: 0,
+            pred_idx: None,
+        });
+        self.cost[src_idx] = 0;
+
+        while let Some(current) = self.queue.pop() {
+            // if shortest path found
+            // -> create path
+            if current.idx == dst_idx {
+                let mut cur_idx = current.idx;
+
+                let mut path = Path::new(src_idx, dst_idx);
+                path.cost = current.cost;
+                while let Some(pred_idx) = self.predecessors[cur_idx] {
+                    path.predecessors.insert(cur_idx, pred_idx);
+                    path.successors.insert(pred_idx, cur_idx);
+                    cur_idx = pred_idx;
+                }
+                // predecessor of src is not set
+                // successor of dst is not set
+                return Some(path);
+            }
+
+            // first occurrence has lowest cost
+            // -> check if current has already been visited
+            if current.cost > self.cost[current.idx] {
+                continue;
+            }
+
+            if let Some(leaving_edges) = graph.leaving_edges(current.idx) {
+                // update cost and add predecessors
+                // to nodes, that are dst of current's leaving edges
+                for leaving_edge in leaving_edges {
+                    let new_cost = current.cost + leaving_edge.meters();
+                    let leaving_edge_dst = graph.node(leaving_edge.dst_idx());
+                    let estimation =
+                        (geo::haversine_distance(leaving_edge_dst.coord(), dst.coord()) * 1_000.0)
+                            as u32;
+
+                    if new_cost < self.cost[leaving_edge.dst_idx()] {
+                        self.predecessors[leaving_edge.dst_idx()] = Some(current.idx);
+                        self.cost[leaving_edge.dst_idx()] = new_cost;
+                        self.queue.push(CostNode {
+                            idx: leaving_edge.dst_idx(),
+                            cost: new_cost,
+                            estimation: estimation,
+                            pred_idx: Some(current.idx),
+                        });
+                    }
+                }
+            }
+        }
+
+        None
+    }
 }

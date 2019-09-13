@@ -1,5 +1,5 @@
 use super::TestPath;
-use osmgraphing::routing::astar;
+use osmgraphing::routing;
 
 #[test]
 fn small() {
@@ -99,8 +99,9 @@ fn small() {
 
     let graph = super::parse("resources/maps/small.fmi");
 
+    let mut astar = routing::Astar::new();
     for (src, dst, option_test_path) in test_paths {
-        let option_path = astar::compute_shortest_path(super::id(src), super::id(dst), &graph);
+        let option_path = astar.compute_shortest_path(super::id(src), super::id(dst), &graph);
         assert_eq!(
             option_path.is_some(),
             option_test_path.is_some(),
