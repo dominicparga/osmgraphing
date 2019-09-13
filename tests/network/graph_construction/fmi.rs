@@ -127,14 +127,14 @@ fn small() {
 
     // nodes sorted by id
     // name, id, decimicro_lat, decimicro_lon
-    let node_a = TestNode::from("a", 0, 0.1234567, 0.1234567, &graph);
-    let node_b = TestNode::from("b", 1, 1.2345678, 1.2345678, &graph);
-    let node_c = TestNode::from("c", 2, 2.3456789, 2.3456789, &graph);
-    let node_d = TestNode::from("d", 3, 3.4567890, 3.4567890, &graph);
-    let node_e = TestNode::from("e", 4, 4.5678901, 4.5678901, &graph);
-    let node_f = TestNode::from("f", 5, 5.6789012, 5.6789012, &graph);
-    let node_g = TestNode::from("g", 6, 6.7890123, 6.7890123, &graph);
-    let node_h = TestNode::from("h", 7, 7.8901234, 7.8901234, &graph);
+    let node_a = TestNode::from("a", 0, 0.0000000, 0.0000000, &graph);
+    let node_b = TestNode::from("b", 1, 0.0000000, 0.0000000, &graph);
+    let node_c = TestNode::from("c", 2, 0.0000000, 0.0000000, &graph);
+    let node_d = TestNode::from("d", 3, 0.0000000, 0.0000000, &graph);
+    let node_e = TestNode::from("e", 4, 0.0000000, 0.0000000, &graph);
+    let node_f = TestNode::from("f", 5, 0.0000000, 0.0000000, &graph);
+    let node_g = TestNode::from("g", 6, 0.0000000, 0.0000000, &graph);
+    let node_h = TestNode::from("h", 7, 0.0000000, 0.0000000, &graph);
 
     // Due to the offset-array, the edge-ids should match with sorting by src-id, then by dst-id.
     // -> testing offset-array

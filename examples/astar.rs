@@ -11,7 +11,7 @@ fn init_logging(verbosely: bool) {
     builder.filter(None, log::LevelFilter::Warn);
     // if verbose logging: log `info` for the server and this repo
     if verbosely {
-        builder.filter(Some("dijkstra"), log::LevelFilter::Info);
+        builder.filter(Some("astar"), log::LevelFilter::Info);
         builder.filter(Some("osmgraphing"), log::LevelFilter::Info);
     }
     // overwrite default with environment-variables
@@ -27,7 +27,7 @@ fn init_logging(verbosely: bool) {
 
 fn main() {
     init_logging(true);
-    info!("Executing example: dijkstra");
+    info!("Executing example: A*");
 
     //----------------------------------------------------------------------------------------------
     // parsing
@@ -54,7 +54,7 @@ fn main() {
     info!("{}", graph);
 
     //----------------------------------------------------------------------------------------------
-    // dijkstra
+    // astar
 
     // routing
     let src_idx = 0;
@@ -69,9 +69,9 @@ fn main() {
         info!("");
 
         let now = Instant::now();
-        let option_path = routing::dijkstra::compute_shortest_path(src.id(), dst.id(), &graph);
+        let option_path = routing::astar::compute_shortest_path(src.id(), dst.id(), &graph);
         info!(
-            "Ran Dijkstra in {} µs a.k.a {} seconds",
+            "Ran A* in {} µs a.k.a {} seconds",
             now.elapsed().as_micros(),
             now.elapsed().as_secs()
         );

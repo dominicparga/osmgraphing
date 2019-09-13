@@ -1,1 +1,1 @@
-pub mod dijkstra;
+pub mod astar;

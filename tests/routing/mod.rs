@@ -1,5 +1,5 @@
 use super::parse;
-mod dijkstra;
+mod astar;
 
 //--------------------------------------------------------------------------------------------//
 
@@ -50,7 +50,7 @@ impl TestPath {
         }
     }
 
-    fn assert(&self, path: &routing::dijkstra::Path, graph: &Graph) {
+    fn assert(&self, path: &routing::astar::Path, graph: &Graph) {
         let node = |idx: usize| -> (usize, i64) { (idx, graph.node(idx).id()) };
 
         //----------------------------------------------------------------------------------------//

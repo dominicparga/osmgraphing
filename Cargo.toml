@@ -37,8 +37,8 @@ name = "parser"
 path = "examples/parser.rs"
 
 [[example]]
-name = "dijkstra"
-path = "examples/dijkstra.rs"
+name = "astar"
+path = "examples/astar.rs"
 
 [[example]]
 name = "actix"

@@ -37,7 +37,7 @@ impl PartialEq for CostNode {
 }
 
 //------------------------------------------------------------------------------------------------//
-// Dijkstra's type of path
+// Astar's type of path
 
 #[derive(Clone)]
 pub struct Path {
@@ -88,7 +88,7 @@ impl Path {
 }
 
 //------------------------------------------------------------------------------------------------//
-// Dijkstra
+// Astar
 
 pub fn compute_shortest_path(src_id: i64, dst_id: i64, graph: &Graph) -> Option<Path> {
     //--------------------------------------------------------------------------------------------//
@@ -160,7 +160,6 @@ pub fn compute_shortest_path(src_id: i64, dst_id: i64, graph: &Graph) -> Option<
                 let leaving_edge_dst = graph.node(leaving_edge.dst_idx());
                 let estimation = (geo::haversine_distance(leaving_edge_dst.coord(), dst.coord())
                     * 1_000.0) as u32;
-                let estimation = 0; // TODO test-case
 
                 if new_cost < cost[leaving_edge.dst_idx()] {
                     predecessors[leaving_edge.dst_idx()] = Some(current.idx);
