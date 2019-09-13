@@ -1,21 +1,54 @@
-use super::TestPath;
+use super::{TestNode, TestPath};
 use osmgraphing::routing;
+
+//------------------------------------------------------------------------------------------------//
+
+fn assert_correct(
+    expected_paths: Vec<(TestNode, TestNode, Option<(u32, Vec<Vec<TestNode>>)>)>,
+    filepath: &str,
+) {
+    let graph = super::parse(filepath);
+
+    let mut astar = routing::Astar::new();
+    for (src, dst, option_specs) in expected_paths {
+        let option_path = astar.compute_shortest_path(src.id, dst.id, &graph);
+        assert_eq!(
+            option_path.is_some(),
+            option_specs.is_some(),
+            "Path from {} to {} should be {}",
+            src,
+            dst,
+            if option_specs.is_some() {
+                "Some"
+            } else {
+                "None"
+            }
+        );
+
+        if let (Some((cost, nodes)), Some(path)) = (option_specs, option_path) {
+            TestPath::from_alternatives(src, dst, cost, nodes).assert_correct(&path, &graph);
+        }
+    }
+}
+
+//------------------------------------------------------------------------------------------------//
+// tests
 
 #[test]
 fn small() {
     // (idx, id)
-    let a = (0, 0);
-    let b = (1, 1);
-    let c = (2, 2);
-    let d = (3, 3);
-    let e = (4, 4);
-    let f = (5, 5);
-    let g = (6, 6);
-    let h = (7, 7);
+    let a = TestNode::from(0, 0);
+    let b = TestNode::from(1, 1);
+    let c = TestNode::from(2, 2);
+    let d = TestNode::from(3, 3);
+    let e = TestNode::from(4, 4);
+    let f = TestNode::from(5, 5);
+    let g = TestNode::from(6, 6);
+    let h = TestNode::from(7, 7);
 
-    let test_paths = vec![
+    let expected_paths = vec![
         // a
-        (a, a, Some(TestPath::from(a, a, 0, vec![]))),
+        (a, a, Some((0, vec![vec![]]))),
         (a, b, None),
         (a, c, None),
         (a, d, None),
@@ -24,99 +57,127 @@ fn small() {
         (a, g, None),
         (a, h, None),
         // b
-        (b, a, Some(TestPath::from(b, a, 1, vec![b, a]))),
-        (b, b, Some(TestPath::from(b, b, 0, vec![]))),
-        (b, c, Some(TestPath::from(b, c, 1, vec![b, c]))),
+        (b, a, Some((1, vec![vec![b, a]]))),
+        (b, b, Some((0, vec![vec![]]))),
+        (b, c, Some((1, vec![vec![b, c]]))),
         (b, d, None),
         (b, e, None),
         (b, f, None),
         (b, g, None),
         (b, h, None),
         // c
-        (c, a, Some(TestPath::from(c, a, 1, vec![c, a]))),
-        (c, b, Some(TestPath::from(c, b, 1, vec![c, b]))),
-        (c, c, Some(TestPath::from(c, c, 0, vec![]))),
+        (c, a, Some((1, vec![vec![c, a]]))),
+        (c, b, Some((1, vec![vec![c, b]]))),
+        (c, c, Some((0, vec![vec![]]))),
         (c, d, None),
         (c, e, None),
         (c, f, None),
         (c, g, None),
         (c, h, None),
         // d
-        (d, a, Some(TestPath::from(d, a, 2, vec![d, b, a]))),
-        (d, b, Some(TestPath::from(d, b, 1, vec![d, b]))),
-        (d, c, Some(TestPath::from(d, c, 2, vec![d, b, c]))),
-        (d, d, Some(TestPath::from(d, d, 0, vec![]))),
-        (d, e, Some(TestPath::from(d, e, 2, vec![d, e]))),
-        (d, f, Some(TestPath::from(d, f, 2, vec![d, h, f]))),
+        (d, a, Some((2, vec![vec![d, b, a]]))),
+        (d, b, Some((1, vec![vec![d, b]]))),
+        (d, c, Some((2, vec![vec![d, b, c]]))),
+        (d, d, Some((0, vec![vec![]]))),
+        (d, e, Some((2, vec![vec![d, e]]))),
+        (d, f, Some((2, vec![vec![d, h, f]]))),
         (d, g, None),
-        (d, h, Some(TestPath::from(d, h, 1, vec![d, h]))),
+        (d, h, Some((1, vec![vec![d, h]]))),
         // e
-        (e, a, Some(TestPath::from(e, a, 4, vec![e, d, b, a]))),
-        (e, b, Some(TestPath::from(e, b, 3, vec![e, d, b]))),
-        (e, c, Some(TestPath::from(e, c, 4, vec![e, d, b, c]))),
-        (e, d, Some(TestPath::from(e, d, 2, vec![e, d]))),
-        (e, e, Some(TestPath::from(e, e, 0, vec![]))),
-        (e, f, Some(TestPath::from(e, f, 1, vec![e, f]))),
+        (e, a, Some((4, vec![vec![e, d, b, a]]))),
+        (e, b, Some((3, vec![vec![e, d, b]]))),
+        (e, c, Some((4, vec![vec![e, d, b, c]]))),
+        (e, d, Some((2, vec![vec![e, d]]))),
+        (e, e, Some((0, vec![vec![]]))),
+        (e, f, Some((1, vec![vec![e, f]]))),
         (e, g, None),
-        (e, h, Some(TestPath::from(e, h, 2, vec![e, f, h]))),
+        (e, h, Some((2, vec![vec![e, f, h]]))),
         // f
-        (f, a, Some(TestPath::from(f, a, 4, vec![f, h, d, b, a]))),
-        (f, b, Some(TestPath::from(f, b, 3, vec![f, h, d, b]))),
-        (f, c, Some(TestPath::from(f, c, 4, vec![f, h, d, b, c]))),
-        (f, d, Some(TestPath::from(f, d, 2, vec![f, h, d]))),
-        (f, e, Some(TestPath::from(f, e, 1, vec![f, e]))),
-        (f, f, Some(TestPath::from(f, f, 0, vec![]))),
+        (f, a, Some((4, vec![vec![f, h, d, b, a]]))),
+        (f, b, Some((3, vec![vec![f, h, d, b]]))),
+        (f, c, Some((4, vec![vec![f, h, d, b, c]]))),
+        (f, d, Some((2, vec![vec![f, h, d]]))),
+        (f, e, Some((1, vec![vec![f, e]]))),
+        (f, f, Some((0, vec![vec![]]))),
         (f, g, None),
-        (f, h, Some(TestPath::from(f, h, 1, vec![f, h]))),
+        (f, h, Some((1, vec![vec![f, h]]))),
         // g
-        (g, a, Some(TestPath::from(g, a, 5, vec![g, e, d, b, a]))),
-        (g, b, Some(TestPath::from(g, b, 4, vec![g, e, d, b]))),
-        (g, c, Some(TestPath::from(g, c, 5, vec![g, e, d, b, c]))),
-        (
-            g,
-            d,
-            Some(TestPath::from_alternatives(
-                g,
-                d,
-                3,
-                vec![vec![g, e, d], vec![g, f, d]],
-            )),
-        ),
-        (g, e, Some(TestPath::from(g, e, 1, vec![g, e]))),
-        (g, f, Some(TestPath::from(g, f, 1, vec![g, f]))),
-        (g, g, Some(TestPath::from(g, g, 0, vec![]))),
-        (g, h, Some(TestPath::from(g, h, 2, vec![g, f, h]))),
+        (g, a, Some((5, vec![vec![g, e, d, b, a]]))),
+        (g, b, Some((4, vec![vec![g, e, d, b]]))),
+        (g, c, Some((5, vec![vec![g, e, d, b, c]]))),
+        (g, d, Some((3, vec![vec![g, e, d], vec![g, f, d]]))),
+        (g, e, Some((1, vec![vec![g, e]]))),
+        (g, f, Some((1, vec![vec![g, f]]))),
+        (g, g, Some((0, vec![vec![]]))),
+        (g, h, Some((2, vec![vec![g, f, h]]))),
         // h
-        (h, a, Some(TestPath::from(h, a, 3, vec![h, d, b, a]))),
-        (h, b, Some(TestPath::from(h, b, 2, vec![h, d, b]))),
-        (h, c, Some(TestPath::from(h, c, 3, vec![h, d, b, c]))),
-        (h, d, Some(TestPath::from(h, d, 1, vec![h, d]))),
-        (h, e, Some(TestPath::from(h, e, 2, vec![h, f, e]))),
-        (h, f, Some(TestPath::from(h, f, 1, vec![h, f]))),
+        (h, a, Some((3, vec![vec![h, d, b, a]]))),
+        (h, b, Some((2, vec![vec![h, d, b]]))),
+        (h, c, Some((3, vec![vec![h, d, b, c]]))),
+        (h, d, Some((1, vec![vec![h, d]]))),
+        (h, e, Some((2, vec![vec![h, f, e]]))),
+        (h, f, Some((1, vec![vec![h, f]]))),
         (h, g, None),
-        (h, h, Some(TestPath::from(h, h, 0, vec![]))),
+        (h, h, Some((0, vec![vec![]]))),
     ];
 
-    let graph = super::parse("resources/maps/small.fmi");
+    assert_correct(expected_paths, "resources/maps/small.fmi");
+}
 
-    let mut astar = routing::Astar::new();
-    for (src, dst, option_test_path) in test_paths {
-        let option_path = astar.compute_shortest_path(super::id(src), super::id(dst), &graph);
-        assert_eq!(
-            option_path.is_some(),
-            option_test_path.is_some(),
-            "Path from (idx,id)={:?} to (idx,id)={:?} should be {}",
-            src,
-            dst,
-            if option_test_path.is_some() {
-                "Some"
-            } else {
-                "None"
-            }
-        );
+#[test]
+fn simple_stuttgart() {
+    // (idx, id)
+    let opp = TestNode::from(0, 26_033_921);
+    let bac = TestNode::from(1, 26_160_028);
+    let wai = TestNode::from(2, 252_787_940);
+    let end = TestNode::from(3, 298_249_467);
+    let dea = TestNode::from(4, 1_621_605_361);
+    let stu = TestNode::from(5, 2_933_335_353);
 
-        if let (Some(test_path), Some(path)) = (option_test_path, option_path) {
-            test_path.assert(&path, &graph);
-        }
-    }
+    let expected_paths = vec![
+        // opp
+        (opp, opp, Some((0, vec![vec![]]))),
+        (opp, bac, Some((8_000, vec![vec![opp, bac]]))),
+        (opp, wai, Some((31_000, vec![vec![opp, bac, wai]]))),
+        (opp, end, Some((30_000, vec![vec![opp, bac, end]]))),
+        (opp, dea, Some((9_069, vec![vec![opp, bac, dea]]))),
+        (opp, stu, Some((48_000, vec![vec![opp, bac, wai, stu]]))),
+        // bac
+        (bac, opp, Some((8_000, vec![vec![bac, opp]]))),
+        (bac, bac, Some((0, vec![vec![]]))),
+        (bac, wai, Some((23_000, vec![vec![bac, wai]]))),
+        (bac, end, Some((22_000, vec![vec![bac, end]]))),
+        (bac, dea, Some((1_069, vec![vec![bac, dea]]))),
+        (bac, stu, Some((40_000, vec![vec![bac, wai, stu]]))),
+        // wai
+        (wai, opp, Some((31_000, vec![vec![wai, bac, opp]]))),
+        (wai, bac, Some((23_000, vec![vec![wai, bac]]))),
+        (wai, wai, Some((0, vec![vec![]]))),
+        (wai, end, Some((8_000, vec![vec![wai, end]]))),
+        (wai, dea, Some((24_069, vec![vec![wai, bac, dea]]))),
+        (wai, stu, Some((17_000, vec![vec![wai, stu]]))),
+        // end
+        (end, opp, Some((30_000, vec![vec![end, bac, opp]]))),
+        (end, bac, Some((22_000, vec![vec![end, bac]]))),
+        (end, wai, Some((8_000, vec![vec![end, wai]]))),
+        (end, end, Some((0, vec![vec![]]))),
+        (end, dea, Some((23_069, vec![vec![end, bac, dea]]))),
+        (end, stu, Some((21_000, vec![vec![end, stu]]))),
+        // dea
+        (dea, opp, None),
+        (dea, bac, None),
+        (dea, wai, None),
+        (dea, end, None),
+        (dea, dea, Some((0, vec![vec![]]))),
+        (dea, stu, None),
+        // stu
+        (stu, opp, Some((48_000, vec![vec![stu, wai, bac, opp]]))),
+        (stu, bac, Some((40_000, vec![vec![stu, wai, bac]]))),
+        (stu, wai, Some((17_000, vec![vec![stu, wai]]))),
+        (stu, end, Some((21_000, vec![vec![stu, end]]))),
+        (stu, dea, Some((41_069, vec![vec![stu, wai, bac, dea]]))),
+        (stu, stu, Some((0, vec![vec![]]))),
+    ];
+
+    assert_correct(expected_paths, "resources/maps/simple_stuttgart.fmi");
 }

@@ -85,6 +85,17 @@ impl Path {
             None => None,
         }
     }
+
+    // TODO
+    // pub fn into_vec(&self) {
+    //     let mut current = path_src;
+    //     let mut succ_path = vec![current];
+    //     while let Some(succ) = path.successor(idx(current)) {
+    //         let succ = node(succ);
+    //         succ_path.push(succ);
+    //         current = succ;
+    //     }
+    // }
 }
 
 //------------------------------------------------------------------------------------------------//

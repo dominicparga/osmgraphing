@@ -34,7 +34,7 @@ fn main() {
 
     let path = match std::env::args_os().nth(1) {
         Some(path) => path,
-        None => OsString::from("resources/maps/small.fmi"),
+        None => OsString::from("resources/maps/simple_stuttgart.fmi"),
     };
 
     let now = Instant::now();

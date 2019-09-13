@@ -27,7 +27,7 @@ impl TestNode {
         assert_eq!(
             node.id(),
             self.id,
-            "Wrong node_id={} for {}",
+            "Wrong node-id={} for {}",
             node.id(),
             self.name
         );
