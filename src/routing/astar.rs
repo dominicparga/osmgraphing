@@ -91,16 +91,16 @@ impl PartialEq for CostNode {
 // Astar
 
 pub struct Astar {
-    cost_fn: Box<Fn(&Edge) -> u32>,
-    estimate_fn: Box<Fn(&Node, &Node) -> u32>,
+    cost_fn: Box<dyn Fn(&Edge) -> u32>,
+    estimate_fn: Box<dyn Fn(&Node, &Node) -> u32>,
     costs: Vec<u32>,
     predecessors: Vec<Option<usize>>,
     queue: BinaryHeap<CostNode>, // max-heap, but CostNode's natural order is reversed
 }
 impl Astar {
     pub fn from(
-        cost_fn: Box<Fn(&Edge) -> u32>,
-        estimate_fn: Box<Fn(&Node, &Node) -> u32>,
+        cost_fn: Box<dyn Fn(&Edge) -> u32>,
+        estimate_fn: Box<dyn Fn(&Node, &Node) -> u32>,
     ) -> Astar {
         Astar {
             cost_fn,
