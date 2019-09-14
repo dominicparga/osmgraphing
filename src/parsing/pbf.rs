@@ -14,7 +14,7 @@ mod pbf {
 pub struct Parser;
 impl super::Parsing for Parser {
     fn parse_ways(file: File, graph_builder: &mut GraphBuilder) {
-        info!("Starting edge-creation using ways ..");
+        info!("Starting edge-creation ..");
         for mut way in pbf::Reader::new(file)
             .par_iter()
             .filter_map(Result::ok)
@@ -32,6 +32,10 @@ impl super::Parsing for Parser {
                 Some(highway_tag) => highway_tag,
                 None => continue,
             };
+            // todo: get via json
+            if !highway_tag.is_for_vehicles(false) {
+                continue;
+            }
             let maxspeed = highway_tag.parse_maxspeed(&way);
             let (is_oneway, is_reverse) = highway_tag.parse_oneway(&way);
 
@@ -57,11 +61,11 @@ impl super::Parsing for Parser {
                 src_id = dst_id;
             }
         }
-        info!("Finished edge-creation using ways");
+        info!("Finished edge-creation");
     }
 
     fn parse_nodes(file: File, graph_builder: &mut GraphBuilder) {
-        info!("Starting node-creation using ways ..");
+        info!("Starting node-creation ..");
         for node in pbf::Reader::new(file)
             .par_iter()
             .filter_map(Result::ok)
@@ -78,6 +82,6 @@ impl super::Parsing for Parser {
                 );
             }
         }
-        info!("Finished node-creation using ways");
+        info!("Finished node-creation");
     }
 }

@@ -34,7 +34,7 @@ trait Parsing {
 
         let mut graph_builder = GraphBuilder::new();
 
-        info!("Starting processing given pbf-file ..");
+        info!("Starting processing given file ..");
         match Self::open_file(&path) {
             Ok(file) => Self::parse_ways(file, &mut graph_builder),
             Err(msg) => return Err(msg),
@@ -43,11 +43,11 @@ trait Parsing {
             Ok(file) => Self::parse_nodes(file, &mut graph_builder),
             Err(msg) => return Err(msg),
         }
-        info!("Finished processing given pbf-file");
+        info!("Finished processing given file");
 
-        let graph = graph_builder.finalize();
+        let result = graph_builder.finalize();
         info!("Finished parsing");
-        Ok(graph)
+        result
     }
 }
 

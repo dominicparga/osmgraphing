@@ -1,7 +1,7 @@
 use std::fs::File;
 use std::io::BufRead;
 
-use log::warn;
+use log::{info, warn};
 
 use crate::network::GraphBuilder;
 
@@ -99,7 +99,6 @@ mod fmi {
                 ));
             }
 
-            let way_id = None;
             let src_id = match params[0].parse::<i64>() {
                 Ok(src_id) => src_id,
                 Err(_) => {
@@ -119,18 +118,15 @@ mod fmi {
                 }
             };
             let meters = match params[2].parse::<u32>() {
-                Ok(kilometers) => Some(kilometers * 1_000),
-                Err(_) => match params[2].parse::<f64>() {
-                    Ok(kilometers) => Some((kilometers * 1_000.0) as u32),
-                    Err(_) => {
-                        warn!(
-                            "Parsing length '{}' of edge didn't work, \
-                             so straight-line is taken.",
-                            params[2]
-                        );
-                        None
-                    }
-                },
+                Ok(meters) => Some(meters),
+                Err(_) => {
+                    warn!(
+                        "Parsing length '{}' of edge didn't work, \
+                         so straight-line is taken.",
+                        params[2]
+                    );
+                    None
+                }
             };
             let maxspeed = match params[4].parse::<u16>() {
                 Ok(maxspeed) => maxspeed,
@@ -143,7 +139,7 @@ mod fmi {
             };
 
             Ok(ProtoEdge {
-                way_id,
+                way_id: None,
                 src_id,
                 dst_id,
                 meters,
@@ -163,6 +159,7 @@ impl Parser {
 }
 impl super::Parsing for Parser {
     fn parse_ways(file: File, graph_builder: &mut GraphBuilder) {
+        info!("Starting edge-creation ..");
         for line in fmi::Reader::new(file)
             .lines()
             .map(Result::unwrap)
@@ -182,9 +179,11 @@ impl super::Parsing for Parser {
                 }
             }
         }
+        info!("Finished edge-creation");
     }
 
     fn parse_nodes(file: File, graph_builder: &mut GraphBuilder) {
+        info!("Starting node-creation ..");
         for line in fmi::Reader::new(file)
             .lines()
             .map(Result::unwrap)
@@ -194,5 +193,6 @@ impl super::Parsing for Parser {
                 graph_builder.push_node(proto_node.id, proto_node.coord);
             }
         }
+        info!("Finished node-creation");
     }
 }

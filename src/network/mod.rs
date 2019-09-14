@@ -1,14 +1,19 @@
-mod building;
-pub use building::{GraphBuilder, ProtoEdge, ProtoNode};
-mod defaults;
-pub mod geo;
-pub use defaults::StreetType;
-
 //------------------------------------------------------------------------------------------------//
+// other imports
 
 use std::fmt;
 
 //------------------------------------------------------------------------------------------------//
+// own imports
+
+mod building;
+pub use building::{GraphBuilder, ProtoEdge, ProtoNode};
+pub mod defaults;
+pub mod geo;
+pub use defaults::StreetType;
+
+//------------------------------------------------------------------------------------------------//
+// node
 
 #[derive(Debug)]
 pub struct Node {
@@ -36,6 +41,7 @@ impl fmt::Display for Node {
 }
 
 //------------------------------------------------------------------------------------------------//
+// edge
 
 #[derive(Debug)]
 pub struct Edge {
@@ -61,6 +67,11 @@ impl Edge {
     pub fn maxspeed(&self) -> u16 {
         self.maxspeed
     }
+    pub fn seconds(&self) -> u32 {
+        // length [m] / velocity [km/h]
+        // +1 to prevent 0
+        ((self.meters as f64 / (self.maxspeed as f64)) * 3.6) as u32 + 1
+    }
 }
 impl fmt::Display for Edge {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -73,6 +84,7 @@ impl fmt::Display for Edge {
 }
 
 //------------------------------------------------------------------------------------------------//
+// graph
 
 #[derive(Debug)]
 pub struct Graph {

@@ -11,7 +11,7 @@ fn init_logging(verbosely: bool) {
     builder.filter(None, log::LevelFilter::Warn);
     // if verbose logging: log `info` for the server and this repo
     if verbosely {
-        builder.filter(Some("dijkstra"), log::LevelFilter::Info);
+        builder.filter(Some("astar"), log::LevelFilter::Info);
         builder.filter(Some("osmgraphing"), log::LevelFilter::Info);
     }
     // overwrite default with environment-variables
@@ -27,14 +27,14 @@ fn init_logging(verbosely: bool) {
 
 fn main() {
     init_logging(true);
-    info!("Executing example: dijkstra");
+    info!("Executing example: A*");
 
     //----------------------------------------------------------------------------------------------
     // parsing
 
     let path = match std::env::args_os().nth(1) {
         Some(path) => path,
-        None => OsString::from("resources/osm/small.fmi"),
+        None => OsString::from("resources/maps/simple_stuttgart.fmi"),
     };
 
     let now = Instant::now();
@@ -54,10 +54,10 @@ fn main() {
     info!("{}", graph);
 
     //----------------------------------------------------------------------------------------------
-    // dijkstra
+    // astar
 
-    // routing
-    let mut dijkstra = routing::Dijkstra::new(&graph);
+    let mut astar = routing::factory::new_shortest_path_astar();
+
     let src_idx = 0;
     let dsts: Vec<usize> = (0..graph.node_count()).collect();
     // let dsts: Vec<usize> = vec![80]; problem on baden-wuerttemberg.osm.pbf
@@ -70,15 +70,16 @@ fn main() {
         info!("");
 
         let now = Instant::now();
-        let path = dijkstra.compute_shortest_path(src_idx, dst_idx);
+        let option_path = astar.compute_shortest_path(src.id(), dst.id(), &graph);
         info!(
-            "Ran Dijkstra in {} µs a.k.a {} seconds",
+            "Ran A* in {} µs a.k.a {} seconds",
             now.elapsed().as_micros(),
             now.elapsed().as_secs()
         );
-        info!(
-            "Distance {} m from ({}) to ({}).",
-            path.cost[dst_idx], src, dst
-        );
+        if let Some(path) = option_path {
+            info!("Distance {} m from ({}) to ({}).", path.cost(), src, dst);
+        } else {
+            info!("No path from ({}) to ({}).", src, dst);
+        }
     }
 }

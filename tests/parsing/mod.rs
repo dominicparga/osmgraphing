@@ -7,6 +7,11 @@ use std::ffi::OsString;
 
 use osmgraphing::Parser;
 
+use super::parse;
+
+//------------------------------------------------------------------------------------------------//
+// tests
+
 #[test]
 fn wrong_extension() {
     assert!(

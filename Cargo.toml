@@ -1,6 +1,6 @@
 [package]
 name = "osmgraphing"
-version = "0.4.1"
+version = "0.5.0"
 description = "Playing around with graphs created via parsing OpenStreetMap data"
 edition = "2018"
 
@@ -37,8 +37,8 @@ name = "parser"
 path = "examples/parser.rs"
 
 [[example]]
-name = "dijkstra"
-path = "examples/dijkstra.rs"
+name = "astar"
+path = "examples/astar.rs"
 
 [[example]]
 name = "actix"
