@@ -1,4 +1,12 @@
+//------------------------------------------------------------------------------------------------//
+// other imports
+
 use clap;
+
+//------------------------------------------------------------------------------------------------//
+// own imports
+
+mod braess;
 
 //------------------------------------------------------------------------------------------------//
 
@@ -35,6 +43,10 @@ fn parse_cmdline<'a>() -> clap::ArgMatches<'a> {
                     .join("\n"),
                 ),
         )
+        .subcommand(
+            clap::SubCommand::with_name("braess")
+                .about("Executes shortest-path-algorithms and try to improve the resulting routes"),
+        )
         .get_matches()
 }
 
@@ -61,7 +73,9 @@ fn main() {
     let matches = parse_cmdline();
     setup_logging(matches.is_present("verbose"));
 
-    if matches.args.len() == 0 {
+    if let Some(_matches) = matches.subcommand_matches("braess") {
+        braess::run();
+    } else if matches.args.len() == 0 {
         println!("Execute '.../osmgraphing -h' (or 'cargo run -- -h') for more info.");
     }
 }
