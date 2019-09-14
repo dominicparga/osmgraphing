@@ -1,5 +1,5 @@
 //------------------------------------------------------------------------------------------------//
-// other imports
+// other modules
 
 use std::cmp::Ordering;
 use std::collections::{BinaryHeap, HashMap};
@@ -9,7 +9,7 @@ use log::debug;
 use crate::network::{Edge, Graph, Node};
 
 //------------------------------------------------------------------------------------------------//
-// own imports
+// own modules
 
 #[derive(Clone)]
 pub struct Path {
@@ -58,6 +58,20 @@ impl Path {
         }
     }
 }
+// impl Into<Vec<usize>> for Path {
+//     fn into(self) -> Vec<usize> {
+//         let mut nodes = vec![];
+//         if self.successors.len() > 0 {
+//             let mut current = self.src_idx;
+//             nodes.push(current);
+//             while let Some(succ) = self.successor(current) {
+//                 nodes.push(succ);
+//                 current = succ;
+//             }
+//         }
+//         nodes
+//     }
+// }
 
 #[derive(Copy, Clone)]
 struct CostNode {
@@ -90,19 +104,27 @@ impl PartialEq for CostNode {
 //------------------------------------------------------------------------------------------------//
 // Astar
 
-pub struct Astar {
-    cost_fn: Box<dyn Fn(&Edge) -> u32>,
-    estimate_fn: Box<dyn Fn(&Node, &Node) -> u32>,
+pub trait Astar {
+    fn compute_shortest_path(&mut self, src_id: i64, dst_id: i64, graph: &Graph) -> Option<Path>;
+}
+
+//------------------------------------------------------------------------------------------------//
+// GenericAstar
+
+pub struct GenericAstar<C, E>
+where
+    C: Fn(&Edge) -> u32,
+    E: Fn(&Node, &Node) -> u32,
+{
+    cost_fn: C,
+    estimate_fn: E,
     costs: Vec<u32>,
     predecessors: Vec<Option<usize>>,
     queue: BinaryHeap<CostNode>, // max-heap, but CostNode's natural order is reversed
 }
-impl Astar {
-    pub fn from(
-        cost_fn: Box<dyn Fn(&Edge) -> u32>,
-        estimate_fn: Box<dyn Fn(&Node, &Node) -> u32>,
-    ) -> Astar {
-        Astar {
+impl<C: Fn(&Edge) -> u32, E: Fn(&Node, &Node) -> u32> GenericAstar<C, E> {
+    pub fn from(cost_fn: C, estimate_fn: E) -> GenericAstar<C, E> {
+        GenericAstar {
             cost_fn,
             estimate_fn,
             costs: vec![std::u32::MAX; 0],
@@ -123,13 +145,13 @@ impl Astar {
 
         self.queue = BinaryHeap::new();
     }
-
-    pub fn compute_shortest_path(
-        &mut self,
-        src_id: i64,
-        dst_id: i64,
-        graph: &Graph,
-    ) -> Option<Path> {
+}
+impl<C, E> Astar for GenericAstar<C, E>
+where
+    C: Fn(&Edge) -> u32,
+    E: Fn(&Node, &Node) -> u32,
+{
+    fn compute_shortest_path(&mut self, src_id: i64, dst_id: i64, graph: &Graph) -> Option<Path> {
         //----------------------------------------------------------------------------------------//
         // initialization-stuff
 

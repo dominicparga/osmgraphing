@@ -1,10 +1,10 @@
 //------------------------------------------------------------------------------------------------//
-// other imports
+// other modules
 
 use std::fmt;
 
 //------------------------------------------------------------------------------------------------//
-// own imports
+// own modules
 
 mod building;
 pub use building::{GraphBuilder, ProtoEdge, ProtoNode};
