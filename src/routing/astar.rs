@@ -1,43 +1,15 @@
+//------------------------------------------------------------------------------------------------//
+// other imports
+
 use std::cmp::Ordering;
 use std::collections::{BinaryHeap, HashMap};
 
 use log::debug;
 
-use crate::network::{geo, Graph};
+use crate::network::{Edge, Graph, Node};
 
 //------------------------------------------------------------------------------------------------//
-// nodes
-
-#[derive(Copy, Clone)]
-struct CostNode {
-    pub idx: usize,
-    pub cost: u32,
-    pub estimation: u32,
-    pub pred_idx: Option<usize>,
-}
-impl Ord for CostNode {
-    fn cmp(&self, other: &CostNode) -> Ordering {
-        // (1) cost in float, but cmp uses only m, which is ok
-        // (2) inverse order since BinaryHeap is max-heap, but min-heap is needed
-        (other.cost + other.estimation)
-            .cmp(&(self.cost + self.estimation))
-            .then_with(|| other.idx.cmp(&self.idx))
-    }
-}
-impl PartialOrd for CostNode {
-    fn partial_cmp(&self, other: &CostNode) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
-}
-impl Eq for CostNode {}
-impl PartialEq for CostNode {
-    fn eq(&self, other: &CostNode) -> bool {
-        self.cmp(other) == Ordering::Equal
-    }
-}
-
-//------------------------------------------------------------------------------------------------//
-// Astar's type of path
+// own imports
 
 #[derive(Clone)]
 pub struct Path {
@@ -85,44 +57,68 @@ impl Path {
             None => None,
         }
     }
+}
 
-    // TODO
-    // pub fn into_vec(&self) {
-    //     let mut current = path_src;
-    //     let mut succ_path = vec![current];
-    //     while let Some(succ) = path.successor(idx(current)) {
-    //         let succ = node(succ);
-    //         succ_path.push(succ);
-    //         current = succ;
-    //     }
-    // }
+#[derive(Copy, Clone)]
+struct CostNode {
+    pub idx: usize,
+    pub cost: u32,
+    pub estimation: u32,
+    pub pred_idx: Option<usize>,
+}
+impl Ord for CostNode {
+    fn cmp(&self, other: &CostNode) -> Ordering {
+        // (1) cost in float, but cmp uses only m, which is ok
+        // (2) inverse order since BinaryHeap is max-heap, but min-heap is needed
+        (other.cost + other.estimation)
+            .cmp(&(self.cost + self.estimation))
+            .then_with(|| other.idx.cmp(&self.idx))
+    }
+}
+impl PartialOrd for CostNode {
+    fn partial_cmp(&self, other: &CostNode) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+impl Eq for CostNode {}
+impl PartialEq for CostNode {
+    fn eq(&self, other: &CostNode) -> bool {
+        self.cmp(other) == Ordering::Equal
+    }
 }
 
 //------------------------------------------------------------------------------------------------//
 // Astar
 
 pub struct Astar {
-    cost: Vec<u32>,
+    cost_fn: Box<Fn(&Edge) -> u32>,
+    estimate_fn: Box<Fn(&Node, &Node) -> u32>,
+    costs: Vec<u32>,
     predecessors: Vec<Option<usize>>,
     queue: BinaryHeap<CostNode>, // max-heap, but CostNode's natural order is reversed
 }
 impl Astar {
-    pub fn new() -> Astar {
+    pub fn from(
+        cost_fn: Box<Fn(&Edge) -> u32>,
+        estimate_fn: Box<Fn(&Node, &Node) -> u32>,
+    ) -> Astar {
         Astar {
-            cost: vec![std::u32::MAX; 0],
+            cost_fn,
+            estimate_fn,
+            costs: vec![std::u32::MAX; 0],
             predecessors: vec![None; 0],
             queue: BinaryHeap::new(),
         }
     }
 
     fn resize(&mut self, new_len: usize) {
-        let old_len = self.cost.len();
+        let old_len = self.costs.len();
         let min_len = std::cmp::min(old_len, new_len);
         for i in 0..min_len {
-            self.cost[i] = std::u32::MAX;
+            self.costs[i] = std::u32::MAX;
             self.predecessors[i] = None;
         }
-        self.cost.resize(new_len, std::u32::MAX);
+        self.costs.resize(new_len, std::u32::MAX);
         self.predecessors.resize(new_len, None);
 
         self.queue = BinaryHeap::new();
@@ -136,6 +132,7 @@ impl Astar {
     ) -> Option<Path> {
         //----------------------------------------------------------------------------------------//
         // initialization-stuff
+
         self.resize(graph.node_count());
 
         // use graph-structure (offset-array) and work with idx instead of id
@@ -165,7 +162,10 @@ impl Astar {
             estimation: 0,
             pred_idx: None,
         });
-        self.cost[src_idx] = 0;
+        self.costs[src_idx] = 0;
+
+        //----------------------------------------------------------------------------------------//
+        // search for shortest path
 
         while let Some(current) = self.queue.pop() {
             // if shortest path found
@@ -187,7 +187,7 @@ impl Astar {
 
             // first occurrence has lowest cost
             // -> check if current has already been visited
-            if current.cost > self.cost[current.idx] {
+            if current.cost > self.costs[current.idx] {
                 continue;
             }
 
@@ -195,15 +195,13 @@ impl Astar {
                 // update cost and add predecessors
                 // to nodes, that are dst of current's leaving edges
                 for leaving_edge in leaving_edges {
-                    let new_cost = current.cost + leaving_edge.meters();
+                    let new_cost = current.cost + (self.cost_fn)(leaving_edge);
                     let leaving_edge_dst = graph.node(leaving_edge.dst_idx());
-                    let estimation =
-                        (geo::haversine_distance(leaving_edge_dst.coord(), dst.coord()) * 1_000.0)
-                            as u32;
+                    let estimation = (self.estimate_fn)(leaving_edge_dst, dst);
 
-                    if new_cost < self.cost[leaving_edge.dst_idx()] {
+                    if new_cost < self.costs[leaving_edge.dst_idx()] {
                         self.predecessors[leaving_edge.dst_idx()] = Some(current.idx);
-                        self.cost[leaving_edge.dst_idx()] = new_cost;
+                        self.costs[leaving_edge.dst_idx()] = new_cost;
                         self.queue.push(CostNode {
                             idx: leaving_edge.dst_idx(),
                             cost: new_cost,

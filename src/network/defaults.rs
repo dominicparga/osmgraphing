@@ -9,6 +9,8 @@ mod pbf {
 
 //------------------------------------------------------------------------------------------------//
 
+pub const MAX_SPEED_KMH: u32 = 130;
+
 pub enum StreetType {
     Motorway,
     MotorwayLink,

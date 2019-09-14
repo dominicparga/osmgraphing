@@ -1,7 +1,5 @@
-use super::parse;
-mod astar;
-
 //--------------------------------------------------------------------------------------------//
+// other imports
 
 use std::fmt;
 
@@ -9,7 +7,43 @@ use osmgraphing::network::Graph;
 use osmgraphing::routing;
 
 //--------------------------------------------------------------------------------------------//
+// own imports
+
+mod astar;
+
+//--------------------------------------------------------------------------------------------//
 // helpers
+
+fn assert_correct(
+    astar: &mut routing::Astar,
+    expected_paths: Vec<(TestNode, TestNode, Option<(u32, Vec<Vec<TestNode>>)>)>,
+    filepath: &str,
+) {
+    let graph = super::parse(filepath);
+
+    for (src, dst, option_specs) in expected_paths {
+        let option_path = astar.compute_shortest_path(src.id, dst.id, &graph);
+        assert_eq!(
+            option_path.is_some(),
+            option_specs.is_some(),
+            "Path from {} to {} should be {}",
+            src,
+            dst,
+            if option_specs.is_some() {
+                "Some"
+            } else {
+                "None"
+            }
+        );
+
+        if let (Some((cost, nodes)), Some(path)) = (option_specs, option_path) {
+            TestPath::from_alternatives(src, dst, cost, nodes).assert_correct(&path, &graph);
+        }
+    }
+}
+
+//--------------------------------------------------------------------------------------------//
+// test-node
 
 #[derive(Debug, Copy, Clone)]
 struct TestNode {

@@ -1,6 +1,6 @@
 mod building;
 pub use building::{GraphBuilder, ProtoEdge, ProtoNode};
-mod defaults;
+pub mod defaults;
 pub mod geo;
 pub use defaults::StreetType;
 
@@ -60,6 +60,10 @@ impl Edge {
     }
     pub fn maxspeed(&self) -> u16 {
         self.maxspeed
+    }
+    pub fn seconds(&self) -> u32 {
+        // length [m] / velocity [km/h]
+        ((self.meters / (self.maxspeed as u32)) as f64 * 3.6) as u32
     }
 }
 impl fmt::Display for Edge {

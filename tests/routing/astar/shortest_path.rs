@@ -1,41 +1,26 @@
-use super::{TestNode, TestPath};
+use super::TestNode;
 use osmgraphing::routing;
-
-//------------------------------------------------------------------------------------------------//
-
-fn assert_correct(
-    expected_paths: Vec<(TestNode, TestNode, Option<(u32, Vec<Vec<TestNode>>)>)>,
-    filepath: &str,
-) {
-    let graph = super::parse(filepath);
-
-    let mut astar = routing::Astar::new();
-    for (src, dst, option_specs) in expected_paths {
-        let option_path = astar.compute_shortest_path(src.id, dst.id, &graph);
-        assert_eq!(
-            option_path.is_some(),
-            option_specs.is_some(),
-            "Path from {} to {} should be {}",
-            src,
-            dst,
-            if option_specs.is_some() {
-                "Some"
-            } else {
-                "None"
-            }
-        );
-
-        if let (Some((cost, nodes)), Some(path)) = (option_specs, option_path) {
-            TestPath::from_alternatives(src, dst, cost, nodes).assert_correct(&path, &graph);
-        }
-    }
-}
-
-//------------------------------------------------------------------------------------------------//
-// tests
 
 #[test]
 fn simple_stuttgart() {
+    let mut astar = routing::factory::new_shortest_path_astar();
+    let expected_paths = expected_paths_simple_stuttgart();
+    let filepath = "resources/maps/simple_stuttgart.fmi";
+    super::assert_correct(&mut astar, expected_paths, filepath);
+}
+
+#[test]
+fn small() {
+    let mut astar = routing::factory::new_shortest_path_astar();
+    let expected_paths = expected_paths_small();
+    let filepath = "resources/maps/small.fmi";
+    super::assert_correct(&mut astar, expected_paths, filepath);
+}
+
+//------------------------------------------------------------------------------------------------//
+
+fn expected_paths_simple_stuttgart() -> Vec<(TestNode, TestNode, Option<(u32, Vec<Vec<TestNode>>)>)>
+{
     // (idx, id)
     let opp = TestNode::from(0, 26_033_921);
     let bac = TestNode::from(1, 26_160_028);
@@ -44,7 +29,7 @@ fn simple_stuttgart() {
     let dea = TestNode::from(4, 1_621_605_361);
     let stu = TestNode::from(5, 2_933_335_353);
 
-    let expected_paths = vec![
+    vec![
         // opp
         (opp, opp, Some((0, vec![vec![]]))),
         (opp, bac, Some((8_000, vec![vec![opp, bac]]))),
@@ -87,13 +72,10 @@ fn simple_stuttgart() {
         (stu, end, Some((21_000, vec![vec![stu, end]]))),
         (stu, dea, Some((41_069, vec![vec![stu, wai, bac, dea]]))),
         (stu, stu, Some((0, vec![vec![]]))),
-    ];
-
-    assert_correct(expected_paths, "resources/maps/simple_stuttgart.fmi");
+    ]
 }
 
-#[test]
-fn small() {
+fn expected_paths_small() -> Vec<(TestNode, TestNode, Option<(u32, Vec<Vec<TestNode>>)>)> {
     // (idx, id)
     let a = TestNode::from(0, 0);
     let b = TestNode::from(1, 1);
@@ -104,7 +86,7 @@ fn small() {
     let g = TestNode::from(6, 6);
     let h = TestNode::from(7, 7);
 
-    let expected_paths = vec![
+    vec![
         // a
         (a, a, Some((0, vec![vec![]]))),
         (a, b, None),
@@ -177,7 +159,5 @@ fn small() {
         (h, f, Some((1, vec![vec![h, f]]))),
         (h, g, None),
         (h, h, Some((0, vec![vec![]]))),
-    ];
-
-    assert_correct(expected_paths, "resources/maps/small.fmi");
+    ]
 }
