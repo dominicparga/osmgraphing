@@ -35,6 +35,12 @@ impl Node {
         self.coord.lon()
     }
 }
+impl Eq for Node {}
+impl PartialEq for Node {
+    fn eq(&self, other: &Node) -> bool {
+        self.id == other.id && self.coord == other.coord
+    }
+}
 impl fmt::Display for Node {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "Node: {{ id: {}, {} }}", self.id, self.coord,)
@@ -72,6 +78,16 @@ impl Edge {
         // length [m] / velocity [km/h]
         // +1 to prevent 0
         ((self.meters as f64 / (self.maxspeed as f64)) * 3.6) as u32 + 1
+    }
+}
+impl Eq for Edge {}
+impl PartialEq for Edge {
+    fn eq(&self, other: &Edge) -> bool {
+        self.id == other.id
+            && self.src_idx == other.src_idx
+            && self.dst_idx == other.dst_idx
+            && self.meters == other.meters
+            && self.maxspeed == other.maxspeed
     }
 }
 impl fmt::Display for Edge {
