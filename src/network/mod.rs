@@ -2,6 +2,7 @@
 // other modules
 
 use std::fmt;
+use std::ops;
 
 //------------------------------------------------------------------------------------------------//
 // own modules
@@ -123,36 +124,41 @@ impl Graph {
         &self.nodes[idx]
     }
 
-    pub fn edge(&self, src_idx: usize, dst_idx: usize) -> Option<&Edge> {
-        match self.leaving_edges(src_idx) {
-            Some(leaving_edges) => {
-                match leaving_edges.binary_search_by(|edge| edge.dst_idx.cmp(&dst_idx)) {
-                    Ok(j) => Some(&leaving_edges[j]),
-                    Err(_) => None,
-                }
-            }
-            None => None,
+    pub fn edge(&self, edge_idx: usize) -> &Edge {
+        &self.edges[edge_idx]
+    }
+
+    pub fn offset(&self, node_idx: usize) -> usize {
+        self.offsets[node_idx]
+    }
+
+    /// uses binary-search, but only on src's leaving edges (±3), so more or less in O(1)
+    pub fn edge_from(&self, src_idx: usize, dst_idx: usize) -> Option<&Edge> {
+        let leaving_edges = self.leaving_edges(src_idx)?;
+        let j = leaving_edges
+            .binary_search_by(|edge| edge.dst_idx.cmp(&dst_idx))
+            .ok()?;
+        Some(&leaving_edges[j])
+    }
+
+    pub fn offset_indices(&self, node_idx: usize) -> Option<ops::Range<usize>> {
+        // Use offset-array to get indices for the graph's edges belonging to the given node
+        let &i0 = self.offsets.get(node_idx)?;
+        // (idx + 1) guaranteed by offset-array-length
+        let &i1 = self.offsets.get(node_idx + 1)?;
+
+        // check if i0 and i1 are equal
+        // <-> if node has leaving edges
+        if i0 < i1 {
+            Some(i0..i1)
+        } else {
+            None
         }
     }
 
     pub fn leaving_edges(&self, node_idx: usize) -> Option<&[Edge]> {
-        // Use offset-array to get indices for the graph's edges belonging to the given node
-        match self.offsets.get(node_idx) {
-            // (idx + 1) guaranteed by offset-array-length
-            Some(&i0) => match self.offsets.get(node_idx + 1) {
-                Some(&i1) => {
-                    // check if i0 and i1 are equal
-                    // <-> if node has leaving edges
-                    if i0 < i1 {
-                        Some(&self.edges[i0..i1])
-                    } else {
-                        None
-                    }
-                }
-                None => None,
-            },
-            None => None,
-        }
+        let range = self.offset_indices(node_idx)?;
+        Some(&self.edges[range])
     }
 }
 impl fmt::Display for Graph {

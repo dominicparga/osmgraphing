@@ -75,7 +75,7 @@ impl TestEdge {
     }
 
     fn assert_correct(&self, graph: &Graph) {
-        let edge = graph.edge(self.src_idx, self.dst_idx).expect(&format!(
+        let edge = graph.edge_from(self.src_idx, self.dst_idx).expect(&format!(
             "Edge (src_idx, dst_idx): ({}, {}) does not exist.",
             self.src_idx, self.dst_idx
         ));
@@ -168,7 +168,7 @@ fn simple_stuttgart() {
     assert_eq!(graph.node_count(), 6, "Wrong node-count");
     assert_eq!(graph.edge_count(), 13, "Wrong edge-count");
     assert!(
-        graph.edge(24, 42).is_none(),
+        graph.edge_from(24, 42).is_none(),
         "Edge doesn't exist, so graph should return None."
     );
     assert!(
@@ -252,7 +252,7 @@ fn small() {
     assert_eq!(graph.node_count(), 8, "Wrong node-count");
     assert_eq!(graph.edge_count(), 16, "Wrong edge-count");
     assert!(
-        graph.edge(24, 42).is_none(),
+        graph.edge_from(24, 42).is_none(),
         "Edge doesn't exist, so graph should return None."
     );
     assert!(
