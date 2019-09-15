@@ -17,7 +17,7 @@
 #   src-id     dst-id distance ? maxspeed
   26033921   26160028     8000 _       50 # Oppenweiler -> Backnang
 
-  26160028 1621605361  "trash" _       30 # Backnang -> Dead-end
+  26160028 1621605361     calc _       30 # Backnang -> Dead-end
   26160028   26033921     8000 _       50 # Backnang -> Oppenweiler
   26160028  298249467    22000 _       80 # Backnang -> Endersbach
   26160028  252787940    23000 _      120 # Backnang -> Waiblingen

@@ -351,7 +351,8 @@ impl str::FromStr for StreetType {
             "highway:service"
             | "highway:service;yes" // way-id: 170702046
             => Ok(StreetType::Service),
-            "highway:historic" // way-id: 192265844
+            "highway:byway" // way-id: 29881284
+            | "highway:historic" // way-id: 192265844
             | "highway:path;unclassified" // way-id: 38480982
             | "highway:tra#" // way-id: 721881475
             | "highway:track"
