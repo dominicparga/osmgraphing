@@ -23,6 +23,7 @@ clap = "2.33" # cmdline-parsing
 env_logger = "0.6" # logging for external use, e.g. main.rs and examples
 log = "0.4"        # logging for internal use, e.g. lib.rs
 osmpbfreader = "0.13" # read osm.pbf-files
+rand = "0.7" # generate random routes
 
 [dev-dependencies]
 actix-web = "1.0" # backend-server
