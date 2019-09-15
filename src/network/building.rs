@@ -46,6 +46,7 @@ pub struct ProtoEdge {
 }
 
 //------------------------------------------------------------------------------------------------//
+// graphbuilding
 
 pub struct GraphBuilder {
     proto_nodes: BTreeMap<i64, ProtoNode>,
@@ -133,25 +134,56 @@ impl GraphBuilder {
         self
     }
 
+    /// O(1) per removed element, so O(m) for m edges
+    pub fn filter_edges<F>(&mut self, func: F) -> Result<(), String>
+    where
+        F: Fn(&ProtoEdge) -> bool,
+    {
+        // high-level-idea:
+        // iterate over edges, filter each one, and update two running indices l, r
+        // to guarantee O(1) per removed element
+        //
+        // Note:
+        // l is called idx
+        // r is handled by Vec::swap_remove
+
+        let mut idx = 0;
+        // len() changes in loop, thus while-loop is taken
+        while idx < self.proto_edges.len() {
+            let proto_edge = &self.proto_edges[idx];
+
+            if func(proto_edge) {
+                // if edge is kept -> inc l
+                idx += 1;
+            } else {
+                // if edge is gonna be removed -> swap l, r and dec r and update nodes' edge-counts
+                for node_id in vec![proto_edge.src_id, proto_edge.dst_id] {
+                    if let Some(node) = self.proto_nodes.get_mut(&node_id) {
+                        node.edge_count -= 1;
+                    } else {
+                        return Err(format!(
+                            "Graphbuilder should contain node-id {} for edge {}->{}, but doesn't.",
+                            proto_edge.src_id, proto_edge.src_id, proto_edge.dst_id
+                        ));
+                    }
+                }
+                self.proto_edges.swap_remove(idx);
+            }
+        }
+
+        Ok(())
+    }
+
     pub fn finalize(mut self) -> Result<Graph, String> {
         //----------------------------------------------------------------------------------------//
         // init graph
 
-        let node_count = self.proto_nodes.len();
-        let edge_count = self.proto_edges.len();
         info!(
             "Starting finalizing graph ({} proto-nodes and {} proto-edges) ..",
-            node_count, edge_count
+            self.proto_nodes.len(),
+            self.proto_edges.len()
         );
         let mut graph = Graph::new();
-
-        //----------------------------------------------------------------------------------------//
-        // filter edges
-
-        // TODO
-        // iterate over edges, filter, and update two running indices l, r
-        // if edge is gonna be removed -> swap l, r and dec r and update nodes' edge-counts
-        // if edge is kept -> inc l
 
         //----------------------------------------------------------------------------------------//
         // sort edges by ascending src-id, then by ascending dst-id -> offset-array
@@ -200,7 +232,7 @@ impl GraphBuilder {
         graph.offsets.push(offset);
         // high-level-idea
         // count offset for each proto_edge (sorted) and apply offset as far as src changes
-        for edge_idx in 0..edge_count {
+        for edge_idx in 0..self.proto_edges.len() {
             let proto_edge = &self.proto_edges[edge_idx];
             // set way-id to index
             let edge_way_id = proto_edge.way_id.unwrap_or(edge_idx as i64);

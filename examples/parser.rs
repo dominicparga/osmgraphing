@@ -37,7 +37,7 @@ fn main() {
     };
 
     let now = Instant::now();
-    let graph = match Parser::parse(&path) {
+    let graph = match Parser::parse_and_finalize(&path) {
         Ok(graph) => graph,
         Err(msg) => {
             error!("{}", msg);

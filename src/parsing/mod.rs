@@ -26,12 +26,7 @@ trait Parsing {
 
     fn parse_nodes(file: File, graph_builder: &mut GraphBuilder);
 
-    fn parse<S: AsRef<OsStr> + ?Sized>(path: &S) -> Result<Graph, String> {
-        info!("Starting parsing given path {:?} ..", &Path::new(&path));
-
-        // TODO parse "cycleway" and others
-        // see https://wiki.openstreetmap.org/wiki/Key:highway
-
+    fn parse<S: AsRef<OsStr> + ?Sized>(path: &S) -> Result<GraphBuilder, String> {
         let mut graph_builder = GraphBuilder::new();
 
         info!("Starting processing given file ..");
@@ -41,7 +36,16 @@ trait Parsing {
         Self::parse_nodes(file, &mut graph_builder);
         info!("Finished processing given file");
 
-        let result = graph_builder.finalize();
+        Ok(graph_builder)
+    }
+
+    fn parse_and_finalize<S: AsRef<OsStr> + ?Sized>(path: &S) -> Result<Graph, String> {
+        info!("Starting parsing given path {:?} ..", &Path::new(&path));
+
+        // TODO parse "cycleway" and others
+        // see https://wiki.openstreetmap.org/wiki/Key:highway
+
+        let result = Self::parse(path)?.finalize();
         info!("Finished parsing");
         result
     }
@@ -86,10 +90,17 @@ impl Type {
 
 pub struct Parser;
 impl Parser {
-    pub fn parse<S: AsRef<OsStr> + ?Sized>(path: &S) -> Result<Graph, String> {
+    pub fn parse<S: AsRef<OsStr> + ?Sized>(path: &S) -> Result<GraphBuilder, String> {
         match Type::from_path(path)? {
             Type::PBF => pbf::Parser::parse(path),
             Type::FMI => fmi::Parser::parse(path),
+        }
+    }
+
+    pub fn parse_and_finalize<S: AsRef<OsStr> + ?Sized>(path: &S) -> Result<Graph, String> {
+        match Type::from_path(path)? {
+            Type::PBF => pbf::Parser::parse_and_finalize(path),
+            Type::FMI => fmi::Parser::parse_and_finalize(path),
         }
     }
 }

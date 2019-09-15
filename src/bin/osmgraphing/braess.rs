@@ -12,7 +12,7 @@ pub struct Config<'a> {
 pub fn run(cfg: Config) -> Result<(), String> {
     info!("Executing braess-optimization");
 
-    let graph = Parser::parse(&cfg.mapfile)?;
+    let graph = Parser::parse_and_finalize(&cfg.mapfile)?;
     let mut astar = routing::factory::new_shortest_path_astar();
 
     let src_idx = 0;
