@@ -9,10 +9,6 @@ use crate::network::GraphBuilder;
 
 mod fmi {
     pub use std::io::BufReader as Reader;
-
-    //--------------------------------------------------------------------------------------------//
-
-    use log::warn;
     use std::str;
 
     use crate::network::geo;
@@ -117,16 +113,17 @@ mod fmi {
                     ))
                 }
             };
-            let meters = match params[2].parse::<u32>() {
-                Ok(meters) => Some(meters),
-                Err(_) => {
-                    warn!(
-                        "Parsing length '{}' of edge didn't work, \
-                         so straight-line is taken.",
-                        params[2]
-                    );
-                    None
-                }
+            let meters = match params[2] {
+                "calc" => None,
+                _ => match params[2].parse::<u32>() {
+                    Ok(meters) => Some(meters),
+                    Err(_) => {
+                        return Err(format!(
+                            "Parsing length '{}' of edge ({}->{}) didn't work.",
+                            params[2], src_id, dst_id
+                        ))
+                    }
+                },
             };
             let maxspeed = match params[4].parse::<u16>() {
                 Ok(maxspeed) => maxspeed,
