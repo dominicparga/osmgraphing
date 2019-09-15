@@ -12,22 +12,13 @@ pub struct Config<'a> {
 pub fn run(cfg: Config) -> Result<(), String> {
     info!("Executing braess-optimization");
 
-    //--------------------------------------------------------------------------------------------//
-    // parsing
-
     let graph = Parser::parse(&cfg.mapfile)?;
-
-    //--------------------------------------------------------------------------------------------//
-    // astar
-
     let mut astar = routing::factory::new_shortest_path_astar();
 
     let src_idx = 0;
     let dsts: Vec<usize> = (0..graph.node_count()).collect();
-    // let dsts: Vec<usize> = vec![80]; problem on baden-wuerttemberg.osm.pbf
 
     let src = graph.node(src_idx);
-
     for dst_idx in dsts {
         let dst = graph.node(dst_idx);
 

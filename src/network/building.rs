@@ -10,7 +10,12 @@ use super::{geo, Edge, Graph, Node};
 pub struct ProtoNode {
     id: i64,
     coord: Option<geo::Coordinate>,
-    is_edge_node: bool,
+    edge_count: u16,
+}
+impl ProtoNode {
+    fn is_in_edge(&self) -> bool {
+        self.edge_count > 0
+    }
 }
 impl Ord for ProtoNode {
     fn cmp(&self, other: &ProtoNode) -> Ordering {
@@ -65,7 +70,7 @@ impl GraphBuilder {
                 ProtoNode {
                     id,
                     coord: Some(coord),
-                    is_edge_node: false,
+                    edge_count: 0,
                 },
             );
         }
@@ -74,7 +79,7 @@ impl GraphBuilder {
 
     pub fn is_node_in_edge(&self, id: i64) -> bool {
         if let Some(proto_node) = self.proto_nodes.get(&id) {
-            proto_node.is_edge_node
+            proto_node.is_in_edge()
         } else {
             false
         }
@@ -99,28 +104,28 @@ impl GraphBuilder {
 
         // add or update src-node
         if let Some(proto_node) = self.proto_nodes.get_mut(&src_id) {
-            proto_node.is_edge_node = true;
+            proto_node.edge_count += 1;
         } else {
             self.proto_nodes.insert(
                 src_id,
                 ProtoNode {
                     id: src_id,
                     coord: None,
-                    is_edge_node: true,
+                    edge_count: 1,
                 },
             );
         }
 
         // add or update dst-node
         if let Some(proto_node) = self.proto_nodes.get_mut(&dst_id) {
-            proto_node.is_edge_node = true;
+            proto_node.edge_count += 1;
         } else {
             self.proto_nodes.insert(
                 dst_id,
                 ProtoNode {
                     id: dst_id,
                     coord: None,
-                    is_edge_node: true,
+                    edge_count: 1,
                 },
             );
         }
@@ -141,13 +146,32 @@ impl GraphBuilder {
         let mut graph = Graph::new();
 
         //----------------------------------------------------------------------------------------//
+        // filter edges
+
+        // TODO
+        // iterate over edges, filter, and update two running indices l, r
+        // if edge is gonna be removed -> swap l, r and dec r and update nodes' edge-counts
+        // if edge is kept -> inc l
+
+        //----------------------------------------------------------------------------------------//
+        // sort edges by ascending src-id, then by ascending dst-id -> offset-array
+
+        info!("Starting sorting proto-edges by their src/dst-IDs ..");
+        self.proto_edges.sort_by(|e0, e1| {
+            e0.src_id
+                .cmp(&e1.src_id)
+                .then_with(|| e0.dst_id.cmp(&e1.dst_id))
+        });
+        info!("Finished sorting proto-edges");
+
+        //----------------------------------------------------------------------------------------//
         // add nodes to graph which belong to edges (sorted by asc id)
 
         info!("Starting adding nodes (sorted) which belongs to an edge ..");
         // BTreeMap's iter returns sorted by key (asc)
         for (_id, proto_node) in self.proto_nodes.iter() {
             // add nodes only if they belong to an edge
-            if !proto_node.is_edge_node {
+            if !proto_node.is_in_edge() {
                 continue;
             }
 
@@ -168,35 +192,21 @@ impl GraphBuilder {
         info!("Finished adding nodes");
 
         //----------------------------------------------------------------------------------------//
-        // sort edges by ascending src-id, then by ascending dst-id -> offset-array
-        // then give edges IDs
-
-        info!("Starting sorting proto-edges by their src/dst-IDs ..");
-        self.proto_edges.sort_by(|e0, e1| {
-            e0.src_id
-                .cmp(&e1.src_id)
-                .then_with(|| e0.dst_id.cmp(&e1.dst_id))
-        });
-        info!("Finished sorting proto-edges");
-
-        //----------------------------------------------------------------------------------------//
         // build offset-array and edges
 
         info!("Starting creating the offset-array ..");
-        let mut node_idx = 0;
+        let mut offset_node_idx = 0;
         let mut offset = 0;
         graph.offsets.push(offset);
-        // high-level-idea: count offset for each proto_edge and apply if src changes
+        // high-level-idea
+        // count offset for each proto_edge (sorted) and apply offset as far as src changes
         for edge_idx in 0..edge_count {
             let proto_edge = &self.proto_edges[edge_idx];
             // set way-id to index
-            let edge_way_id = match proto_edge.way_id {
-                Some(id) => id,
-                None => edge_idx as i64,
-            };
+            let edge_way_id = proto_edge.way_id.unwrap_or(edge_idx as i64);
 
             // find source-index in sorted vec of nodes
-            let src_idx = match graph.node_idx_from(proto_edge.src_id) {
+            let edge_src_idx = match graph.node_idx_from(proto_edge.src_id) {
                 Ok(idx) => idx,
                 Err(_) => {
                     return Err(format!(
@@ -207,7 +217,7 @@ impl GraphBuilder {
             };
 
             // find destination-index in sorted vec of nodes
-            let dst_idx = match graph.node_idx_from(proto_edge.dst_id) {
+            let edge_dst_idx = match graph.node_idx_from(proto_edge.dst_id) {
                 Ok(idx) => idx,
                 Err(_) => {
                     return Err(format!(
@@ -221,8 +231,8 @@ impl GraphBuilder {
             let meters = match proto_edge.meters {
                 Some(meters) => meters,
                 None => {
-                    let src = graph.node(src_idx);
-                    let dst = graph.node(dst_idx);
+                    let src = graph.node(edge_src_idx);
+                    let dst = graph.node(edge_dst_idx);
                     (geo::haversine_distance(&src.coord, &dst.coord) * 1_000.0) as u32
                 }
             };
@@ -230,16 +240,16 @@ impl GraphBuilder {
             // add new edge to graph
             let edge = Edge {
                 id: edge_way_id,
-                src_idx,
-                dst_idx,
+                src_idx: edge_src_idx,
+                dst_idx: edge_dst_idx,
                 meters,
                 maxspeed: proto_edge.maxspeed,
             };
 
             // if coming edges have new src
             // then update offset of new src
-            while node_idx != src_idx {
-                node_idx += 1;
+            while offset_node_idx != edge_src_idx {
+                offset_node_idx += 1;
                 graph.offsets.push(offset);
             }
             graph.edges.push(edge);
