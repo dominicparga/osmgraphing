@@ -105,7 +105,7 @@ impl PartialEq for CostNode {
 // Astar
 
 pub trait Astar {
-    fn compute_shortest_path(&mut self, src_id: i64, dst_id: i64, graph: &Graph) -> Option<Path>;
+    fn compute_best_path(&mut self, src_id: i64, dst_id: i64, graph: &Graph) -> Option<Path>;
 }
 
 //------------------------------------------------------------------------------------------------//
@@ -151,7 +151,7 @@ where
     C: Fn(&Edge) -> u32,
     E: Fn(&Node, &Node) -> u32,
 {
-    fn compute_shortest_path(&mut self, src_id: i64, dst_id: i64, graph: &Graph) -> Option<Path> {
+    fn compute_best_path(&mut self, src_id: i64, dst_id: i64, graph: &Graph) -> Option<Path> {
         //----------------------------------------------------------------------------------------//
         // initialization-stuff
 

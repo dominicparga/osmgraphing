@@ -42,7 +42,7 @@ pub fn run(cfg: Config) -> Result<(), String> {
         let src = graph.node(src_idx);
         let dst = graph.node(dst_idx);
 
-        let option_path = astar.compute_shortest_path(src.id(), dst.id(), &graph);
+        let option_path = astar.compute_best_path(src.id(), dst.id(), &graph);
         if let Some(path) = option_path {
             info!("Distance {} m from ({}) to ({}).", path.cost(), src, dst);
         } else {
