@@ -149,12 +149,17 @@ impl Graph {
     }
 
     /// uses binary-search, but only on src's leaving edges (±3), so more or less in O(1)
-    pub fn edge_from(&self, src_idx: usize, dst_idx: usize) -> Option<&Edge> {
-        let leaving_edges = self.leaving_edges(src_idx)?;
+    ///
+    /// Returns the index of the edge, which can be used in the function `edge`
+    pub fn edge_from(&self, src_idx: usize, dst_idx: usize) -> Option<(&Edge, usize)> {
+        let range = self.offset_indices(src_idx)?;
+        let leaving_edges = &self.edges[range.clone()];
         let j = leaving_edges
             .binary_search_by(|edge| edge.dst_idx.cmp(&dst_idx))
             .ok()?;
-        Some(&leaving_edges[j])
+        let edge_idx = range.start + j;
+        debug_assert_eq!(leaving_edges[j], self.edges[edge_idx]);
+        Some((&leaving_edges[j], edge_idx))
     }
 
     pub fn offset_indices(&self, node_idx: usize) -> Option<ops::Range<usize>> {
