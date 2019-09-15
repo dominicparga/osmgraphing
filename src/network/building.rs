@@ -44,6 +44,16 @@ pub struct ProtoEdge {
     meters: Option<u32>,
     maxspeed: u16,
 }
+impl Eq for ProtoEdge {}
+impl PartialEq for ProtoEdge {
+    fn eq(&self, other: &ProtoEdge) -> bool {
+        self.way_id == other.way_id
+            && self.src_id == other.src_id
+            && self.dst_id == other.dst_id
+            && self.meters == other.meters
+            && self.maxspeed == other.maxspeed
+    }
+}
 
 //------------------------------------------------------------------------------------------------//
 // graphbuilding
