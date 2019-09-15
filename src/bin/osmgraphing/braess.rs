@@ -15,10 +15,7 @@ pub fn run(cfg: Config) -> Result<(), String> {
     //--------------------------------------------------------------------------------------------//
     // parsing
 
-    let graph = match Parser::parse(&cfg.mapfile) {
-        Ok(graph) => graph,
-        Err(msg) => return Err(msg),
-    };
+    let graph = Parser::parse(&cfg.mapfile)?;
 
     //--------------------------------------------------------------------------------------------//
     // astar

@@ -16,7 +16,7 @@ fn parse_cmdline<'a>() -> clap::ArgMatches<'a> {
     // args
 
     // arg_verbose
-    let help = &[
+    let tmp = &[
         "Logs 'info' in addition to 'warn' and 'error'.",
         "The env-variable 'RUST_LOG' has precedence.",
     ]
@@ -24,7 +24,7 @@ fn parse_cmdline<'a>() -> clap::ArgMatches<'a> {
     let arg_verbose = clap::Arg::with_name("verbose")
         .short("v")
         .long("verbose")
-        .help(help);
+        .help(tmp);
 
     // arg_mapfile
     let arg_mapfile = clap::Arg::with_name("mapfile")

@@ -35,14 +35,10 @@ trait Parsing {
         let mut graph_builder = GraphBuilder::new();
 
         info!("Starting processing given file ..");
-        match Self::open_file(&path) {
-            Ok(file) => Self::parse_ways(file, &mut graph_builder),
-            Err(msg) => return Err(msg),
-        }
-        match Self::open_file(&path) {
-            Ok(file) => Self::parse_nodes(file, &mut graph_builder),
-            Err(msg) => return Err(msg),
-        }
+        let file = Self::open_file(&path)?;
+        Self::parse_ways(file, &mut graph_builder);
+        let file = Self::open_file(&path)?;
+        Self::parse_nodes(file, &mut graph_builder);
         info!("Finished processing given file");
 
         let result = graph_builder.finalize();
@@ -91,10 +87,9 @@ impl Type {
 pub struct Parser;
 impl Parser {
     pub fn parse<S: AsRef<OsStr> + ?Sized>(path: &S) -> Result<Graph, String> {
-        match Type::from_path(path) {
-            Ok(Type::PBF) => pbf::Parser::parse(path),
-            Ok(Type::FMI) => fmi::Parser::parse(path),
-            Err(msg) => Err(msg),
+        match Type::from_path(path)? {
+            Type::PBF => pbf::Parser::parse(path),
+            Type::FMI => fmi::Parser::parse(path),
         }
     }
 }

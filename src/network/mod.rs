@@ -105,10 +105,7 @@ impl Graph {
     // id <-> idx
 
     pub fn node_idx_from(&self, id: i64) -> Result<usize, usize> {
-        match self.nodes.binary_search_by(|node| node.id.cmp(&id)) {
-            Ok(idx) => Ok(idx),
-            Err(idx) => Err(idx),
-        }
+        self.nodes.binary_search_by(|node| node.id.cmp(&id))
     }
 
     //--------------------------------------------------------------------------------------------//
