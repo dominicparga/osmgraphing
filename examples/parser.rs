@@ -5,6 +5,8 @@ use log::{error, info};
 
 use osmgraphing::Parser;
 
+//------------------------------------------------------------------------------------------------//
+
 fn init_logging(verbosely: bool) {
     let mut builder = env_logger::Builder::new();
     // minimum filter-level: `warn`

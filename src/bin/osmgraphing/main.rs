@@ -45,7 +45,12 @@ fn parse_cmdline<'a>() -> clap::ArgMatches<'a> {
         )
         .subcommand(
             clap::SubCommand::with_name("braess")
-                .about("Executes shortest-path-algorithms and try to improve the resulting routes"),
+                .version(env!("CARGO_PKG_VERSION"))
+                .author(env!("CARGO_PKG_AUTHORS"))
+                .about("Executes shortest-path-algorithms and try to improve the resulting routes")
+                .long_about(
+                    "Executes shortest-path-algorithms and try to improve the resulting routes",
+                )
         )
         .get_matches()
 }
