@@ -42,20 +42,16 @@ impl Path {
         return self.cost;
     }
 
-    /// Return idx of predecessor
-    pub fn predecessor(&self, idx: usize) -> Option<usize> {
-        match self.predecessors.get(&idx) {
-            Some(&pred) => Some(pred),
-            None => None,
-        }
+    /// Return idx of predecessor-node
+    pub fn pred_node_idx(&self, idx: usize) -> Option<usize> {
+        let &pred_idx = self.predecessors.get(&idx)?;
+        Some(pred_idx)
     }
 
-    /// Return idx of successor
-    pub fn successor(&self, idx: usize) -> Option<usize> {
-        match self.successors.get(&idx) {
-            Some(&succ) => Some(succ),
-            None => None,
-        }
+    /// Return idx of successor-node
+    pub fn succ_node_idx(&self, idx: usize) -> Option<usize> {
+        let &succ_idx = self.successors.get(&idx)?;
+        Some(succ_idx)
     }
 }
 // impl Into<Vec<usize>> for Path {

@@ -123,14 +123,14 @@ impl TestPath {
 
         // src has no predecessor
         assert_eq!(
-            path.predecessor(self.src.idx),
+            path.pred_node_idx(self.src.idx),
             None,
             "Predecessor of src {} should be None",
             self.src
         );
         // dst has no successor
         assert_eq!(
-            path.successor(self.dst.idx),
+            path.succ_node_idx(self.dst.idx),
             None,
             "Predecessor of dst {} should be None",
             self.dst
@@ -143,7 +143,7 @@ impl TestPath {
                 // build predecessor-path
                 let mut current = path_dst;
                 let mut pred_path = vec![current];
-                while let Some(pred) = path.predecessor(current.idx) {
+                while let Some(pred) = path.pred_node_idx(current.idx) {
                     let pred = node(pred);
                     pred_path.push(pred);
                     current = pred;
@@ -154,7 +154,7 @@ impl TestPath {
                 // build successor-path
                 let mut current = path_src;
                 let mut succ_path = vec![current];
-                while let Some(succ) = path.successor(current.idx) {
+                while let Some(succ) = path.succ_node_idx(current.idx) {
                     let succ = node(succ);
                     succ_path.push(succ);
                     current = succ;
