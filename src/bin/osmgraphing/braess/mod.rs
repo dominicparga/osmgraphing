@@ -1,6 +1,11 @@
 //------------------------------------------------------------------------------------------------//
 // other modules
 
+use std::collections::HashMap;
+use std::ffi::OsString;
+use std::fs::File;
+use std::io::{BufWriter, Write};
+
 use log::{info, warn};
 use osmgraphing::{routing, Parser};
 use serde::{Deserialize, Serialize};
@@ -14,7 +19,8 @@ pub mod routes;
 // config
 
 pub struct Config<'a> {
-    pub mapfile: &'a str,
+    pub map_filepath: &'a str,
+    pub out_dirpath: &'a str,
 }
 
 //------------------------------------------------------------------------------------------------//
@@ -38,8 +44,7 @@ pub fn run(cfg: Config) -> Result<(), String> {
     //--------------------------------------------------------------------------------------------//
     // parsing
 
-    let graph = Parser::parse_and_finalize(&cfg.mapfile)?;
-    println!("{}", graph);
+    let graph = Parser::parse_and_finalize(&cfg.map_filepath)?;
 
     //--------------------------------------------------------------------------------------------//
     // read in src-dst-pairs
@@ -69,7 +74,7 @@ pub fn run(cfg: Config) -> Result<(), String> {
         if let Some(path) = option_path {
             info!("Duration {} s from ({}) to ({}).", path.cost(), src, dst);
 
-            // create path to update edge-statistics
+            // reconstruct path to update edge-statistics
             let mut current_idx = src_idx;
             while let Some(edge_dst_idx) = path.succ_node_idx(current_idx) {
                 if let Some((_edge, edge_idx)) = graph.edge_from(current_idx, edge_dst_idx) {
@@ -91,38 +96,65 @@ pub fn run(cfg: Config) -> Result<(), String> {
     }
 
     //--------------------------------------------------------------------------------------------//
-    // calculate statistics
+    // calculate and export statistics
 
-    // TODO move loop into loop above since edges are only for interest if they are part of a path
-    for edge_idx in 0..graph.edge_count() {
-        if usages[edge_idx] == 0 {
-            continue;
+    // open output-file
+    let out_filepath = OsString::from([cfg.out_dirpath, "results.json"].join("/"));
+    let out_file = match File::create(&out_filepath) {
+        Ok(file) => file,
+        Err(_) => return Err(format!("Could not open file {:?}", out_filepath)),
+    };
+    let mut writer = BufWriter::new(out_file);
+    let mut write = |s: String| -> Result<(), String> {
+        if let Err(io_err) = writer.write(s.as_bytes()) {
+            return Err(format!("{}", io_err));
         }
+        Ok(())
+    };
 
-        let edge = graph.edge(edge_idx);
-        let src = graph.node(edge.src_idx());
-        let dst = graph.node(edge.dst_idx());
-        let lat = (src.lat() + dst.lat()) / 2.0;
-        let lon = (src.lon() + dst.lon()) / 2.0;
-        let usage = (usages[edge_idx] / 1) as u16; // TODO calculate
-        data.push(EdgeInfo {
-            src_id: src.id(),
-            dst_id: dst.id(),
-            lat,
-            lon,
-            is_src: is_src[edge_idx],
-            is_dst: is_dst[edge_idx],
-            volume: edge.meters(),
-            usage: usage,
-        });
+    // write beginning of json-file
+    write(["{", "\"edges\": [", ""].join("\n"))?;
+
+    for _ in 0..16_000 {
+        // setup stats before writing to file
+        let mut print_with_comma = false;
+        for edge_idx in 0..graph.edge_count() {
+            if usages[edge_idx] == 0 {
+                continue;
+            }
+
+            // collect data
+            let edge = graph.edge(edge_idx);
+            let edge_src = graph.node(edge.src_idx());
+            let edge_dst = graph.node(edge.dst_idx());
+            let lat = (edge_src.lat() + edge_dst.lat()) / 2.0;
+            let lon = (edge_src.lon() + edge_dst.lon()) / 2.0;
+            let usage = (usages[edge_idx] / 1) as u16; // TODO calculate
+            let edge_info = EdgeInfo {
+                src_id: edge_src.id(),
+                dst_id: edge_dst.id(),
+                lat,
+                lon,
+                is_src: is_src[edge_idx],
+                is_dst: is_dst[edge_idx],
+                volume: edge.meters(),
+                usage: usage,
+            };
+
+            // write to file
+            if let Ok(mut json_data) = serde_json::to_string_pretty(&edge_info) {
+                if print_with_comma {
+                    json_data = format!(",{}", json_data);
+                } else {
+                    print_with_comma = true;
+                }
+                write(json_data)?;
+            }
+        }
     }
 
-    //--------------------------------------------------------------------------------------------//
-    // export statistics
-
-    if let Ok(json_data) = serde_json::to_string_pretty(&data) {
-        println!("{}", json_data);
-    }
+    // write ending of json-file
+    write(["", "]", "}"].join("\n"))?;
 
     Ok(())
 }

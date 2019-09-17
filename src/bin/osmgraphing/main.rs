@@ -26,12 +26,21 @@ fn parse_cmdline<'a>() -> clap::ArgMatches<'a> {
         .long("verbose")
         .help(tmp);
 
-    // arg_mapfile
-    let arg_mapfile = clap::Arg::with_name("mapfile")
+    // arg_map_filepath
+    let arg_map_filepath = clap::Arg::with_name("map_filepath")
         .short("m")
         .long("map")
-        .help("The mapfile being parsed.")
+        .help("The path to the map-file being parsed.")
+        .takes_value(true)
         .default_value("resources/maps/simple_stuttgart.fmi");
+
+    // arg_out_filepath
+    let arg_out_dirpath = clap::Arg::with_name("out_dirpath")
+        .short("o")
+        .long("out")
+        .help("The path to the directory where the results should be stored.")
+        .takes_value(true)
+        .required(true);
 
     //--------------------------------------------------------------------------------------------//
     // subcmds
@@ -41,7 +50,8 @@ fn parse_cmdline<'a>() -> clap::ArgMatches<'a> {
         .author(env!("CARGO_PKG_AUTHORS"))
         .about("Executes shortest-path-algorithms and try to improve the resulting routes")
         .long_about("Executes shortest-path-algorithms and try to improve the resulting routes")
-        .arg(arg_mapfile);
+        .arg(arg_map_filepath)
+        .arg(arg_out_dirpath);
 
     //--------------------------------------------------------------------------------------------//
     // return composition
@@ -96,7 +106,8 @@ fn main() {
 
     if let Some(matches) = matches.subcommand_matches("braess") {
         let cfg = braess::Config {
-            mapfile: matches.value_of("mapfile").unwrap(),
+            map_filepath: matches.value_of("map_filepath").unwrap(),
+            out_dirpath: matches.value_of("out_dirpath").unwrap(),
         };
         if let Err(msg) = braess::run(cfg) {
             error!("{}", msg);
