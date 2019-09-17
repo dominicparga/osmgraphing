@@ -2,9 +2,10 @@
 // other modules
 
 use std::collections::HashMap;
-use std::ffi::OsString;
-use std::fs::File;
+use std::ffi;
+use std::fs;
 use std::io::{BufWriter, Write};
+use std::path;
 
 use log::{info, warn};
 use osmgraphing::{routing, Parser};
@@ -42,6 +43,27 @@ pub fn run(cfg: Config) -> Result<(), String> {
     info!("Executing braess-optimization");
 
     //--------------------------------------------------------------------------------------------//
+    // pre-check io
+
+    // check path of output-file before expensive simulation
+    {
+        let out_dirpath = ffi::OsString::from(cfg.out_dirpath);
+        let out_dirpath = path::Path::new(&out_dirpath);
+        if !out_dirpath.exists() {
+            return Err(format!("Directory {:?} does not exist.", out_dirpath));
+        }
+    }
+
+    let out_filepath = ffi::OsString::from([cfg.out_dirpath, "results.json"].join("/"));
+    let out_filepath = path::Path::new(&out_filepath);
+    if out_filepath.exists() {
+        return Err(format!(
+            "File {:?} does already exist. Please (re)move it.",
+            out_filepath
+        ));
+    }
+
+    //--------------------------------------------------------------------------------------------//
     // parsing
 
     let graph = Parser::parse_and_finalize(&cfg.map_filepath)?;
@@ -60,7 +82,7 @@ pub fn run(cfg: Config) -> Result<(), String> {
     let mut data: Vec<EdgeInfo> = Vec::with_capacity(1_000);
 
     //--------------------------------------------------------------------------------------------//
-    // routing
+    // routing and statistics-update
 
     let mut astar = routing::factory::new_fastest_path_astar();
 
@@ -96,65 +118,53 @@ pub fn run(cfg: Config) -> Result<(), String> {
     }
 
     //--------------------------------------------------------------------------------------------//
-    // calculate and export statistics
+    // finalize statistics
 
-    // open output-file
-    let out_filepath = OsString::from([cfg.out_dirpath, "results.json"].join("/"));
-    let out_file = match File::create(&out_filepath) {
+    // setup stats before writing to file
+    for edge_idx in 0..graph.edge_count() {
+        if usages[edge_idx] == 0 {
+            continue;
+        }
+
+        // collect data
+        let edge = graph.edge(edge_idx);
+        let edge_src = graph.node(edge.src_idx());
+        let edge_dst = graph.node(edge.dst_idx());
+        let lat = (edge_src.lat() + edge_dst.lat()) / 2.0;
+        let lon = (edge_src.lon() + edge_dst.lon()) / 2.0;
+        let usage = (usages[edge_idx] / 1) as u16; // TODO calculate
+        data.push(EdgeInfo {
+            src_id: edge_src.id(),
+            dst_id: edge_dst.id(),
+            lat,
+            lon,
+            is_src: is_src[edge_idx],
+            is_dst: is_dst[edge_idx],
+            volume: edge.meters(),
+            usage: usage,
+        });
+    }
+
+    //--------------------------------------------------------------------------------------------//
+    // export statistics
+
+    // write data to json-file
+    let out_file = match fs::File::create(&out_filepath) {
         Ok(file) => file,
         Err(_) => return Err(format!("Could not open file {:?}", out_filepath)),
     };
     let mut writer = BufWriter::new(out_file);
-    let mut write = |s: String| -> Result<(), String> {
-        if let Err(io_err) = writer.write(s.as_bytes()) {
-            return Err(format!("{}", io_err));
-        }
-        Ok(())
-    };
-
-    // write beginning of json-file
-    write(["{", "\"edges\": [", ""].join("\n"))?;
-
-    for _ in 0..16_000 {
-        // setup stats before writing to file
-        let mut print_with_comma = false;
-        for edge_idx in 0..graph.edge_count() {
-            if usages[edge_idx] == 0 {
-                continue;
-            }
-
-            // collect data
-            let edge = graph.edge(edge_idx);
-            let edge_src = graph.node(edge.src_idx());
-            let edge_dst = graph.node(edge.dst_idx());
-            let lat = (edge_src.lat() + edge_dst.lat()) / 2.0;
-            let lon = (edge_src.lon() + edge_dst.lon()) / 2.0;
-            let usage = (usages[edge_idx] / 1) as u16; // TODO calculate
-            let edge_info = EdgeInfo {
-                src_id: edge_src.id(),
-                dst_id: edge_dst.id(),
-                lat,
-                lon,
-                is_src: is_src[edge_idx],
-                is_dst: is_dst[edge_idx],
-                volume: edge.meters(),
-                usage: usage,
+    let mut json_data = HashMap::new();
+    json_data.insert("edges", &data);
+    match serde_json::to_string_pretty(&json_data) {
+        Ok(json_data) => {
+            match writer.write(json_data.as_bytes()) {
+                Ok(_) => (),
+                Err(e) => return Err(format!("{}", e)),
             };
-
-            // write to file
-            if let Ok(mut json_data) = serde_json::to_string_pretty(&edge_info) {
-                if print_with_comma {
-                    json_data = format!(",{}", json_data);
-                } else {
-                    print_with_comma = true;
-                }
-                write(json_data)?;
-            }
         }
+        Err(e) => return Err(format!("{}", e)),
     }
-
-    // write ending of json-file
-    write(["", "]", "}"].join("\n"))?;
 
     Ok(())
 }
