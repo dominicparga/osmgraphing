@@ -6,6 +6,7 @@ use std::ffi;
 use std::fs;
 use std::io::{BufWriter, Write};
 use std::path;
+use std::time::SystemTime;
 
 use log::{info, warn};
 use osmgraphing::{routing, Parser};
@@ -46,22 +47,7 @@ pub fn run(cfg: Config) -> Result<(), String> {
     // pre-check io
 
     // check path of output-file before expensive simulation
-    {
-        let out_dirpath = ffi::OsString::from(cfg.out_dirpath);
-        let out_dirpath = path::Path::new(&out_dirpath);
-        if !out_dirpath.exists() {
-            return Err(format!("Directory {:?} does not exist.", out_dirpath));
-        }
-    }
-
-    let out_filepath = ffi::OsString::from([cfg.out_dirpath, "results.json"].join("/"));
-    let out_filepath = path::Path::new(&out_filepath);
-    if out_filepath.exists() {
-        return Err(format!(
-            "File {:?} does already exist. Please (re)move it.",
-            out_filepath
-        ));
-    }
+    let out_filepath = prepare_out_dir(cfg.out_dirpath)?;
 
     //--------------------------------------------------------------------------------------------//
     // parsing
@@ -167,4 +153,48 @@ pub fn run(cfg: Config) -> Result<(), String> {
     }
 
     Ok(())
+}
+
+//------------------------------------------------------------------------------------------------//
+// helpers
+
+fn prepare_out_dir(out_dirpath: &str) -> Result<String, String> {
+    // get and format current time
+    let now = SystemTime::now();
+    let now: chrono::DateTime<chrono::Utc> = now.into();
+    let now_ymd = format!("{}", now.format("%Y-%m-%d"));
+    let now_hms = format!("{}", now.format("%T")); // %T == %H:%M:%S
+    drop(now);
+
+    // check if necessary directories do already exist
+    let mut out_path = vec![out_dirpath];
+    {
+        let tmp = ffi::OsString::from(&out_path.join("/"));
+        let tmp = path::Path::new(&tmp);
+        if !tmp.exists() {
+            return Err(format!("Path {:?} does not exist.", &tmp));
+        }
+    }
+    out_path.append(&mut vec![now_ymd.as_ref(), now_hms.as_ref()]);
+    {
+        let tmp = ffi::OsString::from(&out_path.join("/"));
+        let tmp = path::Path::new(&tmp);
+        match fs::create_dir_all(tmp) {
+            Ok(_) => (),
+            Err(e) => return Err(format!("Problem with path {:?}: {}", &tmp, e)),
+        };
+    }
+    out_path.push("results.json");
+    {
+        let tmp = ffi::OsString::from(&out_path.join("/"));
+        let tmp = path::Path::new(&tmp);
+        if tmp.exists() {
+            return Err(format!(
+                "File {:?} does already exist. Please (re)move it.",
+                tmp
+            ));
+        }
+    }
+
+    Ok(out_path.join("/"))
 }
