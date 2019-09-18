@@ -3,8 +3,6 @@ mod pbf;
 
 //------------------------------------------------------------------------------------------------//
 
-use std::ffi::OsString;
-
 use osmgraphing::Parser;
 
 use super::parse;
@@ -15,7 +13,7 @@ use super::parse;
 #[test]
 fn wrong_extension() {
     assert!(
-        Parser::parse(&OsString::from("foo.asdf")).is_err(),
+        Parser::parse("foo.asdf").is_err(),
         "File-extension 'asdf' should not be supported."
     );
 }

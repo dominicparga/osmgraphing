@@ -19,9 +19,9 @@ pub mod routes;
 //------------------------------------------------------------------------------------------------//
 // config
 
-pub struct Config<'a> {
-    pub map_file_path: &'a str,
-    pub out_dir_path: &'a str,
+pub struct Config<'a, P: AsRef<Path> + ?Sized> {
+    pub map_file_path: &'a P,
+    pub out_dir_path: &'a P,
 }
 
 //------------------------------------------------------------------------------------------------//
@@ -39,7 +39,7 @@ struct EdgeInfo {
     usage: u16,
 }
 
-pub fn run(cfg: Config) -> Result<(), String> {
+pub fn run<P: AsRef<Path> + ?Sized>(cfg: Config<P>) -> Result<(), String> {
     info!("Executing braess-optimization");
 
     //--------------------------------------------------------------------------------------------//
