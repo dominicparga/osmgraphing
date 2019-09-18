@@ -72,18 +72,20 @@ impl Edge {
         self.dst_idx
     }
     pub fn lane_count(&self) -> u8 {
+        debug_assert!(self.lane_count > 0, "Edge-lane-count should be > 0");
         self.lane_count
     }
     pub fn meters(&self) -> u32 {
+        debug_assert!(self.meters > 0, "Edge-length should be > 0");
         self.meters
     }
     pub fn maxspeed(&self) -> u16 {
+        debug_assert!(self.maxspeed > 0, "Edge-maxspeed should be > 0");
         self.maxspeed
     }
-    pub fn seconds(&self) -> u32 {
+    pub fn milliseconds(&self) -> u32 {
         // length [m] / velocity [km/h]
-        // +1 to prevent 0
-        ((self.meters as f64 / (self.maxspeed as f64)) * 3.6) as u32 + 1
+        self.meters * 3_600 / (self.maxspeed as u32)
     }
 }
 impl Eq for Edge {}
