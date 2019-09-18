@@ -2,12 +2,12 @@
 // other modules
 
 use std::collections::HashMap;
-use std::fs;
-use std::io::{BufWriter, Write};
-use std::path::{Path, PathBuf};
+use std::io::Write;
 use std::time::SystemTime;
+use std::{fs, io, path};
 
 use log::{info, warn};
+use osmgraphing::network::Graph;
 use osmgraphing::{routing, Parser};
 use serde::{Deserialize, Serialize};
 
@@ -19,7 +19,7 @@ pub mod routes;
 //------------------------------------------------------------------------------------------------//
 // config
 
-pub struct Config<'a, P: AsRef<Path> + ?Sized> {
+pub struct Config<'a, P: AsRef<path::Path> + ?Sized> {
     pub map_file_path: &'a P,
     pub out_dir_path: &'a P,
 }
@@ -35,11 +35,11 @@ struct EdgeInfo {
     decimicro_lon: i32,
     is_src: bool,
     is_dst: bool,
-    volume: u32,
-    usage: u16,
+    length_m: u32,
+    route_count: u16,
 }
 
-pub fn run<P: AsRef<Path> + ?Sized>(cfg: Config<P>) -> Result<(), String> {
+pub fn run<P: AsRef<path::Path> + ?Sized>(cfg: Config<P>) -> Result<(), String> {
     info!("Executing braess-optimization");
 
     //--------------------------------------------------------------------------------------------//
@@ -71,58 +71,7 @@ pub fn run<P: AsRef<Path> + ?Sized>(cfg: Config<P>) -> Result<(), String> {
         if let Some(path) = option_path {
             info!("Duration {} s from ({}) to ({}).", path.cost(), src, dst);
 
-            // reconstruct path to update edge-statistics
-            let mut current_idx = src_idx;
-            while let Some(edge_dst_idx) = path.succ_node_idx(current_idx) {
-                // get edge from its nodes
-                let (edge, edge_idx) = graph
-                    .edge_from(current_idx, edge_dst_idx)
-                    .expect("Path should only use edges from the graph.");
-                let (edge_src, edge_dst) = (graph.node(edge.src_idx()), graph.node(edge.dst_idx()));
-                debug_assert_eq!(edge.src_idx(), current_idx, "edge.src_idx() != current_idx");
-                debug_assert_eq!(
-                    edge.dst_idx(),
-                    edge_dst_idx,
-                    "edge.dst_idx() != edge_dst_idx"
-                );
-
-                // create EdgeInfo if not existing
-                if data[edge_idx].is_none() {
-                    data[edge_idx] = Some(EdgeInfo {
-                        src_id: edge_src.id(),
-                        dst_id: edge_dst.id(),
-                        decimicro_lat: {
-                            (edge_src.coord().decimicro_lat() + edge_dst.coord().decimicro_lat())
-                                / 2
-                        },
-                        decimicro_lon: {
-                            (edge_src.coord().decimicro_lon() + edge_dst.coord().decimicro_lon())
-                                / 2
-                        },
-                        is_src: false,
-                        is_dst: false,
-                        volume: edge.meters(),
-                        usage: 0,
-                    });
-                }
-
-                // update edge-info of path-edges
-                if let Some(edge_info) = data
-                    .get_mut(edge_idx)
-                    .expect("Every edge should have an Option due to initialization.")
-                {
-                    // update path-edges' usages
-                    edge_info.usage += 1;
-                    // update if edge is src/dst
-                    if edge.src_idx() == src_idx {
-                        edge_info.is_src = true;
-                    }
-                    if edge.dst_idx() == dst_idx {
-                        edge_info.is_dst = true;
-                    }
-                }
-                current_idx = edge_dst_idx;
-            }
+            update_edge_info(&mut data, &path, &graph);
         } else {
             warn!("No path from ({}) to ({}).", src, dst);
         }
@@ -138,12 +87,12 @@ pub fn run<P: AsRef<Path> + ?Sized>(cfg: Config<P>) -> Result<(), String> {
 }
 
 //------------------------------------------------------------------------------------------------//
-// helpers
+// helpers: io
 
 /// Returns output-path, which is "{out_dir_path}/{%Y-%m-%d}/{%H:%M:%S}"
-fn check_and_prepare_out_dir_path<P: AsRef<Path> + ?Sized>(
+fn check_and_prepare_out_dir_path<P: AsRef<path::Path> + ?Sized>(
     out_dir_path: &P,
-) -> Result<PathBuf, String> {
+) -> Result<path::PathBuf, String> {
     // get and format current time
     let now = SystemTime::now();
     let now: chrono::DateTime<chrono::Utc> = now.into();
@@ -176,7 +125,7 @@ fn read_in_proto_routes() -> Vec<(usize, usize)> {
     vec![(0, 5), (0, 3), (2, 4)]
 }
 
-fn export_statistics<P: AsRef<Path> + ?Sized>(
+fn export_statistics<P: AsRef<path::Path> + ?Sized>(
     mut data: Vec<Option<EdgeInfo>>,
     out_file_path: &P,
 ) -> Result<(), String> {
@@ -200,12 +149,12 @@ fn export_statistics<P: AsRef<Path> + ?Sized>(
     data.retain(|ei| ei.is_some());
 
     // write data to json-file
-    let mut writer = BufWriter::new(out_file);
+    let mut writer = io::BufWriter::new(out_file);
     let mut json_data = HashMap::new();
     json_data.insert("edges", &data);
     match serde_json::to_string_pretty(&json_data) {
         Ok(json_data) => {
-            match writer.write(json_data.as_bytes()) {
+            match &mut writer.write(json_data.as_bytes()) {
                 Ok(_) => (),
                 Err(e) => return Err(format!("{}", e)),
             };
@@ -214,4 +163,65 @@ fn export_statistics<P: AsRef<Path> + ?Sized>(
     }
 
     Ok(())
+}
+
+//------------------------------------------------------------------------------------------------//
+// helpers: routing
+
+fn update_edge_info(data: &mut Vec<Option<EdgeInfo>>, path: &routing::astar::Path, graph: &Graph) {
+    // reconstruct path to update edge-statistics
+    let mut current_idx = path.src_idx();
+    while let Some(edge_dst_idx) = path.succ_node_idx(current_idx) {
+        // get edge from its nodes
+        let (edge, edge_idx) = graph
+            .edge_from(current_idx, edge_dst_idx)
+            .expect("Path should only use edges from the graph.");
+        debug_assert_eq!(edge.src_idx(), current_idx, "edge.src_idx() != current_idx");
+        debug_assert_eq!(
+            edge.dst_idx(),
+            edge_dst_idx,
+            "edge.dst_idx() != edge_dst_idx"
+        );
+
+        // create EdgeInfo if not existing
+        {
+            let (edge_src, edge_dst) = (graph.node(edge.src_idx()), graph.node(edge.dst_idx()));
+
+            if data[edge_idx].is_none() {
+                data[edge_idx] = Some(EdgeInfo {
+                    src_id: edge_src.id(),
+                    dst_id: edge_dst.id(),
+                    decimicro_lat: {
+                        (edge_src.coord().decimicro_lat() + edge_dst.coord().decimicro_lat()) / 2
+                    },
+                    decimicro_lon: {
+                        (edge_src.coord().decimicro_lon() + edge_dst.coord().decimicro_lon()) / 2
+                    },
+                    is_src: false,
+                    is_dst: false,
+                    length_m: edge.meters(),
+                    route_count: 0,
+                });
+            }
+        }
+
+        // update edge-info of path-edges
+        {
+            let edge_info = data[edge_idx]
+                // Option<EdgeInfo> -> already set above
+                .as_mut()
+                .expect("EdgeInfo should have been set a few lines above.");
+            // update path-edges' usages
+            edge_info.route_count += 1;
+            // update if edge is src/dst
+            if edge.src_idx() == path.src_idx() {
+                edge_info.is_src = true;
+            }
+            if edge.dst_idx() == path.dst_idx() {
+                edge_info.is_dst = true;
+            }
+        }
+
+        current_idx = edge_dst_idx;
+    }
 }
