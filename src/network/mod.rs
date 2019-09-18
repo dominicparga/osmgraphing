@@ -36,7 +36,7 @@ impl Node {
 impl Eq for Node {}
 impl PartialEq for Node {
     fn eq(&self, other: &Node) -> bool {
-        self.id == other.id && self.coord == other.coord
+        self.id == other.id && self.idx == other.idx && self.coord == other.coord
     }
 }
 impl fmt::Display for Node {
