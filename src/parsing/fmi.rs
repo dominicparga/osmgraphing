@@ -76,6 +76,7 @@ mod fmi {
         pub way_id: Option<i64>,
         pub src_id: i64,
         pub dst_id: i64,
+        pub lane_count: u8,
         pub meters: Option<u32>,
         pub maxspeed: u16,
     }
@@ -139,6 +140,7 @@ mod fmi {
                 way_id: None,
                 src_id,
                 dst_id,
+                lane_count: 1, // TODO
                 meters,
                 maxspeed,
             })
@@ -167,6 +169,7 @@ impl super::Parsing for Parser {
                     proto_edge.way_id,
                     proto_edge.src_id,
                     proto_edge.dst_id,
+                    proto_edge.lane_count,
                     proto_edge.meters,
                     proto_edge.maxspeed,
                 );

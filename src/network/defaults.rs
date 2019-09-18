@@ -36,6 +36,30 @@ impl StreetType {
     //--------------------------------------------------------------------------------------------//
     // defaults
 
+    fn lane_count(&self) -> u8 {
+        match self {
+            StreetType::Motorway => 3,
+            StreetType::MotorwayLink => 1,
+            StreetType::Trunk => 2,
+            StreetType::TrunkLink => 1,
+            StreetType::Primary => 2,
+            StreetType::PrimaryLink => 1,
+            StreetType::Secondary => 1,
+            StreetType::SecondaryLink => 1,
+            StreetType::Tertiary => 1,
+            StreetType::TertiaryLink => 1,
+            StreetType::Unclassified => 1,
+            StreetType::Residential => 1,
+            StreetType::LivingStreet => 1,
+            StreetType::Service => 1,
+            StreetType::Track => 1,
+            StreetType::Road => 1,
+            StreetType::Cycleway => 1,
+            StreetType::Pedestrian => 1,
+            StreetType::Path => 1,
+        }
+    }
+
     fn maxspeed(&self) -> u16 {
         match self {
             StreetType::Motorway => 130,
@@ -152,6 +176,11 @@ impl StreetType {
                 }
             }
         })
+    }
+
+    pub fn parse_lane_count(&self, _way: &pbf::Way) -> u8 {
+        // TODO
+        self.lane_count()
     }
 
     pub fn parse_maxspeed(&self, way: &pbf::Way) -> u16 {

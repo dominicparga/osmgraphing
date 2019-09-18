@@ -35,6 +35,7 @@ struct EdgeInfo {
     decimicro_lon: i32,
     is_src: bool,
     is_dst: bool,
+    lane_count: u8,
     length_m: u32,
     route_count: u16,
 }
@@ -47,6 +48,8 @@ pub fn run<P: AsRef<path::Path> + ?Sized>(cfg: Config<P>) -> Result<(), String> 
 
     // check path of io-files before expensive simulation
     let out_dir_path = check_and_prepare_out_dir_path(cfg.out_dir_path)?;
+    let out_file_path = out_dir_path.join("results.json");
+    create_out_file(&out_file_path)?;
     let proto_routes = read_in_proto_routes();
 
     let graph = Parser::parse_and_finalize(&cfg.map_file_path)?;
@@ -80,7 +83,6 @@ pub fn run<P: AsRef<path::Path> + ?Sized>(cfg: Config<P>) -> Result<(), String> 
     //--------------------------------------------------------------------------------------------//
     // export statistics
 
-    let out_file_path = out_dir_path.join("results.json");
     export_statistics(data, &out_file_path)?;
 
     Ok(())
@@ -120,6 +122,23 @@ fn check_and_prepare_out_dir_path<P: AsRef<path::Path> + ?Sized>(
     Ok(out_dir_path)
 }
 
+fn create_out_file<P: AsRef<path::Path> + ?Sized>(out_file_path: &P) -> Result<(), String> {
+    let out_file_path = out_file_path.as_ref();
+    if out_file_path.exists() {
+        return Err(format!(
+            "File {} does already exist. Please (re)move it.",
+            out_file_path.display()
+        ));
+    } else {
+        match fs::File::create(out_file_path) {
+            Ok(file) => file,
+            Err(_) => return Err(format!("Could not open file {}", out_file_path.display())),
+        }
+    };
+
+    Ok(())
+}
+
 fn read_in_proto_routes() -> Vec<(usize, usize)> {
     // TODO
     vec![(0, 5), (0, 3), (2, 4)]
@@ -129,19 +148,12 @@ fn export_statistics<P: AsRef<path::Path> + ?Sized>(
     mut data: Vec<Option<EdgeInfo>>,
     out_file_path: &P,
 ) -> Result<(), String> {
-    // create file and check if it already exists
+    // file should have been created
     let out_file = {
         let out_file_path = out_file_path.as_ref();
-        if out_file_path.exists() {
-            return Err(format!(
-                "File {} does already exist. Please (re)move it.",
-                out_file_path.display()
-            ));
-        } else {
-            match fs::File::create(out_file_path) {
-                Ok(file) => file,
-                Err(_) => return Err(format!("Could not open file {}", out_file_path.display())),
-            }
+        match fs::File::create(out_file_path) {
+            Ok(file) => file,
+            Err(_) => return Err(format!("Could not open file {}", out_file_path.display())),
         }
     };
 
@@ -156,10 +168,10 @@ fn export_statistics<P: AsRef<path::Path> + ?Sized>(
         Ok(json_data) => {
             match &mut writer.write(json_data.as_bytes()) {
                 Ok(_) => (),
-                Err(e) => return Err(format!("{}", e)),
+                Err(e) => return Err(format!("Could not write data to file Errmsg: {}", e)),
             };
         }
-        Err(e) => return Err(format!("{}", e)),
+        Err(e) => return Err(format!("Could not convert data to json. Errmsg: {}", e)),
     }
 
     Ok(())
@@ -199,6 +211,7 @@ fn update_edge_info(data: &mut Vec<Option<EdgeInfo>>, path: &routing::astar::Pat
                     },
                     is_src: false,
                     is_dst: false,
+                    lane_count: edge.lane_count(),
                     length_m: edge.meters(),
                     route_count: 0,
                 });

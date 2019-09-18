@@ -57,6 +57,7 @@ pub struct Edge {
     id: i64,
     src_idx: usize,
     dst_idx: usize,
+    lane_count: u8,
     meters: u32,
     maxspeed: u16,
 }
@@ -69,6 +70,9 @@ impl Edge {
     }
     pub fn dst_idx(&self) -> usize {
         self.dst_idx
+    }
+    pub fn lane_count(&self) -> u8 {
+        self.lane_count
     }
     pub fn meters(&self) -> u32 {
         self.meters

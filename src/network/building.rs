@@ -41,6 +41,7 @@ pub struct ProtoEdge {
     way_id: Option<i64>,
     src_id: i64,
     dst_id: i64,
+    lane_count: u8,
     meters: Option<u32>,
     maxspeed: u16,
 }
@@ -50,6 +51,7 @@ impl PartialEq for ProtoEdge {
         self.way_id == other.way_id
             && self.src_id == other.src_id
             && self.dst_id == other.dst_id
+            && self.lane_count == other.lane_count
             && self.meters == other.meters
             && self.maxspeed == other.maxspeed
     }
@@ -101,6 +103,7 @@ impl GraphBuilder {
         way_id: Option<i64>,
         src_id: i64,
         dst_id: i64,
+        lane_count: u8,
         meters: Option<u32>,
         maxspeed: u16,
     ) -> &mut Self {
@@ -109,6 +112,7 @@ impl GraphBuilder {
             way_id,
             src_id,
             dst_id,
+            lane_count,
             meters,
             maxspeed,
         });
@@ -292,6 +296,7 @@ impl GraphBuilder {
                 id: edge_way_id,
                 src_idx: edge_src_idx,
                 dst_idx: edge_dst_idx,
+                lane_count: proto_edge.lane_count,
                 meters,
                 maxspeed: proto_edge.maxspeed,
             };
