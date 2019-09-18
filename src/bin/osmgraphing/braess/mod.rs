@@ -27,7 +27,7 @@ pub struct Config<'a, P: AsRef<Path> + ?Sized> {
 //------------------------------------------------------------------------------------------------//
 // simulation
 
-#[derive(Serialize, Deserialize, Copy, Clone)]
+#[derive(Serialize, Deserialize, Clone)]
 struct EdgeInfo {
     src_id: i64,
     dst_id: i64,
@@ -87,39 +87,39 @@ pub fn run<P: AsRef<Path> + ?Sized>(cfg: Config<P>) -> Result<(), String> {
                 );
 
                 // create EdgeInfo if not existing
-                let mut edge_info = match data[edge_idx] {
-                    Some(edge_info) => edge_info,
-                    None => {
-                        let edge_info = EdgeInfo {
-                            src_id: edge_src.id(),
-                            dst_id: edge_dst.id(),
-                            decimicro_lat: {
-                                (edge_src.coord().decimicro_lat()
-                                    + edge_dst.coord().decimicro_lat())
-                                    / 2
-                            },
-                            decimicro_lon: {
-                                (edge_src.coord().decimicro_lon()
-                                    + edge_dst.coord().decimicro_lon())
-                                    / 2
-                            },
-                            is_src: false,
-                            is_dst: false,
-                            volume: edge.meters(),
-                            usage: 0,
-                        };
-                        data[edge_idx] = Some(edge_info);
-                        edge_info
-                    }
-                };
-                // update path-edges' usages
-                edge_info.usage += 1;
-                // update if edge is src/dst
-                if current_idx == src_idx {
-                    edge_info.is_src = true;
+                if data[edge_idx].is_none() {
+                    data[edge_idx] = Some(EdgeInfo {
+                        src_id: edge_src.id(),
+                        dst_id: edge_dst.id(),
+                        decimicro_lat: {
+                            (edge_src.coord().decimicro_lat() + edge_dst.coord().decimicro_lat())
+                                / 2
+                        },
+                        decimicro_lon: {
+                            (edge_src.coord().decimicro_lon() + edge_dst.coord().decimicro_lon())
+                                / 2
+                        },
+                        is_src: false,
+                        is_dst: false,
+                        volume: edge.meters(),
+                        usage: 0,
+                    });
                 }
-                if edge_dst_idx == dst_idx {
-                    edge_info.is_dst = true;
+
+                // update edge-info of path-edges
+                if let Some(edge_info) = data
+                    .get_mut(edge_idx)
+                    .expect("Every edge should have an Option due to initialization.")
+                {
+                    // update path-edges' usages
+                    edge_info.usage += 1;
+                    // update if edge is src/dst
+                    if edge.src_idx() == src_idx {
+                        edge_info.is_src = true;
+                    }
+                    if edge.dst_idx() == dst_idx {
+                        edge_info.is_dst = true;
+                    }
                 }
                 current_idx = edge_dst_idx;
             }
