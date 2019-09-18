@@ -72,7 +72,7 @@ fn main() {
         info!("");
 
         let now = Instant::now();
-        let option_path = astar.compute_best_path(src.id(), dst.id(), &graph);
+        let option_path = astar.compute_best_path(src, dst, &graph);
         info!(
             "Ran A* in {} µs a.k.a {} seconds",
             now.elapsed().as_micros(),

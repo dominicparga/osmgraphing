@@ -41,7 +41,11 @@ impl PartialEq for Node {
 }
 impl fmt::Display for Node {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Node: {{ id: {}, idx: {}, {} }}", self.id, self.idx, self.coord,)
+        write!(
+            f,
+            "Node: {{ id: {}, idx: {}, {} }}",
+            self.id, self.idx, self.coord,
+        )
     }
 }
 

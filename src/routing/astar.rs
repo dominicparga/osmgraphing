@@ -4,8 +4,6 @@
 use std::cmp::Ordering;
 use std::collections::{BinaryHeap, HashMap};
 
-use log::debug;
-
 use crate::network::{Edge, Graph, Node};
 
 //------------------------------------------------------------------------------------------------//
@@ -101,7 +99,7 @@ impl PartialEq for CostNode {
 // Astar
 
 pub trait Astar {
-    fn compute_best_path(&mut self, src_id: i64, dst_id: i64, graph: &Graph) -> Option<Path>;
+    fn compute_best_path(&mut self, src: &Node, dst: &Node, graph: &Graph) -> Option<Path>;
 }
 
 //------------------------------------------------------------------------------------------------//
@@ -147,40 +145,25 @@ where
     C: Fn(&Edge) -> u32,
     E: Fn(&Node, &Node) -> u32,
 {
-    fn compute_best_path(&mut self, src_id: i64, dst_id: i64, graph: &Graph) -> Option<Path> {
+    /// Note:
+    /// This method uses the graph-structure (offset-array) and works with idx instead of id for better performance.
+    fn compute_best_path(&mut self, src: &Node, dst: &Node, graph: &Graph) -> Option<Path> {
         //----------------------------------------------------------------------------------------//
         // initialization-stuff
 
         self.resize(graph.node_count());
-
-        // use graph-structure (offset-array) and work with idx instead of id
-        let src_idx = match graph.node_idx_from(src_id) {
-            Ok(idx) => idx,
-            Err(_) => {
-                debug!("Src-id {} is not in graph.", src_id);
-                return None;
-            }
-        };
-        let dst_idx = match graph.node_idx_from(dst_id) {
-            Ok(idx) => idx,
-            Err(_) => {
-                debug!("Dst-id {} is not in graph.", dst_id);
-                return None;
-            }
-        };
-        let dst = graph.node(dst_idx);
 
         //----------------------------------------------------------------------------------------//
         // compute
 
         // prepare first iteration
         self.queue.push(CostNode {
-            idx: src_idx,
+            idx: src.idx(),
             cost: 0,
             estimation: 0,
             pred_idx: None,
         });
-        self.costs[src_idx] = 0;
+        self.costs[src.idx()] = 0;
 
         //----------------------------------------------------------------------------------------//
         // search for shortest path
@@ -188,10 +171,10 @@ where
         while let Some(current) = self.queue.pop() {
             // if shortest path found
             // -> create path
-            if current.idx == dst_idx {
+            if current.idx == dst.idx() {
                 let mut cur_idx = current.idx;
 
-                let mut path = Path::new(src_idx, dst_idx);
+                let mut path = Path::new(src.idx(), dst.idx());
                 path.cost = current.cost;
                 while let Some(pred_idx) = self.predecessors[cur_idx] {
                     path.predecessors.insert(cur_idx, pred_idx);

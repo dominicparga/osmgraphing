@@ -22,7 +22,7 @@ fn assert_correct(
     let graph = super::parse(filepath);
 
     for (src, dst, option_specs) in expected_paths {
-        let option_path = astar.compute_best_path(src.id, dst.id, &graph);
+        let option_path = astar.compute_best_path(graph.node(src.idx), graph.node(dst.idx), &graph);
         assert_eq!(
             option_path.is_some(),
             option_specs.is_some(),

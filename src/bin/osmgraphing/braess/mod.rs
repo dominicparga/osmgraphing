@@ -67,7 +67,7 @@ pub fn run<P: AsRef<Path> + ?Sized>(cfg: Config<P>) -> Result<(), String> {
         let dst = graph.node(dst_idx);
 
         // compute best path
-        let option_path = astar.compute_best_path(src.id(), dst.id(), &graph);
+        let option_path = astar.compute_best_path(src, dst, &graph);
         if let Some(path) = option_path {
             info!("Duration {} s from ({}) to ({}).", path.cost(), src, dst);
 
