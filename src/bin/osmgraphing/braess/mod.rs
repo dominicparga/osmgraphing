@@ -72,7 +72,7 @@ pub fn run<P: AsRef<path::Path> + ?Sized>(cfg: Config<P>) -> Result<(), String> 
         // compute best path
         let option_path = astar.compute_best_path(src, dst, &graph);
         if let Some(path) = option_path {
-            info!("Duration {} s from ({}) to ({}).", path.cost(), src, dst);
+            info!("Duration {} ms from ({}) to ({}).", path.cost(), src, dst);
 
             update_edge_info(&mut data, &path, &graph);
         } else {
