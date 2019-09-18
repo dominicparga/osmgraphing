@@ -2,10 +2,9 @@
 // other modules
 
 use std::collections::HashMap;
-use std::ffi;
 use std::fs;
 use std::io::{BufWriter, Write};
-use std::path;
+use std::path::{Path, PathBuf};
 use std::time::SystemTime;
 
 use log::{info, warn};
@@ -21,19 +20,19 @@ pub mod routes;
 // config
 
 pub struct Config<'a> {
-    pub map_filepath: &'a str,
-    pub out_dirpath: &'a str,
+    pub map_file_path: &'a str,
+    pub out_dir_path: &'a str,
 }
 
 //------------------------------------------------------------------------------------------------//
 // simulation
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Copy, Clone)]
 struct EdgeInfo {
     src_id: i64,
     dst_id: i64,
-    lat: f64,
-    lon: f64,
+    decimicro_lat: i32,
+    decimicro_lon: i32,
     is_src: bool,
     is_dst: bool,
     volume: u32,
@@ -44,28 +43,18 @@ pub fn run(cfg: Config) -> Result<(), String> {
     info!("Executing braess-optimization");
 
     //--------------------------------------------------------------------------------------------//
-    // pre-check io
+    // prepare simulation
 
-    // check path of output-file before expensive simulation
-    let out_filepath = prepare_out_dir(cfg.out_dirpath)?;
+    // check path of io-files before expensive simulation
+    let out_dir_path = check_and_prepare_out_dir_path(cfg.out_dir_path)?;
+    let proto_routes = read_in_proto_routes();
 
-    //--------------------------------------------------------------------------------------------//
-    // parsing
-
-    let graph = Parser::parse_and_finalize(&cfg.map_filepath)?;
-
-    //--------------------------------------------------------------------------------------------//
-    // read in src-dst-pairs
-
-    let proto_routes = vec![(0, 5), (0, 3), (2, 4)];
+    let graph = Parser::parse_and_finalize(&cfg.map_file_path)?;
 
     //--------------------------------------------------------------------------------------------//
     // prepare statistics
 
-    let mut usages = vec![0u32; graph.edge_count()];
-    let mut is_src = vec![false; graph.edge_count()];
-    let mut is_dst = vec![false; graph.edge_count()];
-    let mut data: Vec<EdgeInfo> = Vec::with_capacity(1_000);
+    let mut data: Vec<Option<EdgeInfo>> = vec![None; graph.edge_count()];
 
     //--------------------------------------------------------------------------------------------//
     // routing and statistics-update
@@ -85,16 +74,52 @@ pub fn run(cfg: Config) -> Result<(), String> {
             // reconstruct path to update edge-statistics
             let mut current_idx = src_idx;
             while let Some(edge_dst_idx) = path.succ_node_idx(current_idx) {
-                if let Some((_edge, edge_idx)) = graph.edge_from(current_idx, edge_dst_idx) {
-                    // update path-edges' usages
-                    usages[edge_idx] += 1;
-                    // update if edge is src/dst
-                    if current_idx == src_idx {
-                        is_src[edge_idx] = true;
+                // get edge from its nodes
+                let (edge, edge_idx) = graph
+                    .edge_from(current_idx, edge_dst_idx)
+                    .expect("Path should only use edges from the graph.");
+                let (edge_src, edge_dst) = (graph.node(edge.src_idx()), graph.node(edge.dst_idx()));
+                debug_assert_eq!(edge.src_idx(), current_idx, "edge.src_idx() != current_idx");
+                debug_assert_eq!(
+                    edge.dst_idx(),
+                    edge_dst_idx,
+                    "edge.dst_idx() != edge_dst_idx"
+                );
+
+                // create EdgeInfo if not existing
+                let mut edge_info = match data[edge_idx] {
+                    Some(edge_info) => edge_info,
+                    None => {
+                        let edge_info = EdgeInfo {
+                            src_id: edge_src.id(),
+                            dst_id: edge_dst.id(),
+                            decimicro_lat: {
+                                (edge_src.coord().decimicro_lat()
+                                    + edge_dst.coord().decimicro_lat())
+                                    / 2
+                            },
+                            decimicro_lon: {
+                                (edge_src.coord().decimicro_lon()
+                                    + edge_dst.coord().decimicro_lon())
+                                    / 2
+                            },
+                            is_src: false,
+                            is_dst: false,
+                            volume: edge.meters(),
+                            usage: 0,
+                        };
+                        data[edge_idx] = Some(edge_info);
+                        edge_info
                     }
-                    if edge_dst_idx == dst_idx {
-                        is_dst[edge_idx] = true;
-                    }
+                };
+                // update path-edges' usages
+                edge_info.usage += 1;
+                // update if edge is src/dst
+                if current_idx == src_idx {
+                    edge_info.is_src = true;
+                }
+                if edge_dst_idx == dst_idx {
+                    edge_info.is_dst = true;
                 }
                 current_idx = edge_dst_idx;
             }
@@ -104,41 +129,77 @@ pub fn run(cfg: Config) -> Result<(), String> {
     }
 
     //--------------------------------------------------------------------------------------------//
-    // finalize statistics
-
-    // setup stats before writing to file
-    for edge_idx in 0..graph.edge_count() {
-        if usages[edge_idx] == 0 {
-            continue;
-        }
-
-        // collect data
-        let edge = graph.edge(edge_idx);
-        let edge_src = graph.node(edge.src_idx());
-        let edge_dst = graph.node(edge.dst_idx());
-        let lat = (edge_src.lat() + edge_dst.lat()) / 2.0;
-        let lon = (edge_src.lon() + edge_dst.lon()) / 2.0;
-        let usage = (usages[edge_idx] / 1) as u16; // TODO calculate
-        data.push(EdgeInfo {
-            src_id: edge_src.id(),
-            dst_id: edge_dst.id(),
-            lat,
-            lon,
-            is_src: is_src[edge_idx],
-            is_dst: is_dst[edge_idx],
-            volume: edge.meters(),
-            usage: usage,
-        });
-    }
-
-    //--------------------------------------------------------------------------------------------//
     // export statistics
 
-    // write data to json-file
-    let out_file = match fs::File::create(&out_filepath) {
-        Ok(file) => file,
-        Err(_) => return Err(format!("Could not open file {:?}", out_filepath)),
+    let out_file_path = out_dir_path.join("results.json");
+    export_statistics(data, &out_file_path)?;
+
+    Ok(())
+}
+
+//------------------------------------------------------------------------------------------------//
+// helpers
+
+/// Returns output-path, which is "{out_dir_path}/{%Y-%m-%d}/{%H:%M:%S}"
+fn check_and_prepare_out_dir_path<P: AsRef<Path> + ?Sized>(
+    out_dir_path: &P,
+) -> Result<PathBuf, String> {
+    // get and format current time
+    let now = SystemTime::now();
+    let now: chrono::DateTime<chrono::Utc> = now.into();
+    let now_ymd = format!("{}", now.format("%Y-%m-%d"));
+    let now_hms = format!("{}", now.format("%T")); // %T == %H:%M:%S
+    drop(now);
+
+    // check if necessary directories do already exist
+    let out_dir_path = out_dir_path.as_ref();
+    if !out_dir_path.exists() {
+        return Err(format!("Path {} does not exist.", out_dir_path.display()));
+    }
+    let out_dir_path = out_dir_path.join(now_ymd).join(now_hms);
+    match fs::create_dir_all(&out_dir_path) {
+        Ok(_) => (),
+        Err(e) => {
+            return Err(format!(
+                "Problem with path {}: {}",
+                out_dir_path.display(),
+                e
+            ))
+        }
     };
+
+    Ok(out_dir_path)
+}
+
+fn read_in_proto_routes() -> Vec<(usize, usize)> {
+    // TODO
+    vec![(0, 5), (0, 3), (2, 4)]
+}
+
+fn export_statistics<P: AsRef<Path> + ?Sized>(
+    mut data: Vec<Option<EdgeInfo>>,
+    out_file_path: &P,
+) -> Result<(), String> {
+    // create file and check if it already exists
+    let out_file = {
+        let out_file_path = out_file_path.as_ref();
+        if out_file_path.exists() {
+            return Err(format!(
+                "File {} does already exist. Please (re)move it.",
+                out_file_path.display()
+            ));
+        } else {
+            match fs::File::create(out_file_path) {
+                Ok(file) => file,
+                Err(_) => return Err(format!("Could not open file {}", out_file_path.display())),
+            }
+        }
+    };
+
+    // remove None's from data
+    data.retain(|ei| ei.is_some());
+
+    // write data to json-file
     let mut writer = BufWriter::new(out_file);
     let mut json_data = HashMap::new();
     json_data.insert("edges", &data);
@@ -153,48 +214,4 @@ pub fn run(cfg: Config) -> Result<(), String> {
     }
 
     Ok(())
-}
-
-//------------------------------------------------------------------------------------------------//
-// helpers
-
-fn prepare_out_dir(out_dirpath: &str) -> Result<String, String> {
-    // get and format current time
-    let now = SystemTime::now();
-    let now: chrono::DateTime<chrono::Utc> = now.into();
-    let now_ymd = format!("{}", now.format("%Y-%m-%d"));
-    let now_hms = format!("{}", now.format("%T")); // %T == %H:%M:%S
-    drop(now);
-
-    // check if necessary directories do already exist
-    let mut out_path = vec![out_dirpath];
-    {
-        let tmp = ffi::OsString::from(&out_path.join("/"));
-        let tmp = path::Path::new(&tmp);
-        if !tmp.exists() {
-            return Err(format!("Path {:?} does not exist.", &tmp));
-        }
-    }
-    out_path.append(&mut vec![now_ymd.as_ref(), now_hms.as_ref()]);
-    {
-        let tmp = ffi::OsString::from(&out_path.join("/"));
-        let tmp = path::Path::new(&tmp);
-        match fs::create_dir_all(tmp) {
-            Ok(_) => (),
-            Err(e) => return Err(format!("Problem with path {:?}: {}", &tmp, e)),
-        };
-    }
-    out_path.push("results.json");
-    {
-        let tmp = ffi::OsString::from(&out_path.join("/"));
-        let tmp = path::Path::new(&tmp);
-        if tmp.exists() {
-            return Err(format!(
-                "File {:?} does already exist. Please (re)move it.",
-                tmp
-            ));
-        }
-    }
-
-    Ok(out_path.join("/"))
 }
