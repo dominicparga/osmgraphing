@@ -19,11 +19,15 @@ pub use defaults::StreetType;
 #[derive(Debug)]
 pub struct Node {
     id: i64,
+    idx: usize,
     coord: geo::Coordinate,
 }
 impl Node {
     pub fn id(&self) -> i64 {
         self.id
+    }
+    pub fn idx(&self) -> usize {
+        self.idx
     }
     pub fn coord(&self) -> &geo::Coordinate {
         &self.coord
@@ -37,7 +41,7 @@ impl PartialEq for Node {
 }
 impl fmt::Display for Node {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Node: {{ id: {}, {} }}", self.id, self.coord,)
+        write!(f, "Node: {{ id: {}, idx: {}, {} }}", self.id, self.idx, self.coord,)
     }
 }
 
@@ -131,6 +135,10 @@ impl Graph {
     }
 
     pub fn node(&self, idx: usize) -> &Node {
+        debug_assert_eq!(
+            self.nodes[idx].idx, idx,
+            "Node's idx in graph and its stored idx should be same."
+        );
         &self.nodes[idx]
     }
 

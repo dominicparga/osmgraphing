@@ -210,6 +210,7 @@ impl GraphBuilder {
         // add nodes to graph which belong to edges (sorted by asc id)
 
         info!("Starting adding nodes (sorted) which belongs to an edge ..");
+        let mut node_idx = 0;
         // BTreeMap's iter returns sorted by key (asc)
         for (_id, proto_node) in self.proto_nodes.iter() {
             // add nodes only if they belong to an edge
@@ -221,8 +222,10 @@ impl GraphBuilder {
             if let Some(coord) = proto_node.coord {
                 graph.nodes.push(Node {
                     id: proto_node.id,
+                    idx: node_idx,
                     coord,
                 });
+                node_idx += 1;
             } else {
                 // should not happen if file is okay
                 error!(
@@ -231,6 +234,11 @@ impl GraphBuilder {
                 );
             }
         }
+        debug_assert_eq!(
+            graph.nodes.len(),
+            node_idx,
+            "The (maximum index - 1) should not be more than the number of nodes in the graph."
+        );
         info!("Finished adding nodes");
 
         //----------------------------------------------------------------------------------------//

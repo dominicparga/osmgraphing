@@ -32,6 +32,13 @@ impl TestNode {
             self.name
         );
         assert_eq!(
+            node.idx(),
+            self.idx,
+            "Wrong node-idx={} for {}",
+            node.idx(),
+            self.name
+        );
+        assert_eq!(
             node.coord(),
             &self.coord,
             "Wrong coordinate {} for {}",
