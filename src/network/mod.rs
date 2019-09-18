@@ -28,12 +28,6 @@ impl Node {
     pub fn coord(&self) -> &geo::Coordinate {
         &self.coord
     }
-    pub fn lat(&self) -> f64 {
-        self.coord.lat()
-    }
-    pub fn lon(&self) -> f64 {
-        self.coord.lon()
-    }
 }
 impl Eq for Node {}
 impl PartialEq for Node {
