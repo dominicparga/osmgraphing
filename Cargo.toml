@@ -27,6 +27,7 @@ osmpbfreader = "0.13" # read osm.pbf-files
 # rand = "0.7" # generate random routes
 serde = "1.0"
 serde_json = "1.0"
+csv = "1.1"
 
 [dev-dependencies]
 actix-web = "1.0" # backend-server

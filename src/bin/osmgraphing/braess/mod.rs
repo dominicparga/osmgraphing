@@ -19,10 +19,40 @@ pub mod routes;
 //------------------------------------------------------------------------------------------------//
 // config
 
-pub struct Config<'a, P: AsRef<path::Path> + ?Sized> {
-    pub map_file_path: &'a P,
-    pub out_dir_path: &'a P,
+pub mod config {
+    use std::path;
+
+    pub struct Config<'a, P: AsRef<path::Path> + ?Sized> {
+        pub paths: Paths<'a, P>,
+    }
+    pub struct Paths<'a, P: AsRef<path::Path> + ?Sized> {
+        pub input: InputPaths<'a, P>,
+        pub output: OutputPaths<'a, P>,
+    }
+
+    //--------------------------------------------------------------------------------------------//
+    // input-paths
+
+    pub struct InputPaths<'a, P: AsRef<path::Path> + ?Sized> {
+        pub files: InputFiles<'a, P>,
+    }
+    pub struct InputFiles<'a, P: AsRef<path::Path> + ?Sized> {
+        pub map: &'a P,
+        pub proto_routes: &'a P,
+    }
+
+    //--------------------------------------------------------------------------------------------//
+    // output-paths
+
+    pub struct OutputPaths<'a, P: AsRef<path::Path> + ?Sized> {
+        pub dirs: OutputDirs<'a, P>,
+    }
+    pub struct OutputDirs<'a, P: AsRef<path::Path> + ?Sized> {
+        pub results: &'a P,
+    }
 }
+pub use config as cfg;
+use config::Config;
 
 //------------------------------------------------------------------------------------------------//
 // simulation
@@ -47,12 +77,14 @@ pub fn run<P: AsRef<path::Path> + ?Sized>(cfg: Config<P>) -> Result<(), String> 
     // prepare simulation
 
     // check path of io-files before expensive simulation
-    let out_dir_path = check_and_prepare_out_dir_path(cfg.out_dir_path)?;
-    let out_file_path = out_dir_path.join("results.json");
+    let out_file_path = {
+        let out_dir_path = check_and_prepare_out_dir_path(cfg.paths.output.dirs.results)?;
+        out_dir_path.join("results.json")
+    };
     create_out_file(&out_file_path)?;
-    let proto_routes = read_in_proto_routes();
+    let proto_routes = read_in_proto_routes(cfg.paths.input.files.proto_routes)?;
 
-    let graph = Parser::parse_and_finalize(&cfg.map_file_path)?;
+    let graph = Parser::parse_and_finalize(&cfg.paths.input.files.map)?;
 
     //--------------------------------------------------------------------------------------------//
     // prepare statistics
@@ -65,14 +97,36 @@ pub fn run<P: AsRef<path::Path> + ?Sized>(cfg: Config<P>) -> Result<(), String> 
     let mut astar = routing::factory::new_fastest_path_astar();
 
     // routes
-    for (src_idx, dst_idx) in proto_routes {
-        let src = graph.node(src_idx);
-        let dst = graph.node(dst_idx);
+    for (src_id, dst_id) in proto_routes {
+        // get nodes: src and dst
+        let src = graph.node(match graph.node_idx_from(src_id) {
+            Ok(src_idx) => src_idx,
+            Err(_) => {
+                return Err(format!(
+                    "Src-id {} from proto-route ({}, {}) could not be found in the graph.",
+                    src_id, src_id, dst_id,
+                ))
+            }
+        });
+        let dst = graph.node(match graph.node_idx_from(dst_id) {
+            Ok(dst_idx) => dst_idx,
+            Err(_) => {
+                return Err(format!(
+                    "Dst-id {} from proto-route ({}, {}) could not be found in the graph.",
+                    dst_id, src_id, dst_id,
+                ))
+            }
+        });
 
         // compute best path
         let option_path = astar.compute_best_path(src, dst, &graph);
         if let Some(path) = option_path {
-            info!("Duration {} ms from ({}) to ({}).", path.cost(), src, dst);
+            info!(
+                "Duration {} s from ({}) to ({}).",
+                path.cost() / 1_000,
+                src,
+                dst
+            );
 
             update_edge_info(&mut data, &path, &graph);
         } else {
@@ -139,9 +193,32 @@ fn create_out_file<P: AsRef<path::Path> + ?Sized>(out_file_path: &P) -> Result<(
     Ok(())
 }
 
-fn read_in_proto_routes() -> Vec<(usize, usize)> {
-    // TODO
-    vec![(0, 5), (0, 3), (2, 4)]
+fn read_in_proto_routes<P: AsRef<path::Path> + ?Sized>(
+    in_file_path: &P,
+) -> Result<Vec<(i64, i64)>, String> {
+    let in_file_path = in_file_path.as_ref();
+
+    // get reader
+    let reader = {
+        let in_file = match fs::File::open(in_file_path) {
+            Ok(file) => file,
+            Err(_) => return Err(format!("No such file {}", in_file_path.display())),
+        };
+        let reader = io::BufReader::new(in_file);
+        csv::Reader::from_reader(reader)
+    };
+
+    // deserialize, cast and let collect() check for errors
+    let proto_routes = match reader.into_deserialize().collect() {
+        Ok(v) => v,
+        Err(_) => {
+            return Err(format!(
+                "Could not deserialize file {}",
+                in_file_path.display()
+            ))
+        }
+    };
+    Ok(proto_routes)
 }
 
 fn export_statistics<P: AsRef<path::Path> + ?Sized>(
@@ -149,19 +226,19 @@ fn export_statistics<P: AsRef<path::Path> + ?Sized>(
     out_file_path: &P,
 ) -> Result<(), String> {
     // file should have been created
-    let out_file = {
+    let mut writer = {
         let out_file_path = out_file_path.as_ref();
-        match fs::File::create(out_file_path) {
+        let out_file = match fs::File::create(out_file_path) {
             Ok(file) => file,
             Err(_) => return Err(format!("Could not open file {}", out_file_path.display())),
-        }
+        };
+        io::BufWriter::new(out_file)
     };
 
     // remove None's from data
     data.retain(|ei| ei.is_some());
 
     // write data to json-file
-    let mut writer = io::BufWriter::new(out_file);
     let mut json_data = HashMap::new();
     json_data.insert("edges", &data);
     match serde_json::to_string_pretty(&json_data) {
