@@ -1,8 +1,6 @@
 //------------------------------------------------------------------------------------------------//
 // other modules
 
-use std::collections::HashMap;
-use std::io::Write;
 use std::time::SystemTime;
 use std::{fs, io, path};
 
@@ -79,7 +77,7 @@ pub fn run<P: AsRef<path::Path> + ?Sized>(cfg: Config<P>) -> Result<(), String> 
     // check path of io-files before expensive simulation
     let out_file_path = {
         let out_dir_path = check_and_prepare_out_dir_path(cfg.paths.output.dirs.results)?;
-        out_dir_path.join("results.json")
+        out_dir_path.join("edge_stats.csv")
     };
     create_out_file(&out_file_path)?;
     let proto_routes = read_in_proto_routes(cfg.paths.input.files.proto_routes)?;
@@ -225,33 +223,60 @@ fn export_statistics<P: AsRef<path::Path> + ?Sized>(
     mut data: Vec<Option<EdgeInfo>>,
     out_file_path: &P,
 ) -> Result<(), String> {
+    let out_file_path = out_file_path.as_ref();
+
     // file should have been created
     let mut writer = {
-        let out_file_path = out_file_path.as_ref();
         let out_file = match fs::File::create(out_file_path) {
             Ok(file) => file,
             Err(_) => return Err(format!("Could not open file {}", out_file_path.display())),
         };
-        io::BufWriter::new(out_file)
+        let writer = io::BufWriter::new(out_file);
+        csv::Writer::from_writer(writer)
     };
 
     // remove None's from data
     data.retain(|ei| ei.is_some());
+    // prepare data
+    let head_line = vec![
+        "src-id",
+        "dst-id",
+        "decimicro-lat",
+        "decimicro-lon",
+        "is-src",
+        "is-dst",
+        "lane-count",
+        "lenth-m",
+        "route-count",
+    ];
 
-    // write data to json-file
-    let mut json_data = HashMap::new();
-    json_data.insert("edges", &data);
-    match serde_json::to_string_pretty(&json_data) {
-        Ok(json_data) => {
-            match &mut writer.write(json_data.as_bytes()) {
-                Ok(_) => (),
-                Err(e) => return Err(format!("Could not write data to file Errmsg: {}", e)),
-            };
+    // write head-line to csv-file
+    {
+        let result = writer.write_record(&head_line);
+        if let Err(e) = result {
+            return Err(format!("Could not write record to csv-file due to {}", e));
         }
-        Err(e) => return Err(format!("Could not convert data to json. Errmsg: {}", e)),
+    }
+    // write data to csv-file
+    {
+        for edge_info in data {
+            let result = writer.serialize(edge_info);
+            if let Err(e) = result {
+                return Err(format!("Could not write data to csv-file due to {}", e));
+            }
+        }
     }
 
-    Ok(())
+    // csv-writer needs explicit flush
+    // https://rust-lang-nursery.github.io/rust-cookbook/encoding/csv.html#serialize-records-to-csv
+    if writer.flush().is_err() {
+        Err(format!(
+            "Could not flush csv-writer of file {}",
+            out_file_path.display()
+        ))
+    } else {
+        Ok(())
+    }
 }
 
 //------------------------------------------------------------------------------------------------//
