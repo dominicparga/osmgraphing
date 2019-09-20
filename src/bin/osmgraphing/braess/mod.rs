@@ -86,7 +86,11 @@ pub fn run<P: AsRef<path::Path> + ?Sized>(cfg: Config<P>) -> Result<(), String> 
     let mut astar = routing::factory::new_fastest_path_astar();
 
     // routes
+    let mut progress_bar = progressing::Bar::from(proto_routes.len() as u32);
+    progress_bar.log();
     for (src_id, dst_id) in proto_routes {
+        progress_bar.inc_n();
+
         // get nodes: src and dst
         let src = graph.node(match graph.node_idx_from(src_id) {
             Ok(src_idx) => src_idx,
@@ -118,10 +122,12 @@ pub fn run<P: AsRef<path::Path> + ?Sized>(cfg: Config<P>) -> Result<(), String> 
             );
 
             update_edge_info(&mut data, &best_path, &graph);
+            progress_bar.inc_k().log();
         } else {
-            warn!("No best path from ({}) to ({}).", src, dst);
+            warn!("No path from ({}) to ({}).", src, dst);
         }
     }
+    info!("{}", progress_bar);
 
     //--------------------------------------------------------------------------------------------//
     // export statistics
