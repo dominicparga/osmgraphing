@@ -9,6 +9,7 @@ use rand::SeedableRng;
 // own modules
 
 use super::io_kyle;
+use super::progressing;
 
 //------------------------------------------------------------------------------------------------//
 // config
@@ -81,111 +82,13 @@ pub fn search_and_export<P: AsRef<path::Path> + ?Sized>(cfg: Config<P>) -> Resul
     // routing
 
     // logging progress
-    let progress_levels = {
-        vec![
-            (
-                cfg.route_count * 00 / 20,
-                "Found routes: [>                   ]",
-            ),
-            (
-                cfg.route_count * 01 / 20,
-                "Found routes: [=>                  ]",
-            ),
-            (
-                cfg.route_count * 02 / 20,
-                "Found routes: [==>                 ]",
-            ),
-            (
-                cfg.route_count * 03 / 20,
-                "Found routes: [===>                ]",
-            ),
-            (
-                cfg.route_count * 04 / 20,
-                "Found routes: [====>               ]",
-            ),
-            (
-                cfg.route_count * 05 / 20,
-                "Found routes: [=====>              ]",
-            ),
-            (
-                cfg.route_count * 06 / 20,
-                "Found routes: [======>             ]",
-            ),
-            (
-                cfg.route_count * 07 / 20,
-                "Found routes: [=======>            ]",
-            ),
-            (
-                cfg.route_count * 08 / 20,
-                "Found routes: [========>           ]",
-            ),
-            (
-                cfg.route_count * 09 / 20,
-                "Found routes: [=========>          ]",
-            ),
-            (
-                cfg.route_count * 10 / 20,
-                "Found routes: [==========>         ]",
-            ),
-            (
-                cfg.route_count * 11 / 20,
-                "Found routes: [===========>        ]",
-            ),
-            (
-                cfg.route_count * 12 / 20,
-                "Found routes: [============>       ]",
-            ),
-            (
-                cfg.route_count * 13 / 20,
-                "Found routes: [=============>      ]",
-            ),
-            (
-                cfg.route_count * 14 / 20,
-                "Found routes: [==============>     ]",
-            ),
-            (
-                cfg.route_count * 15 / 20,
-                "Found routes: [===============>    ]",
-            ),
-            (
-                cfg.route_count * 16 / 20,
-                "Found routes: [================>   ]",
-            ),
-            (
-                cfg.route_count * 17 / 20,
-                "Found routes: [=================>  ]",
-            ),
-            (
-                cfg.route_count * 18 / 20,
-                "Found routes: [==================> ]",
-            ),
-            (
-                cfg.route_count * 19 / 20,
-                "Found routes: [===================>]",
-            ),
-            (
-                cfg.route_count * 20 / 20,
-                "Found routes: [====================]",
-            ),
-        ]
-    };
-    let log_progress = {
-        |k: u32, n: u32| {
-            for &(cap, bar) in &progress_levels {
-                if k == cap {
-                    info!("{} ({}/{}) valid", bar, k, n)
-                }
-            }
-        }
-    };
+    let mut progress_bar = progressing::Bar::from(cfg.route_count);
 
     // searching
-    let mut n: u32 = 0;
-    let mut k: u32 = 0;
-    log_progress(k, n);
+    progress_bar.log();
     io_kyle::write_proto_routes(&vec![], cfg.paths.output.files.proto_routes, false)?;
-    while k < cfg.route_count {
-        n += 1;
+    while progress_bar.k() < cfg.route_count {
+        progress_bar.inc_n();
 
         let (src, dst) = {
             let src_idx: usize = die.sample(&mut rng);
@@ -193,8 +96,8 @@ pub fn search_and_export<P: AsRef<path::Path> + ?Sized>(cfg: Config<P>) -> Resul
             (graph.node(src_idx), graph.node(dst_idx))
         };
         if let Some(best_path) = astar.compute_best_path(src, dst, &graph) {
-            k += 1;
-            log_progress(k, n);
+            progress_bar.inc_k();
+            progress_bar.log();
 
             // if travel-time takes at most max_travel_time_ms (e.g. one hour)
             // -> accept
@@ -234,7 +137,7 @@ pub fn search_and_export<P: AsRef<path::Path> + ?Sized>(cfg: Config<P>) -> Resul
             }
         }
     }
-    info!("Tried {}-times for {} valid src-dst-pairs.", n, k);
+    info!("{}", progress_bar);
 
     Ok(())
 }

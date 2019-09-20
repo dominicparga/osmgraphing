@@ -34,7 +34,7 @@ pub fn create_datetime_dir<P: AsRef<path::Path> + ?Sized>(
         Ok(_) => (),
         Err(e) => {
             return Err(format!(
-                "Problem with path {}: {}",
+                "Problem with path {} due to {}",
                 out_dir_path.display(),
                 e
             ))
@@ -124,6 +124,30 @@ pub fn write_edge_stats<P: AsRef<path::Path> + ?Sized>(
 
 //------------------------------------------------------------------------------------------------//
 // basic io
+
+/// Returns error if the file exists
+pub fn create_dir<P: AsRef<path::Path> + ?Sized>(path: &P) -> Result<path::PathBuf, String> {
+    let path = path.as_ref();
+    if path.exists() {
+        return Err(format!(
+            "Dir {} does already exist. Please (re)move it.",
+            path.display()
+        ));
+    } else {
+        match fs::create_dir(path) {
+            Ok(dir) => dir,
+            Err(e) => {
+                return Err(format!(
+                    "Could not open dir {} due to {}",
+                    path.display(),
+                    e
+                ))
+            }
+        }
+    };
+
+    Ok(path.to_path_buf())
+}
 
 /// Returns error if the file exists
 pub fn create_file<P: AsRef<path::Path> + ?Sized>(path: &P) -> Result<(), String> {

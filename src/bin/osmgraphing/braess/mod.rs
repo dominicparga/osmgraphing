@@ -14,6 +14,7 @@ mod io_kyle;
 mod model;
 pub mod routes;
 use model::EdgeInfo;
+mod progressing;
 
 //------------------------------------------------------------------------------------------------//
 // config
@@ -63,8 +64,12 @@ pub fn run<P: AsRef<path::Path> + ?Sized>(cfg: Config<P>) -> Result<(), String> 
     // prepare simulation
 
     // check path of io-files before expensive simulation
-    let out_dir_path = io_kyle::create_datetime_dir(cfg.paths.output.dirs.results)?;
-    let out_file_path = out_dir_path.join("edge_stats.csv");
+    let out_dir_path = {
+        let out_dir_path = io_kyle::create_datetime_dir(cfg.paths.output.dirs.results)?;
+        let out_dir_path = out_dir_path.join("edge_stats");
+        io_kyle::create_dir(&out_dir_path)?
+    };
+    let out_file_path = out_dir_path.join("loop_0.csv");
     io_kyle::create_file(&out_file_path)?;
     let proto_routes = io_kyle::read_proto_routes(cfg.paths.input.files.proto_routes)?;
 
