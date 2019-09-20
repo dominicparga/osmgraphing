@@ -11,8 +11,8 @@ use osmgraphing::{routing, Parser};
 // own modules
 
 mod io_kyle;
-// pub mod routes;
 mod model;
+pub mod routes;
 use model::EdgeInfo;
 
 //------------------------------------------------------------------------------------------------//
