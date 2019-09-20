@@ -40,12 +40,13 @@ impl<'a> Bar<'a> {
         }
     }
 
-    pub fn log(&self) {
+    pub fn log(&self) -> &Self {
         for &(cap, bar) in &self.levels {
             if self.k == cap {
                 info!("{} ({}/{}) valid", bar, self.k, self.n)
             }
         }
+        self
     }
 
     pub fn k(&self) -> u32 {
@@ -56,12 +57,12 @@ impl<'a> Bar<'a> {
         self.n
     }
 
-    pub fn inc_k(&mut self) {
-        self.k += 1
+    pub fn inc_k(&mut self) -> &Self {
+        self.k += 1; self
     }
 
-    pub fn inc_n(&mut self) {
-        self.n += 1
+    pub fn inc_n(&mut self) -> &Self{
+        self.n += 1; self
     }
 }
 impl<'a> fmt::Display for Bar<'a> {

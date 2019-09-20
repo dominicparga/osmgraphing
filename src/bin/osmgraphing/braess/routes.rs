@@ -96,8 +96,7 @@ pub fn search_and_export<P: AsRef<path::Path> + ?Sized>(cfg: Config<P>) -> Resul
             (graph.node(src_idx), graph.node(dst_idx))
         };
         if let Some(best_path) = astar.compute_best_path(src, dst, &graph) {
-            progress_bar.inc_k();
-            progress_bar.log();
+            progress_bar.inc_k().log();
 
             // if travel-time takes at most max_travel_time_ms (e.g. one hour)
             // -> accept
