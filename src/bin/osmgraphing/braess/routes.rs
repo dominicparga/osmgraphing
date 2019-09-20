@@ -3,7 +3,7 @@ use std::path;
 use log::info;
 use osmgraphing::{routing, Parser};
 use rand::distributions::{Distribution, Uniform};
-use rand::{Rng, SeedableRng};
+use rand::SeedableRng;
 
 //------------------------------------------------------------------------------------------------//
 // own modules
@@ -18,6 +18,8 @@ pub mod config {
 
     pub struct Config<'a, P: AsRef<path::Path> + ?Sized> {
         pub paths: Paths<'a, P>,
+        pub route_count: u32,
+        pub seed: u64,
     }
     pub struct Paths<'a, P: AsRef<path::Path> + ?Sized> {
         pub input: InputPaths<'a, P>,
@@ -53,43 +55,186 @@ pub fn search_and_export<P: AsRef<path::Path> + ?Sized>(cfg: Config<P>) -> Resul
     info!("Executing proto-route-generator");
 
     //--------------------------------------------------------------------------------------------//
+    // some default-params
+
+    let writebuf_len = 100;
+    let max_travel_time_ms = 3_600_000; // 1 h
+
+    //--------------------------------------------------------------------------------------------//
     // prepare simulation
 
     // check path of io-files before expensive simulation
     io_kyle::create_file(cfg.paths.output.files.proto_routes)?;
 
     let graph = Parser::parse_and_finalize(&cfg.paths.input.files.map)?;
-    println!("{}", graph);
+    let mut astar = routing::factory::new_fastest_path_astar();
 
-    let mut rng = rand_pcg::Pcg32::seed_from_u64(123);
-    let (rnd_src_idx, rnd_dst_idx): (usize, usize) = rng.gen();
-    println!("({}, {})", rnd_src_idx, rnd_dst_idx);
+    // random
+    info!("Using seed {}", cfg.seed);
+    let mut rng = rand_pcg::Pcg32::seed_from_u64(cfg.seed);
+    let die = Uniform::from(0..graph.node_count());
 
-    // //--------------------------------------------------------------------------------------------//
-    // // routing
+    // proto_routes
+    let mut proto_routes = Vec::with_capacity(writebuf_len);
 
-    // let mut astar = routing::factory::new_shortest_path_astar();
+    //--------------------------------------------------------------------------------------------//
+    // routing
 
-    // let seed = &[1, 2, 3, 4];
-    // let mut rng = rand::thread_rng();
-    // let die = Uniform::from(0..graph.node_count());
-    // let throw = die.sample(&mut rng);
-    // // routes
-    // let src_idx = 0;
-    // let dsts: Vec<usize> = (0..graph.node_count()).collect();
+    // logging progress
+    let progress_levels = {
+        vec![
+            (
+                cfg.route_count * 00 / 20,
+                "Found routes: [>                   ]",
+            ),
+            (
+                cfg.route_count * 01 / 20,
+                "Found routes: [=>                  ]",
+            ),
+            (
+                cfg.route_count * 02 / 20,
+                "Found routes: [==>                 ]",
+            ),
+            (
+                cfg.route_count * 03 / 20,
+                "Found routes: [===>                ]",
+            ),
+            (
+                cfg.route_count * 04 / 20,
+                "Found routes: [====>               ]",
+            ),
+            (
+                cfg.route_count * 05 / 20,
+                "Found routes: [=====>              ]",
+            ),
+            (
+                cfg.route_count * 06 / 20,
+                "Found routes: [======>             ]",
+            ),
+            (
+                cfg.route_count * 07 / 20,
+                "Found routes: [=======>            ]",
+            ),
+            (
+                cfg.route_count * 08 / 20,
+                "Found routes: [========>           ]",
+            ),
+            (
+                cfg.route_count * 09 / 20,
+                "Found routes: [=========>          ]",
+            ),
+            (
+                cfg.route_count * 10 / 20,
+                "Found routes: [==========>         ]",
+            ),
+            (
+                cfg.route_count * 11 / 20,
+                "Found routes: [===========>        ]",
+            ),
+            (
+                cfg.route_count * 12 / 20,
+                "Found routes: [============>       ]",
+            ),
+            (
+                cfg.route_count * 13 / 20,
+                "Found routes: [=============>      ]",
+            ),
+            (
+                cfg.route_count * 14 / 20,
+                "Found routes: [==============>     ]",
+            ),
+            (
+                cfg.route_count * 15 / 20,
+                "Found routes: [===============>    ]",
+            ),
+            (
+                cfg.route_count * 16 / 20,
+                "Found routes: [================>   ]",
+            ),
+            (
+                cfg.route_count * 17 / 20,
+                "Found routes: [=================>  ]",
+            ),
+            (
+                cfg.route_count * 18 / 20,
+                "Found routes: [==================> ]",
+            ),
+            (
+                cfg.route_count * 19 / 20,
+                "Found routes: [===================>]",
+            ),
+            (
+                cfg.route_count * 20 / 20,
+                "Found routes: [====================]",
+            ),
+        ]
+    };
+    let log_progress = {
+        |k: u32, n: u32| {
+            for &(cap, bar) in &progress_levels {
+                if k == cap {
+                    info!("{} ({}/{}) valid", bar, k, n)
+                }
+            }
+        }
+    };
 
-    // // calculate
-    // let src = graph.node(src_idx);
-    // for dst_idx in dsts {
-    //     let dst = graph.node(dst_idx);
+    // searching
+    let mut n: u32 = 0;
+    let mut k: u32 = 0;
+    log_progress(k, n);
+    io_kyle::write_proto_routes(&vec![], cfg.paths.output.files.proto_routes, false)?;
+    while k < cfg.route_count {
+        n += 1;
 
-    //     let option_path = astar.compute_best_path(src.id(), dst.id(), &graph);
-    //     if let Some(path) = option_path {
-    //         info!("Distance {} m from ({}) to ({}).", path.cost(), src, dst);
-    //     } else {
-    //         info!("No path from ({}) to ({}).", src, dst);
-    //     }
-    // }
+        let (src, dst) = {
+            let src_idx: usize = die.sample(&mut rng);
+            let dst_idx: usize = die.sample(&mut rng);
+            (graph.node(src_idx), graph.node(dst_idx))
+        };
+        if let Some(best_path) = astar.compute_best_path(src, dst, &graph) {
+            k += 1;
+            log_progress(k, n);
+
+            // if travel-time takes at most max_travel_time_ms (e.g. one hour)
+            // -> accept
+            // if more than one hour
+            // -> shorten found path, then accept
+            let mut cost = best_path.cost();
+            let mut succ_idx = dst.idx();
+
+            // shorten found best-path until it fits
+            while cost > max_travel_time_ms {
+                // get predecessor of last path-node
+                let pred_idx = best_path
+                    .pred_node_idx(succ_idx)
+                    .expect("Path should be long enough to have a predecessor.");
+                // update cost
+                cost -= {
+                    let (edge, _) = graph
+                        .edge_from(pred_idx, succ_idx)
+                        .expect("Path-edge should exist.");
+                    edge.milliseconds()
+                };
+                succ_idx = pred_idx;
+            }
+
+            // add new path
+            let new_dst = graph.node(succ_idx);
+            proto_routes.push((src.id(), new_dst.id()));
+
+            // write to file
+            if proto_routes.len() >= writebuf_len {
+                io_kyle::write_proto_routes(
+                    &proto_routes,
+                    cfg.paths.output.files.proto_routes,
+                    true,
+                )?;
+                proto_routes.clear();
+            }
+        }
+    }
+    info!("Tried {}-times for {} valid src-dst-pairs.", n, k);
 
     Ok(())
 }

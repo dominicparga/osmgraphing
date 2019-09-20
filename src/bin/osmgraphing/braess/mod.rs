@@ -3,7 +3,7 @@
 
 use std::path;
 
-use log::{info, warn};
+use log::{info, trace, warn};
 use osmgraphing::network::Graph;
 use osmgraphing::{routing, Parser};
 
@@ -105,7 +105,7 @@ pub fn run<P: AsRef<path::Path> + ?Sized>(cfg: Config<P>) -> Result<(), String> 
         // compute best path
         let option_best_path = astar.compute_best_path(src, dst, &graph);
         if let Some(best_path) = option_best_path {
-            info!(
+            trace!(
                 "Duration {} s from ({}) to ({}).",
                 best_path.cost() / 1_000,
                 src,
@@ -121,7 +121,9 @@ pub fn run<P: AsRef<path::Path> + ?Sized>(cfg: Config<P>) -> Result<(), String> 
     //--------------------------------------------------------------------------------------------//
     // export statistics
 
-    io_kyle::export_statistics(data, &out_file_path)?;
+    // remove None's from data
+    data.retain(|ei| ei.is_some());
+    io_kyle::write_edge_stats(&data, &out_file_path, false)?;
 
     Ok(())
 }

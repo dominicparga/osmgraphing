@@ -50,6 +50,22 @@ fn parse_cmdline<'a>() -> clap::ArgMatches<'a> {
     //--------------------------------------------------------------------------------------------//
     // subcmd: proto-routes
 
+    // arg: seed
+    let arg_seed = clap::Arg::with_name("seed")
+        .long("seed")
+        .help("The seed to find random src-/dst-nodes")
+        .takes_value(true)
+        .required(true)
+        .default_value("42");
+
+    // arg: route_count
+    let arg_route_count = clap::Arg::with_name("route_count")
+        .short("c")
+        .long("route-count")
+        .help("The amount of routes, that should be generated.")
+        .takes_value(true)
+        .required(true);
+
     // arg: map
     let arg_map_file_path = clap::Arg::with_name("map")
         .long("map")
@@ -77,8 +93,10 @@ fn parse_cmdline<'a>() -> clap::ArgMatches<'a> {
         .author(env!("CARGO_PKG_AUTHORS"))
         .about("Creates a csv-file containing random src-dst-pairs")
         .long_about(tmp.as_ref())
-        .arg(arg_proto_routes)
-        .arg(arg_map_file_path);
+        .arg(arg_seed)
+        .arg(arg_route_count)
+        .arg(arg_map_file_path)
+        .arg(arg_proto_routes);
 
     //--------------------------------------------------------------------------------------------//
     // return composition
@@ -140,13 +158,30 @@ fn setup_logging(verbosely: bool) {
     builder.init();
 }
 
-fn main() {
+fn main() -> Result<(), ()> {
     let matches = parse_cmdline();
     setup_logging(matches.is_present("verbose"));
 
     if let Some(matches) = matches.subcommand_matches("gen-proto-routes") {
+        let seed = match matches.value_of("seed").unwrap().parse() {
+            Ok(s) => s,
+            Err(e) => {
+                error!("{}", e);
+                return Err(());
+            }
+        };
+        let route_count = match matches.value_of("route_count").unwrap().parse() {
+            Ok(c) => c,
+            Err(e) => {
+                error!("{}", e);
+                return Err(());
+            }
+        };
+
         use braess::routes::cfg;
         let cfg = cfg::Config {
+            seed,
+            route_count,
             paths: cfg::Paths {
                 input: cfg::InputPaths {
                     files: cfg::InputFiles {
@@ -162,6 +197,7 @@ fn main() {
         };
         if let Err(msg) = braess::routes::search_and_export(cfg) {
             error!("{}", msg);
+            return Err(());
         }
     } else if let Some(matches) = matches.subcommand_matches("braess") {
         use braess::cfg;
@@ -182,8 +218,11 @@ fn main() {
         };
         if let Err(msg) = braess::run(cfg) {
             error!("{}", msg);
+            return Err(());
         }
     } else if matches.args.len() == 0 {
         println!("Execute '.../osmgraphing -h' (or 'cargo run -- -h') for more info.");
     }
+
+    Ok(())
 }

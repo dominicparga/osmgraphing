@@ -1,5 +1,4 @@
-use std::fmt;
-use std::str;
+use std::{cmp, fmt, str};
 
 use log::warn;
 

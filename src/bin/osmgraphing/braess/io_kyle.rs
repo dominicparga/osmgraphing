@@ -11,24 +11,6 @@ use super::model::EdgeInfo;
 
 //------------------------------------------------------------------------------------------------//
 
-/// Returns error if the file exists
-pub fn create_file<P: AsRef<path::Path> + ?Sized>(path: &P) -> Result<(), String> {
-    let path = path.as_ref();
-    if path.exists() {
-        return Err(format!(
-            "File {} does already exist. Please (re)move it.",
-            path.display()
-        ));
-    } else {
-        match fs::File::create(path) {
-            Ok(file) => file,
-            Err(_) => return Err(format!("Could not open file {}", path.display())),
-        }
-    };
-
-    Ok(())
-}
-
 /// Returns output-path, which is "{dir_path}/{%Y-%m-%d}/{%H:%M:%S}"
 pub fn create_datetime_dir<P: AsRef<path::Path> + ?Sized>(
     dir_path: &P,
@@ -66,16 +48,7 @@ pub fn read_proto_routes<P: AsRef<path::Path> + ?Sized>(
     file_path: &P,
 ) -> Result<Vec<(i64, i64)>, String> {
     let file_path = file_path.as_ref();
-
-    // get reader
-    let reader = {
-        let file = match fs::File::open(file_path) {
-            Ok(file) => file,
-            Err(_) => return Err(format!("No such file {}", file_path.display())),
-        };
-        let reader = io::BufReader::new(file);
-        csv::Reader::from_reader(reader)
-    };
+    let reader = open_csv_reader(file_path)?;
 
     // deserialize, cast and let collect() check for errors
     let proto_routes = match reader.into_deserialize().collect() {
@@ -90,34 +63,54 @@ pub fn read_proto_routes<P: AsRef<path::Path> + ?Sized>(
     Ok(proto_routes)
 }
 
-pub fn export_statistics<P: AsRef<path::Path> + ?Sized>(
-    mut data: Vec<Option<EdgeInfo>>,
-    out_file_path: &P,
+pub fn write_proto_routes<P: AsRef<path::Path> + ?Sized>(
+    proto_routes: &Vec<(i64, i64)>,
+    file_path: &P,
+    appending: bool,
 ) -> Result<(), String> {
-    let out_file_path = out_file_path.as_ref();
+    let file_path = file_path.as_ref();
+    let mut writer = open_csv_writer(file_path, appending)?;
 
-    // file should have been created
-    let mut writer = {
-        let out_file = match fs::File::create(out_file_path) {
-            Ok(file) => file,
-            Err(_) => return Err(format!("Could not open file {}", out_file_path.display())),
-        };
-        let writer = io::BufWriter::new(out_file);
-        csv::Writer::from_writer(writer)
-    };
-
-    // remove None's from data
-    data.retain(|ei| ei.is_some());
-
-    // write head-line to csv-file
-    {
-        let result = writer.write_record(EdgeInfo::head_line());
-        if let Err(e) = result {
-            return Err(format!("Could not write record to csv-file due to {}", e));
-        }
-    }
     // write data to csv-file
     {
+        if !appending {
+            // write head-line to csv-file
+            let result = writer.write_record(vec!["src-id", "dst-id"]);
+            if let Err(e) = result {
+                return Err(format!("Could not write record to csv-file due to {}", e));
+            }
+        }
+        for proto_route in proto_routes {
+            let result = writer.serialize(proto_route);
+            if let Err(e) = result {
+                return Err(format!(
+                    "Could not write proto-route to csv-file due to {}",
+                    e
+                ));
+            }
+        }
+    }
+
+    flush_csv_writer(writer)
+}
+
+pub fn write_edge_stats<P: AsRef<path::Path> + ?Sized>(
+    data: &Vec<Option<EdgeInfo>>,
+    file_path: &P,
+    appending: bool,
+) -> Result<(), String> {
+    let file_path = file_path.as_ref();
+    let mut writer = open_csv_writer(file_path, appending)?;
+
+    // write data to csv-file
+    {
+        if !appending {
+            // write head-line to csv-file
+            let result = writer.write_record(EdgeInfo::head_line());
+            if let Err(e) = result {
+                return Err(format!("Could not write record to csv-file due to {}", e));
+            }
+        }
         for edge_info in data {
             let result = writer.serialize(edge_info);
             if let Err(e) = result {
@@ -126,13 +119,83 @@ pub fn export_statistics<P: AsRef<path::Path> + ?Sized>(
         }
     }
 
+    flush_csv_writer(writer)
+}
+
+//------------------------------------------------------------------------------------------------//
+// basic io
+
+/// Returns error if the file exists
+pub fn create_file<P: AsRef<path::Path> + ?Sized>(path: &P) -> Result<(), String> {
+    let path = path.as_ref();
+    if path.exists() {
+        return Err(format!(
+            "File {} does already exist. Please (re)move it.",
+            path.display()
+        ));
+    } else {
+        match fs::File::create(path) {
+            Ok(file) => file,
+            Err(e) => {
+                return Err(format!(
+                    "Could not open file {} due to {}",
+                    path.display(),
+                    e
+                ))
+            }
+        }
+    };
+
+    Ok(())
+}
+
+pub fn open_csv_reader<P: AsRef<path::Path> + ?Sized>(
+    file_path: &P,
+) -> Result<csv::Reader<io::BufReader<fs::File>>, String> {
+    let file_path = file_path.as_ref();
+
+    match fs::File::open(file_path) {
+        Ok(file) => {
+            let writer = io::BufReader::new(file);
+            Ok(csv::Reader::from_reader(writer))
+        }
+        Err(e) => Err(format!(
+            "Could not open file {} due to {}",
+            file_path.display(),
+            e
+        )),
+    }
+}
+
+pub fn open_csv_writer<P: AsRef<path::Path> + ?Sized>(
+    file_path: &P,
+    appending: bool,
+) -> Result<csv::Writer<io::BufWriter<fs::File>>, String> {
+    let file_path = file_path.as_ref();
+
+    match fs::OpenOptions::new()
+        .write(true)
+        .append(appending)
+        .create(false)
+        .open(file_path)
+    {
+        Ok(file) => {
+            let writer = io::BufWriter::new(file);
+            Ok(csv::Writer::from_writer(writer))
+        }
+        Err(e) => Err(format!(
+            "Could not open file {} due to {}",
+            file_path.display(),
+            e
+        )),
+    }
+}
+
+pub fn flush_csv_writer(mut writer: csv::Writer<io::BufWriter<fs::File>>) -> Result<(), String> {
     // csv-writer needs explicit flush
     // https://rust-lang-nursery.github.io/rust-cookbook/encoding/csv.html#serialize-records-to-csv
-    if writer.flush().is_err() {
-        Err(format!(
-            "Could not flush csv-writer of file {}",
-            out_file_path.display()
-        ))
+    if let Err(e) = writer.flush() {
+        Err(format!("Could not flush csv-writer due to {}", e))
     } else {
         Ok(())
     }
