@@ -1,18 +1,19 @@
 //------------------------------------------------------------------------------------------------//
 // other modules
 
-use std::time::SystemTime;
-use std::{fs, io, path};
+use std::path;
 
-use log::{info, warn};
+use log::{info, trace, warn};
 use osmgraphing::network::Graph;
 use osmgraphing::{routing, Parser};
-use serde::{Deserialize, Serialize};
 
 //------------------------------------------------------------------------------------------------//
 // own modules
 
+mod io_kyle;
+mod model;
 pub mod routes;
+use model::EdgeInfo;
 
 //------------------------------------------------------------------------------------------------//
 // config
@@ -55,19 +56,6 @@ use config::Config;
 //------------------------------------------------------------------------------------------------//
 // simulation
 
-#[derive(Serialize, Deserialize, Clone)]
-struct EdgeInfo {
-    src_id: i64,
-    dst_id: i64,
-    decimicro_lat: i32,
-    decimicro_lon: i32,
-    is_src: bool,
-    is_dst: bool,
-    lane_count: u8,
-    length_m: u32,
-    route_count: u16,
-}
-
 pub fn run<P: AsRef<path::Path> + ?Sized>(cfg: Config<P>) -> Result<(), String> {
     info!("Executing braess-optimization");
 
@@ -75,12 +63,10 @@ pub fn run<P: AsRef<path::Path> + ?Sized>(cfg: Config<P>) -> Result<(), String> 
     // prepare simulation
 
     // check path of io-files before expensive simulation
-    let out_file_path = {
-        let out_dir_path = check_and_prepare_out_dir_path(cfg.paths.output.dirs.results)?;
-        out_dir_path.join("edge_stats.csv")
-    };
-    create_out_file(&out_file_path)?;
-    let proto_routes = read_in_proto_routes(cfg.paths.input.files.proto_routes)?;
+    let out_dir_path = io_kyle::create_datetime_dir(cfg.paths.output.dirs.results)?;
+    let out_file_path = out_dir_path.join("edge_stats.csv");
+    io_kyle::create_file(&out_file_path)?;
+    let proto_routes = io_kyle::read_proto_routes(cfg.paths.input.files.proto_routes)?;
 
     let graph = Parser::parse_and_finalize(&cfg.paths.input.files.map)?;
 
@@ -117,175 +103,39 @@ pub fn run<P: AsRef<path::Path> + ?Sized>(cfg: Config<P>) -> Result<(), String> 
         });
 
         // compute best path
-        let option_path = astar.compute_best_path(src, dst, &graph);
-        if let Some(path) = option_path {
-            info!(
+        let option_best_path = astar.compute_best_path(src, dst, &graph);
+        if let Some(best_path) = option_best_path {
+            trace!(
                 "Duration {} s from ({}) to ({}).",
-                path.cost() / 1_000,
+                best_path.cost() / 1_000,
                 src,
                 dst
             );
 
-            update_edge_info(&mut data, &path, &graph);
+            update_edge_info(&mut data, &best_path, &graph);
         } else {
-            warn!("No path from ({}) to ({}).", src, dst);
+            warn!("No best path from ({}) to ({}).", src, dst);
         }
     }
 
     //--------------------------------------------------------------------------------------------//
     // export statistics
 
-    export_statistics(data, &out_file_path)?;
-
-    Ok(())
-}
-
-//------------------------------------------------------------------------------------------------//
-// helpers: io
-
-/// Returns output-path, which is "{out_dir_path}/{%Y-%m-%d}/{%H:%M:%S}"
-fn check_and_prepare_out_dir_path<P: AsRef<path::Path> + ?Sized>(
-    out_dir_path: &P,
-) -> Result<path::PathBuf, String> {
-    // get and format current time
-    let now = SystemTime::now();
-    let now: chrono::DateTime<chrono::Utc> = now.into();
-    let now_ymd = format!("{}", now.format("%Y-%m-%d"));
-    let now_hms = format!("{}", now.format("%T")); // %T == %H:%M:%S
-    drop(now);
-
-    // check if necessary directories do already exist
-    let out_dir_path = out_dir_path.as_ref();
-    if !out_dir_path.exists() {
-        return Err(format!("Path {} does not exist.", out_dir_path.display()));
-    }
-    let out_dir_path = out_dir_path.join(now_ymd).join(now_hms);
-    match fs::create_dir_all(&out_dir_path) {
-        Ok(_) => (),
-        Err(e) => {
-            return Err(format!(
-                "Problem with path {}: {}",
-                out_dir_path.display(),
-                e
-            ))
-        }
-    };
-
-    Ok(out_dir_path)
-}
-
-fn create_out_file<P: AsRef<path::Path> + ?Sized>(out_file_path: &P) -> Result<(), String> {
-    let out_file_path = out_file_path.as_ref();
-    if out_file_path.exists() {
-        return Err(format!(
-            "File {} does already exist. Please (re)move it.",
-            out_file_path.display()
-        ));
-    } else {
-        match fs::File::create(out_file_path) {
-            Ok(file) => file,
-            Err(_) => return Err(format!("Could not open file {}", out_file_path.display())),
-        }
-    };
-
-    Ok(())
-}
-
-fn read_in_proto_routes<P: AsRef<path::Path> + ?Sized>(
-    in_file_path: &P,
-) -> Result<Vec<(i64, i64)>, String> {
-    let in_file_path = in_file_path.as_ref();
-
-    // get reader
-    let reader = {
-        let in_file = match fs::File::open(in_file_path) {
-            Ok(file) => file,
-            Err(_) => return Err(format!("No such file {}", in_file_path.display())),
-        };
-        let reader = io::BufReader::new(in_file);
-        csv::Reader::from_reader(reader)
-    };
-
-    // deserialize, cast and let collect() check for errors
-    let proto_routes = match reader.into_deserialize().collect() {
-        Ok(v) => v,
-        Err(_) => {
-            return Err(format!(
-                "Could not deserialize file {}",
-                in_file_path.display()
-            ))
-        }
-    };
-    Ok(proto_routes)
-}
-
-fn export_statistics<P: AsRef<path::Path> + ?Sized>(
-    mut data: Vec<Option<EdgeInfo>>,
-    out_file_path: &P,
-) -> Result<(), String> {
-    let out_file_path = out_file_path.as_ref();
-
-    // file should have been created
-    let mut writer = {
-        let out_file = match fs::File::create(out_file_path) {
-            Ok(file) => file,
-            Err(_) => return Err(format!("Could not open file {}", out_file_path.display())),
-        };
-        let writer = io::BufWriter::new(out_file);
-        csv::Writer::from_writer(writer)
-    };
-
     // remove None's from data
     data.retain(|ei| ei.is_some());
-    // prepare data
-    let head_line = vec![
-        "src-id",
-        "dst-id",
-        "decimicro-lat",
-        "decimicro-lon",
-        "is-src",
-        "is-dst",
-        "lane-count",
-        "lenth-m",
-        "route-count",
-    ];
+    io_kyle::write_edge_stats(&data, &out_file_path, false)?;
 
-    // write head-line to csv-file
-    {
-        let result = writer.write_record(&head_line);
-        if let Err(e) = result {
-            return Err(format!("Could not write record to csv-file due to {}", e));
-        }
-    }
-    // write data to csv-file
-    {
-        for edge_info in data {
-            let result = writer.serialize(edge_info);
-            if let Err(e) = result {
-                return Err(format!("Could not write data to csv-file due to {}", e));
-            }
-        }
-    }
-
-    // csv-writer needs explicit flush
-    // https://rust-lang-nursery.github.io/rust-cookbook/encoding/csv.html#serialize-records-to-csv
-    if writer.flush().is_err() {
-        Err(format!(
-            "Could not flush csv-writer of file {}",
-            out_file_path.display()
-        ))
-    } else {
-        Ok(())
-    }
+    Ok(())
 }
 
-//------------------------------------------------------------------------------------------------//
-// helpers: routing
-
-fn update_edge_info(data: &mut Vec<Option<EdgeInfo>>, path: &routing::astar::Path, graph: &Graph) {
-    // reconstruct path to update edge-statistics
-    let mut current_idx = path.src_idx();
-    while let Some(edge_dst_idx) = path.succ_node_idx(current_idx) {
+fn update_edge_info(
+    data: &mut Vec<Option<EdgeInfo>>,
+    best_path: &routing::astar::Path,
+    graph: &Graph,
+) {
+    // reconstruct best path to update edge-statistics
+    let mut current_idx = best_path.src_idx();
+    while let Some(edge_dst_idx) = best_path.succ_node_idx(current_idx) {
         // get edge from its nodes
         let (edge, edge_idx) = graph
             .edge_from(current_idx, edge_dst_idx)
@@ -329,10 +179,10 @@ fn update_edge_info(data: &mut Vec<Option<EdgeInfo>>, path: &routing::astar::Pat
             // update path-edges' usages
             edge_info.route_count += 1;
             // update if edge is src/dst
-            if edge.src_idx() == path.src_idx() {
+            if edge.src_idx() == best_path.src_idx() {
                 edge_info.is_src = true;
             }
-            if edge.dst_idx() == path.dst_idx() {
+            if edge.dst_idx() == best_path.dst_idx() {
                 edge_info.is_dst = true;
             }
         }

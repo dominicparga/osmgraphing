@@ -85,7 +85,7 @@ impl Edge {
     }
     pub fn milliseconds(&self) -> u32 {
         // length [m] / velocity [km/h]
-        self.meters * 3_600 / (self.maxspeed as u32)
+        self.meters() * 3_600 / (self.maxspeed() as u32)
     }
 }
 impl Eq for Edge {}

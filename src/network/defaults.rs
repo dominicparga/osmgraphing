@@ -1,5 +1,4 @@
-use std::fmt;
-use std::str;
+use std::{cmp, fmt, str};
 
 use log::warn;
 
@@ -9,7 +8,8 @@ mod pbf {
 
 //------------------------------------------------------------------------------------------------//
 
-pub const MAX_SPEED_KMH: u32 = 130;
+pub const MAX_SPEED_KMH: u8 = 130;
+pub const MIN_SPEED_KMH: u8 = 5;
 
 pub enum StreetType {
     Motorway,
@@ -191,7 +191,7 @@ impl StreetType {
 
         // parse given maxspeed and return
         match snippet.parse::<u16>() {
-            Ok(maxspeed) => maxspeed,
+            Ok(maxspeed) => cmp::max(MIN_SPEED_KMH.into(), maxspeed),
             Err(_) => match snippet.trim().to_ascii_lowercase().as_ref() {
                 // motorway
                 "de:motorway"
