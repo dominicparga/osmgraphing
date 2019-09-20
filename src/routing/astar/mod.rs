@@ -2,70 +2,54 @@
 // other modules
 
 use std::cmp::Ordering;
-use std::collections::{BinaryHeap, HashMap};
+use std::collections::BinaryHeap;
 
 use crate::network::{Edge, Graph, Node};
 
 //------------------------------------------------------------------------------------------------//
 // own modules
 
+mod paths;
+
+//------------------------------------------------------------------------------------------------//
+// Path
+
 #[derive(Clone)]
 pub struct Path {
-    src_idx: usize,
-    dst_idx: usize,
-    cost: u32,
-    predecessors: HashMap<usize, usize>,
-    successors: HashMap<usize, usize>,
+    core: paths::HashPath,
 }
 impl Path {
-    fn new(src_idx: usize, dst_idx: usize) -> Path {
-        Path {
-            src_idx,
-            dst_idx,
-            cost: 0,
-            predecessors: HashMap::new(),
-            successors: HashMap::new(),
-        }
+    fn from(src_idx: usize, dst_idx: usize, _graph: &Graph) -> Self {
+        // let core = paths::VecPath::with_capacity(src_idx, dst_idx, graph.node_count());
+        let core = paths::HashPath::new(src_idx, dst_idx);
+        Path { core }
     }
+
+    //--------------------------------------------------------------------------------------------//
 
     pub fn src_idx(&self) -> usize {
-        return self.src_idx;
+        self.core.src_idx
     }
-
     pub fn dst_idx(&self) -> usize {
-        return self.dst_idx;
+        self.core.dst_idx
     }
 
     pub fn cost(&self) -> u32 {
-        return self.cost;
+        self.core.cost
     }
 
     /// Return idx of predecessor-node
     pub fn pred_node_idx(&self, idx: usize) -> Option<usize> {
-        let &pred_idx = self.predecessors.get(&idx)?;
-        Some(pred_idx)
+        self.core.pred_node_idx(idx)
     }
-
     /// Return idx of successor-node
     pub fn succ_node_idx(&self, idx: usize) -> Option<usize> {
-        let &succ_idx = self.successors.get(&idx)?;
-        Some(succ_idx)
+        self.core.succ_node_idx(idx)
     }
 }
-// impl Into<Vec<usize>> for Path {
-//     fn into(self) -> Vec<usize> {
-//         let mut nodes = vec![];
-//         if self.successors.len() > 0 {
-//             let mut current = self.src_idx;
-//             nodes.push(current);
-//             while let Some(succ) = self.successor(current) {
-//                 nodes.push(succ);
-//                 current = succ;
-//             }
-//         }
-//         nodes
-//     }
-// }
+
+//------------------------------------------------------------------------------------------------//
+// CostNode
 
 #[derive(Copy, Clone)]
 struct CostNode {
@@ -137,7 +121,7 @@ impl<C: Fn(&Edge) -> u32, E: Fn(&Node, &Node) -> u32> GenericAstar<C, E> {
         self.costs.resize(new_len, std::u32::MAX);
         self.predecessors.resize(new_len, None);
 
-        self.queue = BinaryHeap::new();
+        self.queue.clear();
     }
 }
 impl<C, E> Astar for GenericAstar<C, E>
@@ -174,11 +158,10 @@ where
             if current.idx == dst.idx() {
                 let mut cur_idx = current.idx;
 
-                let mut path = Path::new(src.idx(), dst.idx());
-                path.cost = current.cost;
+                let mut path = Path::from(src.idx(), dst.idx(), &graph);
+                path.core.cost = current.cost;
                 while let Some(pred_idx) = self.predecessors[cur_idx] {
-                    path.predecessors.insert(cur_idx, pred_idx);
-                    path.successors.insert(pred_idx, cur_idx);
+                    path.core.add_pred_succ(pred_idx, cur_idx);
                     cur_idx = pred_idx;
                 }
                 // predecessor of src is not set
