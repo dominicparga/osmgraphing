@@ -13,9 +13,77 @@ mod braess;
 
 fn parse_cmdline<'a>() -> clap::ArgMatches<'a> {
     //--------------------------------------------------------------------------------------------//
-    // args
+    // subcmd: braess
 
-    // arg_verbose
+    // arg: map
+    let arg_map_file_path = clap::Arg::with_name("map")
+        .long("map")
+        .help("The path to the map-file being parsed.")
+        .takes_value(true)
+        .default_value("resources/maps/simple_stuttgart.fmi");
+
+    // arg: proto_routes
+    let arg_proto_routes = clap::Arg::with_name("proto_routes")
+        .long("proto-routes")
+        .help("The path to the file of proto-routes (csv of (src, dst)-pairs).")
+        .takes_value(true)
+        .default_value("resources/braess/proto_routes.csv");
+
+    // arg: results
+    let arg_results_dir = clap::Arg::with_name("results_dir")
+        .short("o")
+        .long("out")
+        .help("The path to the directory where the results should be stored.")
+        .takes_value(true)
+        .required(true);
+
+    // subcmd
+    let subcmd_braess = clap::SubCommand::with_name("braess")
+        .version(env!("CARGO_PKG_VERSION"))
+        .author(env!("CARGO_PKG_AUTHORS"))
+        .about("Executes shortest-path-algorithms and try to improve the resulting routes")
+        .long_about("Executes shortest-path-algorithms and try to improve the resulting routes")
+        .arg(arg_proto_routes)
+        .arg(arg_map_file_path)
+        .arg(arg_results_dir);
+
+    //--------------------------------------------------------------------------------------------//
+    // subcmd: proto-routes
+
+    // arg: map
+    let arg_map_file_path = clap::Arg::with_name("map")
+        .long("map")
+        .help("The path to the map-file being parsed.")
+        .takes_value(true)
+        .required(true);
+
+    // arg: proto_routes
+    let arg_proto_routes = clap::Arg::with_name("out")
+        .short("o")
+        .long("out")
+        .help("The path to the file of proto-routes (csv of (src, dst)-pairs).")
+        .takes_value(true)
+        .required(true);
+
+    // subcmd
+    let tmp = [
+        "",
+        "Creates a csv-file containing random src-dst-pairs related to a given map,",
+        "guaranteed to have a route in this particular map.",
+    ]
+    .join("\n");
+    let subcmd_gen_proto_routes = clap::SubCommand::with_name("gen-proto-routes")
+        .version(env!("CARGO_PKG_VERSION"))
+        .author(env!("CARGO_PKG_AUTHORS"))
+        .about("Creates a csv-file containing random src-dst-pairs")
+        .long_about(tmp.as_ref())
+        .arg(arg_proto_routes)
+        .arg(arg_map_file_path);
+
+    //--------------------------------------------------------------------------------------------//
+    // return composition
+
+    // arg: verbose
     let tmp = &[
         "Logs 'info' in addition to 'warn' and 'error'.",
         "The env-variable 'RUST_LOG' has precedence.",
@@ -26,43 +94,7 @@ fn parse_cmdline<'a>() -> clap::ArgMatches<'a> {
         .long("verbose")
         .help(tmp);
 
-    // arg_map_file_path
-    let arg_map_file_path = clap::Arg::with_name("map")
-        .long("map")
-        .help("The path to the map-file being parsed.")
-        .takes_value(true)
-        .default_value("resources/maps/simple_stuttgart.fmi");
-
-    // arg_map_file_path
-    let arg_proto_routes_file_path = clap::Arg::with_name("proto_routes")
-        .long("proto-routes")
-        .help("The path to the file of proto-routes (csv of (src, dst)-pairs).")
-        .takes_value(true)
-        .default_value("resources/braess/proto_routes.csv");
-
-    // arg_results_dir_path
-    let arg_results_dir_path = clap::Arg::with_name("results_dir")
-        .short("o")
-        .long("out")
-        .help("The path to the directory where the results should be stored.")
-        .takes_value(true)
-        .required(true);
-
-    //--------------------------------------------------------------------------------------------//
-    // subcmds
-
-    let subcmd_braess = clap::SubCommand::with_name("braess")
-        .version(env!("CARGO_PKG_VERSION"))
-        .author(env!("CARGO_PKG_AUTHORS"))
-        .about("Executes shortest-path-algorithms and try to improve the resulting routes")
-        .long_about("Executes shortest-path-algorithms and try to improve the resulting routes")
-        .arg(arg_proto_routes_file_path)
-        .arg(arg_map_file_path)
-        .arg(arg_results_dir_path);
-
-    //--------------------------------------------------------------------------------------------//
-    // return composition
-
+    // all
     clap::App::new(env!("CARGO_PKG_NAME"))
         .version(env!("CARGO_PKG_VERSION"))
         .author(env!("CARGO_PKG_AUTHORS"))
@@ -85,6 +117,7 @@ fn parse_cmdline<'a>() -> clap::ArgMatches<'a> {
         )
         .arg(arg_verbose)
         .subcommand(subcmd_braess)
+        .subcommand(subcmd_gen_proto_routes)
         .get_matches()
 }
 
@@ -111,17 +144,37 @@ fn main() {
     let matches = parse_cmdline();
     setup_logging(matches.is_present("verbose"));
 
-    if let Some(matches) = matches.subcommand_matches("braess") {
-        let cfg = braess::cfg::Config {
-            paths: braess::cfg::Paths {
-                input: braess::cfg::InputPaths {
-                    files: braess::cfg::InputFiles {
+    if let Some(matches) = matches.subcommand_matches("gen-proto-routes") {
+        use braess::routes::cfg;
+        let cfg = cfg::Config {
+            paths: cfg::Paths {
+                input: cfg::InputPaths {
+                    files: cfg::InputFiles {
+                        map: matches.value_of("map").unwrap(),
+                    },
+                },
+                output: cfg::OutputPaths {
+                    files: cfg::OutputFiles {
+                        proto_routes: matches.value_of("out").unwrap(),
+                    },
+                },
+            },
+        };
+        if let Err(msg) = braess::routes::search_and_export(cfg) {
+            error!("{}", msg);
+        }
+    } else if let Some(matches) = matches.subcommand_matches("braess") {
+        use braess::cfg;
+        let cfg = cfg::Config {
+            paths: cfg::Paths {
+                input: cfg::InputPaths {
+                    files: cfg::InputFiles {
                         map: matches.value_of("map").unwrap(),
                         proto_routes: matches.value_of("proto_routes").unwrap(),
                     },
                 },
-                output: braess::cfg::OutputPaths {
-                    dirs: braess::cfg::OutputDirs {
+                output: cfg::OutputPaths {
+                    dirs: cfg::OutputDirs {
                         results: matches.value_of("results_dir").unwrap(),
                     },
                 },

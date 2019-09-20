@@ -28,7 +28,7 @@ pub fn new_fastest_path_astar() -> Box<dyn Astar> {
     let cost_fn = |edge: &Edge| edge.milliseconds();
     let estimate_fn = |from: &Node, to: &Node| {
         let kilometers = geo::haversine_distance(from.coord(), to.coord());
-        let maxspeed = network::defaults::MAX_SPEED_KMH;
+        let maxspeed: u16 = network::defaults::MAX_SPEED_KMH.into();
         (kilometers * ((3600 / maxspeed) as f64)) as u32
     };
     Box::new(GenericAstar::from(cost_fn, estimate_fn))
