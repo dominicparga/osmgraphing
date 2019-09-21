@@ -74,8 +74,11 @@ pub fn run<P: AsRef<path::Path> + ?Sized>(cfg: Config<P>) -> Result<(), String> 
     };
     let out_file_path = out_dir_path.join("edge_stats.csv");
     io_kyle::create_file(&out_file_path)?;
-    let proto_routes = io_kyle::read_proto_routes(cfg.paths.input.files.proto_routes)?;
 
+    // proto_routes
+    let mut proto_routes = io_kyle::read_proto_routes(cfg.paths.input.files.proto_routes)?;
+
+    // graph
     let graph = Parser::parse_and_finalize(&cfg.paths.input.files.map)?;
     let graph = Arc::new(graph);
 
@@ -92,14 +95,19 @@ pub fn run<P: AsRef<path::Path> + ?Sized>(cfg: Config<P>) -> Result<(), String> 
     let mut astar = routing::factory::new_fastest_path_astar();
 
     // multithreading
-    let (workers, stats_rx) = WorkerSocket::spawn_some(8, &graph);
+    // let (workers, stats_rx) = WorkerSocket::spawn_some(8, &graph);
 
     //--------------------------------------------------------------------------------------------//
     // routing and statistics-update
 
     progress_bar.log();
-    let (k, n) = work_off(proto_routes, &mut astar, &mut stats, &graph)?;
-    progress_bar.update_n(n).update_k(k).log();
+    while proto_routes.len() > 0 {
+        // let workpkg = proto_routes.split_off(1);
+        let proto_route = proto_routes.pop().unwrap();
+        let (k, n) = work_off(&proto_route, &mut astar, &mut stats, &graph)?;
+
+        progress_bar.update_n(n).update_k(k).try_log();
+    }
     // TODO update data
     // TODO ask workers for results
     // TODO update data
@@ -108,22 +116,24 @@ pub fn run<P: AsRef<path::Path> + ?Sized>(cfg: Config<P>) -> Result<(), String> 
     //--------------------------------------------------------------------------------------------//
     // export statistics
 
-    let mut data: Vec<EdgeInfo> = stats
+    let data: Vec<EdgeInfo> = stats
         .drain(..)
         .filter_map(|s| match s {
             Some(small_edge_info) => Some(EdgeInfo::from(small_edge_info, &graph)),
             None => None,
         })
         .collect();
-    io_kyle::write_edge_stats(&data, &out_file_path, false)?;
+    let appending = false;
+    io_kyle::write_edge_stats(&data, &out_file_path, appending)?;
 
     Ok(())
 }
 
 //------------------------------------------------------------------------------------------------//
 
-fn work_off(
-    proto_routes: Vec<(i64, i64)>,
+/// return (k, n)
+fn work_off_all(
+    proto_routes: &[(i64, i64)],
     astar: &mut Box<dyn routing::Astar>,
     stats: &mut Vec<Option<SmallEdgeInfo>>,
     graph: &Graph,
@@ -133,48 +143,64 @@ fn work_off(
     let mut n = 0;
 
     // loop over all routes, calculate best path, evaluate and update stats
-    for (src_id, dst_id) in proto_routes {
-        n += 1;
-
-        // get nodes: src and dst
-        let src = graph.node(match graph.node_idx_from(src_id) {
-            Ok(src_idx) => src_idx,
-            Err(_) => {
-                return Err(format!(
-                    "Src-id {} from proto-route ({}, {}) could not be found in the graph.",
-                    src_id, src_id, dst_id,
-                ))
-            }
-        });
-        let dst = graph.node(match graph.node_idx_from(dst_id) {
-            Ok(dst_idx) => dst_idx,
-            Err(_) => {
-                return Err(format!(
-                    "Dst-id {} from proto-route ({}, {}) could not be found in the graph.",
-                    dst_id, src_id, dst_id,
-                ))
-            }
-        });
-
-        // compute best path
-        let option_best_path = astar.compute_best_path(src, dst, &graph);
-        if let Some(best_path) = option_best_path {
-            trace!(
-                "Duration {} s from ({}) to ({}).",
-                best_path.cost() / 1_000,
-                src,
-                dst
-            );
-
-            // update stats
-            evaluate_best_path(&best_path, stats, &graph);
-            k += 1;
-        } else {
-            warn!("No path from ({}) to ({}).", src, dst);
-        }
+    for proto_route in proto_routes {
+        let (delta_k, delta_n) = work_off(proto_route, astar, stats, graph)?;
+        k += delta_k;
+        n += delta_n;
     }
 
     Ok((k, n))
+}
+
+/// return (k, n)
+fn work_off(
+    proto_route: &(i64, i64),
+    astar: &mut Box<dyn routing::Astar>,
+    stats: &mut Vec<Option<SmallEdgeInfo>>,
+    graph: &Graph,
+) -> Result<(u32, u32), String> {
+    // loop over all routes, calculate best path, evaluate and update stats
+    let &(src_id, dst_id) = proto_route;
+
+    // get nodes: src and dst
+    let src = graph.node(match graph.node_idx_from(src_id) {
+        Ok(src_idx) => src_idx,
+        Err(_) => {
+            return Err(format!(
+                "Src-id {} from proto-route ({}, {}) could not be found in the graph.",
+                src_id, src_id, dst_id,
+            ))
+        }
+    });
+    let dst = graph.node(match graph.node_idx_from(dst_id) {
+        Ok(dst_idx) => dst_idx,
+        Err(_) => {
+            return Err(format!(
+                "Dst-id {} from proto-route ({}, {}) could not be found in the graph.",
+                dst_id, src_id, dst_id,
+            ))
+        }
+    });
+
+    // compute best path
+    let option_best_path = astar.compute_best_path(src, dst, &graph);
+    if let Some(best_path) = option_best_path {
+        trace!(
+            "Duration {} s from ({}) to ({}).",
+            best_path.cost() / 1_000,
+            src,
+            dst
+        );
+
+        // update stats
+        evaluate_best_path(&best_path, stats, &graph);
+
+        Ok((1, 1))
+    } else {
+        warn!("No path from ({}) to ({}).", src, dst);
+
+        Ok((0, 1))
+    }
 }
 
 fn evaluate_best_path(

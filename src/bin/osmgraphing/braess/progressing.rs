@@ -1,3 +1,4 @@
+use std::cmp::min;
 use std::fmt;
 
 use log::info;
@@ -5,118 +6,34 @@ use log::info;
 #[derive(Debug)]
 pub struct Bar<'a> {
     k: u32,
-    n: u32,
     max_k: u32,
-    levels: Vec<(u32, &'a str, bool)>,
+    n: u32,
+    levels: Vec<(&'a str, bool)>,
 }
 impl<'a> Bar<'a> {
     pub fn from(max_k: u32) -> Bar<'a> {
         let progress_levels = vec![
-            (
-                max_k * 00 / 20,
-                "Found routes: [>                   ]",
-                false,
-            ),
-            (
-                max_k * 01 / 20,
-                "Found routes: [=>                  ]",
-                false,
-            ),
-            (
-                max_k * 02 / 20,
-                "Found routes: [==>                 ]",
-                false,
-            ),
-            (
-                max_k * 03 / 20,
-                "Found routes: [===>                ]",
-                false,
-            ),
-            (
-                max_k * 04 / 20,
-                "Found routes: [====>               ]",
-                false,
-            ),
-            (
-                max_k * 05 / 20,
-                "Found routes: [=====>              ]",
-                false,
-            ),
-            (
-                max_k * 06 / 20,
-                "Found routes: [======>             ]",
-                false,
-            ),
-            (
-                max_k * 07 / 20,
-                "Found routes: [=======>            ]",
-                false,
-            ),
-            (
-                max_k * 08 / 20,
-                "Found routes: [========>           ]",
-                false,
-            ),
-            (
-                max_k * 09 / 20,
-                "Found routes: [=========>          ]",
-                false,
-            ),
-            (
-                max_k * 10 / 20,
-                "Found routes: [==========>         ]",
-                false,
-            ),
-            (
-                max_k * 11 / 20,
-                "Found routes: [===========>        ]",
-                false,
-            ),
-            (
-                max_k * 12 / 20,
-                "Found routes: [============>       ]",
-                false,
-            ),
-            (
-                max_k * 13 / 20,
-                "Found routes: [=============>      ]",
-                false,
-            ),
-            (
-                max_k * 14 / 20,
-                "Found routes: [==============>     ]",
-                false,
-            ),
-            (
-                max_k * 15 / 20,
-                "Found routes: [===============>    ]",
-                false,
-            ),
-            (
-                max_k * 16 / 20,
-                "Found routes: [================>   ]",
-                false,
-            ),
-            (
-                max_k * 17 / 20,
-                "Found routes: [=================>  ]",
-                false,
-            ),
-            (
-                max_k * 18 / 20,
-                "Found routes: [==================> ]",
-                false,
-            ),
-            (
-                max_k * 19 / 20,
-                "Found routes: [===================>]",
-                false,
-            ),
-            (
-                max_k * 20 / 20,
-                "Found routes: [====================]",
-                false,
-            ),
+            ("Found routes: [>                   ]", false),
+            ("Found routes: [=>                  ]", false),
+            ("Found routes: [==>                 ]", false),
+            ("Found routes: [===>                ]", false),
+            ("Found routes: [====>               ]", false),
+            ("Found routes: [=====>              ]", false),
+            ("Found routes: [======>             ]", false),
+            ("Found routes: [=======>            ]", false),
+            ("Found routes: [========>           ]", false),
+            ("Found routes: [=========>          ]", false),
+            ("Found routes: [==========>         ]", false),
+            ("Found routes: [===========>        ]", false),
+            ("Found routes: [============>       ]", false),
+            ("Found routes: [=============>      ]", false),
+            ("Found routes: [==============>     ]", false),
+            ("Found routes: [===============>    ]", false),
+            ("Found routes: [================>   ]", false),
+            ("Found routes: [=================>  ]", false),
+            ("Found routes: [==================> ]", false),
+            ("Found routes: [===================>]", false),
+            ("Found routes: [====================]", false),
         ];
         Bar {
             k: 0,
@@ -129,24 +46,21 @@ impl<'a> Bar<'a> {
     fn log_conditionally(&mut self, always: bool) -> &mut Self {
         let idx = {
             // (len - 1) because 0 % (or respectively 100 %)
-            let len = (self.levels.len() - 1) as u32;
-            // k/max_k == idx/len
-            // <-> i == k * l/m == k / (m/l)
-            (if len > self.max_k {
-                self.k * (len / self.max_k)
-            } else {
-                self.k / (self.max_k / len)
-            }) as usize
+            let len = (self.levels.len() - 1) as f32;
+            let k = self.k as f32;
+            let max_k = self.max_k as f32;
+
+            min(len as usize, (k / max_k * len) as usize)
         };
-        let (cap, bar, already_logged) = self.levels[idx];
+        let (bar, already_logged) = self.levels[idx];
 
         if always || !already_logged {
-            if cap == 0 {
+            if self.k == 0 {
                 info!("{} ({} will be valid)", bar, self.max_k)
             } else {
                 info!("{} ({} of {} valid)", bar, self.k, self.n)
             }
-            self.levels[idx].2 = true;
+            self.levels[idx].1 = true;
         }
 
         self
