@@ -54,6 +54,10 @@ name = "graph"
 path = "examples/playground/graph.rs"
 
 [[example]]
+name = "multithreading"
+path = "examples/playground/multithreading.rs"
+
+[[example]]
 name = "pipes_and_filters"
 path = "examples/playground/pipes_and_filters.rs"
 
