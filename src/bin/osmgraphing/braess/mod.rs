@@ -2,7 +2,7 @@
 // other modules
 
 use std::path;
-use std::time::Instant;
+use std::sync::Arc;
 
 use log::{info, trace, warn};
 use osmgraphing::network::Graph;
@@ -13,9 +13,11 @@ use osmgraphing::{routing, Parser};
 
 mod io_kyle;
 mod model;
-pub mod routes;
-use model::EdgeInfo;
+use model::{EdgeInfo, SmallEdgeInfo};
+mod multithreading;
+use multithreading::WorkerSocket;
 mod progressing;
+pub mod routes;
 
 //------------------------------------------------------------------------------------------------//
 // config
@@ -67,31 +69,72 @@ pub fn run<P: AsRef<path::Path> + ?Sized>(cfg: Config<P>) -> Result<(), String> 
     // check path of io-files before expensive simulation
     let out_dir_path = {
         let out_dir_path = io_kyle::create_datetime_dir(cfg.paths.output.dirs.results)?;
-        let out_dir_path = out_dir_path.join("edge_stats");
+        let out_dir_path = out_dir_path.join("loop_0");
         io_kyle::create_dir(&out_dir_path)?
     };
-    let out_file_path = out_dir_path.join("loop_0.csv");
+    let out_file_path = out_dir_path.join("edge_stats.csv");
     io_kyle::create_file(&out_file_path)?;
     let proto_routes = io_kyle::read_proto_routes(cfg.paths.input.files.proto_routes)?;
 
     let graph = Parser::parse_and_finalize(&cfg.paths.input.files.map)?;
+    let graph = Arc::new(graph);
 
     //--------------------------------------------------------------------------------------------//
     // prepare statistics
 
-    let mut data: Vec<Option<EdgeInfo>> = vec![None; graph.edge_count()];
+    // logging
+    let mut progress_bar = progressing::Bar::from(proto_routes.len() as u32);
+
+    // stats
+    let mut stats: Vec<Option<SmallEdgeInfo>> = vec![None; graph.edge_count()];
+
+    // routing
+    let mut astar = routing::factory::new_fastest_path_astar();
+
+    // multithreading
+    let (workers, stats_rx) = WorkerSocket::spawn_some(8, &graph);
 
     //--------------------------------------------------------------------------------------------//
     // routing and statistics-update
 
-    let mut astar = routing::factory::new_fastest_path_astar();
-
-    // routes
-    let mut progress_bar = progressing::Bar::from(proto_routes.len() as u32);
     progress_bar.log();
-    let mut now = Instant::now();
+    let (k, n) = work_off(proto_routes, &mut astar, &mut stats, &graph)?;
+    progress_bar.update_n(n).update_k(k).log();
+    // TODO update data
+    // TODO ask workers for results
+    // TODO update data
+    // TODO update progress_bar and log
+
+    //--------------------------------------------------------------------------------------------//
+    // export statistics
+
+    let mut data: Vec<EdgeInfo> = stats
+        .drain(..)
+        .filter_map(|s| match s {
+            Some(small_edge_info) => Some(EdgeInfo::from(small_edge_info, &graph)),
+            None => None,
+        })
+        .collect();
+    io_kyle::write_edge_stats(&data, &out_file_path, false)?;
+
+    Ok(())
+}
+
+//------------------------------------------------------------------------------------------------//
+
+fn work_off(
+    proto_routes: Vec<(i64, i64)>,
+    astar: &mut Box<dyn routing::Astar>,
+    stats: &mut Vec<Option<SmallEdgeInfo>>,
+    graph: &Graph,
+) -> Result<(u32, u32), String> {
+    // progress
+    let mut k = 0;
+    let mut n = 0;
+
+    // loop over all routes, calculate best path, evaluate and update stats
     for (src_id, dst_id) in proto_routes {
-        progress_bar.inc_n();
+        n += 1;
 
         // get nodes: src and dst
         let src = graph.node(match graph.node_idx_from(src_id) {
@@ -115,14 +158,6 @@ pub fn run<P: AsRef<path::Path> + ?Sized>(cfg: Config<P>) -> Result<(), String> 
 
         // compute best path
         let option_best_path = astar.compute_best_path(src, dst, &graph);
-        if progress_bar.k() % 10 == 0 {
-            warn!(
-                "[{} µs == ±{} s]",
-                now.elapsed().as_micros(),
-                now.elapsed().as_secs()
-            );
-        }
-        warn!("Start step {}", progress_bar.k());
         if let Some(best_path) = option_best_path {
             trace!(
                 "Duration {} s from ({}) to ({}).",
@@ -131,27 +166,20 @@ pub fn run<P: AsRef<path::Path> + ?Sized>(cfg: Config<P>) -> Result<(), String> 
                 dst
             );
 
-            update_edge_info(&mut data, &best_path, &graph);
-            progress_bar.inc_k().log();
+            // update stats
+            evaluate_best_path(&best_path, stats, &graph);
+            k += 1;
         } else {
             warn!("No path from ({}) to ({}).", src, dst);
         }
     }
-    info!("{}", progress_bar);
 
-    //--------------------------------------------------------------------------------------------//
-    // export statistics
-
-    // remove None's from data
-    data.retain(|ei| ei.is_some());
-    io_kyle::write_edge_stats(&data, &out_file_path, false)?;
-
-    Ok(())
+    Ok((k, n))
 }
 
-fn update_edge_info(
-    data: &mut Vec<Option<EdgeInfo>>,
+fn evaluate_best_path(
     best_path: &routing::astar::Path,
+    stats: &mut Vec<Option<SmallEdgeInfo>>,
     graph: &Graph,
 ) {
     // reconstruct best path to update edge-statistics
@@ -168,46 +196,25 @@ fn update_edge_info(
             "edge.dst_idx() != edge_dst_idx"
         );
 
-        // create EdgeInfo if not existing
+        // update edge-info or, if not existing, add new one
+        // stats[idx] guaranteed due to stats-init
+        if let Some(edge_info) = stats
+            .get_mut(edge_idx)
+            .expect("Should be set after initializing stats.")
         {
-            let (edge_src, edge_dst) = (graph.node(edge.src_idx()), graph.node(edge.dst_idx()));
-
-            if data[edge_idx].is_none() {
-                data[edge_idx] = Some(EdgeInfo {
-                    src_id: edge_src.id(),
-                    dst_id: edge_dst.id(),
-                    decimicro_lat: {
-                        (edge_src.coord().decimicro_lat() + edge_dst.coord().decimicro_lat()) / 2
-                    },
-                    decimicro_lon: {
-                        (edge_src.coord().decimicro_lon() + edge_dst.coord().decimicro_lon()) / 2
-                    },
-                    is_src: false,
-                    is_dst: false,
-                    lane_count: edge.lane_count(),
-                    length_m: edge.meters(),
-                    route_count: 0,
-                });
-            }
-        }
-
-        // update edge-info of path-edges
-        {
-            let edge_info = data[edge_idx]
-                // Option<EdgeInfo> -> already set above
-                .as_mut()
-                .expect("EdgeInfo should have been set a few lines above.");
-            // update path-edges' usages
+            edge_info.is_src |= edge.src_idx() == best_path.src_idx();
+            edge_info.is_dst |= edge.dst_idx() == best_path.dst_idx();
             edge_info.route_count += 1;
-            // update if edge is src/dst
-            if edge.src_idx() == best_path.src_idx() {
-                edge_info.is_src = true;
-            }
-            if edge.dst_idx() == best_path.dst_idx() {
-                edge_info.is_dst = true;
-            }
+        } else {
+            stats[edge_idx] = Some(SmallEdgeInfo {
+                edge_idx,
+                is_src: edge.src_idx() == best_path.src_idx(),
+                is_dst: edge.dst_idx() == best_path.dst_idx(),
+                route_count: 1,
+            });
         }
 
+        // next loop run
         current_idx = edge_dst_idx;
     }
 }

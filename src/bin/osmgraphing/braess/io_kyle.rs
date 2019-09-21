@@ -95,7 +95,7 @@ pub fn write_proto_routes<P: AsRef<path::Path> + ?Sized>(
 }
 
 pub fn write_edge_stats<P: AsRef<path::Path> + ?Sized>(
-    data: &Vec<Option<EdgeInfo>>,
+    data: &Vec<EdgeInfo>,
     file_path: &P,
     appending: bool,
 ) -> Result<(), String> {
