@@ -153,8 +153,10 @@ where
         // search for shortest path
 
         while let Some(current) = self.queue.pop() {
+            //------------------------------------------------------------------------------------//
             // if shortest path found
             // -> create path
+
             if current.idx == dst.idx() {
                 let mut cur_idx = current.idx;
 
@@ -169,30 +171,36 @@ where
                 return Some(path);
             }
 
+            //------------------------------------------------------------------------------------//
             // first occurrence has lowest cost
             // -> check if current has already been visited
+
             if current.cost > self.costs[current.idx] {
                 continue;
             }
 
-            if let Some(leaving_edges) = graph.leaving_edges(current.idx) {
-                // update cost and add predecessors
-                // to nodes, that are dst of current's leaving edges
-                for leaving_edge in leaving_edges {
-                    let new_cost = current.cost + (self.cost_fn)(leaving_edge);
+            //------------------------------------------------------------------------------------//
+            // update costs and add predecessors
+            // of nodes, which are dst of current's leaving edges
+
+            let leaving_edges = match graph.leaving_edges(current.idx) {
+                Some(e) => e,
+                None => continue,
+            };
+            for leaving_edge in leaving_edges {
+                let new_cost = current.cost + (self.cost_fn)(leaving_edge);
+                if new_cost < self.costs[leaving_edge.dst_idx()] {
+                    self.predecessors[leaving_edge.dst_idx()] = Some(current.idx);
+                    self.costs[leaving_edge.dst_idx()] = new_cost;
+
                     let leaving_edge_dst = graph.node(leaving_edge.dst_idx());
                     let estimation = (self.estimate_fn)(leaving_edge_dst, dst);
-
-                    if new_cost < self.costs[leaving_edge.dst_idx()] {
-                        self.predecessors[leaving_edge.dst_idx()] = Some(current.idx);
-                        self.costs[leaving_edge.dst_idx()] = new_cost;
-                        self.queue.push(CostNode {
-                            idx: leaving_edge.dst_idx(),
-                            cost: new_cost,
-                            estimation: estimation,
-                            pred_idx: Some(current.idx),
-                        });
-                    }
+                    self.queue.push(CostNode {
+                        idx: leaving_edge.dst_idx(),
+                        cost: new_cost,
+                        estimation: estimation,
+                        pred_idx: Some(current.idx),
+                    });
                 }
             }
         }

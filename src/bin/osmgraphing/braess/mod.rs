@@ -2,6 +2,7 @@
 // other modules
 
 use std::path;
+use std::time::Instant;
 
 use log::{info, trace, warn};
 use osmgraphing::network::Graph;
@@ -88,6 +89,7 @@ pub fn run<P: AsRef<path::Path> + ?Sized>(cfg: Config<P>) -> Result<(), String> 
     // routes
     let mut progress_bar = progressing::Bar::from(proto_routes.len() as u32);
     progress_bar.log();
+    let mut now = Instant::now();
     for (src_id, dst_id) in proto_routes {
         progress_bar.inc_n();
 
@@ -113,6 +115,14 @@ pub fn run<P: AsRef<path::Path> + ?Sized>(cfg: Config<P>) -> Result<(), String> 
 
         // compute best path
         let option_best_path = astar.compute_best_path(src, dst, &graph);
+        if progress_bar.k() % 10 == 0 {
+            warn!(
+                "[{} µs == ±{} s]",
+                now.elapsed().as_micros(),
+                now.elapsed().as_secs()
+            );
+        }
+        warn!("Start step {}", progress_bar.k());
         if let Some(best_path) = option_best_path {
             trace!(
                 "Duration {} s from ({}) to ({}).",
