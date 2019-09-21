@@ -13,7 +13,7 @@ use osmgraphing::{routing, Parser};
 
 mod io_kyle;
 mod model;
-use model::{EdgeInfo, SmallEdgeInfo};
+use model::SmallEdgeInfo;
 mod multithreading;
 use multithreading::WorkerSocket;
 mod progressing;
@@ -72,8 +72,11 @@ pub fn run<P: AsRef<path::Path> + ?Sized>(cfg: Config<P>) -> Result<(), String> 
         let out_dir_path = out_dir_path.join("loop_0");
         io_kyle::create_dir(&out_dir_path)?
     };
-    let out_file_path = out_dir_path.join("edge_stats.csv");
-    io_kyle::create_file(&out_file_path)?;
+    let out_file_path = {
+        let out_file_path = out_dir_path.join("edge_stats.csv");
+        io_kyle::create_file(&out_file_path)?;
+        out_file_path
+    };
 
     // proto_routes
     let mut proto_routes = io_kyle::read_proto_routes(cfg.paths.input.files.proto_routes)?;
@@ -95,36 +98,38 @@ pub fn run<P: AsRef<path::Path> + ?Sized>(cfg: Config<P>) -> Result<(), String> 
     let mut astar = routing::factory::new_fastest_path_astar();
 
     // multithreading
-    // let (workers, stats_rx) = WorkerSocket::spawn_some(8, &graph);
+    let (workers, stats_rx) = WorkerSocket::spawn_some(8, &graph);
 
     //--------------------------------------------------------------------------------------------//
     // routing and statistics-update
 
     progress_bar.log();
     while proto_routes.len() > 0 {
-        // let workpkg = proto_routes.split_off(1);
+        // work-off routes
         let proto_route = proto_routes.pop().unwrap();
         let (k, n) = work_off(&proto_route, &mut astar, &mut stats, &graph)?;
+        let _ = progress_bar.update_n(n).update_k(k).try_log();
 
-        progress_bar.update_n(n).update_k(k).try_log();
+        // TODO check multithreading-results and deliver new data
+        // TODO update data
+        // TODO ask workers for results
+        // TODO update data
+        // TODO update progress_bar and log
+        // let workpkg = proto_routes.split_off(1);
+        // if progress, write current results to file
+        let result = progress_bar.update_n(n).update_k(k).try_log();
+        if result.is_ok() {
+            let appending = false;
+            io_kyle::write_edge_stats(&stats, &out_file_path, appending, &graph)?;
+        }
     }
-    // TODO update data
-    // TODO ask workers for results
-    // TODO update data
-    // TODO update progress_bar and log
 
     //--------------------------------------------------------------------------------------------//
     // export statistics
 
-    let data: Vec<EdgeInfo> = stats
-        .drain(..)
-        .filter_map(|s| match s {
-            Some(small_edge_info) => Some(EdgeInfo::from(small_edge_info, &graph)),
-            None => None,
-        })
-        .collect();
     let appending = false;
-    io_kyle::write_edge_stats(&data, &out_file_path, appending)?;
+    io_kyle::write_edge_stats(&stats, &out_file_path, appending, &graph)?;
+    info!("Finished braess-optimization");
 
     Ok(())
 }
@@ -151,7 +156,6 @@ fn work_off_all(
 
     Ok((k, n))
 }
-
 /// return (k, n)
 fn work_off(
     proto_route: &(i64, i64),

@@ -43,7 +43,7 @@ impl<'a> Bar<'a> {
         }
     }
 
-    fn log_conditionally(&mut self, always: bool) -> &mut Self {
+    fn log_conditionally(&mut self, always: bool) -> Result<&mut Self, &mut Self> {
         let idx = {
             // (len - 1) because 0 % (or respectively 100 %)
             let len = (self.levels.len() - 1) as f32;
@@ -61,17 +61,19 @@ impl<'a> Bar<'a> {
                 info!("{} ({} of {} valid)", bar, self.k, self.n)
             }
             self.levels[idx].1 = true;
-        }
 
-        self
+            Ok(self)
+        } else {
+            Err(self)
+        }
     }
     /// Doesn't log progress-level if already logged once
-    pub fn try_log(&mut self) -> &mut Self {
+    pub fn try_log(&mut self) -> Result<&mut Self, &mut Self> {
         self.log_conditionally(false)
     }
     /// Does log progress-level, even if already logged once
     pub fn log(&mut self) -> &mut Self {
-        self.log_conditionally(true)
+        self.log_conditionally(true).unwrap()
     }
 
     pub fn k(&self) -> u32 {

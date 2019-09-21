@@ -4,10 +4,12 @@
 use std::time::SystemTime;
 use std::{fs, io, path};
 
+use osmgraphing::network::Graph;
+
 //------------------------------------------------------------------------------------------------//
 // own modules
 
-use super::model::EdgeInfo;
+use super::model::{EdgeInfo, SmallEdgeInfo};
 
 //------------------------------------------------------------------------------------------------//
 
@@ -95,22 +97,26 @@ pub fn write_proto_routes<P: AsRef<path::Path> + ?Sized>(
 }
 
 pub fn write_edge_stats<P: AsRef<path::Path> + ?Sized>(
-    data: &Vec<EdgeInfo>,
+    stats: &Vec<Option<SmallEdgeInfo>>,
     file_path: &P,
     appending: bool,
+    graph: &Graph,
 ) -> Result<(), String> {
+    // remove all None-values
+    // and parse data into output-format
+    let data: Vec<EdgeInfo> = stats
+        .into_iter()
+        .filter_map(|s| match s {
+            Some(small_edge_info) => Some(EdgeInfo::from(small_edge_info.clone(), &graph)),
+            None => None,
+        })
+        .collect();
+
     let file_path = file_path.as_ref();
     let mut writer = open_csv_writer(file_path, appending)?;
 
     // write data to csv-file
     {
-        if !appending {
-            // write head-line to csv-file
-            let result = writer.write_record(EdgeInfo::head_line());
-            if let Err(e) = result {
-                return Err(format!("Could not write record to csv-file due to {}", e));
-            }
-        }
         for edge_info in data {
             let result = writer.serialize(edge_info);
             if let Err(e) = result {

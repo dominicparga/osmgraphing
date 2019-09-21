@@ -41,11 +41,15 @@ impl<'a> WorkerSocket {
             let mut stats: Vec<Option<SmallEdgeInfo>> = vec![None; graph.edge_count()];
 
             loop {
+                // recv new data
                 let proto_routes: Vec<(i64, i64)> = match data_rx.recv() {
                     Ok(data) => data,
                     Err(_) => break,
                 };
-                super::work_off_all(&proto_routes[..], &mut astar, &mut stats, &graph)?;
+
+                // work data completely off
+                let (k, n) =
+                    super::work_off_all(&proto_routes[..], &mut astar, &mut stats, &graph)?;
 
                 stats_tx.send(3).unwrap();
             }
