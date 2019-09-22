@@ -46,21 +46,21 @@ name = "astar"
 path = "examples/astar.rs"
 
 [[example]]
-name = "actix"
+name = "playground_actix"
 path = "examples/playground/actix.rs"
 
 [[example]]
-name = "graph"
+name = "playground_graph"
 path = "examples/playground/graph.rs"
 
 [[example]]
-name = "multithreading"
+name = "playground_multithreading"
 path = "examples/playground/multithreading.rs"
 
 [[example]]
-name = "pipes_and_filters"
+name = "playground_pipes_and_filters"
 path = "examples/playground/pipes_and_filters.rs"
 
 [[example]]
-name = "xml_reader"
+name = "playground_xml_reader"
 path = "examples/playground/xml_reader.rs"

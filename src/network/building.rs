@@ -1,4 +1,4 @@
-use std::cmp::Ordering;
+use std::cmp::{max, Ordering};
 use std::collections::BTreeMap;
 
 use log::{error, info};
@@ -242,14 +242,17 @@ impl GraphBuilder {
             };
 
             // calculate distance if not provided
-            let meters = match proto_edge.meters {
-                Some(meters) => meters,
-                None => {
-                    let src = graph.node(edge_src_idx).expect("src-node should exist.");
-                    let dst = graph.node(edge_dst_idx).expect("dst-node should exist.");
-                    (geo::haversine_distance(&src.coord, &dst.coord) * 1_000.0) as u32
-                }
-            };
+            let meters = max(
+                1,
+                match proto_edge.meters {
+                    Some(meters) => meters,
+                    None => {
+                        let src = graph.node(edge_src_idx).expect("src-node should exist.");
+                        let dst = graph.node(edge_dst_idx).expect("dst-node should exist.");
+                        (geo::haversine_distance(&src.coord, &dst.coord) * 1_000.0) as u32
+                    }
+                },
+            );
 
             // add new edge to graph
             let edge = Edge {

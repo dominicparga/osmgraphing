@@ -4,6 +4,7 @@ import csv
 import math
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+import numpy as np
 import sys
 
 #-----------------------------------------------------------------------------#
@@ -33,18 +34,22 @@ def utilization(csv_path, label, out_path):
             utilization = route_count / vehicles_per_edge
             vals.append(utilization)
 
+    print(f'    mean={np.mean(vals)}')
+    print(f'     std={np.std(vals)}')
+
     # plot data
     plt.figure()
     plt.title("Edge-utilization")
 
     cmap = mpl.cm.get_cmap('copper')
-    plt.scatter(lons, lats, s=20, c=vals, alpha=0.3, edgecolors='none', cmap=cmap, label=label)
+    plt.scatter(lons, lats, s=20, c=vals, alpha=0.4, edgecolors='none', cmap=cmap, label=label, vmin=0, vmax=10)
 
     plt.xlabel('longitude')
     plt.ylabel('latitude')
     plt.colorbar()
-    plt.grid(True)
+    plt.grid(False)
     plt.savefig(out_path)
+    plt.show()
 
 #-----------------------------------------------------------------------------#
 # lat, lon, src, dst
@@ -102,8 +107,9 @@ def vis_lat_lon(csv_path, label, out_path):
     plt.xlabel('longitude')
     plt.ylabel('latitude')
     plt.legend()
-    plt.grid(True)
+    plt.grid(False)
     plt.savefig(out_path)
+    plt.show()
 
 #-----------------------------------------------------------------------------#
 # route-counts
@@ -150,6 +156,7 @@ def vis_route_counts(cfg):
     plt.xlabel('route-count of some edge')
     plt.ylabel('log10(frequency)')
     plt.savefig(out_path)
+    plt.show()
 
 #-----------------------------------------------------------------------------#
 # main
