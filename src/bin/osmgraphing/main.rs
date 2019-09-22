@@ -44,6 +44,12 @@ fn parse_cmdline<'a>() -> clap::ArgMatches<'a> {
         .takes_value(true)
         .default_value("8");
 
+    // arg: routes
+    let arg_route_count = clap::Arg::with_name("route_count")
+        .long("route-count")
+        .help("How many routes should be used from provided file.")
+        .takes_value(true);
+
     // subcmd
     let subcmd_braess = clap::SubCommand::with_name("braess")
         .version(env!("CARGO_PKG_VERSION"))
@@ -53,7 +59,8 @@ fn parse_cmdline<'a>() -> clap::ArgMatches<'a> {
         .arg(arg_proto_routes)
         .arg(arg_map_file_path)
         .arg(arg_results_dir)
-        .arg(arg_threads);
+        .arg(arg_threads)
+        .arg(arg_route_count);
 
     //--------------------------------------------------------------------------------------------//
     // subcmd: proto-routes
@@ -210,12 +217,22 @@ fn main() -> Result<(), ()> {
     } else if let Some(matches) = matches.subcommand_matches("braess") {
         use braess::cfg;
         let cfg = cfg::Config {
-            threads: match matches.value_of("threads").unwrap().parse::<u8>() {
+            thread_count: match matches.value_of("threads").unwrap().parse::<u8>() {
                 Ok(value) => value,
                 Err(e) => {
                     error!("{}", e);
                     return Err(());
                 }
+            },
+            route_count: match matches.value_of("route_count") {
+                Some(s) => Some(match s.parse::<usize>() {
+                    Ok(c) => c,
+                    Err(e) => {
+                        error!("{}", e);
+                        return Err(());
+                    }
+                }),
+                None => None,
             },
             paths: cfg::Paths {
                 input: cfg::InputPaths {

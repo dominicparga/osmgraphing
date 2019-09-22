@@ -28,7 +28,8 @@ pub mod config {
 
     pub struct Config<'a, P: AsRef<path::Path> + ?Sized> {
         pub paths: Paths<'a, P>,
-        pub threads: u8,
+        pub thread_count: u8,
+        pub route_count: Option<usize>,
     }
     pub struct Paths<'a, P: AsRef<path::Path> + ?Sized> {
         pub input: InputPaths<'a, P>,
@@ -83,8 +84,22 @@ pub fn run<P: AsRef<path::Path> + ?Sized>(cfg: Config<P>) -> Result<(), String> 
 
     // proto_routes
     let mut proto_routes = io_kyle::read_proto_routes(cfg.paths.input.files.proto_routes)?;
+    {
+        // route-count
+        let route_count = cfg.route_count.unwrap_or(proto_routes.len());
+        if route_count > proto_routes.len() {
+            warn!(
+                "{} routes should be used, but taking {} src-dst-pairs from provided file.",
+                route_count,
+                proto_routes.len()
+            );
+        } else {
+            proto_routes.truncate(route_count);
+        }
+    }
     // reverse since split_off returns last part
     proto_routes.reverse();
+    info!("Using {} proto-routes", proto_routes.len());
 
     // graph
     let graph = Parser::parse_and_finalize(&cfg.paths.input.files.map)?;
@@ -101,12 +116,12 @@ pub fn run<P: AsRef<path::Path> + ?Sized>(cfg: Config<P>) -> Result<(), String> 
 
     // multithreading
     {
-        if cfg.threads == 0 {
+        if cfg.thread_count == 0 {
             return Err("Number of threads should be > 0".to_owned());
         }
-        info!("Using {} threads", cfg.threads);
+        info!("Using {} threads", cfg.thread_count);
     }
-    let (mut workers, stats_rx) = WorkerSocket::spawn_some(cfg.threads, &graph)?;
+    let (mut workers, stats_rx) = WorkerSocket::spawn_some(cfg.thread_count, &graph)?;
     let workpkg_route_count = 10;
 
     //--------------------------------------------------------------------------------------------//
