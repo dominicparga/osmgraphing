@@ -5,7 +5,7 @@ use std::sync::mpsc::{Receiver, Sender};
 use std::sync::{mpsc, Arc};
 use std::thread;
 
-use log::{debug, info};
+use log::{debug, trace};
 
 use osmgraphing::network::Graph;
 use osmgraphing::routing;
@@ -59,13 +59,13 @@ impl<'a> WorkerSocket {
         let (data_tx, data_rx) = mpsc::channel();
 
         let handle = thread::spawn(move || {
-            info!("[Worker {}] spawned", worker_idx);
+            debug!("[Worker {}] spawned", worker_idx);
 
             let mut astar = routing::factory::new_fastest_path_astar();
             let mut stats: Vec<Option<SmallEdgeInfo>> = vec![None; graph.edge_count()];
 
             loop {
-                debug!(
+                trace!(
                     "[Worker {}][step 0] Waiting for proto-routes ..",
                     worker_idx
                 );
@@ -76,18 +76,18 @@ impl<'a> WorkerSocket {
                     Err(_) => break,
                 };
 
-                debug!("[Worker {}][step 1] Received proto-routes", worker_idx);
-                debug!("[Worker {}][step 2] Starting processing ..", worker_idx);
+                trace!("[Worker {}][step 1] Received proto-routes", worker_idx);
+                trace!("[Worker {}][step 2] Starting processing ..", worker_idx);
 
                 // work data completely off
                 let (k, n) =
                     super::work_off_all(&proto_routes[..], &mut astar, &mut stats, &graph)?;
 
-                debug!(
+                trace!(
                     "[Worker {}][step 3] Finished working-off proto-routes",
                     worker_idx
                 );
-                debug!("[Worker {}][step 4] Starting sending stats ..", worker_idx);
+                trace!("[Worker {}][step 4] Starting sending stats ..", worker_idx);
 
                 // send results
                 let packet = Packet {
@@ -102,13 +102,13 @@ impl<'a> WorkerSocket {
                         .collect(),
                 };
                 stats_tx.send(packet).unwrap();
-                debug!("[Worker {}][step 5] stats sent", worker_idx);
+                trace!("[Worker {}][step 5] stats sent", worker_idx);
 
                 // refill cleared stats
                 stats.resize(graph.edge_count(), None);
             }
 
-            info!("[Worker {}] terminated", worker_idx);
+            debug!("[Worker {}] terminated", worker_idx);
             Ok(())
         });
 

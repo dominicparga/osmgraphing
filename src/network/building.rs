@@ -148,46 +148,6 @@ impl GraphBuilder {
         self
     }
 
-    /// O(1) per removed element, so O(m) for m edges
-    pub fn filter_edges<F>(&mut self, func: F) -> Result<(), String>
-    where
-        F: Fn(&ProtoEdge) -> bool,
-    {
-        // high-level-idea:
-        // iterate over edges, filter each one, and update two running indices l, r
-        // to guarantee O(1) per removed element
-        //
-        // Note:
-        // l is called idx
-        // r is handled by Vec::swap_remove
-
-        let mut idx = 0;
-        // len() changes in loop, thus while-loop is taken
-        while idx < self.proto_edges.len() {
-            let proto_edge = &self.proto_edges[idx];
-
-            if func(proto_edge) {
-                // if edge is kept -> inc l
-                idx += 1;
-            } else {
-                // if edge is gonna be removed -> swap l, r and dec r and update nodes' edge-counts
-                for node_id in vec![proto_edge.src_id, proto_edge.dst_id] {
-                    if let Some(node) = self.proto_nodes.get_mut(&node_id) {
-                        node.edge_count -= 1;
-                    } else {
-                        return Err(format!(
-                            "Graphbuilder should contain node-id {} for edge {}->{}, but doesn't.",
-                            proto_edge.src_id, proto_edge.src_id, proto_edge.dst_id
-                        ));
-                    }
-                }
-                self.proto_edges.swap_remove(idx);
-            }
-        }
-
-        Ok(())
-    }
-
     pub fn finalize(mut self) -> Result<Graph, String> {
         //----------------------------------------------------------------------------------------//
         // init graph
@@ -285,8 +245,8 @@ impl GraphBuilder {
             let meters = match proto_edge.meters {
                 Some(meters) => meters,
                 None => {
-                    let src = graph.node(edge_src_idx);
-                    let dst = graph.node(edge_dst_idx);
+                    let src = graph.node(edge_src_idx).expect("src-node should exist.");
+                    let dst = graph.node(edge_dst_idx).expect("dst-node should exist.");
                     (geo::haversine_distance(&src.coord, &dst.coord) * 1_000.0) as u32
                 }
             };
@@ -312,6 +272,12 @@ impl GraphBuilder {
         }
         // last node needs an upper bound as well for `leaving_edges(...)`
         graph.offsets.push(offset);
+
+        // optimize memory a little
+        graph.nodes.shrink_to_fit();
+        graph.edges.shrink_to_fit();
+        graph.offsets.shrink_to_fit();
+        graph.enabled = vec![true; graph.edge_count()];
         info!("Finished creating offset-array");
 
         Ok(graph)

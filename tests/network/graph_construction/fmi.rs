@@ -23,7 +23,9 @@ impl TestNode {
     }
 
     fn assert_correct(&self, graph: &Graph) {
-        let node = graph.node(self.idx);
+        let node = graph
+            .node(self.idx)
+            .expect(&format!("Node of idx={} should be in graph.", self.idx));
         assert_eq!(
             node.id(),
             self.id,

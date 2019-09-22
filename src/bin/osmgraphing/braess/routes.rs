@@ -93,7 +93,13 @@ pub fn search_and_export<P: AsRef<path::Path> + ?Sized>(cfg: Config<P>) -> Resul
         let (src, dst) = {
             let src_idx: usize = die.sample(&mut rng);
             let dst_idx: usize = die.sample(&mut rng);
-            (graph.node(src_idx), graph.node(dst_idx))
+            let src = graph
+                .node(src_idx)
+                .expect("Range should be ok for src-node.");
+            let dst = graph
+                .node(dst_idx)
+                .expect("Range should be ok for dst-node.");
+            (src, dst)
         };
         if let Some(best_path) = astar.compute_best_path(src, dst, &graph) {
             progress_bar.inc_k().log();
@@ -122,7 +128,9 @@ pub fn search_and_export<P: AsRef<path::Path> + ?Sized>(cfg: Config<P>) -> Resul
             }
 
             // add new path
-            let new_dst = graph.node(succ_idx);
+            let new_dst = graph
+                .node(succ_idx)
+                .expect("Path should contain graph's nodes.");
             proto_routes.push((src.id(), new_dst.id()));
 
             // write to file

@@ -11,7 +11,7 @@ use super::model::EdgeInfo;
 
 //------------------------------------------------------------------------------------------------//
 
-/// Returns output-path, which is "{dir_path}/{%Y-%m-%d}/{%H:%M:%S}"
+/// Returns output-path, which is "{dir_path}/{%Y-%m-%d}/{%H-%M-%S}"
 pub fn create_datetime_dir<P: AsRef<path::Path> + ?Sized>(
     dir_path: &P,
 ) -> Result<path::PathBuf, String> {
@@ -21,7 +21,7 @@ pub fn create_datetime_dir<P: AsRef<path::Path> + ?Sized>(
         let now = SystemTime::now();
         let now: chrono::DateTime<chrono::Utc> = now.into();
         let now_ymd = format!("{}", now.format("%Y-%m-%d"));
-        let now_hms = format!("{}", now.format("%T")); // %T == %H:%M:%S
+        let now_hms = format!("{}", now.format("%H-%M-%S")); // %T == %H:%M:%S
 
         let dir_path = dir_path.as_ref();
         if !dir_path.exists() {

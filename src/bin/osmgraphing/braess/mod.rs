@@ -5,7 +5,7 @@ use std::cmp::min;
 use std::path;
 use std::sync::Arc;
 
-use log::{info, trace, warn};
+use log::{debug, info, trace, warn};
 use osmgraphing::network::{Graph, Node};
 use osmgraphing::{routing, Parser};
 
@@ -180,6 +180,7 @@ pub fn run<P: AsRef<path::Path> + ?Sized>(cfg: Config<P>) -> Result<(), String> 
             loop_count
         );
         // process incoming stats
+        info!("Intermediate simulation-progress is stored (silently) to the final csv-file.");
         progress_bar.log();
         loop {
             if let Ok(packet) = stats_rx.recv() {
@@ -188,14 +189,14 @@ pub fn run<P: AsRef<path::Path> + ?Sized>(cfg: Config<P>) -> Result<(), String> 
                 // update progress and export intermediate results to file
                 let result = progress_bar.update_n(packet.n).update_k(packet.k).try_log();
                 if result.is_ok() {
-                    info!(
+                    debug!(
                         "Exporting stats after {} processed routes",
                         progress_bar.k()
                     );
                     let appending = false;
                     let data = data_from_stats(&stats, &graph);
                     io_kyle::write_edge_stats(&data, &out_file_paths[loop_i], appending)?;
-                    info!("Exported");
+                    debug!("Exported");
                 } else {
                     // just helpful for debugging
                     if progress_bar.k() == 100 {
@@ -247,7 +248,7 @@ pub fn run<P: AsRef<path::Path> + ?Sized>(cfg: Config<P>) -> Result<(), String> 
             cfg.params.removed_edges_per_loop(),
             &mut astar,
             data,
-        );
+        )?;
     }
 
     info!("Finished braess-simulation");
@@ -280,23 +281,7 @@ fn optimize_graph(
     mut disable_count: usize,
     astar: &mut Box<dyn routing::Astar>,
     mut data: Vec<EdgeInfo>,
-) {
-    // used twice
-    fn src_dst(src_id: i64, dst_id: i64, graph: &Graph) -> (&Node, &Node) {
-        // get stuff from graph
-        let src = graph.node(
-            graph
-                .node_idx_from(src_id)
-                .expect("Graph should contain this src-node."),
-        );
-        let dst = graph.node(
-            graph
-                .node_idx_from(dst_id)
-                .expect("Graph should contain this dst-node."),
-        );
-        (src, dst)
-    }
-
+) -> Result<(), String> {
     //--------------------------------------------------------------------------------------------//
 
     // sort in descending order
@@ -311,15 +296,22 @@ fn optimize_graph(
             break;
         }
 
-        let (src, dst) = src_dst(edge_info.src_id, edge_info.dst_id, graph);
-        let (_edge, edge_idx) = graph
-            .edge_from(src.idx(), dst.idx())
-            .expect("Graph should contain this edge.");
+        let (src, dst) = src_dst_from(edge_info.src_id, edge_info.dst_id, graph)?;
+        let (_edge, edge_idx) = match graph.edge_from(src.idx(), dst.idx()) {
+            Some((e, i)) => (e, i),
+            None => {
+                return Err(format!(
+                    "Graph should contain this edge ({}->{}).",
+                    src.idx(),
+                    dst.idx()
+                ))
+            }
+        };
 
         // disable edge
         graph.disable_edge(edge_idx);
         // get new references due to immut-mut-immut-usage
-        let (src, dst) = src_dst(edge_info.src_id, edge_info.dst_id, graph);
+        let (src, dst) = src_dst_from(edge_info.src_id, edge_info.dst_id, graph)?;
         // check if src and dst are still connected
         if astar.compute_best_path(src, dst, graph).is_some() {
             disable_count -= 1;
@@ -329,8 +321,12 @@ fn optimize_graph(
     }
 
     if disable_count > 0 {
-        warn!("Did not disable {} edges because there are too less edges used.", disable_count);
+        warn!(
+            "Did not disable {} edges because there are too less edges used.",
+            disable_count
+        );
     }
+    Ok(())
 }
 
 fn data_from_stats(stats: &Vec<Option<SmallEdgeInfo>>, graph: &Graph) -> Vec<EdgeInfo> {
@@ -377,25 +373,7 @@ fn work_off(
     // loop over all routes, calculate best path, evaluate and update stats
     let &(src_id, dst_id) = proto_route;
 
-    // get nodes: src and dst
-    let src = graph.node(match graph.node_idx_from(src_id) {
-        Ok(src_idx) => src_idx,
-        Err(_) => {
-            return Err(format!(
-                "Src-id {} from proto-route ({}, {}) could not be found in the graph.",
-                src_id, src_id, dst_id,
-            ))
-        }
-    });
-    let dst = graph.node(match graph.node_idx_from(dst_id) {
-        Ok(dst_idx) => dst_idx,
-        Err(_) => {
-            return Err(format!(
-                "Dst-id {} from proto-route ({}, {}) could not be found in the graph.",
-                dst_id, src_id, dst_id,
-            ))
-        }
-    });
+    let (src, dst) = src_dst_from(src_id, dst_id, graph)?;
 
     // compute best path
     let option_best_path = astar.compute_best_path(src, dst, &graph);
@@ -458,4 +436,49 @@ fn evaluate_best_path(
         // next loop run
         current_idx = edge_dst_idx;
     }
+}
+
+//------------------------------------------------------------------------------------------------//
+
+fn src_dst_from(src_id: i64, dst_id: i64, graph: &Graph) -> Result<(&Node, &Node), String> {
+    // get nodes: src and dst
+    let src = graph.node(match graph.node_idx_from(src_id) {
+        Ok(src_idx) => src_idx,
+        Err(_) => {
+            return Err(format!(
+                "Src-id {} from src-dst-pair ({}, {}) could not be found in the graph.",
+                src_id, src_id, dst_id,
+            ))
+        }
+    });
+    let dst = graph.node(match graph.node_idx_from(dst_id) {
+        Ok(dst_idx) => dst_idx,
+        Err(_) => {
+            return Err(format!(
+                "Dst-id {} from src-dst-pair ({}, {}) could not be found in the graph.",
+                dst_id, src_id, dst_id,
+            ))
+        }
+    });
+
+    let src = match src {
+        Some(node) => node,
+        None => {
+            return Err(format!(
+                "Src-id {} from src-dst-pair ({}, {}) could not be found in the graph.",
+                src_id, src_id, dst_id,
+            ))
+        }
+    };
+    let dst = match dst {
+        Some(dst_idx) => dst_idx,
+        None => {
+            return Err(format!(
+                "Dst-id {} from src-dst-pair ({}, {}) could not be found in the graph.",
+                dst_id, src_id, dst_id,
+            ))
+        }
+    };
+
+    Ok((src, dst))
 }

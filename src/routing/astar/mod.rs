@@ -193,7 +193,9 @@ where
                     self.predecessors[leaving_edge.dst_idx()] = Some(current.idx);
                     self.costs[leaving_edge.dst_idx()] = new_cost;
 
-                    let leaving_edge_dst = graph.node(leaving_edge.dst_idx());
+                    let leaving_edge_dst = graph
+                        .node(leaving_edge.dst_idx())
+                        .expect("Edge-node should exist since graph should be consistent.");
                     let estimation = (self.estimate_fn)(leaving_edge_dst, dst);
                     self.queue.push(CostNode {
                         idx: leaving_edge.dst_idx(),

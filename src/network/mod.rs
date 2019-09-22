@@ -116,6 +116,7 @@ pub struct Graph {
     nodes: Vec<Node>,
     edges: Vec<Edge>,
     offsets: Vec<usize>,
+    enabled: Vec<bool>, // edges
 }
 impl Graph {
     fn new() -> Graph {
@@ -123,6 +124,7 @@ impl Graph {
             nodes: Vec::new(),
             edges: Vec::new(),
             offsets: Vec::new(),
+            enabled: Vec::new(),
         }
     }
 
@@ -140,18 +142,22 @@ impl Graph {
         self.nodes.binary_search_by(|node| node.id.cmp(&id))
     }
 
-    pub fn node(&self, idx: usize) -> &Node {
+    pub fn node(&self, idx: usize) -> Option<&Node> {
         debug_assert_eq!(
             self.nodes[idx].idx, idx,
             "Node's idx in graph and its stored idx should be same."
         );
-        &self.nodes[idx]
+        self.nodes.get(idx)
     }
-    pub fn edge(&self, edge_idx: usize) -> &Edge {
-        &self.edges[edge_idx]
+    pub fn edge(&self, edge_idx: usize) -> Option<&Edge> {
+        if *(self.enabled.get(edge_idx)?) {
+            self.edges.get(edge_idx)
+        } else {
+            None
+        }
     }
-    pub fn offset(&self, node_idx: usize) -> usize {
-        self.offsets[node_idx]
+    pub fn offset(&self, node_idx: usize) -> Option<usize> {
+        Some(*(self.offsets.get(node_idx)?))
     }
 
     /// uses binary-search, but only on src's leaving edges (±3), so more or less in O(1)
@@ -163,12 +169,16 @@ impl Graph {
         let j = leaving_edges
             .binary_search_by(|edge| edge.dst_idx.cmp(&dst_idx))
             .ok()?;
+
         let edge_idx = range.start + j;
         debug_assert_eq!(leaving_edges[j], self.edges[edge_idx]);
-        Some((&leaving_edges[j], edge_idx))
+        let edge = self.edge(edge_idx)?;
+
+        Some((edge, edge_idx))
     }
 
-    pub fn offset_indices(&self, node_idx: usize) -> Option<ops::Range<usize>> {
+    /// Returns a "real" range, where `start_bound < end_bound`
+    fn offset_indices(&self, node_idx: usize) -> Option<ops::Range<usize>> {
         // Use offset-array to get indices for the graph's edges belonging to the given node
         let &i0 = self.offsets.get(node_idx)?;
         // (idx + 1) guaranteed by offset-array-length
@@ -183,16 +193,23 @@ impl Graph {
         }
     }
 
-    pub fn leaving_edges(&self, node_idx: usize) -> Option<&[Edge]> {
+    pub fn leaving_edges(&self, node_idx: usize) -> Option<Vec<&Edge>> {
         let range = self.offset_indices(node_idx)?;
-        Some(&self.edges[range])
+
+        let mut leaving_edges = vec![];
+        for i in range {
+            if let Some(edge) = self.edge(i) {
+                leaving_edges.push(edge);
+            }
+        }
+        Some(leaving_edges)
     }
 
     pub fn enable_edge(&mut self, edge_idx: usize) {
-        unimplemented!("pub fn enable_edge(edge_idx: usize")
+        self.enabled[edge_idx] = true;
     }
     pub fn disable_edge(&mut self, edge_idx: usize) {
-        unimplemented!("pub fn disable_edge(edge_idx: usize")
+        self.enabled[edge_idx] = false;
     }
 }
 impl fmt::Display for Graph {
@@ -248,9 +265,9 @@ impl fmt::Display for Graph {
                     "Edge: {{ idx: {}, id: {}, ({})-{}->({}) }}",
                     j,
                     edge.id,
-                    self.node(edge.src_idx).id,
+                    self.nodes[edge.src_idx].id,
                     edge.meters,
-                    self.node(edge.dst_idx).id,
+                    self.nodes[edge.dst_idx].id,
                 )?;
             } else {
                 break;

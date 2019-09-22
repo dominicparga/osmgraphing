@@ -22,7 +22,13 @@ fn assert_correct(
     let graph = super::parse(filepath);
 
     for (src, dst, option_specs) in expected_paths {
-        let option_path = astar.compute_best_path(graph.node(src.idx), graph.node(dst.idx), &graph);
+        let graph_src = graph
+            .node(src.idx)
+            .expect(&format!("src-node of idx={} should be in graph.", src.idx));
+        let graph_dst = graph
+            .node(dst.idx)
+            .expect(&format!("dst-node of idx={} should be in graph.", dst.idx));
+        let option_path = astar.compute_best_path(graph_src, graph_dst, &graph);
         assert_eq!(
             option_path.is_some(),
             option_specs.is_some(),
@@ -92,7 +98,12 @@ impl TestPath {
     }
 
     fn assert_correct(&self, path: &routing::astar::Path, graph: &Graph) {
-        let node = |idx: usize| -> TestNode { TestNode::from(idx, graph.node(idx).id()) };
+        let node = |idx: usize| -> TestNode {
+            TestNode::from(
+                idx,
+                graph.node(idx).expect("Node should be in graph here.").id(),
+            )
+        };
 
         //----------------------------------------------------------------------------------------//
         // check meta-info

@@ -64,10 +64,14 @@ fn main() {
     let dsts: Vec<usize> = (0..graph.node_count()).collect();
     // let dsts: Vec<usize> = vec![80]; problem on baden-wuerttemberg.osm.pbf
 
-    let src = graph.node(src_idx);
+    let src = graph
+        .node(src_idx)
+        .expect("src-node of idx={} should be in graph");
 
     for dst_idx in dsts {
-        let dst = graph.node(dst_idx);
+        let dst = graph
+            .node(dst_idx)
+            .expect("dst-node of idx={} should be in graph");
 
         info!("");
 
