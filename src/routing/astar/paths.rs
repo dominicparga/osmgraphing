@@ -47,7 +47,6 @@ pub struct HashPath {
     predecessors: HashMap<usize, usize>,
     successors: HashMap<usize, usize>,
 }
-#[allow(dead_code)]
 impl HashPath {
     pub fn new(src_idx: usize, dst_idx: usize) -> Self {
         HashPath {
