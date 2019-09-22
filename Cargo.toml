@@ -1,12 +1,11 @@
 [package]
 name = "osmgraphing"
-version = "0.5.0"
+version = "0.6.0"
 description = "Playing around with graphs created via parsing OpenStreetMap data"
 edition = "2018"
 
 authors = [
     "dominicparga <dominic.parga@gmail.com>",
-    "jenasat <jena.s@outlook.de>"
 ]
 repository = "https://github.com/dominicparga/osmgraphing"
 readme = "README.md"
