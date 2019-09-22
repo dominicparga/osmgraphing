@@ -5,6 +5,8 @@ use log::{error, info};
 
 use osmgraphing::Parser;
 
+//------------------------------------------------------------------------------------------------//
+
 fn init_logging(verbosely: bool) {
     let mut builder = env_logger::Builder::new();
     // minimum filter-level: `warn`
@@ -35,7 +37,7 @@ fn main() {
     };
 
     let now = Instant::now();
-    let graph = match Parser::parse(&path) {
+    let graph = match Parser::parse_and_finalize(&path) {
         Ok(graph) => graph,
         Err(msg) => {
             error!("{}", msg);

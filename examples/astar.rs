@@ -5,6 +5,8 @@ use log::{error, info};
 
 use osmgraphing::{routing, Parser};
 
+//------------------------------------------------------------------------------------------------//
+
 fn init_logging(verbosely: bool) {
     let mut builder = env_logger::Builder::new();
     // minimum filter-level: `warn`
@@ -29,7 +31,7 @@ fn main() {
     init_logging(true);
     info!("Executing example: A*");
 
-    //----------------------------------------------------------------------------------------------
+    //--------------------------------------------------------------------------------------------//
     // parsing
 
     let path = match std::env::args_os().nth(1) {
@@ -38,7 +40,7 @@ fn main() {
     };
 
     let now = Instant::now();
-    let graph = match Parser::parse(&path) {
+    let graph = match Parser::parse_and_finalize(&path) {
         Ok(graph) => graph,
         Err(msg) => {
             error!("{}", msg);
@@ -53,7 +55,7 @@ fn main() {
     info!("");
     info!("{}", graph);
 
-    //----------------------------------------------------------------------------------------------
+    //--------------------------------------------------------------------------------------------//
     // astar
 
     let mut astar = routing::factory::new_shortest_path_astar();
@@ -62,15 +64,19 @@ fn main() {
     let dsts: Vec<usize> = (0..graph.node_count()).collect();
     // let dsts: Vec<usize> = vec![80]; problem on baden-wuerttemberg.osm.pbf
 
-    let src = graph.node(src_idx);
+    let src = graph
+        .node(src_idx)
+        .expect("src-node of idx={} should be in graph");
 
     for dst_idx in dsts {
-        let dst = graph.node(dst_idx);
+        let dst = graph
+            .node(dst_idx)
+            .expect("dst-node of idx={} should be in graph");
 
         info!("");
 
         let now = Instant::now();
-        let option_path = astar.compute_shortest_path(src.id(), dst.id(), &graph);
+        let option_path = astar.compute_best_path(src, dst, &graph);
         info!(
             "Ran A* in {} µs a.k.a {} seconds",
             now.elapsed().as_micros(),

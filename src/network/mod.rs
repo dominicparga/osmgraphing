@@ -1,10 +1,11 @@
 //------------------------------------------------------------------------------------------------//
-// other imports
+// other modules
 
 use std::fmt;
+use std::ops;
 
 //------------------------------------------------------------------------------------------------//
-// own imports
+// own modules
 
 mod building;
 pub use building::{GraphBuilder, ProtoEdge, ProtoNode};
@@ -18,25 +19,33 @@ pub use defaults::StreetType;
 #[derive(Debug)]
 pub struct Node {
     id: i64,
+    idx: usize,
     coord: geo::Coordinate,
 }
 impl Node {
     pub fn id(&self) -> i64 {
         self.id
     }
+    pub fn idx(&self) -> usize {
+        self.idx
+    }
     pub fn coord(&self) -> &geo::Coordinate {
         &self.coord
     }
-    pub fn lat(&self) -> f64 {
-        self.coord.lat()
-    }
-    pub fn lon(&self) -> f64 {
-        self.coord.lon()
+}
+impl Eq for Node {}
+impl PartialEq for Node {
+    fn eq(&self, other: &Node) -> bool {
+        self.id == other.id && self.idx == other.idx && self.coord == other.coord
     }
 }
 impl fmt::Display for Node {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Node: {{ id: {}, {} }}", self.id, self.coord,)
+        write!(
+            f,
+            "Node: {{ id: {}, idx: {}, {} }}",
+            self.id, self.idx, self.coord,
+        )
     }
 }
 
@@ -48,6 +57,7 @@ pub struct Edge {
     id: i64,
     src_idx: usize,
     dst_idx: usize,
+    lane_count: u8,
     meters: u32,
     maxspeed: u16,
 }
@@ -61,16 +71,31 @@ impl Edge {
     pub fn dst_idx(&self) -> usize {
         self.dst_idx
     }
+    pub fn lane_count(&self) -> u8 {
+        debug_assert!(self.lane_count > 0, "Edge-lane-count should be > 0");
+        self.lane_count
+    }
     pub fn meters(&self) -> u32 {
+        debug_assert!(self.meters > 0, "Edge-length should be > 0");
         self.meters
     }
     pub fn maxspeed(&self) -> u16 {
+        debug_assert!(self.maxspeed > 0, "Edge-maxspeed should be > 0");
         self.maxspeed
     }
-    pub fn seconds(&self) -> u32 {
+    pub fn milliseconds(&self) -> u32 {
         // length [m] / velocity [km/h]
-        // +1 to prevent 0
-        ((self.meters as f64 / (self.maxspeed as f64)) * 3.6) as u32 + 1
+        self.meters() * 3_600 / (self.maxspeed() as u32)
+    }
+}
+impl Eq for Edge {}
+impl PartialEq for Edge {
+    fn eq(&self, other: &Edge) -> bool {
+        self.id == other.id
+            && self.src_idx == other.src_idx
+            && self.dst_idx == other.dst_idx
+            && self.meters == other.meters
+            && self.maxspeed == other.maxspeed
     }
 }
 impl fmt::Display for Edge {
@@ -91,6 +116,7 @@ pub struct Graph {
     nodes: Vec<Node>,
     edges: Vec<Edge>,
     offsets: Vec<usize>,
+    enabled: Vec<bool>, // edges
 }
 impl Graph {
     fn new() -> Graph {
@@ -98,16 +124,7 @@ impl Graph {
             nodes: Vec::new(),
             edges: Vec::new(),
             offsets: Vec::new(),
-        }
-    }
-
-    //--------------------------------------------------------------------------------------------//
-    // id <-> idx
-
-    pub fn node_idx_from(&self, id: i64) -> Result<usize, usize> {
-        match self.nodes.binary_search_by(|node| node.id.cmp(&id)) {
-            Ok(idx) => Ok(idx),
-            Err(idx) => Err(idx),
+            enabled: Vec::new(),
         }
     }
 
@@ -117,45 +134,82 @@ impl Graph {
     pub fn node_count(&self) -> usize {
         self.nodes.len()
     }
-
     pub fn edge_count(&self) -> usize {
         self.edges.len()
     }
 
-    pub fn node(&self, idx: usize) -> &Node {
-        &self.nodes[idx]
+    pub fn node_idx_from(&self, id: i64) -> Result<usize, usize> {
+        self.nodes.binary_search_by(|node| node.id.cmp(&id))
     }
 
-    pub fn edge(&self, src_idx: usize, dst_idx: usize) -> Option<&Edge> {
-        match self.leaving_edges(src_idx) {
-            Some(leaving_edges) => {
-                match leaving_edges.binary_search_by(|edge| edge.dst_idx.cmp(&dst_idx)) {
-                    Ok(j) => Some(&leaving_edges[j]),
-                    Err(_) => None,
-                }
-            }
-            None => None,
+    pub fn node(&self, idx: usize) -> Option<&Node> {
+        debug_assert_eq!(
+            self.nodes[idx].idx, idx,
+            "Node's idx in graph and its stored idx should be same."
+        );
+        self.nodes.get(idx)
+    }
+    pub fn edge(&self, edge_idx: usize) -> Option<&Edge> {
+        if *(self.enabled.get(edge_idx)?) {
+            self.edges.get(edge_idx)
+        } else {
+            None
         }
     }
+    pub fn offset(&self, node_idx: usize) -> Option<usize> {
+        Some(*(self.offsets.get(node_idx)?))
+    }
 
-    pub fn leaving_edges(&self, node_idx: usize) -> Option<&[Edge]> {
+    /// uses binary-search, but only on src's leaving edges (±3), so more or less in O(1)
+    ///
+    /// Returns the index of the edge, which can be used in the function `edge`
+    pub fn edge_from(&self, src_idx: usize, dst_idx: usize) -> Option<(&Edge, usize)> {
+        let range = self.offset_indices(src_idx)?;
+        let leaving_edges = &self.edges[range.clone()];
+        let j = leaving_edges
+            .binary_search_by(|edge| edge.dst_idx.cmp(&dst_idx))
+            .ok()?;
+
+        let edge_idx = range.start + j;
+        debug_assert_eq!(leaving_edges[j], self.edges[edge_idx]);
+        let edge = self.edge(edge_idx)?;
+
+        Some((edge, edge_idx))
+    }
+
+    /// Returns a "real" range, where `start_bound < end_bound`
+    fn offset_indices(&self, node_idx: usize) -> Option<ops::Range<usize>> {
         // Use offset-array to get indices for the graph's edges belonging to the given node
-        match self.offsets.get(node_idx) {
-            // (idx + 1) guaranteed by offset-array-length
-            Some(&i0) => match self.offsets.get(node_idx + 1) {
-                Some(&i1) => {
-                    // check if i0 and i1 are equal
-                    // <-> if node has leaving edges
-                    if i0 < i1 {
-                        Some(&self.edges[i0..i1])
-                    } else {
-                        None
-                    }
-                }
-                None => None,
-            },
-            None => None,
+        let &i0 = self.offsets.get(node_idx)?;
+        // (idx + 1) guaranteed by offset-array-length
+        let &i1 = self.offsets.get(node_idx + 1)?;
+
+        // check if i0 and i1 are equal
+        // <-> if node has leaving edges
+        if i0 < i1 {
+            Some(i0..i1)
+        } else {
+            None
         }
+    }
+
+    pub fn leaving_edges(&self, node_idx: usize) -> Option<Vec<&Edge>> {
+        let range = self.offset_indices(node_idx)?;
+
+        let mut leaving_edges = vec![];
+        for i in range {
+            if let Some(edge) = self.edge(i) {
+                leaving_edges.push(edge);
+            }
+        }
+        Some(leaving_edges)
+    }
+
+    pub fn enable_edge(&mut self, edge_idx: usize) {
+        self.enabled[edge_idx] = true;
+    }
+    pub fn disable_edge(&mut self, edge_idx: usize) {
+        self.enabled[edge_idx] = false;
     }
 }
 impl fmt::Display for Graph {
@@ -211,9 +265,9 @@ impl fmt::Display for Graph {
                     "Edge: {{ idx: {}, id: {}, ({})-{}->({}) }}",
                     j,
                     edge.id,
-                    self.node(edge.src_idx).id,
+                    self.nodes[edge.src_idx].id,
                     edge.meters,
-                    self.node(edge.dst_idx).id,
+                    self.nodes[edge.dst_idx].id,
                 )?;
             } else {
                 break;

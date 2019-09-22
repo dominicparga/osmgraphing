@@ -3,7 +3,6 @@ pub mod pbf;
 
 //------------------------------------------------------------------------------------------------//
 
-use std::ffi::OsStr;
 use std::fs::File;
 use std::path::Path;
 
@@ -14,11 +13,11 @@ use crate::network::{Graph, GraphBuilder};
 //------------------------------------------------------------------------------------------------//
 
 trait Parsing {
-    fn open_file<S: AsRef<OsStr> + ?Sized>(path: &S) -> Result<File, String> {
-        let path = Path::new(&path);
-        match File::open(&path) {
+    fn open_file<P: AsRef<Path> + ?Sized>(path: &P) -> Result<File, String> {
+        let path = path.as_ref();
+        match File::open(path) {
             Ok(file) => Ok(file),
-            Err(_) => Err(format!("No such file {:?}", path)),
+            Err(_) => Err(format!("No such file {}", path.display())),
         }
     }
 
@@ -26,26 +25,26 @@ trait Parsing {
 
     fn parse_nodes(file: File, graph_builder: &mut GraphBuilder);
 
-    fn parse<S: AsRef<OsStr> + ?Sized>(path: &S) -> Result<Graph, String> {
-        info!("Starting parsing given path {:?} ..", &Path::new(&path));
+    fn parse<P: AsRef<Path> + ?Sized>(path: &P) -> Result<GraphBuilder, String> {
+        let mut graph_builder = GraphBuilder::new();
+
+        info!("Starting processing given file ..");
+        let file = Self::open_file(path)?;
+        Self::parse_ways(file, &mut graph_builder);
+        let file = Self::open_file(path)?;
+        Self::parse_nodes(file, &mut graph_builder);
+        info!("Finished processing given file");
+
+        Ok(graph_builder)
+    }
+
+    fn parse_and_finalize<P: AsRef<Path> + ?Sized>(path: &P) -> Result<Graph, String> {
+        info!("Starting parsing given path {} ..", path.as_ref().display());
 
         // TODO parse "cycleway" and others
         // see https://wiki.openstreetmap.org/wiki/Key:highway
 
-        let mut graph_builder = GraphBuilder::new();
-
-        info!("Starting processing given file ..");
-        match Self::open_file(&path) {
-            Ok(file) => Self::parse_ways(file, &mut graph_builder),
-            Err(msg) => return Err(msg),
-        }
-        match Self::open_file(&path) {
-            Ok(file) => Self::parse_nodes(file, &mut graph_builder),
-            Err(msg) => return Err(msg),
-        }
-        info!("Finished processing given file");
-
-        let result = graph_builder.finalize();
+        let result = Self::parse(path)?.finalize();
         info!("Finished parsing");
         result
     }
@@ -58,9 +57,9 @@ enum Type {
     FMI,
 }
 impl Type {
-    fn from_path<S: AsRef<OsStr> + ?Sized>(path: &S) -> Result<Self, String> {
+    fn from_path<P: AsRef<Path> + ?Sized>(path: &P) -> Result<Self, String> {
         let supported_exts = &["pbf", "fmi"];
-        let path = Path::new(&path);
+        let path = path.as_ref();
 
         // if file has extension
         if let Some(os_str) = path.extension() {
@@ -90,11 +89,17 @@ impl Type {
 
 pub struct Parser;
 impl Parser {
-    pub fn parse<S: AsRef<OsStr> + ?Sized>(path: &S) -> Result<Graph, String> {
-        match Type::from_path(path) {
-            Ok(Type::PBF) => pbf::Parser::parse(path),
-            Ok(Type::FMI) => fmi::Parser::parse(path),
-            Err(msg) => Err(msg),
+    pub fn parse<P: AsRef<Path> + ?Sized>(path: &P) -> Result<GraphBuilder, String> {
+        match Type::from_path(path)? {
+            Type::PBF => pbf::Parser::parse(path),
+            Type::FMI => fmi::Parser::parse(path),
+        }
+    }
+
+    pub fn parse_and_finalize<P: AsRef<Path> + ?Sized>(path: &P) -> Result<Graph, String> {
+        match Type::from_path(path)? {
+            Type::PBF => pbf::Parser::parse_and_finalize(path),
+            Type::FMI => fmi::Parser::parse_and_finalize(path),
         }
     }
 }

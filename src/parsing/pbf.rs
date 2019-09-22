@@ -32,10 +32,11 @@ impl super::Parsing for Parser {
                 Some(highway_tag) => highway_tag,
                 None => continue,
             };
-            // todo: get via json
+            // TODO: get via json
             if !highway_tag.is_for_vehicles(false) {
                 continue;
             }
+            let lane_count = highway_tag.parse_lane_count(&way);
             let maxspeed = highway_tag.parse_maxspeed(&way);
             let (is_oneway, is_reverse) = highway_tag.parse_oneway(&way);
 
@@ -57,7 +58,14 @@ impl super::Parsing for Parser {
                 .next()
                 .expect(format!("Way.nodes.len()={} but should be >1.", way.nodes.len()).as_ref());
             for dst_id in nodes_iter {
-                graph_builder.push_edge(Some(way.id.0), src_id.0, dst_id.0, None, maxspeed);
+                graph_builder.push_edge(
+                    Some(way.id.0),
+                    src_id.0,
+                    dst_id.0,
+                    lane_count,
+                    None,
+                    maxspeed,
+                );
                 src_id = dst_id;
             }
         }

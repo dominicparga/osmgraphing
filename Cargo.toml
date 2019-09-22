@@ -1,12 +1,11 @@
 [package]
 name = "osmgraphing"
-version = "0.5.0"
+version = "0.6.0"
 description = "Playing around with graphs created via parsing OpenStreetMap data"
 edition = "2018"
 
 authors = [
     "dominicparga <dominic.parga@gmail.com>",
-    "jenasat <jena.s@outlook.de>"
 ]
 repository = "https://github.com/dominicparga/osmgraphing"
 readme = "README.md"
@@ -19,10 +18,15 @@ travis-ci = { repository = "dominicparga/osmgraphing", branch = "master" }
 
 
 [dependencies]
+chrono = "0.4" # pretty date and time
 clap = "2.33" # cmdline-parsing
 env_logger = "0.6" # logging for external use, e.g. main.rs and examples
 log = "0.4"        # logging for internal use, e.g. lib.rs
 osmpbfreader = "0.13" # read osm.pbf-files
+rand = "0.7" # generate random routes
+rand_pcg = "0.2" # generate random routes
+serde = "1.0"
+csv = "1.1"
 
 [dev-dependencies]
 actix-web = "1.0" # backend-server
@@ -41,17 +45,21 @@ name = "astar"
 path = "examples/astar.rs"
 
 [[example]]
-name = "actix"
+name = "playground_actix"
 path = "examples/playground/actix.rs"
 
 [[example]]
-name = "graph"
+name = "playground_graph"
 path = "examples/playground/graph.rs"
 
 [[example]]
-name = "pipes_and_filters"
+name = "playground_multithreading"
+path = "examples/playground/multithreading.rs"
+
+[[example]]
+name = "playground_pipes_and_filters"
 path = "examples/playground/pipes_and_filters.rs"
 
 [[example]]
-name = "xml_reader"
+name = "playground_xml_reader"
 path = "examples/playground/xml_reader.rs"

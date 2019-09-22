@@ -13,12 +13,12 @@ rust:
   - nightly
 
 script:
-  - 'scripts/travis.sh build'
-  - 'scripts/travis.sh test'
+  - 'scripts/general/travis.sh build'
+  - 'scripts/general/travis.sh test'
 
 deploy:
   provider: script
-  script: 'scripts/travis.sh deploy'
+  script: 'scripts/general/travis.sh deploy'
   on:
     rust: stable
     tags: true

@@ -9,10 +9,6 @@ use crate::network::GraphBuilder;
 
 mod fmi {
     pub use std::io::BufReader as Reader;
-
-    //--------------------------------------------------------------------------------------------//
-
-    use log::warn;
     use std::str;
 
     use crate::network::geo;
@@ -80,6 +76,7 @@ mod fmi {
         pub way_id: Option<i64>,
         pub src_id: i64,
         pub dst_id: i64,
+        pub lane_count: u8,
         pub meters: Option<u32>,
         pub maxspeed: u16,
     }
@@ -117,16 +114,17 @@ mod fmi {
                     ))
                 }
             };
-            let meters = match params[2].parse::<u32>() {
-                Ok(meters) => Some(meters),
-                Err(_) => {
-                    warn!(
-                        "Parsing length '{}' of edge didn't work, \
-                         so straight-line is taken.",
-                        params[2]
-                    );
-                    None
-                }
+            let meters = match params[2] {
+                "calc" => None,
+                _ => match params[2].parse::<u32>() {
+                    Ok(meters) => Some(meters),
+                    Err(_) => {
+                        return Err(format!(
+                            "Parsing length '{}' of edge ({}->{}) didn't work.",
+                            params[2], src_id, dst_id
+                        ))
+                    }
+                },
             };
             let maxspeed = match params[4].parse::<u16>() {
                 Ok(maxspeed) => maxspeed,
@@ -142,6 +140,7 @@ mod fmi {
                 way_id: None,
                 src_id,
                 dst_id,
+                lane_count: 1, // TODO
                 meters,
                 maxspeed,
             })
@@ -170,6 +169,7 @@ impl super::Parsing for Parser {
                     proto_edge.way_id,
                     proto_edge.src_id,
                     proto_edge.dst_id,
+                    proto_edge.lane_count,
                     proto_edge.meters,
                     proto_edge.maxspeed,
                 );

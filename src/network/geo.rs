@@ -3,8 +3,8 @@ use std::fmt;
 
 #[derive(Copy, Clone, Debug)]
 pub struct Coordinate {
-    pub decimicro_lat: i32,
-    pub decimicro_lon: i32,
+    decimicro_lat: i32,
+    decimicro_lon: i32,
 }
 impl Coordinate {
     pub fn new(decimicro_lat: i32, decimicro_lon: i32) -> Coordinate {
@@ -27,6 +27,14 @@ impl Coordinate {
 
     pub fn lon(&self) -> f64 {
         self.decimicro_lon as f64 * 1e-7
+    }
+
+    pub fn decimicro_lat(&self) -> i32 {
+        self.decimicro_lat
+    }
+
+    pub fn decimicro_lon(&self) -> i32 {
+        self.decimicro_lon
     }
 }
 impl Eq for Coordinate {}

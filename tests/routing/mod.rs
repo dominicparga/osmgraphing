@@ -1,28 +1,34 @@
-//--------------------------------------------------------------------------------------------//
-// other imports
+//------------------------------------------------------------------------------------------------//
+// other modules
 
 use std::fmt;
 
 use osmgraphing::network::Graph;
 use osmgraphing::routing;
 
-//--------------------------------------------------------------------------------------------//
-// own imports
+//------------------------------------------------------------------------------------------------//
+// own modules
 
 mod astar;
 
-//--------------------------------------------------------------------------------------------//
+//------------------------------------------------------------------------------------------------//
 // helpers
 
 fn assert_correct(
-    astar: &mut routing::Astar,
+    astar: &mut Box<dyn routing::Astar>,
     expected_paths: Vec<(TestNode, TestNode, Option<(u32, Vec<Vec<TestNode>>)>)>,
     filepath: &str,
 ) {
     let graph = super::parse(filepath);
 
     for (src, dst, option_specs) in expected_paths {
-        let option_path = astar.compute_shortest_path(src.id, dst.id, &graph);
+        let graph_src = graph
+            .node(src.idx)
+            .expect(&format!("src-node of idx={} should be in graph.", src.idx));
+        let graph_dst = graph
+            .node(dst.idx)
+            .expect(&format!("dst-node of idx={} should be in graph.", dst.idx));
+        let option_path = astar.compute_best_path(graph_src, graph_dst, &graph);
         assert_eq!(
             option_path.is_some(),
             option_specs.is_some(),
@@ -42,7 +48,7 @@ fn assert_correct(
     }
 }
 
-//--------------------------------------------------------------------------------------------//
+//------------------------------------------------------------------------------------------------//
 // test-node
 
 #[derive(Debug, Copy, Clone)]
@@ -67,7 +73,7 @@ impl fmt::Display for TestNode {
     }
 }
 
-//--------------------------------------------------------------------------------------------//
+//------------------------------------------------------------------------------------------------//
 // test-path
 
 struct TestPath {
@@ -92,7 +98,12 @@ impl TestPath {
     }
 
     fn assert_correct(&self, path: &routing::astar::Path, graph: &Graph) {
-        let node = |idx: usize| -> TestNode { TestNode::from(idx, graph.node(idx).id()) };
+        let node = |idx: usize| -> TestNode {
+            TestNode::from(
+                idx,
+                graph.node(idx).expect("Node should be in graph here.").id(),
+            )
+        };
 
         //----------------------------------------------------------------------------------------//
         // check meta-info
@@ -123,14 +134,14 @@ impl TestPath {
 
         // src has no predecessor
         assert_eq!(
-            path.predecessor(self.src.idx),
+            path.pred_node_idx(self.src.idx),
             None,
             "Predecessor of src {} should be None",
             self.src
         );
         // dst has no successor
         assert_eq!(
-            path.successor(self.dst.idx),
+            path.succ_node_idx(self.dst.idx),
             None,
             "Predecessor of dst {} should be None",
             self.dst
@@ -143,7 +154,7 @@ impl TestPath {
                 // build predecessor-path
                 let mut current = path_dst;
                 let mut pred_path = vec![current];
-                while let Some(pred) = path.predecessor(current.idx) {
+                while let Some(pred) = path.pred_node_idx(current.idx) {
                     let pred = node(pred);
                     pred_path.push(pred);
                     current = pred;
@@ -154,7 +165,7 @@ impl TestPath {
                 // build successor-path
                 let mut current = path_src;
                 let mut succ_path = vec![current];
-                while let Some(succ) = path.successor(current.idx) {
+                while let Some(succ) = path.succ_node_idx(current.idx) {
                     let succ = node(succ);
                     succ_path.push(succ);
                     current = succ;

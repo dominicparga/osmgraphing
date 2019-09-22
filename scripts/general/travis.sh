@@ -121,11 +121,6 @@ __build() {
 }
 
 __test() {
-    __echo_info 'Starting executing examples'
-    cargo run --example parser
-    cargo run --example astar
-    __echo_info 'Finished executing examples'
-
     __echo_info 'Starting test phase'
     cargo test --verbose --all
     __echo_info 'Finished test phase'

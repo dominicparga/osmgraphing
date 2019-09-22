@@ -1,5 +1,4 @@
-use std::fmt;
-use std::str;
+use std::{cmp, fmt, str};
 
 use log::warn;
 
@@ -9,7 +8,8 @@ mod pbf {
 
 //------------------------------------------------------------------------------------------------//
 
-pub const MAX_SPEED_KMH: u32 = 130;
+pub const MAX_SPEED_KMH: u8 = 130;
+pub const MIN_SPEED_KMH: u8 = 5;
 
 pub enum StreetType {
     Motorway,
@@ -35,6 +35,30 @@ pub enum StreetType {
 impl StreetType {
     //--------------------------------------------------------------------------------------------//
     // defaults
+
+    fn lane_count(&self) -> u8 {
+        match self {
+            StreetType::Motorway => 3,
+            StreetType::MotorwayLink => 1,
+            StreetType::Trunk => 2,
+            StreetType::TrunkLink => 1,
+            StreetType::Primary => 2,
+            StreetType::PrimaryLink => 1,
+            StreetType::Secondary => 1,
+            StreetType::SecondaryLink => 1,
+            StreetType::Tertiary => 1,
+            StreetType::TertiaryLink => 1,
+            StreetType::Unclassified => 1,
+            StreetType::Residential => 1,
+            StreetType::LivingStreet => 1,
+            StreetType::Service => 1,
+            StreetType::Track => 1,
+            StreetType::Road => 1,
+            StreetType::Cycleway => 1,
+            StreetType::Pedestrian => 1,
+            StreetType::Path => 1,
+        }
+    }
 
     fn maxspeed(&self) -> u16 {
         match self {
@@ -154,6 +178,11 @@ impl StreetType {
         })
     }
 
+    pub fn parse_lane_count(&self, _way: &pbf::Way) -> u8 {
+        // TODO
+        self.lane_count()
+    }
+
     pub fn parse_maxspeed(&self, way: &pbf::Way) -> u16 {
         let snippet = match way.tags.get("maxspeed") {
             Some(snippet) => snippet,
@@ -162,7 +191,7 @@ impl StreetType {
 
         // parse given maxspeed and return
         match snippet.parse::<u16>() {
-            Ok(maxspeed) => maxspeed,
+            Ok(maxspeed) => cmp::max(MIN_SPEED_KMH.into(), maxspeed),
             Err(_) => match snippet.trim().to_ascii_lowercase().as_ref() {
                 // motorway
                 "de:motorway"
@@ -351,7 +380,8 @@ impl str::FromStr for StreetType {
             "highway:service"
             | "highway:service;yes" // way-id: 170702046
             => Ok(StreetType::Service),
-            "highway:historic" // way-id: 192265844
+            "highway:byway" // way-id: 29881284
+            | "highway:historic" // way-id: 192265844
             | "highway:path;unclassified" // way-id: 38480982
             | "highway:tra#" // way-id: 721881475
             | "highway:track"
