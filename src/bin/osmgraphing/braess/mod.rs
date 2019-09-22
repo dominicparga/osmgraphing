@@ -6,7 +6,7 @@ use std::path;
 use std::sync::Arc;
 
 use log::{info, trace, warn};
-use osmgraphing::network::Graph;
+use osmgraphing::network::{Graph, Node};
 use osmgraphing::{routing, Parser};
 
 //------------------------------------------------------------------------------------------------//
@@ -14,7 +14,7 @@ use osmgraphing::{routing, Parser};
 
 mod io_kyle;
 mod model;
-use model::SmallEdgeInfo;
+use model::{EdgeInfo, SmallEdgeInfo};
 mod multithreading;
 use multithreading::WorkerSocket;
 mod progressing;
@@ -29,7 +29,20 @@ pub mod config {
     pub struct Config<'a, P: AsRef<path::Path> + ?Sized> {
         pub paths: Paths<'a, P>,
         pub thread_count: u8,
+        pub params: SimParams,
+    }
+    pub struct SimParams {
         pub route_count: Option<usize>,
+        pub loop_count: Option<usize>,
+        pub removed_edges_per_loop: Option<usize>,
+    }
+    impl SimParams {
+        pub fn loop_count(&self) -> usize {
+            self.loop_count.unwrap_or(2)
+        }
+        pub fn removed_edges_per_loop(&self) -> usize {
+            self.removed_edges_per_loop.unwrap_or(10)
+        }
     }
     pub struct Paths<'a, P: AsRef<path::Path> + ?Sized> {
         pub input: InputPaths<'a, P>,
@@ -70,127 +83,172 @@ pub fn run<P: AsRef<path::Path> + ?Sized>(cfg: Config<P>) -> Result<(), String> 
     // prepare simulation
     info!("Preparing simulation ..");
 
+    // optimization-loops
+    let loop_count = 2;
+
     // check path of io-files before expensive simulation
-    let out_dir_path = {
-        let out_dir_path = io_kyle::create_datetime_dir(cfg.paths.output.dirs.results)?;
-        let out_dir_path = out_dir_path.join("loop_0");
-        io_kyle::create_dir(&out_dir_path)?
+    let out_dir_paths = {
+        let tmp = io_kyle::create_datetime_dir(cfg.paths.output.dirs.results)?;
+        let mut out_dir_paths = vec![];
+        for i in 0..loop_count {
+            let out_dir_path = tmp.join(format!("loop_{}", i));
+            io_kyle::create_dir(&out_dir_path)?;
+            out_dir_paths.push(out_dir_path);
+        }
+        out_dir_paths
     };
-    let out_file_path = {
-        let out_file_path = out_dir_path.join("edge_stats.csv");
-        io_kyle::create_file(&out_file_path)?;
-        out_file_path
+    let out_file_paths = {
+        let mut out_file_paths = vec![];
+        for out_dir_path in out_dir_paths {
+            let out_file_path = out_dir_path.join("edge_stats.csv");
+            io_kyle::create_file(&out_file_path)?;
+            out_file_paths.push(out_file_path);
+        }
+        out_file_paths
     };
 
     // proto_routes
-    let mut proto_routes = io_kyle::read_proto_routes(cfg.paths.input.files.proto_routes)?;
+    let mut proto_routes_backup = io_kyle::read_proto_routes(cfg.paths.input.files.proto_routes)?;
     {
         // route-count
-        let route_count = cfg.route_count.unwrap_or(proto_routes.len());
-        if route_count > proto_routes.len() {
+        let route_count = cfg.params.route_count.unwrap_or(proto_routes_backup.len());
+        if route_count > proto_routes_backup.len() {
             warn!(
                 "{} routes should be used, but taking {} src-dst-pairs from provided file.",
                 route_count,
-                proto_routes.len()
+                proto_routes_backup.len()
             );
         } else {
-            proto_routes.truncate(route_count);
+            proto_routes_backup.truncate(route_count);
         }
     }
     // reverse since split_off returns last part
-    proto_routes.reverse();
-    info!("Using {} proto-routes", proto_routes.len());
+    proto_routes_backup.reverse();
+    info!("Using {} proto-routes", proto_routes_backup.len());
+    info!(
+        "Running {} optimization-loop-runs, removing {} edges each",
+        cfg.params.loop_count(),
+        cfg.params.removed_edges_per_loop()
+    );
 
     // graph
     let graph = Parser::parse_and_finalize(&cfg.paths.input.files.map)?;
-    let graph = Arc::new(graph);
+    let mut graph = Arc::new(graph);
 
-    //--------------------------------------------------------------------------------------------//
-    // prepare statistics
-
-    // logging
-    let mut progress_bar = progressing::Bar::from(proto_routes.len() as u32);
-
-    // stats
-    let mut stats: Vec<Option<SmallEdgeInfo>> = vec![None; graph.edge_count()];
-
-    // multithreading
-    {
-        if cfg.thread_count == 0 {
-            return Err("Number of threads should be > 0".to_owned());
-        }
-        info!("Using {} threads", cfg.thread_count);
-    }
-    let (mut workers, stats_rx) = WorkerSocket::spawn_some(cfg.thread_count, &graph)?;
-    let workpkg_route_count = 10;
+    // routing
+    let mut astar = routing::factory::new_fastest_path_astar();
 
     //--------------------------------------------------------------------------------------------//
     // routing and statistics-update
 
-    // End of loop
-    //
-    // threads send data before this main-thread/master-thread sends
-    // -> recv will eventually be triggered
-    // -> if no work is available, drop respective sender
-    // -> as far as all senders are dropped, break loop
+    for loop_i in 0..loop_count {
+        //----------------------------------------------------------------------------------------//
+        // prepare loop
 
-    info!("Starting braess-optimization-loop ..");
-    // process incoming stats
-    progress_bar.log();
-    loop {
-        if let Ok(packet) = stats_rx.recv() {
-            // merge received stats and update progress
-            merge_into(&packet.stats, &mut stats);
-            // update progress and export intermediate results to file
-            let result = progress_bar.update_n(packet.n).update_k(packet.k).try_log();
-            if result.is_ok() {
-                info!(
-                    "Exporting stats after {} processed routes",
-                    progress_bar.k()
-                );
-                let appending = false;
-                io_kyle::write_edge_stats(&stats, &out_file_path, appending, &graph)?;
-                info!("Exported");
-            } else {
-                // just helpful for debugging
-                if progress_bar.k() == 100 {
-                    progress_bar.log();
-                }
+        // routes
+        let mut proto_routes = proto_routes_backup.clone();
+
+        // logging
+        let mut progress_bar = progressing::Bar::from(proto_routes_backup.len() as u32);
+
+        // stats
+        let mut stats: Vec<Option<SmallEdgeInfo>> = vec![None; graph.edge_count()];
+
+        // multithreading
+        {
+            if cfg.thread_count == 0 {
+                return Err("Number of threads should be > 0".to_owned());
             }
-            // and send new data if available
-            if proto_routes.len() > 0 {
-                let workpkg = {
-                    let len = proto_routes.len();
-                    let work_count = min(workpkg_route_count, len);
-                    proto_routes.split_off(len - work_count)
-                };
-                // send workpkg
-                let worker = match workers[packet.worker_idx as usize].as_ref() {
-                    Some(worker) => worker,
-                    None => return Err("Worker's sender should not be released yet".to_owned()),
-                };
-                if let Err(e) = worker.data_tx().send(workpkg) {
-                    return Err(format!("Sending stucks due to {}", e));
-                }
-            } else {
-                // drop sender
-                if let Some(worker) = workers[packet.worker_idx as usize].take() {
-                    worker.drop_and_join()?;
-                }
-            }
-        } else {
-            // -> disconnected
-            break;
+            info!("Using {} threads", cfg.thread_count);
         }
+        let (mut workers, stats_rx) = WorkerSocket::spawn_some(cfg.thread_count, &graph)?;
+        let workpkg_route_count = 10;
+
+        //----------------------------------------------------------------------------------------//
+        // run loop
+
+        // End of loop
+        //
+        // threads send data before this main-thread/master-thread sends
+        // -> recv will eventually be triggered
+        // -> if no work is available, drop respective sender
+        // -> as far as all senders are dropped, break loop
+
+        info!(
+            "Starting braess-optimization-loop {}/{} ..",
+            loop_i + 1,
+            loop_count
+        );
+        // process incoming stats
+        progress_bar.log();
+        loop {
+            if let Ok(packet) = stats_rx.recv() {
+                // merge received stats and update progress
+                merge_into(&packet.stats, &mut stats);
+                // update progress and export intermediate results to file
+                let result = progress_bar.update_n(packet.n).update_k(packet.k).try_log();
+                if result.is_ok() {
+                    info!(
+                        "Exporting stats after {} processed routes",
+                        progress_bar.k()
+                    );
+                    let appending = false;
+                    let data = data_from_stats(&stats, &graph);
+                    io_kyle::write_edge_stats(&data, &out_file_paths[loop_i], appending)?;
+                    info!("Exported");
+                } else {
+                    // just helpful for debugging
+                    if progress_bar.k() == 100 {
+                        progress_bar.log();
+                    }
+                }
+                // and send new data if available
+                if proto_routes.len() > 0 {
+                    let workpkg = {
+                        let len = proto_routes.len();
+                        let work_count = min(workpkg_route_count, len);
+                        proto_routes.split_off(len - work_count)
+                    };
+                    // send workpkg
+                    let worker = match workers[packet.worker_idx as usize].as_ref() {
+                        Some(worker) => worker,
+                        None => return Err("Worker's sender should not be released yet".to_owned()),
+                    };
+                    if let Err(e) = worker.data_tx().send(workpkg) {
+                        return Err(format!("Sending stucks due to {}", e));
+                    }
+                } else {
+                    // drop sender
+                    if let Some(worker) = workers[packet.worker_idx as usize].take() {
+                        worker.drop_and_join()?;
+                    }
+                }
+            } else {
+                // -> disconnected
+                break;
+            }
+        }
+        info!("Finished braess-optimization-loop");
+
+        //----------------------------------------------------------------------------------------//
+        // export statistics
+
+        info!("Exporting stats to {}", out_file_paths[loop_i].display());
+
+        let appending = false;
+        let data = data_from_stats(&stats, &graph);
+        io_kyle::write_edge_stats(&data, &out_file_paths[loop_i], appending)?;
+
+        //----------------------------------------------------------------------------------------//
+        // optimize graph
+
+        optimize_graph(
+            Arc::get_mut(&mut graph).expect("No other thread should hold some Arc(graph)"),
+            cfg.params.removed_edges_per_loop(),
+            &mut astar,
+            data,
+        );
     }
-    info!("Finished braess-optimization-loop");
-
-    //--------------------------------------------------------------------------------------------//
-    // export statistics
-    info!("Exporting stats to {}", out_file_path.display());
-
-    let appending = false;
-    io_kyle::write_edge_stats(&stats, &out_file_path, appending, &graph)?;
 
     info!("Finished braess-simulation");
     Ok(())
@@ -215,6 +273,76 @@ fn merge_into(packet_stats: &Vec<Option<SmallEdgeInfo>>, stats: &mut Vec<Option<
             }
         }
     }
+}
+
+fn optimize_graph(
+    graph: &mut Graph,
+    mut disable_count: usize,
+    astar: &mut Box<dyn routing::Astar>,
+    mut data: Vec<EdgeInfo>,
+) {
+    // used twice
+    fn src_dst(src_id: i64, dst_id: i64, graph: &Graph) -> (&Node, &Node) {
+        // get stuff from graph
+        let src = graph.node(
+            graph
+                .node_idx_from(src_id)
+                .expect("Graph should contain this src-node."),
+        );
+        let dst = graph.node(
+            graph
+                .node_idx_from(dst_id)
+                .expect("Graph should contain this dst-node."),
+        );
+        (src, dst)
+    }
+
+    //--------------------------------------------------------------------------------------------//
+
+    // sort in descending order
+    data.sort_by(|a, b| {
+        b.edge_utilization_thousandth()
+            .cmp(&a.edge_utilization_thousandth())
+    });
+
+    // iterate over sorted "edges" and disable the worst ones
+    for edge_info in data {
+        if disable_count == 0 {
+            break;
+        }
+
+        let (src, dst) = src_dst(edge_info.src_id, edge_info.dst_id, graph);
+        let (_edge, edge_idx) = graph
+            .edge_from(src.idx(), dst.idx())
+            .expect("Graph should contain this edge.");
+
+        // disable edge
+        graph.disable_edge(edge_idx);
+        // get new references due to immut-mut-immut-usage
+        let (src, dst) = src_dst(edge_info.src_id, edge_info.dst_id, graph);
+        // check if src and dst are still connected
+        if astar.compute_best_path(src, dst, graph).is_some() {
+            disable_count -= 1;
+        } else {
+            graph.enable_edge(edge_idx);
+        }
+    }
+
+    if disable_count > 0 {
+        warn!("Did not disable {} edges because there are too less edges used.", disable_count);
+    }
+}
+
+fn data_from_stats(stats: &Vec<Option<SmallEdgeInfo>>, graph: &Graph) -> Vec<EdgeInfo> {
+    // remove all None-values
+    // and parse data into output-format
+    stats
+        .into_iter()
+        .filter_map(|s| match s {
+            Some(small_edge_info) => Some(EdgeInfo::from(&small_edge_info, &graph)),
+            None => None,
+        })
+        .collect()
 }
 
 //------------------------------------------------------------------------------------------------//

@@ -127,21 +127,17 @@ impl Graph {
     }
 
     //--------------------------------------------------------------------------------------------//
-    // id <-> idx
-
-    pub fn node_idx_from(&self, id: i64) -> Result<usize, usize> {
-        self.nodes.binary_search_by(|node| node.id.cmp(&id))
-    }
-
-    //--------------------------------------------------------------------------------------------//
     // getter
 
     pub fn node_count(&self) -> usize {
         self.nodes.len()
     }
-
     pub fn edge_count(&self) -> usize {
         self.edges.len()
+    }
+
+    pub fn node_idx_from(&self, id: i64) -> Result<usize, usize> {
+        self.nodes.binary_search_by(|node| node.id.cmp(&id))
     }
 
     pub fn node(&self, idx: usize) -> &Node {
@@ -151,11 +147,9 @@ impl Graph {
         );
         &self.nodes[idx]
     }
-
     pub fn edge(&self, edge_idx: usize) -> &Edge {
         &self.edges[edge_idx]
     }
-
     pub fn offset(&self, node_idx: usize) -> usize {
         self.offsets[node_idx]
     }
@@ -192,6 +186,13 @@ impl Graph {
     pub fn leaving_edges(&self, node_idx: usize) -> Option<&[Edge]> {
         let range = self.offset_indices(node_idx)?;
         Some(&self.edges[range])
+    }
+
+    pub fn enable_edge(&mut self, edge_idx: usize) {
+        unimplemented!("pub fn enable_edge(edge_idx: usize")
+    }
+    pub fn disable_edge(&mut self, edge_idx: usize) {
+        unimplemented!("pub fn disable_edge(edge_idx: usize")
     }
 }
 impl fmt::Display for Graph {

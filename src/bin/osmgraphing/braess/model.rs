@@ -49,6 +49,19 @@ impl<'a> EdgeInfo {
         }
     }
 }
+impl<'a> EdgeInfo {
+    /// returns in thousands
+    pub fn edge_utilization_thousandth(&self) -> u32 {
+        let vehicles_per_edge = {
+            // Nagel-Schreckenberg-model
+            let vehicles_per_lane = self.length_m as f64 / 7.5;
+            self.lane_count as f64 * vehicles_per_lane
+        };
+
+        let utilization = self.route_count as f64 / vehicles_per_edge;
+        (1000.0 * utilization) as u32
+    }
+}
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct SmallEdgeInfo {

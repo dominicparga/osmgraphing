@@ -50,6 +50,18 @@ fn parse_cmdline<'a>() -> clap::ArgMatches<'a> {
         .help("How many routes should be used from provided file.")
         .takes_value(true);
 
+    // arg: loop_count
+    let arg_loop_count = clap::Arg::with_name("loop_count")
+        .long("loop-count")
+        .help("How many times the given map will be optimized by removing edges.")
+        .takes_value(true);
+
+    // arg: removed_edges_per_loop
+    let arg_removed_edges_per_loop = clap::Arg::with_name("removed_edges_per_loop")
+        .long("removed-edges-per-loop")
+        .help("How many edges are going to be removed after each optimization-loop-run.")
+        .takes_value(true);
+
     // subcmd
     let subcmd_braess = clap::SubCommand::with_name("braess")
         .version(env!("CARGO_PKG_VERSION"))
@@ -60,7 +72,9 @@ fn parse_cmdline<'a>() -> clap::ArgMatches<'a> {
         .arg(arg_map_file_path)
         .arg(arg_results_dir)
         .arg(arg_threads)
-        .arg(arg_route_count);
+        .arg(arg_route_count)
+        .arg(arg_loop_count)
+        .arg(arg_removed_edges_per_loop);
 
     //--------------------------------------------------------------------------------------------//
     // subcmd: proto-routes
@@ -224,15 +238,37 @@ fn main() -> Result<(), ()> {
                     return Err(());
                 }
             },
-            route_count: match matches.value_of("route_count") {
-                Some(s) => Some(match s.parse::<usize>() {
-                    Ok(c) => c,
-                    Err(e) => {
-                        error!("{}", e);
-                        return Err(());
-                    }
-                }),
-                None => None,
+            params: cfg::SimParams {
+                route_count: match matches.value_of("route_count") {
+                    Some(s) => Some(match s.parse::<usize>() {
+                        Ok(c) => c,
+                        Err(e) => {
+                            error!("{}", e);
+                            return Err(());
+                        }
+                    }),
+                    None => None,
+                },
+                loop_count: match matches.value_of("loop_count") {
+                    Some(s) => Some(match s.parse::<usize>() {
+                        Ok(c) => c,
+                        Err(e) => {
+                            error!("{}", e);
+                            return Err(());
+                        }
+                    }),
+                    None => None,
+                },
+                removed_edges_per_loop: match matches.value_of("removed_edges_per_loop") {
+                    Some(s) => Some(match s.parse::<usize>() {
+                        Ok(c) => c,
+                        Err(e) => {
+                            error!("{}", e);
+                            return Err(());
+                        }
+                    }),
+                    None => None,
+                },
             },
             paths: cfg::Paths {
                 input: cfg::InputPaths {
