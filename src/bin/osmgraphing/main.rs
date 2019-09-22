@@ -37,6 +37,13 @@ fn parse_cmdline<'a>() -> clap::ArgMatches<'a> {
         .takes_value(true)
         .required(true);
 
+    // arg: threads
+    let arg_threads = clap::Arg::with_name("threads")
+        .long("threads")
+        .help("How many threads should be applied.")
+        .takes_value(true)
+        .default_value("8");
+
     // subcmd
     let subcmd_braess = clap::SubCommand::with_name("braess")
         .version(env!("CARGO_PKG_VERSION"))
@@ -45,7 +52,8 @@ fn parse_cmdline<'a>() -> clap::ArgMatches<'a> {
         .long_about("Executes shortest-path-algorithms and try to improve the resulting routes")
         .arg(arg_proto_routes)
         .arg(arg_map_file_path)
-        .arg(arg_results_dir);
+        .arg(arg_results_dir)
+        .arg(arg_threads);
 
     //--------------------------------------------------------------------------------------------//
     // subcmd: proto-routes
@@ -202,6 +210,13 @@ fn main() -> Result<(), ()> {
     } else if let Some(matches) = matches.subcommand_matches("braess") {
         use braess::cfg;
         let cfg = cfg::Config {
+            threads: match matches.value_of("threads").unwrap().parse::<u8>() {
+                Ok(value) => value,
+                Err(e) => {
+                    error!("{}", e);
+                    return Err(());
+                }
+            },
             paths: cfg::Paths {
                 input: cfg::InputPaths {
                     files: cfg::InputFiles {

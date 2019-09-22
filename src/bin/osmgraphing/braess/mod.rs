@@ -28,6 +28,7 @@ pub mod config {
 
     pub struct Config<'a, P: AsRef<path::Path> + ?Sized> {
         pub paths: Paths<'a, P>,
+        pub threads: u8,
     }
     pub struct Paths<'a, P: AsRef<path::Path> + ?Sized> {
         pub input: InputPaths<'a, P>,
@@ -99,8 +100,13 @@ pub fn run<P: AsRef<path::Path> + ?Sized>(cfg: Config<P>) -> Result<(), String> 
     let mut stats: Vec<Option<SmallEdgeInfo>> = vec![None; graph.edge_count()];
 
     // multithreading
-    let thread_count = 8;
-    let (mut workers, stats_rx) = WorkerSocket::spawn_some(thread_count, &graph)?;
+    {
+        if cfg.threads == 0 {
+            return Err("Number of threads should be > 0".to_owned());
+        }
+        info!("Using {} threads", cfg.threads);
+    }
+    let (mut workers, stats_rx) = WorkerSocket::spawn_some(cfg.threads, &graph)?;
     let workpkg_route_count = 10;
 
     //--------------------------------------------------------------------------------------------//
@@ -130,6 +136,11 @@ pub fn run<P: AsRef<path::Path> + ?Sized>(cfg: Config<P>) -> Result<(), String> 
                 let appending = false;
                 io_kyle::write_edge_stats(&stats, &out_file_path, appending, &graph)?;
                 info!("Exported");
+            } else {
+                // just helpful for debugging
+                if progress_bar.k() == 100 {
+                    progress_bar.log();
+                }
             }
             // and send new data if available
             if proto_routes.len() > 0 {
