@@ -107,7 +107,7 @@ pub fn write_edge_stats<P: AsRef<path::Path> + ?Sized>(
     let data: Vec<EdgeInfo> = stats
         .into_iter()
         .filter_map(|s| match s {
-            Some(small_edge_info) => Some(EdgeInfo::from(small_edge_info.clone(), &graph)),
+            Some(small_edge_info) => Some(EdgeInfo::from(&small_edge_info, &graph)),
             None => None,
         })
         .collect();

@@ -1,6 +1,7 @@
 //------------------------------------------------------------------------------------------------//
 // other modules
 
+use std::cmp::min;
 use std::path;
 use std::sync::Arc;
 
@@ -61,10 +62,11 @@ use config::Config;
 // simulation
 
 pub fn run<P: AsRef<path::Path> + ?Sized>(cfg: Config<P>) -> Result<(), String> {
-    info!("Executing braess-optimization");
+    info!("Executing braess-simulation ..");
 
     //--------------------------------------------------------------------------------------------//
     // prepare simulation
+    info!("Preparing simulation ..");
 
     // check path of io-files before expensive simulation
     let out_dir_path = {
@@ -80,6 +82,8 @@ pub fn run<P: AsRef<path::Path> + ?Sized>(cfg: Config<P>) -> Result<(), String> 
 
     // proto_routes
     let mut proto_routes = io_kyle::read_proto_routes(cfg.paths.input.files.proto_routes)?;
+    // reverse since split_off returns last part
+    proto_routes.reverse();
 
     // graph
     let graph = Parser::parse_and_finalize(&cfg.paths.input.files.map)?;
@@ -94,44 +98,97 @@ pub fn run<P: AsRef<path::Path> + ?Sized>(cfg: Config<P>) -> Result<(), String> 
     // stats
     let mut stats: Vec<Option<SmallEdgeInfo>> = vec![None; graph.edge_count()];
 
-    // routing
-    let mut astar = routing::factory::new_fastest_path_astar();
-
     // multithreading
-    let (workers, stats_rx) = WorkerSocket::spawn_some(8, &graph);
+    let thread_count = 8;
+    let (mut workers, stats_rx) = WorkerSocket::spawn_some(thread_count, &graph)?;
+    let workpkg_route_count = 10;
 
     //--------------------------------------------------------------------------------------------//
     // routing and statistics-update
 
-    progress_bar.log();
-    while proto_routes.len() > 0 {
-        // work-off routes
-        let proto_route = proto_routes.pop().unwrap();
-        let (k, n) = work_off(&proto_route, &mut astar, &mut stats, &graph)?;
-        let _ = progress_bar.update_n(n).update_k(k).try_log();
+    // End of loop
+    //
+    // threads send data before this main-thread/master-thread sends
+    // -> recv will eventually be triggered
+    // -> if no work is available, drop respective sender
+    // -> as far as all senders are dropped, break loop
 
-        // TODO check multithreading-results and deliver new data
-        // TODO update data
-        // TODO ask workers for results
-        // TODO update data
-        // TODO update progress_bar and log
-        // let workpkg = proto_routes.split_off(1);
-        // if progress, write current results to file
-        let result = progress_bar.update_n(n).update_k(k).try_log();
-        if result.is_ok() {
-            let appending = false;
-            io_kyle::write_edge_stats(&stats, &out_file_path, appending, &graph)?;
+    info!("Starting braess-optimization-loop ..");
+    // process incoming stats
+    progress_bar.log();
+    loop {
+        if let Ok(packet) = stats_rx.recv() {
+            // merge received stats and update progress
+            merge_into(&packet.stats, &mut stats);
+            // update progress and export intermediate results to file
+            let result = progress_bar.update_n(packet.n).update_k(packet.k).try_log();
+            if result.is_ok() {
+                info!(
+                    "Exporting stats after {} processed routes",
+                    progress_bar.k()
+                );
+                let appending = false;
+                io_kyle::write_edge_stats(&stats, &out_file_path, appending, &graph)?;
+                info!("Exported");
+            }
+            // and send new data if available
+            if proto_routes.len() > 0 {
+                let workpkg = {
+                    let len = proto_routes.len();
+                    let work_count = min(workpkg_route_count, len);
+                    proto_routes.split_off(len - work_count)
+                };
+                // send workpkg
+                let worker = match workers[packet.worker_idx as usize].as_ref() {
+                    Some(worker) => worker,
+                    None => return Err("Worker's sender should not be released yet".to_owned()),
+                };
+                if let Err(e) = worker.data_tx().send(workpkg) {
+                    return Err(format!("Sending stucks due to {}", e));
+                }
+            } else {
+                // drop sender
+                if let Some(worker) = workers[packet.worker_idx as usize].take() {
+                    worker.drop_and_join()?;
+                }
+            }
+        } else {
+            // -> disconnected
+            break;
         }
     }
+    info!("Finished braess-optimization-loop");
 
     //--------------------------------------------------------------------------------------------//
     // export statistics
+    info!("Exporting stats to {}", out_file_path.display());
 
     let appending = false;
     io_kyle::write_edge_stats(&stats, &out_file_path, appending, &graph)?;
-    info!("Finished braess-optimization");
 
+    info!("Finished braess-simulation");
     Ok(())
+}
+
+//------------------------------------------------------------------------------------------------//
+
+fn merge_into(packet_stats: &Vec<Option<SmallEdgeInfo>>, stats: &mut Vec<Option<SmallEdgeInfo>>) {
+    for opt_small_edge_info in packet_stats {
+        if let Some(small_edge_info) = opt_small_edge_info {
+            let edge_idx = small_edge_info.edge_idx;
+
+            // update edge-info or, if not existing, add new one
+            // stats[idx] guaranteed due to stats-init
+            if let Some(edge_info) = stats
+                .get_mut(edge_idx)
+                .expect("Should be set after initializing stats.")
+            {
+                edge_info.update(small_edge_info);
+            } else {
+                stats[edge_idx] = Some(small_edge_info.clone());
+            }
+        }
+    }
 }
 
 //------------------------------------------------------------------------------------------------//
