@@ -25,7 +25,6 @@ The goal is to reduce the actual costs by removing edges from the streetgraph us
 The implemented solution runs concurrently and shows some nice issues, but should be seen as starting-point for further digging.
 
 Next steps will be cleaning up a little, before the master-thesis starts.
-Travis doesn't build properly due to timeouts, although the examples are running locally.
 The wiki should explain more implementation-ideas and the visualization of the `braess`-simulation could be improved.
 After cleanup, I will do my master-thesis with this project.
 It will play around with new metrices basing on edge-usages after calculating alternative routes.
