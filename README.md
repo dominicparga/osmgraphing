@@ -1,6 +1,7 @@
 # osmgraphing
 
-[![Build Status][www_travis_builds_badge]][www_travis_builds]
+[![Build Status latest][www_travis_builds_latest_badge]][www_travis_builds_latest]
+[![Build Status master][www_travis_builds_master_badge]][www_travis_builds_master]
 [![Tag][www_tags_badge]][www_tags]
 [![Crates.io][www_crates_io_badge]][www_crates_io]
 [![Docs][www_docs_badge]][www_docs]
@@ -38,8 +39,10 @@ Please refer to [setup and usage][www_osmgraphing_usage] to get details about th
 [www_openstreetmap]: https://openstreetmap.org
 [www_osmgraphing_usage]: https://github.com/dominicparga/osmgraphing/wiki/Usage
 
-[www_travis_builds_badge]: https://travis-ci.com/dominicparga/osmgraphing.svg
-[www_travis_builds]: https://travis-ci.com/dominicparga/osmgraphing
+[www_travis_builds_latest_badge]: https://img.shields.io/travis/com/dominicparga/osmgraphing?label=latest%20build
+[www_travis_builds_master_badge]: https://img.shields.io/travis/com/dominicparga/osmgraphing/master?label=master-build
+[www_travis_builds_latest]: https://travis-ci.com/dominicparga/osmgraphing
+[www_travis_builds_master]: https://travis-ci.com/dominicparga/osmgraphing/branches
 [www_tags_badge]: https://img.shields.io/github/v/tag/dominicparga/osmgraphing?sort=semver
 [www_tags]: https://github.com/dominicparga/osmgraphing/tags
 [www_crates_io_badge]: https://img.shields.io/crates/v/osmgraphing
