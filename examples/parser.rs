@@ -13,7 +13,7 @@ fn init_logging(verbosely: bool) {
     builder.filter(None, log::LevelFilter::Warn);
     // if verbose logging: log `info` for the server and this repo
     if verbosely {
-        builder.filter(Some("osmgraphing"), log::LevelFilter::Info);
+        builder.filter(Some(env!("CARGO_PKG_NAME")), log::LevelFilter::Info);
         builder.filter(Some("parser"), log::LevelFilter::Info);
     }
     // overwrite default with environment-variables
