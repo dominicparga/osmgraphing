@@ -31,19 +31,19 @@ It will play around with new metrices basing on edge-usages after calculating al
 
 Please refer to [setup and usage][github/usage] to get details about the project setup and how to run the code.
 
-[crates.io/osmgraphing/badge]: https://img.shields.io/crates/v/osmgraphing
 [crates.io/osmgraphing]: https://crates.io/crates/osmgraphing
-[docs.rs/osmgraphing/badge]: https://docs.rs/osmgraphing/badge.svg
+[crates.io/osmgraphing/badge]: https://img.shields.io/crates/v/osmgraphing?style=for-the-badge
 [docs.rs/osmgraphing]: https://docs.rs/osmgraphing/
-[github/last-commit/badge]: https://img.shields.io/github/last-commit/dominicparga/osmgraphing
+[docs.rs/osmgraphing/badge]: https://img.shields.io/crates/v/osmgraphing?color=informational&label=docs&style=for-the-badge
 [github/last-commit]: https://github.com/dominicparga/osmgraphing/commits
-[github/license/badge]: https://img.shields.io/github/license/dominicparga/osmgraphing
+[github/last-commit/badge]: https://img.shields.io/github/last-commit/dominicparga/osmgraphing?style=for-the-badge
 [github/license]: https://github.com/dominicparga/osmgraphing/blob/master/LICENSE
-[github/usage]: https://github.com/dominicparga/osmgraphing/wiki/Usage
-[github/tags/badge]: https://img.shields.io/github/v/tag/dominicparga/osmgraphing?sort=semver
+[github/license/badge]: https://img.shields.io/github/license/dominicparga/osmgraphing?style=for-the-badge
 [github/tags]: https://github.com/dominicparga/osmgraphing/tags
+[github/tags/badge]: https://img.shields.io/github/v/tag/dominicparga/osmgraphing?sort=semver&style=for-the-badge
+[github/usage]: https://github.com/dominicparga/osmgraphing/wiki/Usage
 [osm]: https://openstreetmap.org
-[travis/latest/badge]: https://img.shields.io/travis/com/dominicparga/osmgraphing?label=latest%20build
 [travis/latest]: https://travis-ci.com/dominicparga/osmgraphing
-[travis/master/badge]: https://img.shields.io/travis/com/dominicparga/osmgraphing/master?label=master-build
+[travis/latest/badge]: https://img.shields.io/travis/com/dominicparga/osmgraphing?label=latest%20build&style=for-the-badge
 [travis/master]: https://travis-ci.com/dominicparga/osmgraphing/branches
+[travis/master/badge]: https://img.shields.io/travis/com/dominicparga/osmgraphing/master?label=master-build&style=for-the-badge
