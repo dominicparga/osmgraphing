@@ -130,15 +130,15 @@ fn parse_cmdline<'a>() -> clap::ArgMatches<'a> {
     //--------------------------------------------------------------------------------------------//
     // return composition
 
-    // arg: verbose
+    // arg: quiet
     let tmp = &[
-        "Logs 'info' in addition to 'warn' and 'error'.",
+        "Doesn't log 'info', but only 'warn' and 'error'.",
         "The env-variable 'RUST_LOG' has precedence.",
     ]
     .join("\n");
-    let arg_verbose = clap::Arg::with_name("verbose")
-        .short("v")
-        .long("verbose")
+    let arg_quiet = clap::Arg::with_name("quiet")
+        .short("q")
+        .long("quiet")
         .help(tmp);
 
     // all
@@ -152,8 +152,8 @@ fn parse_cmdline<'a>() -> clap::ArgMatches<'a> {
                 "You can set up the logger by setting RUST_LOG, e.g. to",
                 "    export RUST_LOG='warn,osmgraphing=info,parser=info,astar=info'",
                 "for getting 'warn's per default, but 'info' about the others (e.g. 'parser').",
-                "Consider the flag '--verbose', so you don't have to mess around with RUST_LOG,",
-                "setting RUST_LOG to 'info' for relevant parts of the software.",
+                "RUST_LOG is set up automatically, setting RUST_LOG to 'info'",
+                "for relevant parts of the software, but consider the flag '--quiet'.",
                 "",
                 "In case you're using cargo, please use",
                 "    cargo run --example",
@@ -162,18 +162,18 @@ fn parse_cmdline<'a>() -> clap::ArgMatches<'a> {
             .join("\n"))
                 .as_ref(),
         )
-        .arg(arg_verbose)
+        .arg(arg_quiet)
         .subcommand(subcmd_braess)
         .subcommand(subcmd_gen_proto_routes)
         .get_matches()
 }
 
-fn setup_logging(verbosely: bool) {
+fn setup_logging(quietly: bool) {
     let mut builder = env_logger::Builder::new();
     // minimum filter-level: `warn`
     builder.filter(None, log::LevelFilter::Warn);
-    // if verbose logging: log `info` for the server and this repo
-    if verbosely {
+    // if quiet logging: don't log `info` for the server and this repo
+    if !quietly {
         builder.filter(Some(env!("CARGO_PKG_NAME")), log::LevelFilter::Info);
     }
     // overwrite default with environment-variables
@@ -189,7 +189,7 @@ fn setup_logging(verbosely: bool) {
 
 fn main() -> Result<(), ()> {
     let matches = parse_cmdline();
-    setup_logging(matches.is_present("verbose"));
+    setup_logging(matches.is_present("quiet"));
 
     if let Some(matches) = matches.subcommand_matches("gen-proto-routes") {
         let seed = match matches.value_of("seed").unwrap().parse() {
