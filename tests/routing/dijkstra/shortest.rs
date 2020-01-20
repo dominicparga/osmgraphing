@@ -3,18 +3,18 @@ use osmgraphing::routing;
 
 #[test]
 fn simple_stuttgart() {
-    let mut astar = routing::factory::new_shortest_path_astar();
+    let mut dijkstra = routing::factory::dijkstra::shortest();
     let expected_paths = expected_paths_simple_stuttgart();
     let filepath = "resources/maps/simple_stuttgart.fmi";
-    super::assert_correct(&mut astar, expected_paths, filepath);
+    super::assert_correct(&mut dijkstra, expected_paths, filepath);
 }
 
 #[test]
 fn small() {
-    let mut astar = routing::factory::new_shortest_path_astar();
+    let mut dijkstra = routing::factory::dijkstra::shortest();
     let expected_paths = expected_paths_small();
     let filepath = "resources/maps/small.fmi";
-    super::assert_correct(&mut astar, expected_paths, filepath);
+    super::assert_correct(&mut dijkstra, expected_paths, filepath);
 }
 
 //------------------------------------------------------------------------------------------------//

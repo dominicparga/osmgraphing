@@ -61,7 +61,7 @@ impl<'a> WorkerSocket {
         let handle = thread::spawn(move || {
             debug!("[Worker {}] spawned", worker_idx);
 
-            let mut astar = routing::factory::new_fastest_path_astar();
+            let mut astar = routing::factory::astar::fastest();
             let mut stats: Vec<Option<SmallEdgeInfo>> = vec![None; graph.edge_count()];
 
             loop {

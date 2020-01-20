@@ -136,7 +136,7 @@ pub fn run<P: AsRef<path::Path> + ?Sized>(cfg: Config<P>) -> Result<(), String> 
     let mut graph = Arc::new(graph);
 
     // routing
-    let mut astar = routing::factory::new_fastest_path_astar();
+    let mut astar = routing::factory::astar::fastest();
 
     //--------------------------------------------------------------------------------------------//
     // routing and statistics-update

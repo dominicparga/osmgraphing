@@ -3,7 +3,7 @@ use osmgraphing::routing;
 
 #[test]
 fn simple_stuttgart() {
-    let mut astar = routing::factory::new_fastest_path_astar();
+    let mut astar = routing::factory::astar::fastest();
     let expected_paths = expected_paths_simple_stuttgart();
     let filepath = "resources/maps/simple_stuttgart.fmi";
     super::assert_correct(&mut astar, expected_paths, filepath);
@@ -11,7 +11,7 @@ fn simple_stuttgart() {
 
 #[test]
 fn small() {
-    let mut astar = routing::factory::new_fastest_path_astar();
+    let mut astar = routing::factory::astar::fastest();
     let expected_paths = expected_paths_small();
     let filepath = "resources/maps/small.fmi";
     super::assert_correct(&mut astar, expected_paths, filepath);

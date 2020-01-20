@@ -1,4 +1,4 @@
-mod fastest_path;
-mod shortest_path;
+mod fastest;
+mod shortest;
 
 use super::{assert_correct, TestNode};

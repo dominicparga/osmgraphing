@@ -76,7 +76,7 @@ fn main() {
     //--------------------------------------------------------------------------------------------//
     // astar
 
-    let mut astar = routing::factory::new_shortest_path_astar();
+    let mut astar = routing::factory::astar::shortest();
 
     let src_idx = 0;
     let dsts: Vec<usize> = (0..graph.node_count()).collect();

@@ -68,7 +68,7 @@ pub fn search_and_export<P: AsRef<path::Path> + ?Sized>(cfg: Config<P>) -> Resul
     io_kyle::create_file(cfg.paths.output.files.proto_routes)?;
 
     let graph = Parser::parse_and_finalize(&cfg.paths.input.files.map)?;
-    let mut astar = routing::factory::new_fastest_path_astar();
+    let mut astar = routing::factory::astar::fastest();
 
     // random
     info!("Using seed {}", cfg.seed);
