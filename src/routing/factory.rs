@@ -11,7 +11,7 @@ use super::GenericAstar;
 // own modules
 
 pub mod astar {
-    use super::{Astar, GenericAstar, network, geo, Edge, Node};
+    use super::{geo, network, Astar, Edge, GenericAstar, Node};
 
     pub fn shortest() -> Box<dyn Astar> {
         let cost_fn = |edge: &Edge| edge.meters();
@@ -33,7 +33,7 @@ pub mod astar {
 }
 
 pub mod dijkstra {
-    use super::{Astar, GenericAstar, Edge, Node};
+    use super::{Astar, Edge, GenericAstar, Node};
 
     pub fn shortest() -> Box<dyn Astar> {
         let cost_fn = |edge: &Edge| edge.meters();

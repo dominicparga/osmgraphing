@@ -152,7 +152,7 @@ pub fn run<P: AsRef<path::Path> + ?Sized>(cfg: Config<P>) -> Result<(), String> 
         let mut progress_bar = progressing::Bar::from(proto_routes_backup.len() as u32);
 
         // stats
-        let mut stats: Vec<Option<SmallEdgeInfo>> = vec![None; graph.edge_count()];
+        let mut stats: Vec<Option<SmallEdgeInfo>> = vec![None; graph.fwd_edges.count()];
 
         // multithreading
         {
@@ -297,7 +297,7 @@ fn optimize_graph(
         }
 
         let (src, dst) = src_dst_from(edge_info.src_id, edge_info.dst_id, graph)?;
-        let (_edge, edge_idx) = match graph.edge_from(src.idx(), dst.idx()) {
+        let (_edge, edge_idx) = match graph.fwd_edges.between(src.idx(), dst.idx()) {
             Some((e, i)) => (e, i),
             None => {
                 return Err(format!(
@@ -309,14 +309,14 @@ fn optimize_graph(
         };
 
         // disable edge
-        graph.disable_edge(edge_idx);
+        graph.fwd_edges.disable(edge_idx);
         // get new references due to immut-mut-immut-usage
         let (src, dst) = src_dst_from(edge_info.src_id, edge_info.dst_id, graph)?;
         // check if src and dst are still connected
         if astar.compute_best_path(src, dst, graph).is_some() {
             disable_count -= 1;
         } else {
-            graph.enable_edge(edge_idx);
+            graph.fwd_edges.enable(edge_idx);
         }
     }
 
@@ -406,7 +406,8 @@ fn evaluate_best_path(
     while let Some(edge_dst_idx) = best_path.succ_node_idx(current_idx) {
         // get edge from its nodes
         let (edge, edge_idx) = graph
-            .edge_from(current_idx, edge_dst_idx)
+            .fwd_edges
+            .between(current_idx, edge_dst_idx)
             .expect("Path should only use edges from the graph.");
         debug_assert_eq!(edge.src_idx(), current_idx, "edge.src_idx() != current_idx");
         debug_assert_eq!(
@@ -442,26 +443,7 @@ fn evaluate_best_path(
 
 fn src_dst_from(src_id: i64, dst_id: i64, graph: &Graph) -> Result<(&Node, &Node), String> {
     // get nodes: src and dst
-    let src = graph.node(match graph.node_idx_from(src_id) {
-        Ok(src_idx) => src_idx,
-        Err(_) => {
-            return Err(format!(
-                "Src-id {} from src-dst-pair ({}, {}) could not be found in the graph.",
-                src_id, src_id, dst_id,
-            ))
-        }
-    });
-    let dst = graph.node(match graph.node_idx_from(dst_id) {
-        Ok(dst_idx) => dst_idx,
-        Err(_) => {
-            return Err(format!(
-                "Dst-id {} from src-dst-pair ({}, {}) could not be found in the graph.",
-                dst_id, src_id, dst_id,
-            ))
-        }
-    });
-
-    let src = match src {
+    let src = match graph.nodes.get_from(src_id) {
         Some(node) => node,
         None => {
             return Err(format!(
@@ -470,8 +452,8 @@ fn src_dst_from(src_id: i64, dst_id: i64, graph: &Graph) -> Result<(&Node, &Node
             ))
         }
     };
-    let dst = match dst {
-        Some(dst_idx) => dst_idx,
+    let dst = match graph.nodes.get_from(dst_id) {
+        Some(node) => node,
         None => {
             return Err(format!(
                 "Dst-id {} from src-dst-pair ({}, {}) could not be found in the graph.",

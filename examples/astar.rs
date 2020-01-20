@@ -25,12 +25,12 @@ use osmgraphing::{routing, Parser};
 
 //------------------------------------------------------------------------------------------------//
 
-fn init_logging(verbosely: bool) {
+fn init_logging(quietly: bool) {
     let mut builder = env_logger::Builder::new();
     // minimum filter-level: `warn`
     builder.filter(None, log::LevelFilter::Warn);
-    // if verbose logging: log `info` for the server and this repo
-    if verbosely {
+    // if quiet logging: don't log `info` for the server and this repo
+    if !quietly {
         builder.filter(Some(env!("CARGO_PKG_NAME")), log::LevelFilter::Info);
         builder.filter(Some("astar"), log::LevelFilter::Info);
     }
@@ -46,7 +46,7 @@ fn init_logging(verbosely: bool) {
 }
 
 fn main() {
-    init_logging(true);
+    init_logging(false);
     info!("Executing example: A*");
 
     //--------------------------------------------------------------------------------------------//
@@ -79,16 +79,18 @@ fn main() {
     let mut astar = routing::factory::astar::shortest();
 
     let src_idx = 0;
-    let dsts: Vec<usize> = (0..graph.node_count()).collect();
+    let dsts: Vec<usize> = (0..graph.nodes.count()).collect();
     // let dsts: Vec<usize> = vec![80]; problem on baden-wuerttemberg.osm.pbf
 
     let src = graph
-        .node(src_idx)
+        .nodes
+        .get(src_idx)
         .expect("src-node of idx={} should be in graph");
 
     for dst_idx in dsts {
         let dst = graph
-            .node(dst_idx)
+            .nodes
+            .get(dst_idx)
             .expect("dst-node of idx={} should be in graph");
 
         info!("");

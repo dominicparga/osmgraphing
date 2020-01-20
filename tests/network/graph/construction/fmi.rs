@@ -12,7 +12,8 @@ struct TestNode {
 impl TestNode {
     fn from(name: &str, id: i64, lat: f64, lon: f64, graph: &Graph) -> TestNode {
         let idx = graph
-            .node_idx_from(id)
+            .nodes
+            .idx_from(id)
             .expect(&format!("The node-id {} is not in graph.", id));
         TestNode {
             name: String::from(name),
@@ -24,7 +25,8 @@ impl TestNode {
 
     fn assert_correct(&self, graph: &Graph) {
         let node = graph
-            .node(self.idx)
+            .nodes
+            .get(self.idx)
             .expect(&format!("Node of idx={} should be in graph.", self.idx));
         assert_eq!(
             node.id(),
@@ -87,10 +89,14 @@ impl TestEdge {
     }
 
     fn assert_correct(&self, graph: &Graph) {
-        let (edge, edge_idx) = graph.edge_from(self.src_idx, self.dst_idx).expect(&format!(
-            "Edge (src_idx, dst_idx): ({}, {}) does not exist.",
-            self.src_idx, self.dst_idx
-        ));
+        let (edge, edge_idx) =
+            graph
+                .fwd_edges
+                .between(self.src_idx, self.dst_idx)
+                .expect(&format!(
+                    "Edge (src_idx, dst_idx): ({}, {}) does not exist.",
+                    self.src_idx, self.dst_idx
+                ));
 
         assert_eq!(
             edge_idx, self.edge_idx,
@@ -182,18 +188,18 @@ fn simple_stuttgart() {
     //--------------------------------------------------------------------------------------------//
     // testing graph
 
-    assert_eq!(graph.node_count(), 6, "Wrong node-count");
-    assert_eq!(graph.edge_count(), 13, "Wrong edge-count");
+    assert_eq!(graph.nodes.count(), 6, "Wrong node-count");
+    assert_eq!(graph.fwd_edges.count(), 13, "Wrong edge-count");
     assert!(
-        graph.edge_from(24, 42).is_none(),
+        graph.fwd_edges.between(24, 42).is_none(),
         "Edge doesn't exist, so graph should return None."
     );
     assert!(
-        graph.leaving_edges(424).is_none(),
+        graph.fwd_edges.starting_from(424).is_none(),
         "Node's idx is too high, thus the node should not have any leaving edges."
     );
     assert!(
-        graph.leaving_edges(node_dea.idx).is_none(),
+        graph.fwd_edges.starting_from(node_dea.idx).is_none(),
         "Node has no leaving edges, so the method should return None."
     );
 
@@ -266,18 +272,18 @@ fn small() {
     //--------------------------------------------------------------------------------------------//
     // testing graph
 
-    assert_eq!(graph.node_count(), 8, "Wrong node-count");
-    assert_eq!(graph.edge_count(), 16, "Wrong edge-count");
+    assert_eq!(graph.nodes.count(), 8, "Wrong node-count");
+    assert_eq!(graph.fwd_edges.count(), 16, "Wrong edge-count");
     assert!(
-        graph.edge_from(24, 42).is_none(),
+        graph.fwd_edges.between(24, 42).is_none(),
         "Edge doesn't exist, so graph should return None."
     );
     assert!(
-        graph.leaving_edges(424).is_none(),
+        graph.fwd_edges.starting_from(424).is_none(),
         "Node's idx is too high, thus the node should not have any leaving edges."
     );
     assert!(
-        graph.leaving_edges(node_a.idx).is_none(),
+        graph.fwd_edges.starting_from(node_a.idx).is_none(),
         "Node has no leaving edges, so the method should return None."
     );
 

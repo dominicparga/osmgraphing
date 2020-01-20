@@ -28,14 +28,17 @@ pub struct EdgeInfo {
 impl<'a> EdgeInfo {
     pub fn from(small_edge_info: &SmallEdgeInfo, graph: &Graph) -> EdgeInfo {
         let edge = graph
-            .edge(small_edge_info.edge_idx)
+            .fwd_edges
+            .get(small_edge_info.edge_idx)
             .expect("SmallEdgeInfo should be consistent to graph.");
 
         let edge_src = graph
-            .node(edge.src_idx())
+            .nodes
+            .get(edge.src_idx())
             .expect("Edge's src-node should be in graph, since graph should be consistent.");
         let edge_dst = graph
-            .node(edge.dst_idx())
+            .nodes
+            .get(edge.dst_idx())
             .expect("Edge's dst-node should be in graph, since graph should be consistent.");
 
         EdgeInfo {

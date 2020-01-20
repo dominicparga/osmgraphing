@@ -15,7 +15,6 @@ clear
 cargo fmt
 
 cargo run --release -- \
---verbose \
 braess \
 --map "custom/resources/maps/${__MAP}" \
 --proto-routes "${__OUT_DIR}/proto_routes_30k.csv" \

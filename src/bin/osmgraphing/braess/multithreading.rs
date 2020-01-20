@@ -62,7 +62,7 @@ impl<'a> WorkerSocket {
             debug!("[Worker {}] spawned", worker_idx);
 
             let mut astar = routing::factory::astar::fastest();
-            let mut stats: Vec<Option<SmallEdgeInfo>> = vec![None; graph.edge_count()];
+            let mut stats: Vec<Option<SmallEdgeInfo>> = vec![None; graph.fwd_edges.count()];
 
             loop {
                 trace!(
@@ -105,7 +105,7 @@ impl<'a> WorkerSocket {
                 trace!("[Worker {}][step 5] stats sent", worker_idx);
 
                 // refill cleared stats
-                stats.resize(graph.edge_count(), None);
+                stats.resize(graph.fwd_edges.count(), None);
             }
 
             debug!("[Worker {}] terminated", worker_idx);

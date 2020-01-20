@@ -109,19 +109,64 @@ impl fmt::Display for Edge {
 }
 
 //------------------------------------------------------------------------------------------------//
-// graph
+// graph: NodeContainer
 
 #[derive(Debug)]
-pub struct Graph {
+pub struct NodeContainer {
     nodes: Vec<Node>,
+}
+
+impl NodeContainer {
+    fn new() -> NodeContainer {
+        NodeContainer { nodes: Vec::new() }
+    }
+
+    pub fn count(&self) -> usize {
+        self.nodes.len()
+    }
+
+    pub fn idx_from(&self, id: i64) -> Result<usize, usize> {
+        self.nodes.binary_search_by(|node| node.id.cmp(&id))
+    }
+
+    pub fn get_from(&self, id: i64) -> Option<&Node> {
+        let idx = match self.idx_from(id) {
+            Ok(idx) => idx,
+            Err(_) => return None,
+        };
+        self.get(idx)
+    }
+
+    pub fn get(&self, idx: usize) -> Option<&Node> {
+        debug_assert_eq!(
+            self.nodes[idx].idx, idx,
+            "Node's idx in graph and its stored idx should be same."
+        );
+        self.nodes.get(idx)
+    }
+}
+
+impl ops::Index<usize> for NodeContainer {
+    type Output = Node;
+
+    fn index(&self, idx: usize) -> &Self::Output {
+        &self.nodes[idx]
+    }
+}
+
+//------------------------------------------------------------------------------------------------//
+// graph: EdgeContainer
+
+#[derive(Debug)]
+pub struct EdgeContainer {
     edges: Vec<Edge>,
     offsets: Vec<usize>,
-    enabled: Vec<bool>, // edges
+    enabled: Vec<bool>,
 }
-impl Graph {
-    fn new() -> Graph {
-        Graph {
-            nodes: Vec::new(),
+
+impl EdgeContainer {
+    fn new() -> EdgeContainer {
+        EdgeContainer {
             edges: Vec::new(),
             offsets: Vec::new(),
             enabled: Vec::new(),
@@ -129,41 +174,39 @@ impl Graph {
     }
 
     //--------------------------------------------------------------------------------------------//
-    // getter
+    // getter: counts
 
-    pub fn node_count(&self) -> usize {
-        self.nodes.len()
-    }
-    pub fn edge_count(&self) -> usize {
+    pub fn count(&self) -> usize {
         self.edges.len()
     }
 
-    pub fn node_idx_from(&self, id: i64) -> Result<usize, usize> {
-        self.nodes.binary_search_by(|node| node.id.cmp(&id))
-    }
+    //--------------------------------------------------------------------------------------------//
+    // getter: edges
 
-    pub fn node(&self, idx: usize) -> Option<&Node> {
-        debug_assert_eq!(
-            self.nodes[idx].idx, idx,
-            "Node's idx in graph and its stored idx should be same."
-        );
-        self.nodes.get(idx)
-    }
-    pub fn edge(&self, edge_idx: usize) -> Option<&Edge> {
-        if *(self.enabled.get(edge_idx)?) {
-            self.edges.get(edge_idx)
+    pub fn get(&self, idx: usize) -> Option<&Edge> {
+        if *(self.enabled.get(idx)?) {
+            self.edges.get(idx)
         } else {
             None
         }
     }
-    pub fn offset(&self, node_idx: usize) -> Option<usize> {
-        Some(*(self.offsets.get(node_idx)?))
+
+    pub fn starting_from(&self, node_idx: usize) -> Option<Vec<&Edge>> {
+        let range = self.offset_indices(node_idx)?;
+
+        let mut leaving_edges = vec![];
+        for i in range {
+            if let Some(edge) = self.get(i) {
+                leaving_edges.push(edge);
+            }
+        }
+        Some(leaving_edges)
     }
 
     /// uses binary-search, but only on src's leaving edges (±3), so more or less in O(1)
     ///
     /// Returns the index of the edge, which can be used in the function `edge`
-    pub fn edge_from(&self, src_idx: usize, dst_idx: usize) -> Option<(&Edge, usize)> {
+    pub fn between(&self, src_idx: usize, dst_idx: usize) -> Option<(&Edge, usize)> {
         let range = self.offset_indices(src_idx)?;
         let leaving_edges = &self.edges[range.clone()];
         let j = leaving_edges
@@ -172,10 +215,13 @@ impl Graph {
 
         let edge_idx = range.start + j;
         debug_assert_eq!(leaving_edges[j], self.edges[edge_idx]);
-        let edge = self.edge(edge_idx)?;
+        let edge = self.get(edge_idx)?;
 
         Some((edge, edge_idx))
     }
+
+    //--------------------------------------------------------------------------------------------//
+    // getter: offsets
 
     /// Returns a "real" range, where `start_bound < end_bound`
     fn offset_indices(&self, node_idx: usize) -> Option<ops::Range<usize>> {
@@ -193,32 +239,59 @@ impl Graph {
         }
     }
 
-    pub fn leaving_edges(&self, node_idx: usize) -> Option<Vec<&Edge>> {
-        let range = self.offset_indices(node_idx)?;
+    //--------------------------------------------------------------------------------------------//
+    // setter: enabled edges
 
-        let mut leaving_edges = vec![];
-        for i in range {
-            if let Some(edge) = self.edge(i) {
-                leaving_edges.push(edge);
-            }
-        }
-        Some(leaving_edges)
-    }
-
-    pub fn enable_edge(&mut self, edge_idx: usize) {
+    pub fn enable(&mut self, edge_idx: usize) {
         self.enabled[edge_idx] = true;
     }
-    pub fn disable_edge(&mut self, edge_idx: usize) {
+
+    pub fn disable(&mut self, edge_idx: usize) {
         self.enabled[edge_idx] = false;
     }
 }
+
+impl ops::Index<usize> for EdgeContainer {
+    type Output = Edge;
+
+    fn index(&self, idx: usize) -> &Self::Output {
+        &self.edges[idx]
+    }
+}
+
+//------------------------------------------------------------------------------------------------//
+// graph: EdgeContainer
+
+#[derive(Debug)]
+pub struct Graph {
+    pub nodes: NodeContainer,
+    pub fwd_edges: EdgeContainer,
+}
+
+impl Graph {
+    fn new() -> Graph {
+        Graph {
+            nodes: NodeContainer::new(),
+            fwd_edges: EdgeContainer::new(),
+        }
+    }
+
+    pub fn nodes(&self) -> &NodeContainer {
+        &(self.nodes)
+    }
+
+    pub fn fwd_edges(&self) -> &EdgeContainer {
+        &(self.fwd_edges)
+    }
+}
+
 impl fmt::Display for Graph {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         writeln!(
             f,
-            "Graph: {{ number of nodes: {}, number of edges: {} }}",
-            self.node_count(),
-            self.edge_count()
+            "Graph: {{ number of nodes: {}, number of fwd_edges: {} }}",
+            self.nodes.count(),
+            self.fwd_edges.count()
         )?;
 
         writeln!(f, "")?;
@@ -229,14 +302,14 @@ impl fmt::Display for Graph {
         // print nodes
         for mut i in 0..n {
             // if enough nodes are in the graph
-            if i < self.node_count() {
+            if i < self.nodes.count() {
                 if i == n - 1 {
                     // if at least 2 nodes are missing -> print `...`
-                    if i + 1 < self.node_count() {
+                    if i + 1 < self.nodes.count() {
                         writeln!(f, "...")?;
                     }
                     // print last node
-                    i = self.node_count() - 1;
+                    i = self.nodes.count() - 1;
                 }
                 let node = &self.nodes[i];
                 writeln!(f, "Node: {{ idx: {}, id: {}, {} }}", i, node.id, node.coord,)?;
@@ -247,19 +320,19 @@ impl fmt::Display for Graph {
 
         writeln!(f, "")?;
 
-        // print edges
+        // print fwd-edges
         for mut j in 0..m {
             // if enough edges are in the graph
-            if j < self.edge_count() {
+            if j < self.fwd_edges.count() {
                 if j == m - 1 {
                     // if at least 2 edges are missing -> print `...`
-                    if j + 1 < self.edge_count() {
+                    if j + 1 < self.fwd_edges.count() {
                         writeln!(f, "...")?;
                     }
                     // print last edge
-                    j = self.edge_count() - 1;
+                    j = self.fwd_edges.count() - 1;
                 }
-                let edge = &self.edges[j];
+                let edge = &self.fwd_edges[j];
                 writeln!(
                     f,
                     "Edge: {{ idx: {}, id: {}, ({})-{}->({}) }}",
@@ -276,26 +349,37 @@ impl fmt::Display for Graph {
 
         writeln!(f, "")?;
 
-        // print offsets
+        // print fwd-offsets
         for mut i in 0..n {
             // if enough offsets are in the graph
-            if i < self.node_count() {
+            if i < self.nodes.count() {
                 if i == n - 1 {
                     // if at least 2 offsets are missing -> print `...`
-                    if i + 1 < self.node_count() {
+                    if i + 1 < self.nodes.count() {
                         writeln!(f, "...")?;
                     }
                     // print last offset
-                    i = self.node_count() - 1;
+                    i = self.nodes.count() - 1;
                 }
-                writeln!(f, "{{ id: {}, offset: {} }}", i, self.offsets[i])?;
+                writeln!(
+                    f,
+                    "{{ id: {}, fwd-offset: {} }}",
+                    i, self.fwd_edges.offsets[i]
+                )?;
             } else {
                 break;
             }
         }
         // offset has n+1 entries due to `leaving_edges(...)`
-        let i = self.offsets.len() - 1;
-        writeln!(f, "{{ __: {}, offset: {} }}", i, self.offsets[i])?;
+        let i = self.fwd_edges.offsets.len() - 1;
+        writeln!(
+            f,
+            "{{ __: {}, fwd-offset: {} }}",
+            i, self.fwd_edges.offsets[i]
+        )?;
+
+        // print bwd-offsets
+        // todo
 
         Ok(())
     }

@@ -73,7 +73,8 @@ pub fn search_and_export<P: AsRef<path::Path> + ?Sized>(cfg: Config<P>) -> Resul
     // random
     info!("Using seed {}", cfg.seed);
     let mut rng = rand_pcg::Pcg32::seed_from_u64(cfg.seed);
-    let die = Uniform::from(0..graph.node_count());
+    let die = Uniform::from(0..graph.nodes.count());
+    println!("{}", graph.nodes.count());
 
     // proto_routes
     let mut proto_routes = Vec::with_capacity(writebuf_len);
@@ -94,15 +95,17 @@ pub fn search_and_export<P: AsRef<path::Path> + ?Sized>(cfg: Config<P>) -> Resul
             let src_idx: usize = die.sample(&mut rng);
             let dst_idx: usize = die.sample(&mut rng);
             let src = graph
-                .node(src_idx)
+                .nodes
+                .get(src_idx)
                 .expect("Range should be ok for src-node.");
             let dst = graph
-                .node(dst_idx)
+                .nodes
+                .get(dst_idx)
                 .expect("Range should be ok for dst-node.");
             (src, dst)
         };
         if let Some(best_path) = astar.compute_best_path(src, dst, &graph) {
-            progress_bar.inc_k().log();
+            let _result = progress_bar.inc_k().try_log();
 
             // if travel-time takes at most max_travel_time_ms (e.g. one hour)
             // -> accept
@@ -120,7 +123,8 @@ pub fn search_and_export<P: AsRef<path::Path> + ?Sized>(cfg: Config<P>) -> Resul
                 // update cost
                 cost -= {
                     let (edge, _) = graph
-                        .edge_from(pred_idx, succ_idx)
+                        .fwd_edges
+                        .between(pred_idx, succ_idx)
                         .expect("Path-edge should exist.");
                     edge.milliseconds()
                 };
@@ -129,7 +133,8 @@ pub fn search_and_export<P: AsRef<path::Path> + ?Sized>(cfg: Config<P>) -> Resul
 
             // add new path
             let new_dst = graph
-                .node(succ_idx)
+                .nodes
+                .get(succ_idx)
                 .expect("Path should contain graph's nodes.");
             proto_routes.push((src.id(), new_dst.id()));
 

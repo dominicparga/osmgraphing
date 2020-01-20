@@ -24,10 +24,12 @@ fn assert_correct(
 
     for (src, dst, option_specs) in expected_paths {
         let graph_src = graph
-            .node(src.idx)
+            .nodes
+            .get(src.idx)
             .expect(&format!("src-node of idx={} should be in graph.", src.idx));
         let graph_dst = graph
-            .node(dst.idx)
+            .nodes
+            .get(dst.idx)
             .expect(&format!("dst-node of idx={} should be in graph.", dst.idx));
         let option_path = astar.compute_best_path(graph_src, graph_dst, &graph);
         assert_eq!(
@@ -102,7 +104,11 @@ impl TestPath {
         let node = |idx: usize| -> TestNode {
             TestNode::from(
                 idx,
-                graph.node(idx).expect("Node should be in graph here.").id(),
+                graph
+                    .nodes
+                    .get(idx)
+                    .expect("Node should be in graph here.")
+                    .id(),
             )
         };
 
