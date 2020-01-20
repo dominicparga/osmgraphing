@@ -10,6 +10,7 @@ use osmgraphing::routing;
 // own modules
 
 mod astar;
+mod dijkstra;
 
 //------------------------------------------------------------------------------------------------//
 // helpers
