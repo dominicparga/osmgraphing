@@ -25,12 +25,12 @@ use osmgraphing::{routing, Parser};
 
 //------------------------------------------------------------------------------------------------//
 
-fn init_logging(verbosely: bool) {
+fn init_logging(quietly: bool) {
     let mut builder = env_logger::Builder::new();
     // minimum filter-level: `warn`
     builder.filter(None, log::LevelFilter::Warn);
-    // if verbose logging: log `info` for the server and this repo
-    if verbosely {
+    // if quiet logging: doesn't log `info` for the server and this repo
+    if !quietly {
         builder.filter(Some(env!("CARGO_PKG_NAME")), log::LevelFilter::Info);
         builder.filter(Some("astar"), log::LevelFilter::Info);
     }
@@ -46,7 +46,7 @@ fn init_logging(verbosely: bool) {
 }
 
 fn main() {
-    init_logging(true);
+    init_logging(false);
     info!("Executing example: A*");
 
     //--------------------------------------------------------------------------------------------//

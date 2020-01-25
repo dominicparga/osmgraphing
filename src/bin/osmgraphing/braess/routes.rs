@@ -2,6 +2,7 @@ use std::path;
 
 use log::info;
 use osmgraphing::{routing, Parser};
+use progressing::Bar;
 use rand::distributions::{Distribution, Uniform};
 use rand::SeedableRng;
 
@@ -9,7 +10,6 @@ use rand::SeedableRng;
 // own modules
 
 use super::io_kyle;
-use super::progressing;
 
 //------------------------------------------------------------------------------------------------//
 // config
@@ -82,13 +82,13 @@ pub fn search_and_export<P: AsRef<path::Path> + ?Sized>(cfg: Config<P>) -> Resul
     // routing
 
     // logging progress
-    let mut progress_bar = progressing::Bar::from(cfg.route_count);
+    let mut progressbar = progressing::BernoulliBar::from_goal(cfg.route_count);
 
     // searching
-    progress_bar.log();
+    progressbar.reprint()?;
     io_kyle::write_proto_routes(&vec![], cfg.paths.output.files.proto_routes, false)?;
-    while progress_bar.k() < cfg.route_count {
-        progress_bar.inc_n();
+    while progressbar.progress().successes < cfg.route_count {
+        progressbar.add((0, 1));
 
         let (src, dst) = {
             let src_idx: usize = die.sample(&mut rng);
@@ -102,7 +102,7 @@ pub fn search_and_export<P: AsRef<path::Path> + ?Sized>(cfg: Config<P>) -> Resul
             (src, dst)
         };
         if let Some(best_path) = astar.compute_best_path(src, dst, &graph) {
-            progress_bar.inc_k().log();
+            progressbar.add((1, 0)).reprint()?;
 
             // if travel-time takes at most max_travel_time_ms (e.g. one hour)
             // -> accept
@@ -144,7 +144,7 @@ pub fn search_and_export<P: AsRef<path::Path> + ?Sized>(cfg: Config<P>) -> Resul
             }
         }
     }
-    info!("{}", progress_bar);
+    progressbar.reprintln()?;
 
     Ok(())
 }

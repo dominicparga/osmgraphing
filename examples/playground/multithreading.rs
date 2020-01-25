@@ -97,8 +97,8 @@ fn parse_cmdline<'a>() -> clap::ArgMatches<'a> {
                 "You can set up the logger by setting RUST_LOG, e.g. to",
                 "    export RUST_LOG='warn,osmgraphing=info,parser=info,astar=info'",
                 "for getting 'warn's per default, but 'info' about the others (e.g. 'parser').",
-                "Consider the flag '--verbose', so you don't have to mess around with RUST_LOG,",
-                "setting RUST_LOG to 'info' for relevant parts of the software.",
+                "RUST_LOG is set up automatically, setting RUST_LOG to 'info'",
+                "for relevant parts of the software, but consider the flag '--quiet'.",
                 "",
                 "In case you're using cargo, please use",
                 "    cargo run --example",
@@ -108,26 +108,23 @@ fn parse_cmdline<'a>() -> clap::ArgMatches<'a> {
                 .as_ref(),
         )
         .arg(
-            clap::Arg::with_name("verbose")
-                .short("v")
-                .long("verbose")
-                .help(
-                    &[
-                        "Logs `info` in addition to `warn` and `error`.",
-                        "The env-variable `RUST_LOG` has precedence.",
-                    ]
-                    .join("\n"),
-                ),
+            clap::Arg::with_name("quiet").short("q").long("quiet").help(
+                &[
+                    "Logs `info` in addition to `warn` and `error`.",
+                    "The env-variable `RUST_LOG` has precedence.",
+                ]
+                .join("\n"),
+            ),
         )
         .get_matches()
 }
 
-fn setup_logging(verbosely: bool) {
+fn setup_logging(quietly: bool) {
     let mut builder = env_logger::Builder::new();
     // minimum filter-level: `warn`
     builder.filter(None, log::LevelFilter::Warn);
-    // if verbose logging: log `info` for the server and this repo
-    if verbosely {
+    // if quiet logging: doesn't log `info` for the server and this repo
+    if !quietly {
         builder.filter(Some("actix"), log::LevelFilter::Info);
         builder.filter(Some("osmgraphing"), log::LevelFilter::Info);
     }
@@ -144,7 +141,7 @@ fn setup_logging(verbosely: bool) {
 
 fn main() {
     let matches = parse_cmdline();
-    setup_logging(matches.is_present("verbose"));
+    setup_logging(matches.is_present("quiet"));
     run_first_threads();
     run_channels();
     run_mutex();

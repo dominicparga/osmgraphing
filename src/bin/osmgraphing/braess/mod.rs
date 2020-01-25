@@ -8,6 +8,7 @@ use std::sync::Arc;
 use log::{debug, info, trace, warn};
 use osmgraphing::network::{Graph, Node};
 use osmgraphing::{routing, Parser};
+use progressing::Bar;
 
 //------------------------------------------------------------------------------------------------//
 // own modules
@@ -17,7 +18,6 @@ mod model;
 use model::{EdgeInfo, SmallEdgeInfo};
 mod multithreading;
 use multithreading::WorkerSocket;
-mod progressing;
 pub mod routes;
 
 //------------------------------------------------------------------------------------------------//
@@ -149,7 +149,8 @@ pub fn run<P: AsRef<path::Path> + ?Sized>(cfg: Config<P>) -> Result<(), String> 
         let mut proto_routes = proto_routes_backup.clone();
 
         // logging
-        let mut progress_bar = progressing::Bar::from(proto_routes_backup.len() as u32);
+        let mut progressbar =
+            progressing::BernoulliBar::from_goal(proto_routes_backup.len() as u32);
 
         // stats
         let mut stats: Vec<Option<SmallEdgeInfo>> = vec![None; graph.edge_count()];
@@ -181,27 +182,25 @@ pub fn run<P: AsRef<path::Path> + ?Sized>(cfg: Config<P>) -> Result<(), String> 
         );
         // process incoming stats
         info!("Intermediate simulation-progress is stored (silently) to the final csv-file.");
-        progress_bar.log();
+        progressbar.reprint()?;
+        let mut last_progress = progressbar.progress();
         loop {
             if let Ok(packet) = stats_rx.recv() {
                 // merge received stats and update progress
                 merge_into(&packet.stats, &mut stats);
                 // update progress and export intermediate results to file
-                let result = progress_bar.update_n(packet.n).update_k(packet.k).try_log();
-                if result.is_ok() {
+                progressbar.add(packet.progress).reprint()?;
+                if progressbar.progress().successes - last_progress.successes >= 100 {
+                    // remember state for next comparison
+                    last_progress = progressbar.progress();
                     debug!(
-                        "Exporting stats after {} processed routes",
-                        progress_bar.k()
+                        "\nExporting stats after {} processed routes",
+                        progressbar.progress().successes
                     );
                     let appending = false;
                     let data = data_from_stats(&stats, &graph);
                     io_kyle::write_edge_stats(&data, &out_file_paths[loop_i], appending)?;
                     debug!("Exported");
-                } else {
-                    // just helpful for debugging
-                    if progress_bar.k() == 100 {
-                        progress_bar.log();
-                    }
                 }
                 // and send new data if available
                 if proto_routes.len() > 0 {
@@ -213,9 +212,13 @@ pub fn run<P: AsRef<path::Path> + ?Sized>(cfg: Config<P>) -> Result<(), String> 
                     // send workpkg
                     let worker = match workers[packet.worker_idx as usize].as_ref() {
                         Some(worker) => worker,
-                        None => return Err("Worker's sender should not be released yet".to_owned()),
+                        None => {
+                            progressbar.reprintln()?;
+                            return Err("Worker's sender should not be released yet".to_owned());
+                        }
                     };
                     if let Err(e) = worker.data_tx().send(workpkg) {
+                        progressbar.reprintln()?;
                         return Err(format!("Sending stucks due to {}", e));
                     }
                 } else {
@@ -229,6 +232,7 @@ pub fn run<P: AsRef<path::Path> + ?Sized>(cfg: Config<P>) -> Result<(), String> 
                 break;
             }
         }
+        progressbar.reprintln()?;
         info!("Finished braess-optimization-loop");
 
         //----------------------------------------------------------------------------------------//
@@ -343,33 +347,31 @@ fn data_from_stats(stats: &Vec<Option<SmallEdgeInfo>>, graph: &Graph) -> Vec<Edg
 
 //------------------------------------------------------------------------------------------------//
 
-/// return (k, n)
+/// return (successes, attempts)
 fn work_off_all(
     proto_routes: &[(i64, i64)],
     astar: &mut Box<dyn routing::Astar>,
     stats: &mut Vec<Option<SmallEdgeInfo>>,
     graph: &Graph,
-) -> Result<(u32, u32), String> {
+) -> Result<progressing::BernoulliProgress, String> {
     // progress
-    let mut k = 0;
-    let mut n = 0;
+    let mut progress = progressing::BernoulliProgress::new();
 
     // loop over all routes, calculate best path, evaluate and update stats
     for proto_route in proto_routes {
-        let (delta_k, delta_n) = work_off(proto_route, astar, stats, graph)?;
-        k += delta_k;
-        n += delta_n;
+        let new_progress = work_off(proto_route, astar, stats, graph)?;
+        progress += new_progress;
     }
 
-    Ok((k, n))
+    Ok(progress)
 }
-/// return (k, n)
+/// return (successes, attempts)
 fn work_off(
     proto_route: &(i64, i64),
     astar: &mut Box<dyn routing::Astar>,
     stats: &mut Vec<Option<SmallEdgeInfo>>,
     graph: &Graph,
-) -> Result<(u32, u32), String> {
+) -> Result<progressing::BernoulliProgress, String> {
     // loop over all routes, calculate best path, evaluate and update stats
     let &(src_id, dst_id) = proto_route;
 
@@ -388,11 +390,11 @@ fn work_off(
         // update stats
         evaluate_best_path(&best_path, stats, &graph);
 
-        Ok((1, 1))
+        Ok((1, 1).into())
     } else {
         warn!("No path from ({}) to ({}).", src, dst);
 
-        Ok((0, 1))
+        Ok((0, 1).into())
     }
 }
 

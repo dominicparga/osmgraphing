@@ -6,8 +6,7 @@ use osmgraphing::network::Graph;
 
 pub struct Packet {
     pub worker_idx: u8,
-    pub k: u32,
-    pub n: u32,
+    pub progress: progressing::BernoulliProgress,
     pub stats: Vec<Option<SmallEdgeInfo>>,
 }
 

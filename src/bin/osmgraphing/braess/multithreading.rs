@@ -80,7 +80,7 @@ impl<'a> WorkerSocket {
                 trace!("[Worker {}][step 2] Starting processing ..", worker_idx);
 
                 // work data completely off
-                let (k, n) =
+                let progress =
                     super::work_off_all(&proto_routes[..], &mut astar, &mut stats, &graph)?;
 
                 trace!(
@@ -92,8 +92,7 @@ impl<'a> WorkerSocket {
                 // send results
                 let packet = Packet {
                     worker_idx,
-                    k,
-                    n,
+                    progress,
                     // drain clears stats
                     // drain + filter_map + collect -> capacity fits
                     stats: stats

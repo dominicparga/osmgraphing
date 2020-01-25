@@ -17,7 +17,6 @@ cargo fmt
 mkdir -v -p "${__OUT_DIR}"
 
 cargo run --release -- \
---verbose \
 gen-proto-routes \
 --seed 42 \
 --route-count 30000 \
