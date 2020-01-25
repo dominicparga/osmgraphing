@@ -1,15 +1,19 @@
 # osmgraphing
 
-[![Build Status latest][travis/latest/badge]][travis/latest]
-[![Build Status master][travis/master/badge]][travis/master]
-[![Tag][github/tags/badge]][github/tags]
+[![Tag][github/dominicparga/osmgraphing/tags/badge]][github/dominicparga/osmgraphing/tags]
 [![Crates.io][crates.io/osmgraphing/badge]][crates.io/osmgraphing]
 [![Docs][docs.rs/osmgraphing/badge]][docs.rs/osmgraphing]
 
-[![License][github/license/badge]][github/license]
-[![Last commit][github/last-commit/badge]][github/last-commit]
+[![Build Status latest][travis/latest/badge]][travis/latest]
+[![Build Status master][travis/master/badge]][travis/master]
 
-Goal of this student project is parsing [openstreetmap][osm] data to calculate traffic routes on it.
+[![Changelog][github/dominicparga/osmgraphing/blob/changelog/badge]][github/dominicparga/osmgraphing/blob/changelog]
+[![Last commit][github/dominicparga/osmgraphing/last-commit/badge]][github/dominicparga/osmgraphing/last-commit]
+
+[![License][github/dominicparga/osmgraphing/license/badge]][github/dominicparga/osmgraphing/license]
+
+Goal of this repo is parsing [openstreetmap][osm] data to calculate traffic-routes and different related use-cases on it.
+
 
 ## News
 
@@ -27,21 +31,25 @@ The implemented solution runs concurrently and shows some nice issues, but shoul
 Next steps will be cleaning up a little and doing the master-thesis until submission at `June 19th, 2020`.
 It will play around with new metrices basing on edge-usages after calculating alternative routes.
 
+
 ## Setup and usage
 
-Please refer to [setup and usage][github/usage] to get details about the project setup and how to run the code.
+Please refer to [setup and usage][github/dominicparga/osmgraphing/usage] to get details about the project setup and how to run the code.
+
 
 [crates.io/osmgraphing]: https://crates.io/crates/osmgraphing
 [crates.io/osmgraphing/badge]: https://img.shields.io/crates/v/osmgraphing?style=for-the-badge
 [docs.rs/osmgraphing]: https://docs.rs/osmgraphing/
 [docs.rs/osmgraphing/badge]: https://img.shields.io/crates/v/osmgraphing?color=informational&label=docs&style=for-the-badge
-[github/last-commit]: https://github.com/dominicparga/osmgraphing/commits
-[github/last-commit/badge]: https://img.shields.io/github/last-commit/dominicparga/osmgraphing?style=for-the-badge
-[github/license]: https://github.com/dominicparga/osmgraphing/blob/master/LICENSE
-[github/license/badge]: https://img.shields.io/github/license/dominicparga/osmgraphing?style=for-the-badge
-[github/tags]: https://github.com/dominicparga/osmgraphing/tags
-[github/tags/badge]: https://img.shields.io/github/v/tag/dominicparga/osmgraphing?sort=semver&style=for-the-badge
-[github/usage]: https://github.com/dominicparga/osmgraphing/wiki/Usage
+[github/dominicparga/osmgraphing/blob/changelog]: https://github.com/dominicparga/osmgraphing/blob/master/CHANGELOG.md
+[github/dominicparga/osmgraphing/blob/changelog/badge]: https://img.shields.io/badge/CHANGELOG-master-blueviolet?style=for-the-badge
+[github/dominicparga/osmgraphing/last-commit]: https://github.com/dominicparga/osmgraphing/commits
+[github/dominicparga/osmgraphing/last-commit/badge]: https://img.shields.io/github/last-commit/dominicparga/osmgraphing?style=for-the-badge
+[github/dominicparga/osmgraphing/license]: https://github.com/dominicparga/osmgraphing/blob/master/LICENSE
+[github/dominicparga/osmgraphing/license/badge]: https://img.shields.io/github/license/dominicparga/osmgraphing?style=for-the-badge
+[github/dominicparga/osmgraphing/tags]: https://github.com/dominicparga/osmgraphing/tags
+[github/dominicparga/osmgraphing/tags/badge]: https://img.shields.io/github/v/tag/dominicparga/osmgraphing?sort=semver&style=for-the-badge
+[github/dominicparga/osmgraphing/usage]: https://github.com/dominicparga/osmgraphing/wiki/Usage
 [osm]: https://openstreetmap.org
 [travis/latest]: https://travis-ci.com/dominicparga/osmgraphing
 [travis/latest/badge]: https://img.shields.io/travis/com/dominicparga/osmgraphing?label=latest%20build&style=for-the-badge
