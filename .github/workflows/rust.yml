@@ -17,15 +17,13 @@ jobs:
       run: |
         git config --global user.name "${GIT_USER_NAME}"
         git config --global user.email "${GIT_USER_EMAIL}"
+        git fetch --all
+        git tag
     - name: Test git-user
-      if: github.ref == 'refs/heads/master'
       env:
         FOO: ${{ github.ref }}
       run: |
-        git fetch --all
-        git config user.name
-        git config --global user.name
-        git tag -a "v$(cargo pkgid | cut -d# -f2 | cut -d: -f2)" -m "See CHANGELOG.md"
+        git tag
     - name: Build
       run: 'false && cargo build --verbose'
     - name: Run tests
