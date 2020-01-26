@@ -18,8 +18,6 @@ jobs:
         git config --global user.name "${GIT_USER_NAME}"
         git config --global user.email "${GIT_USER_EMAIL}"
         git fetch --all
-        git tag --annotate "foo" --message='tagging-test for workflows'
-        git push --tags
     - name: Build
       run: cargo build --verbose
     - name: Run tests
