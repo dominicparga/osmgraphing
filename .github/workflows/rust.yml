@@ -15,11 +15,12 @@ jobs:
       run: cargo test --verbose
     - name: Build docs
       run: cargo doc
-    - name: Deploy
-      run: 'false'
-    - name: Tag
-      if: failure()
-      run: echo "Execute 'git tag -a VERSION'"
+    - name: Deploy and tag
+      run: |
+        echo "Execute 'cargo publish --token TOKEN'"
+        'false'
+        echo "Execute 'git tag -a VERSION'"
+      continue-on-error: true
   beta:
     runs-on: ubuntu-latest
     steps:
