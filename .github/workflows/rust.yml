@@ -15,7 +15,8 @@ jobs:
         token: ${{ secrets.GITHUB_TOKEN }}
     - name: Test git tagging
       run: |
-        git tag -a 'v0.6.1' -m 'See CHANGELOG.md'
+        git status
+        git tag -a "v$(cargo pkgid | cut -d# -f2 | cut -d: -f2)" -m "See CHANGELOG.md"
         'false'
     - name: Build
       run: cargo build --verbose
@@ -28,7 +29,7 @@ jobs:
         CRATES_TOKEN: ${{ secrets.CRATES_TOKEN }}
       run: |
         cargo publish --token "${CRATES_TOKEN}"
-        git tag -a v0.6.1
+        git tag -a "v$(cargo pkgid | cut -d# -f2 | cut -d: -f2)" -m "See CHANGELOG.md"
       continue-on-error: true
   beta:
     runs-on: ubuntu-latest
