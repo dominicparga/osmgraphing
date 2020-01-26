@@ -9,6 +9,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
+    - name: Test git-cmd
+      run: |
+        git tag -a v0.6.1 # should fail because already existing
     - name: Build
       run: cargo build --verbose
     - name: Run tests
@@ -16,10 +19,11 @@ jobs:
     - name: Build docs
       run: cargo doc
     - name: Deploy and tag
+      env:
+        CRATES_TOKEN: ${{ secrets.CRATES_TOKEN }}
       run: |
-        echo "Execute 'cargo publish --token TOKEN'"
-        'false'
-        echo "Execute 'git tag -a VERSION'"
+        cargo publish --token "${CRATES_TOKEN}"
+        git tag -a v0.6.1
       continue-on-error: true
   beta:
     runs-on: ubuntu-latest
