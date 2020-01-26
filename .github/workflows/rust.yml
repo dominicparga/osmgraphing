@@ -18,6 +18,8 @@ jobs:
         git config --global user.name "${GIT_USER_NAME}"
         git config --global user.email "${GIT_USER_EMAIL}"
         git fetch --all
+        git tag --annotate "foo" --message='tagging-test for workflows'
+        git push --tags
     - name: Build
       run: cargo build --verbose
     - name: Run tests
@@ -34,6 +36,7 @@ jobs:
       run: |
         cargo publish --token "${CRATES_TOKEN}"
         git tag --annotate "v$(cargo pkgid | cut -d# -f2 | cut -d: -f2)" --message='See CHANGELOG.md'
+        git push --tags
       continue-on-error: true
   beta:
     runs-on: ubuntu-latest
