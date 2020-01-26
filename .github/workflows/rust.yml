@@ -17,9 +17,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - name: Install
+    - name: Install toolchain
       run: rustup toolchain install beta
-      run: rustup default beta
+    - run: rustup default beta
     - name: Build
       run: cargo build --verbose
     - name: Run tests
@@ -30,7 +30,7 @@ jobs:
     - uses: actions/checkout@v2
     - name: Install
       run: rustup toolchain install nightly
-      run: rustup default nightly
+    - run: rustup default nightly
     - name: Build
       run: cargo build --verbose
     - name: Run tests
