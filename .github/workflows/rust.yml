@@ -40,6 +40,7 @@ jobs:
   beta:
     runs-on: ubuntu-latest
     steps:
+    - run: 'false'
     - uses: actions/checkout@v2
     - name: Install toolchain
       run: rustup toolchain install beta
@@ -51,6 +52,7 @@ jobs:
   nightly:
     runs-on: ubuntu-latest
     steps:
+    - run: 'false'
     - uses: actions/checkout@v2
       continue-on-error: true
     - name: Install
