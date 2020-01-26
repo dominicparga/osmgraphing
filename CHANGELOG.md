@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 ## Table of contents
 
 1. [Unreleased](#unreleased)
+1. [v1.0.0](#v1.0.0)
 1. [v0.6.1](#v0.6.1)
     1. [v0.6.0](#v0.6.0)
 1. [v0.5.0](#v0.5.0)
@@ -32,6 +33,40 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 
 ### Added <a name="unreleased/added"></a>
 
+\-
+
+
+### Changed
+
+\-
+
+
+### Deprecated
+
+- `CHANGELOG.md` contains empty version-descriptions.
+- Replace existing tags with ones referring to `CHANGELOG.md` and add old tag-texts to the `CHANGELOG.md`
+- Inconsistent `semver` in tagging -> probably `cargo yank VERSION` needed
+
+
+### Removed
+
+\-
+
+
+### Fixed
+
+\-
+
+
+### Security
+
+\-
+
+
+## [v1.0.0][github/self/v1.0.0] <a name="v1.0.0"></a>
+
+### Added <a name="v1.0.0/added"></a>
+
 - Add `CHANGELOG.md`. `:)`
 - Add `GitHub`-workflow automatically testing and deploying.
   As improvement over `travis-ci`, it tags commits automatically if the `Cargo.toml`-version has changed.
@@ -52,17 +87,7 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 ### Removed
 
 - The `braess-optimization` has been removed (to a `kutgw`-branch), since it's just kind of a big playground and interferes with future code, at least when testing.
-- `Travis-CI` has been replaced by `GitHub`-workflows (-> see section [Added](#unreleased/added)).
-
-
-### Fixed
-
-\-
-
-
-### Security
-
-\-
+- `Travis-CI` has been replaced by `GitHub`-workflows (-> see section [`Added`](#v1.0.0/added)).
 
 
 ### [v0.6.1][github/self/v0.6.1] <a name="v0.6.1"></a>
@@ -196,7 +221,8 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 [keepachangelog]: https://keepachangelog.com/en/
 [semver]: https://semver.org/
 
-[Unreleased]: https://github.com/dominicparga/osmgraphing/compare/v0.6.1...HEAD
+[Unreleased]: https://github.com/dominicparga/osmgraphing/compare/v1.0.0...HEAD
+[github/self/v1.0.0]: https://github.com/dominicparga/osmgraphing/compare/v0.6.1...v1.0.0
 [github/self/v0.6.1]: https://github.com/dominicparga/osmgraphing/compare/v0.6.0...v0.6.1
 [github/self/v0.6.0]: https://github.com/dominicparga/osmgraphing/compare/v0.5.0...v0.6.0
 [github/self/v0.5.0]: https://github.com/dominicparga/osmgraphing/compare/v0.4.1...v0.5.0
