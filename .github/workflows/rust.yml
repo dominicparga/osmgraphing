@@ -16,7 +16,7 @@ jobs:
     - name: Build docs
       run: cargo doc
     - name: Deploy
-      run: 'true'
+      run: 'false'
       continue-on-error: true
     - name: Tag
       if: success()
