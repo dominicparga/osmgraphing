@@ -14,28 +14,32 @@ jobs:
       env:
         GIT_USER_NAME: 'GitHub Actions'
         GIT_USER_EMAIL: 'actions@users.noreply.github.com'
-        FOO: ${{ github.ref }}
       run: |
-        echo "${FOO}"
         git config --global user.name "${GIT_USER_NAME}"
         git config --global user.email "${GIT_USER_EMAIL}"
+    - name: Test git-user
+      if: github.ref == 'refs/heads/master'
+      env:
+        FOO: ${{ github.ref }}
+      run: |
+        git fetch --all
+        git config user.name
+        git config --global user.name
+        git tag -a "v$(cargo pkgid | cut -d# -f2 | cut -d: -f2)" -m "See CHANGELOG.md"
     - name: Build
-      if: github.ref == 'master'
       run: 'false && cargo build --verbose'
     - name: Run tests
       run: cargo test --verbose
     - name: Build docs
       run: cargo doc
     - name: Deploy and tag
-      if: github.ref == 'master'
+      if: github.ref == 'refs/heads/master'
       env:
         CRATES_TOKEN: ${{ secrets.CRATES_TOKEN }}
       run: |
-        git fetch --all
-        # test if git user is remembered from above
-        git tag -a "v$(cargo pkgid | cut -d# -f2 | cut -d: -f2)" -m "See CHANGELOG.md"
-        'false'
         cargo publish --token "${CRATES_TOKEN}"
+        git fetch --all
+        git tag -a "v$(cargo pkgid | cut -d# -f2 | cut -d: -f2)" -m "See CHANGELOG.md"
       continue-on-error: true
   beta:
     runs-on: ubuntu-latest
