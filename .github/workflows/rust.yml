@@ -28,9 +28,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
+      continue-on-error: true
     - name: Install
       run: rustup toolchain install nightly
+      continue-on-error: true
     - run: rustup default nightly
+      continue-on-error: true
     - name: Build
       run: cargo build --verbose
       continue-on-error: true
