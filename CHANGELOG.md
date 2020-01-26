@@ -8,7 +8,7 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 ## Table of contents
 
 1. [Unreleased](#unreleased)
-1. [v0.6.1](#v0_6_1)
+1. [v0.6.1](#v0.6.1)
     1. [v0.6.0](#v0_6_0)
 1. [v0.5.0](#v0_5_0)
     1. [v0.4.1](#v0_4_1)
@@ -65,7 +65,7 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 \-
 
 
-### [v0.6.1] <a name="v0_6_1"></a>
+### [v0.6.1][github/v0.6.1] <a name="v0.6.1"></a>
 
 #### Deprecated
 
@@ -197,21 +197,21 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 [semver]: https://semver.org/
 
 [Unreleased]: https://github.com/dominicparga/osmgraphing/compare/v0.6.1...HEAD
-[v0.6.1]: https://github.com/dominicparga/osmgraphing/compare/v0.6.0...v0.6.1
-[v0.6.0]: https://github.com/dominicparga/osmgraphing/compare/v0.5.0...v0.6.0
-[v0.5.0]: https://github.com/dominicparga/osmgraphing/compare/v0.4.1...v0.5.0
-[v0.4.1]: https://github.com/dominicparga/osmgraphing/compare/v0.4.0...v0.4.1
-[v0.4.0]: https://github.com/dominicparga/osmgraphing/compare/v0.3.1...v0.4.0
-[v0.3.1]: https://github.com/dominicparga/osmgraphing/compare/v0.3.0...v0.3.1
-[v0.3.0]: https://github.com/dominicparga/osmgraphing/compare/v0.2.4...v0.3.0
-[v0.2.4]: https://github.com/dominicparga/osmgraphing/compare/v0.2.3...v0.2.4
-[v0.2.3]: https://github.com/dominicparga/osmgraphing/compare/v0.2.2...v0.2.3
-[v0.2.2]: https://github.com/dominicparga/osmgraphing/compare/v0.2.1...v0.2.2
-[v0.2.1]: https://github.com/dominicparga/osmgraphing/compare/v0.2.0...v0.2.1
-[v0.2.0]: https://github.com/dominicparga/osmgraphing/compare/v0.1.5...v0.2.0
-[v0.1.5]: https://github.com/dominicparga/osmgraphing/compare/v0.1.4...v0.1.5
-[v0.1.4]: https://github.com/dominicparga/osmgraphing/compare/v0.1.3...v0.1.4
-[v0.1.3]: https://github.com/dominicparga/osmgraphing/compare/v0.1.2...v0.1.3
-[v0.1.2]: https://github.com/dominicparga/osmgraphing/compare/v0.1.1...v0.1.2
-[v0.1.1]: https://github.com/dominicparga/osmgraphing/compare/v0.1.0...v0.1.1
-[v0.1.0]: https://github.com/dominicparga/osmgraphing/releases/tag/v0.1.0
+[GitHub/v0.6.1]: https://github.com/dominicparga/osmgraphing/compare/v0.6.0...v0.6.1
+[github/v0.6.0]: https://github.com/dominicparga/osmgraphing/compare/v0.5.0...v0.6.0
+[github/v0.5.0]: https://github.com/dominicparga/osmgraphing/compare/v0.4.1...v0.5.0
+[github/v0.4.1]: https://github.com/dominicparga/osmgraphing/compare/v0.4.0...v0.4.1
+[github/v0.4.0]: https://github.com/dominicparga/osmgraphing/compare/v0.3.1...v0.4.0
+[github/v0.3.1]: https://github.com/dominicparga/osmgraphing/compare/v0.3.0...v0.3.1
+[github/v0.3.0]: https://github.com/dominicparga/osmgraphing/compare/v0.2.4...v0.3.0
+[github/v0.2.4]: https://github.com/dominicparga/osmgraphing/compare/v0.2.3...v0.2.4
+[github/v0.2.3]: https://github.com/dominicparga/osmgraphing/compare/v0.2.2...v0.2.3
+[github/v0.2.2]: https://github.com/dominicparga/osmgraphing/compare/v0.2.1...v0.2.2
+[github/v0.2.1]: https://github.com/dominicparga/osmgraphing/compare/v0.2.0...v0.2.1
+[github/v0.2.0]: https://github.com/dominicparga/osmgraphing/compare/v0.1.5...v0.2.0
+[github/v0.1.5]: https://github.com/dominicparga/osmgraphing/compare/v0.1.4...v0.1.5
+[github/v0.1.4]: https://github.com/dominicparga/osmgraphing/compare/v0.1.3...v0.1.4
+[github/v0.1.3]: https://github.com/dominicparga/osmgraphing/compare/v0.1.2...v0.1.3
+[github/v0.1.2]: https://github.com/dominicparga/osmgraphing/compare/v0.1.1...v0.1.2
+[github/v0.1.1]: https://github.com/dominicparga/osmgraphing/compare/v0.1.0...v0.1.1
+[github/v0.1.0]: https://github.com/dominicparga/osmgraphing/releases/tag/v0.1.0
