@@ -12,8 +12,28 @@ jobs:
       uses: actions/checkout@v2
     - name: Test git tagging
       run: |
+        echo 'git status'
         git status
+        echo 'git tag'
         git tag
+        echo 'git config user.name'
+        git config user.name
+        echo 'git config user.email'
+        git config user.email
+        echo 'git tag -a "v0.6.1" -m "See CHANGELOG.md"'
+        git tag -a "v0.6.1" -m "See CHANGELOG.md"
+        echo 'git fetch --all'
+        git fetch --all
+        echo 'git status'
+        git status
+        echo 'git tag'
+        git tag
+        echo 'git config user.name'
+        git config user.name
+        echo 'git config user.email'
+        git config user.email
+        echo 'git tag -a "v0.6.1" -m "See CHANGELOG.md"'
+        git tag -a "v0.6.1" -m "See CHANGELOG.md"
         'false'
     - name: Build
       run: cargo build --verbose
