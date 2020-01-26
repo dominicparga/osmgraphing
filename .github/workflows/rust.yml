@@ -21,7 +21,8 @@ jobs:
         git config --global user.email "${GIT_USER_EMAIL}"
         git fetch --all
     - name: Build
-      run: cargo build --verbose
+      # run: cargo build --verbose
+      run: 'false'
     - name: Run tests
       run: cargo test --verbose
     - name: Build docs
