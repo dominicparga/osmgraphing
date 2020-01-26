@@ -21,7 +21,10 @@ jobs:
     - name: Build
       run: cargo build --verbose
     - name: Run tests
-      run: cargo test --verbose
+      run: |
+      cargo test --verbose
+      cargo run --example astar
+      cargo run --example parser
     - name: Build docs
       run: cargo doc
     - name: Deploy and tag
@@ -42,7 +45,10 @@ jobs:
     - name: Build
       run: cargo build --verbose
     - name: Run tests
-      run: cargo test --verbose
+      run: |
+      cargo test --verbose
+      cargo run --example astar
+      cargo run --example parser
   nightly:
     runs-on: ubuntu-latest
     steps:
@@ -57,5 +63,8 @@ jobs:
       run: cargo build --verbose
       continue-on-error: true
     - name: Run tests
-      run: cargo test --verbose
+      run: |
+      cargo test --verbose
+      cargo run --example astar
+      cargo run --example parser
       continue-on-error: true
