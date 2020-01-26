@@ -14,7 +14,9 @@ jobs:
       env:
         GIT_USER_NAME: 'GitHub Actions'
         GIT_USER_EMAIL: 'actions@users.noreply.github.com'
+        FOO: ${{ github.ref }}
       run: |
+        echo "${FOO}"
         git config --global user.name "${GIT_USER_NAME}"
         git config --global user.email "${GIT_USER_EMAIL}"
     - name: Build
