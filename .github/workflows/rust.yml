@@ -30,7 +30,7 @@ jobs:
         CRATES_TOKEN: ${{ secrets.CRATES_TOKEN }}
       run: |
         cargo publish --token "${CRATES_TOKEN}"
-        git tag -a "v$(cargo pkgid | cut -d# -f2 | cut -d: -f2)" -m "See CHANGELOG.md"
+        git tag --annotate "v$(cargo pkgid | cut -d# -f2 | cut -d: -f2)" --message='See CHANGELOG.md'
       continue-on-error: true
   beta:
     runs-on: ubuntu-latest

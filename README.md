@@ -1,6 +1,5 @@
 # osmgraphing
 
-[![Build Status latest][github/dominicparga/osmgraphing/actions/latest/badge]][github/dominicparga/osmgraphing/actions/latest]
 [![Build Status master][github/dominicparga/osmgraphing/actions/master/badge]][github/dominicparga/osmgraphing/actions/master]
 
 [![Tag][github/dominicparga/osmgraphing/tags/badge]][github/dominicparga/osmgraphing/tags]
@@ -25,8 +24,6 @@ Further, refer to [setup and usage][github/dominicparga/osmgraphing/wiki/usage] 
 [crates.io/osmgraphing/badge]: https://img.shields.io/crates/v/osmgraphing?style=for-the-badge
 [docs.rs/osmgraphing]: https://docs.rs/osmgraphing/
 [docs.rs/osmgraphing/badge]: https://img.shields.io/crates/v/osmgraphing?color=informational&label=docs&style=for-the-badge
-[github/dominicparga/osmgraphing/actions/latest]: https://github.com/dominicparga/osmgraphing/actions
-[github/dominicparga/osmgraphing/actions/latest/badge]: https://img.shields.io/github/workflow/status/dominicparga/osmgraphing/Rust?label=latest%20build&style=for-the-badge
 [github/dominicparga/osmgraphing/actions/master]: https://github.com/dominicparga/osmgraphing/actions
 [github/dominicparga/osmgraphing/actions/master/badge]: https://img.shields.io/github/workflow/status/dominicparga/osmgraphing/Rust/master?label=master-build&style=for-the-badge
 [github/dominicparga/osmgraphing/blob/changelog]: https://github.com/dominicparga/osmgraphing/blob/master/CHANGELOG.md
