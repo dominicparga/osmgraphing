@@ -18,25 +18,23 @@ jobs:
         git config --global user.name "${GIT_USER_NAME}"
         git config --global user.email "${GIT_USER_EMAIL}"
         git fetch --all
-        git tag
-    - name: Test git-user
-      env:
-        FOO: ${{ github.ref }}
-      run: |
-        git tag
     - name: Build
-      run: 'false && cargo build --verbose'
+      # run: cargo build --verbose
+      run: 'true'
     - name: Run tests
-      run: cargo test --verbose
+      # run: cargo test --verbose
+      run: 'true'
     - name: Build docs
-      run: cargo doc
+      # run: cargo doc
+      run: 'true'
     - name: Deploy and tag
       if: github.ref == 'refs/heads/master'
       env:
         CRATES_TOKEN: ${{ secrets.CRATES_TOKEN }}
       run: |
+        git tag
+        'false'
         cargo publish --token "${CRATES_TOKEN}"
-        git fetch --all
         git tag -a "v$(cargo pkgid | cut -d# -f2 | cut -d: -f2)" -m "See CHANGELOG.md"
       continue-on-error: true
   beta:
