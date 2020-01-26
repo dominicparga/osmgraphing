@@ -17,11 +17,9 @@ jobs:
       run: cargo doc
     - name: Deploy
       run: 'false'
-      continue-on-error: true
     - name: Tag
       if: success()
       run: echo "Execute 'git tag -a VERSION'"
-      continue-on-error: true
   beta:
     runs-on: ubuntu-latest
     steps:
