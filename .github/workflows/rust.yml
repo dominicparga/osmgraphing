@@ -16,7 +16,7 @@ jobs:
     - name: Test git tagging
       run: |
         git status
-        git tag -a "v$(cargo pkgid | cut -d# -f2 | cut -d: -f2)" -m "See CHANGELOG.md"
+        git tag -a "v0.6.1" -m "See CHANGELOG.md"
         'false'
     - name: Build
       run: cargo build --verbose
