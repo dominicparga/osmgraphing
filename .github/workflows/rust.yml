@@ -9,12 +9,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - name: Setup git-token for testing
+    - name: Setup git-token
       uses: fregante/setup-git-token@v1
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
     - name: Test git tagging
-      run: git tag -a 'v0.6.1' # should fail because tag already exists
+      run: git tag -a 'v0.6.1' -m 'See CHANGELOG.md' # should fail because tag already exists
     - name: Build
       run: cargo build --verbose
     - name: Run tests
