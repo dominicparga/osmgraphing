@@ -1,7 +1,7 @@
 # osmgraphing
 
-[![Build Status latest][travis/latest/badge]][travis/latest]
-[![Build Status master][travis/master/badge]][travis/master]
+[![Build Status master][github/actions/master/badge]][github/actions/master]
+
 [![Tag][github/tags/badge]][github/tags]
 [![Crates.io][crates.io/osmgraphing/badge]][crates.io/osmgraphing]
 [![Docs][docs.rs/osmgraphing/badge]][docs.rs/osmgraphing]
@@ -43,7 +43,6 @@ Please refer to [setup and usage][github/usage] to get details about the project
 [github/tags/badge]: https://img.shields.io/github/v/tag/dominicparga/osmgraphing?sort=semver&style=for-the-badge
 [github/usage]: https://github.com/dominicparga/osmgraphing/wiki/Usage
 [osm]: https://openstreetmap.org
-[travis/latest]: https://travis-ci.com/dominicparga/osmgraphing
-[travis/latest/badge]: https://img.shields.io/travis/com/dominicparga/osmgraphing?label=latest%20build&style=for-the-badge
-[travis/master]: https://travis-ci.com/dominicparga/osmgraphing/branches
-[travis/master/badge]: https://img.shields.io/travis/com/dominicparga/osmgraphing/master?label=master-build&style=for-the-badge
+[github/actions/master]: https://github.com/dominicparga/osmgraphing/actions
+[github/actions/master/badge]: https://img.shields.io/github/workflow/status/dominicparga/osmgraphing/Rust/master?label=master-build&style=for-the-badge
+
