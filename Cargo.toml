@@ -1,6 +1,6 @@
 [package]
 name = "osmgraphing"
-version = "0.6.1"
+version = "1.0.0"
 description = "Playing around with graphs created via parsing OpenStreetMap data"
 edition = "2018"
 
@@ -11,7 +11,7 @@ repository = "https://github.com/dominicparga/osmgraphing"
 readme = "README.md"
 keywords = ["osm", "route", "routing", "pbf", "xml"]
 categories = ["algorithms", "data-structures", "parser-implementations", "parsing"]
-license = "Apache-2.0"
+license-file = "LICENSE"
 
 
 [dependencies]
