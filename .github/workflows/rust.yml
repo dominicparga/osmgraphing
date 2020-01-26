@@ -10,13 +10,6 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v2
-    - name: Setup git-user
-      env:
-        GIT_USER_NAME: 'GitHub Actions'
-        GIT_USER_EMAIL: 'actions@users.noreply.github.com'
-      run: |
-        git config user.name "${GIT_USER_NAME}"
-        git config user.email "${GIT_USER_EMAIL}"
     - name: Build
       run: cargo build --verbose
     - name: Run tests
@@ -26,8 +19,13 @@ jobs:
     - name: Deploy and tag
       env:
         CRATES_TOKEN: ${{ secrets.CRATES_TOKEN }}
+        GIT_USER_NAME: 'GitHub Actions'
+        GIT_USER_EMAIL: 'actions@users.noreply.github.com'
       run: |
         # test if git user is remembered from above
+        git fetch --all
+        git config user.name "${GIT_USER_NAME}"
+        git config user.email "${GIT_USER_EMAIL}"
         git tag -a "v$(cargo pkgid | cut -d# -f2 | cut -d: -f2)" -m "See CHANGELOG.md"
         cargo publish --token "${CRATES_TOKEN}"
       continue-on-error: true
