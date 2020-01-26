@@ -6,8 +6,6 @@ on:
   - cron: '0 6 * * 0-6'
 jobs:
   stable:
-    strategy:
-      fail-fast: true
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
@@ -21,8 +19,7 @@ jobs:
         git config --global user.email "${GIT_USER_EMAIL}"
         git fetch --all
     - name: Build
-      # run: cargo build --verbose
-      run: 'false'
+      run: cargo build --verbose
     - name: Run tests
       run: cargo test --verbose
     - name: Build docs
@@ -36,8 +33,6 @@ jobs:
         git tag -a "v$(cargo pkgid | cut -d# -f2 | cut -d: -f2)" -m "See CHANGELOG.md"
       continue-on-error: true
   beta:
-    strategy:
-      fail-fast: true
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
@@ -49,8 +44,6 @@ jobs:
     - name: Run tests
       run: cargo test --verbose
   nightly:
-    strategy:
-      fail-fast: true
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
