@@ -1,0 +1,61 @@
+name: Rust
+on:
+  push:
+  pull_request:
+  schedule:
+  - cron: '0 6 * * 0-6'
+jobs:
+  stable:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+    - name: Setup git-user
+      env:
+        GIT_USER_NAME: 'GitHub Actions'
+        GIT_USER_EMAIL: 'actions@users.noreply.github.com'
+      run: |
+        git config --global user.name "${GIT_USER_NAME}"
+        git config --global user.email "${GIT_USER_EMAIL}"
+        git fetch --all
+    - name: Build
+      run: cargo build --verbose
+    - name: Run tests
+      run: cargo test --verbose
+    - name: Build docs
+      run: cargo doc
+    - name: Deploy and tag
+      if: github.ref == 'refs/heads/master'
+      env:
+        CRATES_TOKEN: ${{ secrets.CRATES_TOKEN }}
+      run: |
+        cargo publish --token "${CRATES_TOKEN}"
+        git tag -a "v$(cargo pkgid | cut -d# -f2 | cut -d: -f2)" -m "See CHANGELOG.md"
+      continue-on-error: true
+  beta:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Install toolchain
+      run: rustup toolchain install beta
+    - run: rustup default beta
+    - name: Build
+      run: cargo build --verbose
+    - name: Run tests
+      run: cargo test --verbose
+  nightly:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+      continue-on-error: true
+    - name: Install
+      run: rustup toolchain install nightly
+      continue-on-error: true
+    - run: rustup default nightly
+      continue-on-error: true
+    - name: Build
+      run: cargo build --verbose
+      continue-on-error: true
+    - name: Run tests
+      run: cargo test --verbose
+      continue-on-error: true
