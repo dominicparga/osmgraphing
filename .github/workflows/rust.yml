@@ -13,6 +13,15 @@ jobs:
       run: cargo build --verbose
     - name: Run tests
       run: cargo test --verbose
+    - name: Build docs
+      run: cargo doc
+    - name: Deploy
+      run: 'true'
+      continue-on-error: true
+    - name: Tag
+      if: success()
+      run: echo "Execute 'git tag -a VERSION'"
+      continue-on-error: true
   beta:
     runs-on: ubuntu-latest
     steps:
