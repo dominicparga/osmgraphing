@@ -14,15 +14,6 @@ jobs:
       run: |
         git status
         git tag
-        git config user.name
-        git config user.email
-        git tag -a "v0.6.1" -m "See CHANGELOG.md"
-        git fetch --all
-        git status
-        git tag
-        git config user.name
-        git config user.email
-        git tag -a "v0.6.1" -m "See CHANGELOG.md"
         'false'
     - name: Build
       run: cargo build --verbose
