@@ -18,7 +18,7 @@ jobs:
     - name: Deploy
       run: 'false'
     - name: Tag
-      if: success()
+      if: failure()
       run: echo "Execute 'git tag -a VERSION'"
   beta:
     runs-on: ubuntu-latest
