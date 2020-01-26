@@ -14,7 +14,9 @@ jobs:
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
     - name: Test git tagging
-      run: git tag -a 'v0.6.1' -m 'See CHANGELOG.md' # should fail because tag already exists
+      run: |
+        git tag -a 'v0.6.1' -m 'See CHANGELOG.md'
+        'false'
     - name: Build
       run: cargo build --verbose
     - name: Run tests
