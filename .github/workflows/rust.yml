@@ -11,9 +11,12 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v2
     - name: Setup git-user
+      env:
+        GIT_USER_NAME: 'GitHub Actions'
+        GIT_USER_EMAIL: 'actions@users.noreply.github.com'
       run: |
-        git config user.name 'GitHub actions'
-        git config user.email 'actions@users.noreply.github.com'
+        git config user.name "${GIT_USER_NAME}"
+        git config user.email "${GIT_USER_EMAIL}"
     - name: Build
       run: cargo build --verbose
     - name: Run tests
@@ -24,13 +27,13 @@ jobs:
       env:
         CRATES_TOKEN: ${{ secrets.CRATES_TOKEN }}
       run: |
-        cargo publish --token "${CRATES_TOKEN}"
+        # test if git user is remembered from above
         git tag -a "v$(cargo pkgid | cut -d# -f2 | cut -d: -f2)" -m "See CHANGELOG.md"
+        cargo publish --token "${CRATES_TOKEN}"
       continue-on-error: true
   beta:
     runs-on: ubuntu-latest
     steps:
-    - run: 'false'
     - uses: actions/checkout@v2
     - name: Install toolchain
       run: rustup toolchain install beta
@@ -42,7 +45,6 @@ jobs:
   nightly:
     runs-on: ubuntu-latest
     steps:
-    - run: 'false'
     - uses: actions/checkout@v2
       continue-on-error: true
     - name: Install
