@@ -47,6 +47,8 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 - Replace existing tags with ones referring to `CHANGELOG.md` and add old tag-texts to the `CHANGELOG.md`
 - Inconsistent `semver` in tagging -> probably `cargo yank VERSION` needed
 - The `graph` containing forward-edges will be extended by backward-edges.
+  - Tests should be extended as well.
+  - The graph needs to store edges separatedly from the new `edge-containers` for memory-efficiency.
 - Routing should be extended by a `bidirectional A*`.
 
 
