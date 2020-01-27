@@ -116,7 +116,6 @@ pub struct Graph {
     nodes: Vec<Node>,
     edges: Vec<Edge>,
     offsets: Vec<usize>,
-    enabled: Vec<bool>, // edges
 }
 impl Graph {
     fn new() -> Graph {
@@ -124,7 +123,6 @@ impl Graph {
             nodes: Vec::new(),
             edges: Vec::new(),
             offsets: Vec::new(),
-            enabled: Vec::new(),
         }
     }
 
@@ -150,11 +148,7 @@ impl Graph {
         self.nodes.get(idx)
     }
     pub fn edge(&self, edge_idx: usize) -> Option<&Edge> {
-        if *(self.enabled.get(edge_idx)?) {
-            self.edges.get(edge_idx)
-        } else {
-            None
-        }
+        self.edges.get(edge_idx)
     }
     pub fn offset(&self, node_idx: usize) -> Option<usize> {
         Some(*(self.offsets.get(node_idx)?))
@@ -203,13 +197,6 @@ impl Graph {
             }
         }
         Some(leaving_edges)
-    }
-
-    pub fn enable_edge(&mut self, edge_idx: usize) {
-        self.enabled[edge_idx] = true;
-    }
-    pub fn disable_edge(&mut self, edge_idx: usize) {
-        self.enabled[edge_idx] = false;
     }
 }
 impl fmt::Display for Graph {

@@ -280,7 +280,6 @@ impl GraphBuilder {
         graph.nodes.shrink_to_fit();
         graph.edges.shrink_to_fit();
         graph.offsets.shrink_to_fit();
-        graph.enabled = vec![true; graph.edge_count()];
         info!("Finished creating offset-array");
 
         Ok(graph)

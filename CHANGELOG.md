@@ -48,13 +48,12 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 - Inconsistent `semver` in tagging -> probably `cargo yank VERSION` needed
 - The `graph`-interface should allow access via `node`- and `edge`-containers for better maintainability without breaking changes.
 - The `graph` containing forward-edges will be extended by backward-edges.
-  - The feature showing whether an `edge is enabled` will be removed.
 - Routing should be extended by a `bidirectional A*`.
 
 
 ### Removed
 
-\-
+- The feature showing whether an `edge is enabled` is being removed to make handling backward-edges easier.
 
 
 ### Fixed
