@@ -161,7 +161,6 @@ impl ops::Index<usize> for NodeContainer {
 pub struct EdgeContainer {
     edges: Vec<Edge>,
     offsets: Vec<usize>,
-    enabled: Vec<bool>,
 }
 
 impl EdgeContainer {
@@ -169,7 +168,6 @@ impl EdgeContainer {
         EdgeContainer {
             edges: Vec::new(),
             offsets: Vec::new(),
-            enabled: Vec::new(),
         }
     }
 
@@ -184,11 +182,7 @@ impl EdgeContainer {
     // getter: edges
 
     pub fn get(&self, idx: usize) -> Option<&Edge> {
-        if *(self.enabled.get(idx)?) {
-            self.edges.get(idx)
-        } else {
-            None
-        }
+        self.edges.get(idx)
     }
 
     pub fn starting_from(&self, node_idx: usize) -> Option<Vec<&Edge>> {
@@ -237,17 +231,6 @@ impl EdgeContainer {
         } else {
             None
         }
-    }
-
-    //--------------------------------------------------------------------------------------------//
-    // setter: enabled edges
-
-    pub fn enable(&mut self, edge_idx: usize) {
-        self.enabled[edge_idx] = true;
-    }
-
-    pub fn disable(&mut self, edge_idx: usize) {
-        self.enabled[edge_idx] = false;
     }
 }
 

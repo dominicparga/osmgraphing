@@ -1,6 +1,9 @@
 [package]
 name = "osmgraphing"
-version = "0.6.1"
+# Changing this version in master and pushing to GitHub
+# will lead to publishing it automatically to crates.io.
+# Hence do not forget updating Unreleased in CHANGELOG.md.
+version = "1.0.0" # !!!
 description = "Playing around with graphs created via parsing OpenStreetMap data"
 edition = "2018"
 
@@ -10,11 +13,8 @@ authors = [
 repository = "https://github.com/dominicparga/osmgraphing"
 readme = "README.md"
 keywords = ["osm", "route", "routing", "pbf", "xml"]
-categories = ["algorithms", "data-structures", "parser-implementations", "parsing", ""]
-license = "Apache-2.0"
-
-[badges]
-travis-ci = { repository = "dominicparga/osmgraphing", branch = "master" }
+categories = ["algorithms", "data-structures", "parser-implementations", "parsing"]
+license-file = "LICENSE"
 
 
 [dependencies]
@@ -27,6 +27,7 @@ rand = "0.7" # generate random routes
 rand_pcg = "0.2" # generate random routes
 serde = "1.0"
 csv = "1.1"
+progressing = "2" # progressbar
 
 [dev-dependencies]
 actix-web = "1.0" # backend-server

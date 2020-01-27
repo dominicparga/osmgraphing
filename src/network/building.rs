@@ -286,7 +286,6 @@ impl GraphBuilder {
         graph.nodes.nodes.shrink_to_fit();
         graph.fwd_edges.edges.shrink_to_fit();
         graph.fwd_edges.offsets.shrink_to_fit();
-        graph.fwd_edges.enabled = vec![true; graph.fwd_edges.count()];
         info!("Finished creating offset-array");
 
         Ok(graph)

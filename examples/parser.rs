@@ -11,7 +11,7 @@ fn init_logging(quietly: bool) {
     let mut builder = env_logger::Builder::new();
     // minimum filter-level: `warn`
     builder.filter(None, log::LevelFilter::Warn);
-    // if quiet logging: don't log `info` for the server and this repo
+    // if quiet logging: doesn't log `info` for the server and this repo
     if !quietly {
         builder.filter(Some(env!("CARGO_PKG_NAME")), log::LevelFilter::Info);
         builder.filter(Some("parser"), log::LevelFilter::Info);
