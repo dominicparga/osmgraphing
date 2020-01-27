@@ -160,17 +160,6 @@ impl GraphBuilder {
         let mut graph = Graph::new();
 
         //----------------------------------------------------------------------------------------//
-        // sort edges by ascending src-id, then by ascending dst-id -> offset-array
-
-        info!("Starting sorting proto-edges by their src/dst-IDs ..");
-        self.proto_edges.sort_by(|e0, e1| {
-            e0.src_id
-                .cmp(&e1.src_id)
-                .then_with(|| e0.dst_id.cmp(&e1.dst_id))
-        });
-        info!("Finished sorting proto-edges");
-
-        //----------------------------------------------------------------------------------------//
         // add nodes to graph which belong to edges (sorted by asc id)
 
         info!("Starting adding nodes (sorted) which belongs to an edge ..");
@@ -198,12 +187,23 @@ impl GraphBuilder {
                 );
             }
         }
-        debug_assert_eq!(
+        assert_eq!(
             graph.nodes.len(),
             node_idx,
             "The (maximum index - 1) should not be more than the number of nodes in the graph."
         );
         info!("Finished adding nodes");
+
+        //----------------------------------------------------------------------------------------//
+        // sort edges by ascending src-id, then by ascending dst-id -> offset-array
+
+        info!("Starting sorting proto-edges by their src/dst-IDs ..");
+        self.proto_edges.sort_by(|e0, e1| {
+            e0.src_id
+                .cmp(&e1.src_id)
+                .then_with(|| e0.dst_id.cmp(&e1.dst_id))
+        });
+        info!("Finished sorting proto-edges");
 
         //----------------------------------------------------------------------------------------//
         // build offset-array and edges
