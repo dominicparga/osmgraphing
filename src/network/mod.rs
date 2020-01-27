@@ -247,8 +247,9 @@ impl ops::Index<usize> for EdgeContainer {
 
 #[derive(Debug)]
 pub struct Graph {
-    pub nodes: NodeContainer,
-    pub fwd_edges: EdgeContainer,
+    nodes: NodeContainer,
+    fwd_edges: EdgeContainer,
+    bwd_edges: EdgeContainer,
 }
 
 impl Graph {
@@ -256,6 +257,7 @@ impl Graph {
         Graph {
             nodes: NodeContainer::new(),
             fwd_edges: EdgeContainer::new(),
+            bwd_edges: EdgeContainer::new(),
         }
     }
 
@@ -265,6 +267,10 @@ impl Graph {
 
     pub fn fwd_edges(&self) -> &EdgeContainer {
         &(self.fwd_edges)
+    }
+
+    pub fn bwd_edges(&self) -> &EdgeContainer {
+        &(self.bwd_edges)
     }
 }
 
