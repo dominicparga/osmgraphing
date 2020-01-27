@@ -39,6 +39,8 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 ### Changed
 
 - The `graph`-interface allows access via `NodeContainer` and `EdgeContainer` for better maintainability without breaking changes.
+  - The `graph` serves as unit for __memory-storage__, while the containers, based on references from the `graph`, can execute user-queries.
+  - Due to the references, queries for `forward-edges` and `backward-edges` are processed by the same code.
 
 
 ### Deprecated
@@ -48,7 +50,6 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 - Inconsistent `semver` in tagging -> probably `cargo yank VERSION` needed
 - The `graph` containing forward-edges will be extended by backward-edges.
   - Tests should be extended as well.
-  - The graph needs to store edges separatedly from the new `edge-containers` for memory-efficiency.
 - Routing should be extended by a `bidirectional A*`.
 
 
