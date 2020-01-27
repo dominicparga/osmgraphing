@@ -1,7 +1,7 @@
 use osmgraphing::network::{geo, Graph};
 
 //------------------------------------------------------------------------------------------------//
-// test node
+// TestNode
 
 struct TestNode {
     name: String,
@@ -53,11 +53,11 @@ impl TestNode {
 }
 
 //------------------------------------------------------------------------------------------------//
-// test edge
+// TestEdge
 
 struct TestEdge {
     name: String,
-    edge_idx: usize,
+    fwd_edge_idx: usize,
     id: i64,
     src_idx: usize,
     dst_idx: usize,
@@ -68,7 +68,7 @@ struct TestEdge {
 impl TestEdge {
     fn from(
         name: Option<&str>,
-        edge_idx: usize,
+        fwd_edge_idx: usize,
         id: i64,
         src: &TestNode,
         dst: &TestNode,
@@ -78,7 +78,7 @@ impl TestEdge {
     ) -> TestEdge {
         TestEdge {
             name: (name.unwrap_or(&format!("{}->{}", src.name, dst.name))).to_owned(),
-            edge_idx,
+            fwd_edge_idx,
             id,
             src_idx: src.idx,
             dst_idx: dst.idx,
@@ -89,60 +89,60 @@ impl TestEdge {
     }
 
     fn assert_correct(&self, graph: &Graph) {
-        let (edge, edge_idx) =
+        let (fwd_edge, fwd_edge_idx) =
             graph
                 .fwd_edges
                 .between(self.src_idx, self.dst_idx)
                 .expect(&format!(
-                    "Edge (src_idx, dst_idx): ({}, {}) does not exist.",
+                    "Fwd-edge (src_idx, dst_idx): ({}, {}) does not exist.",
                     self.src_idx, self.dst_idx
                 ));
 
         assert_eq!(
-            edge_idx, self.edge_idx,
-            "Wrong edge-idx={} for {}",
-            edge_idx, self.name
+            fwd_edge_idx, self.fwd_edge_idx,
+            "Wrong fwd-edge-idx={} for {}",
+            fwd_edge_idx, self.name
         );
         assert_eq!(
-            edge.id(),
+            fwd_edge.id(),
             self.id,
-            "Wrong edge-id={} for {}",
-            edge.id(),
+            "Wrong fwd-edge-id={} for {}",
+            fwd_edge.id(),
             self.name
         );
         assert_eq!(
-            edge.src_idx(),
+            fwd_edge.src_idx(),
             self.src_idx,
             "Wrong src_idx={} for {}",
-            edge.src_idx(),
+            fwd_edge.src_idx(),
             self.name
         );
         assert_eq!(
-            edge.dst_idx(),
+            fwd_edge.dst_idx(),
             self.dst_idx,
             "Wrong dst_idx={} for {}",
-            edge.dst_idx(),
+            fwd_edge.dst_idx(),
             self.name
         );
         assert_eq!(
-            edge.meters(),
+            fwd_edge.meters(),
             self.meters,
             "Wrong meters={} for {}",
-            edge.meters(),
+            fwd_edge.meters(),
             self.name
         );
         assert_eq!(
-            edge.maxspeed(),
+            fwd_edge.maxspeed(),
             self.maxspeed,
             "Wrong maxspeed={} for {}",
-            edge.maxspeed(),
+            fwd_edge.maxspeed(),
             self.name
         );
         assert_eq!(
-            edge.milliseconds(),
+            fwd_edge.milliseconds(),
             self.milliseconds,
             "Wrong milliseconds={} for {}",
-            edge.milliseconds(),
+            fwd_edge.milliseconds(),
             self.name
         );
     }
@@ -167,32 +167,32 @@ fn simple_stuttgart() {
     let node_dea = TestNode::from("Dead-end", 1_621_605_361, 48.9396327, 9.4188681, &graph);
     let node_stu = TestNode::from("Stuttgart", 2_933_335_353, 48.7701757, 9.1565768, &graph);
 
-    // Due to the offset-array, the edge-ids should match with sorting by src-id, then by dst-id.
+    // Due to the offset-array, the fwd-edge-ids should match with sorting by src-id, then by dst-id.
     // -> testing offset-array
     // name, id, src, dst, meters, maxspeed
-    let edge_opp_bac = TestEdge::from(None, 0, 0, &node_opp, &node_bac, 8_000, 50, 576_000);
-    let edge_bac_opp = TestEdge::from(None, 1, 1, &node_bac, &node_opp, 8_000, 50, 576_000);
-    let edge_bac_wai = TestEdge::from(None, 2, 2, &node_bac, &node_wai, 23_000, 120, 690_000);
-    let edge_bac_end = TestEdge::from(None, 3, 3, &node_bac, &node_end, 22_000, 80, 990_000);
+    let fwd_edge_opp_bac = TestEdge::from(None, 0, 0, &node_opp, &node_bac, 8_000, 50, 576_000);
+    let fwd_edge_bac_opp = TestEdge::from(None, 1, 1, &node_bac, &node_opp, 8_000, 50, 576_000);
+    let fwd_edge_bac_wai = TestEdge::from(None, 2, 2, &node_bac, &node_wai, 23_000, 120, 690_000);
+    let fwd_edge_bac_end = TestEdge::from(None, 3, 3, &node_bac, &node_end, 22_000, 80, 990_000);
     // 1_069 is the length of a straight line, since the file contains trash in there.
-    let edge_bac_dea = TestEdge::from(None, 4, 4, &node_bac, &node_dea, 1_069, 30, 128_280);
-    let edge_wai_bac = TestEdge::from(None, 5, 5, &node_wai, &node_bac, 23_000, 120, 690_000);
-    let edge_wai_end = TestEdge::from(None, 6, 6, &node_wai, &node_end, 8_000, 50, 576_000);
-    let edge_wai_stu = TestEdge::from(None, 7, 7, &node_wai, &node_stu, 17_000, 100, 612_000);
-    let edge_end_bac = TestEdge::from(None, 8, 8, &node_end, &node_bac, 22_000, 80, 990_000);
-    let edge_end_wai = TestEdge::from(None, 9, 9, &node_end, &node_wai, 8_000, 50, 576_000);
-    let edge_end_stu = TestEdge::from(None, 10, 10, &node_end, &node_stu, 21_000, 80, 945_000);
-    let edge_stu_wai = TestEdge::from(None, 11, 11, &node_stu, &node_wai, 17_000, 100, 612_000);
-    let edge_stu_end = TestEdge::from(None, 12, 12, &node_stu, &node_end, 21_000, 80, 945_000);
+    let fwd_edge_bac_dea = TestEdge::from(None, 4, 4, &node_bac, &node_dea, 1_069, 30, 128_280);
+    let fwd_edge_wai_bac = TestEdge::from(None, 5, 5, &node_wai, &node_bac, 23_000, 120, 690_000);
+    let fwd_edge_wai_end = TestEdge::from(None, 6, 6, &node_wai, &node_end, 8_000, 50, 576_000);
+    let fwd_edge_wai_stu = TestEdge::from(None, 7, 7, &node_wai, &node_stu, 17_000, 100, 612_000);
+    let fwd_edge_end_bac = TestEdge::from(None, 8, 8, &node_end, &node_bac, 22_000, 80, 990_000);
+    let fwd_edge_end_wai = TestEdge::from(None, 9, 9, &node_end, &node_wai, 8_000, 50, 576_000);
+    let fwd_edge_end_stu = TestEdge::from(None, 10, 10, &node_end, &node_stu, 21_000, 80, 945_000);
+    let fwd_edge_stu_wai = TestEdge::from(None, 11, 11, &node_stu, &node_wai, 17_000, 100, 612_000);
+    let fwd_edge_stu_end = TestEdge::from(None, 12, 12, &node_stu, &node_end, 21_000, 80, 945_000);
 
     //--------------------------------------------------------------------------------------------//
     // testing graph
 
     assert_eq!(graph.nodes.count(), 6, "Wrong node-count");
-    assert_eq!(graph.fwd_edges.count(), 13, "Wrong edge-count");
+    assert_eq!(graph.fwd_edges.count(), 13, "Wrong fwd-edge-count");
     assert!(
         graph.fwd_edges.between(24, 42).is_none(),
-        "Edge doesn't exist, so graph should return None."
+        "Fwd-edge doesn't exist, so graph should return None."
     );
     assert!(
         graph.fwd_edges.starting_from(424).is_none(),
@@ -214,21 +214,21 @@ fn simple_stuttgart() {
     node_stu.assert_correct(&graph);
 
     //--------------------------------------------------------------------------------------------//
-    // testing edges
+    // testing fwd-edges
 
-    edge_opp_bac.assert_correct(&graph);
-    edge_bac_opp.assert_correct(&graph);
-    edge_bac_wai.assert_correct(&graph);
-    edge_bac_end.assert_correct(&graph);
-    edge_bac_dea.assert_correct(&graph);
-    edge_wai_bac.assert_correct(&graph);
-    edge_wai_end.assert_correct(&graph);
-    edge_wai_stu.assert_correct(&graph);
-    edge_end_bac.assert_correct(&graph);
-    edge_end_wai.assert_correct(&graph);
-    edge_end_stu.assert_correct(&graph);
-    edge_stu_wai.assert_correct(&graph);
-    edge_stu_end.assert_correct(&graph);
+    fwd_edge_opp_bac.assert_correct(&graph);
+    fwd_edge_bac_opp.assert_correct(&graph);
+    fwd_edge_bac_wai.assert_correct(&graph);
+    fwd_edge_bac_end.assert_correct(&graph);
+    fwd_edge_bac_dea.assert_correct(&graph);
+    fwd_edge_wai_bac.assert_correct(&graph);
+    fwd_edge_wai_end.assert_correct(&graph);
+    fwd_edge_wai_stu.assert_correct(&graph);
+    fwd_edge_end_bac.assert_correct(&graph);
+    fwd_edge_end_wai.assert_correct(&graph);
+    fwd_edge_end_stu.assert_correct(&graph);
+    fwd_edge_stu_wai.assert_correct(&graph);
+    fwd_edge_stu_end.assert_correct(&graph);
 }
 
 #[test]
@@ -249,34 +249,34 @@ fn small() {
     let node_g = TestNode::from("g", 6, 0.0000000, 0.0000000, &graph);
     let node_h = TestNode::from("h", 7, 0.0000000, 0.0000000, &graph);
 
-    // Due to the offset-array, the edge-ids should match with sorting by src-id, then by dst-id.
+    // Due to the offset-array, the fwd-edge-ids should match with sorting by src-id, then by dst-id.
     // -> testing offset-array
     // name, id, src, dst, meters, maxspeed
-    let edge_b_a = TestEdge::from(None, 0, 0, &node_b, &node_a, 1, 30, 120);
-    let edge_b_c = TestEdge::from(None, 1, 1, &node_b, &node_c, 1, 30, 120);
-    let edge_c_a = TestEdge::from(None, 2, 2, &node_c, &node_a, 1, 30, 120);
-    let edge_c_b = TestEdge::from(None, 3, 3, &node_c, &node_b, 1, 30, 120);
-    let edge_d_b = TestEdge::from(None, 4, 4, &node_d, &node_b, 1, 30, 120);
-    let edge_d_e = TestEdge::from(None, 5, 5, &node_d, &node_e, 2, 30, 240);
-    let edge_d_h = TestEdge::from(None, 6, 6, &node_d, &node_h, 1, 30, 120);
-    let edge_e_d = TestEdge::from(None, 7, 7, &node_e, &node_d, 2, 30, 240);
-    let edge_e_f = TestEdge::from(None, 8, 8, &node_e, &node_f, 1, 30, 120);
-    let edge_f_e = TestEdge::from(None, 9, 9, &node_f, &node_e, 1, 30, 120);
-    let edge_f_h = TestEdge::from(None, 10, 10, &node_f, &node_h, 1, 30, 120);
-    let edge_g_e = TestEdge::from(None, 11, 11, &node_g, &node_e, 1, 30, 120);
-    let edge_g_f = TestEdge::from(None, 12, 12, &node_g, &node_f, 1, 30, 120);
-    let edge_h_c = TestEdge::from(None, 13, 13, &node_h, &node_c, 4, 30, 480);
-    let edge_h_d = TestEdge::from(None, 14, 14, &node_h, &node_d, 1, 30, 120);
-    let edge_h_f = TestEdge::from(None, 15, 15, &node_h, &node_f, 1, 30, 120);
+    let fwd_edge_b_a = TestEdge::from(None, 0, 0, &node_b, &node_a, 1, 30, 120);
+    let fwd_edge_b_c = TestEdge::from(None, 1, 1, &node_b, &node_c, 1, 30, 120);
+    let fwd_edge_c_a = TestEdge::from(None, 2, 2, &node_c, &node_a, 1, 30, 120);
+    let fwd_edge_c_b = TestEdge::from(None, 3, 3, &node_c, &node_b, 1, 30, 120);
+    let fwd_edge_d_b = TestEdge::from(None, 4, 4, &node_d, &node_b, 1, 30, 120);
+    let fwd_edge_d_e = TestEdge::from(None, 5, 5, &node_d, &node_e, 2, 30, 240);
+    let fwd_edge_d_h = TestEdge::from(None, 6, 6, &node_d, &node_h, 1, 30, 120);
+    let fwd_edge_e_d = TestEdge::from(None, 7, 7, &node_e, &node_d, 2, 30, 240);
+    let fwd_edge_e_f = TestEdge::from(None, 8, 8, &node_e, &node_f, 1, 30, 120);
+    let fwd_edge_f_e = TestEdge::from(None, 9, 9, &node_f, &node_e, 1, 30, 120);
+    let fwd_edge_f_h = TestEdge::from(None, 10, 10, &node_f, &node_h, 1, 30, 120);
+    let fwd_edge_g_e = TestEdge::from(None, 11, 11, &node_g, &node_e, 1, 30, 120);
+    let fwd_edge_g_f = TestEdge::from(None, 12, 12, &node_g, &node_f, 1, 30, 120);
+    let fwd_edge_h_c = TestEdge::from(None, 13, 13, &node_h, &node_c, 4, 30, 480);
+    let fwd_edge_h_d = TestEdge::from(None, 14, 14, &node_h, &node_d, 1, 30, 120);
+    let fwd_edge_h_f = TestEdge::from(None, 15, 15, &node_h, &node_f, 1, 30, 120);
 
     //--------------------------------------------------------------------------------------------//
     // testing graph
 
     assert_eq!(graph.nodes.count(), 8, "Wrong node-count");
-    assert_eq!(graph.fwd_edges.count(), 16, "Wrong edge-count");
+    assert_eq!(graph.fwd_edges.count(), 16, "Wrong fwd-edge-count");
     assert!(
         graph.fwd_edges.between(24, 42).is_none(),
-        "Edge doesn't exist, so graph should return None."
+        "Fwd-edge doesn't exist, so graph should return None."
     );
     assert!(
         graph.fwd_edges.starting_from(424).is_none(),
@@ -300,22 +300,22 @@ fn small() {
     node_h.assert_correct(&graph);
 
     //--------------------------------------------------------------------------------------------//
-    // testing edges
+    // testing fwd-edges
 
-    edge_b_a.assert_correct(&graph);
-    edge_b_c.assert_correct(&graph);
-    edge_c_a.assert_correct(&graph);
-    edge_c_b.assert_correct(&graph);
-    edge_d_b.assert_correct(&graph);
-    edge_d_e.assert_correct(&graph);
-    edge_d_h.assert_correct(&graph);
-    edge_e_d.assert_correct(&graph);
-    edge_e_f.assert_correct(&graph);
-    edge_f_e.assert_correct(&graph);
-    edge_f_h.assert_correct(&graph);
-    edge_g_e.assert_correct(&graph);
-    edge_g_f.assert_correct(&graph);
-    edge_h_c.assert_correct(&graph);
-    edge_h_d.assert_correct(&graph);
-    edge_h_f.assert_correct(&graph);
+    fwd_edge_b_a.assert_correct(&graph);
+    fwd_edge_b_c.assert_correct(&graph);
+    fwd_edge_c_a.assert_correct(&graph);
+    fwd_edge_c_b.assert_correct(&graph);
+    fwd_edge_d_b.assert_correct(&graph);
+    fwd_edge_d_e.assert_correct(&graph);
+    fwd_edge_d_h.assert_correct(&graph);
+    fwd_edge_e_d.assert_correct(&graph);
+    fwd_edge_e_f.assert_correct(&graph);
+    fwd_edge_f_e.assert_correct(&graph);
+    fwd_edge_f_h.assert_correct(&graph);
+    fwd_edge_g_e.assert_correct(&graph);
+    fwd_edge_g_f.assert_correct(&graph);
+    fwd_edge_h_c.assert_correct(&graph);
+    fwd_edge_h_d.assert_correct(&graph);
+    fwd_edge_h_f.assert_correct(&graph);
 }
