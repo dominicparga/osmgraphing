@@ -33,7 +33,7 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 
 ### Added <a name="unreleased/added"></a>
 
-\-
+- Comment in `Cargo.toml`, over changing the version, to not forget changing the `CHANGELOG.md`.
 
 
 ### Changed
@@ -46,6 +46,10 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 - `CHANGELOG.md` contains empty version-descriptions.
 - Replace existing tags with ones referring to `CHANGELOG.md` and add old tag-texts to the `CHANGELOG.md`
 - Inconsistent `semver` in tagging -> probably `cargo yank VERSION` needed
+- The `graph`-interface should allow access via `node`- and `edge`-containers for better maintainability without breaking changes.
+- The `graph` containing forward-edges will be extended by backward-edges.
+  - The feature showing whether an `edge is enabled` will be removed.
+- Routing should be extended by a `bidirectional A*`.
 
 
 ### Removed
@@ -82,6 +86,10 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 - `CHANGELOG.md` contains empty version-descriptions.
 - Replace existing tags with ones referring to `CHANGELOG.md` and add old tag-texts to the `CHANGELOG.md`
 - Inconsistent `semver` in tagging -> probably `cargo yank VERSION` needed
+- The `graph`-interface should allow access via `node`- and `edge`-containers for better maintainability without breaking changes.
+- The `graph` containing forward-edges will be extended by backward-edges.
+  - The feature showing whether an `edge is enabled` will be removed.
+- Routing should be extended by a `bidirectional A*`.
 
 
 ### Removed
