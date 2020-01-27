@@ -2,6 +2,8 @@ mod refcells {
     use std::cell::RefCell;
     use std::rc::{Rc, Weak};
 
+    //--------------------------------------------------------------------------------------------//
+
     #[derive(Debug)]
     pub struct EdgeContainer {
         graph: RefCell<Weak<Graph>>,
@@ -21,6 +23,8 @@ mod refcells {
             };
         }
     }
+
+    //--------------------------------------------------------------------------------------------//
 
     #[derive(Debug)]
     pub struct Graph {
