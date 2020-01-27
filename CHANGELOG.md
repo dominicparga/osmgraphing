@@ -38,7 +38,7 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 
 ### Changed
 
-\-
+- The `graph`-interface allows access via `NodeContainer` and `EdgeContainer` for better maintainability without breaking changes.
 
 
 ### Deprecated
@@ -46,7 +46,6 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 - `CHANGELOG.md` contains empty version-descriptions.
 - Replace existing tags with ones referring to `CHANGELOG.md` and add old tag-texts to the `CHANGELOG.md`
 - Inconsistent `semver` in tagging -> probably `cargo yank VERSION` needed
-- The `graph`-interface should allow access via `node`- and `edge`-containers for better maintainability without breaking changes.
 - The `graph` containing forward-edges will be extended by backward-edges.
 - Routing should be extended by a `bidirectional A*`.
 
@@ -97,132 +96,130 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 - `Travis-CI` has been replaced by `GitHub`-workflows (-> see section [`Added`](#v1.0.0/added)).
 
 
-### [v0.6.1][github/self/v0.6.1] <a name="v0.6.1"></a>
+## [v0.6.1][github/self/v0.6.1] <a name="v0.6.1"></a>
 
-#### Deprecated
-
-- todo
-
-
-### [v0.6.0][github/self/v0.6.0] <a name="v0.6.0"></a>
-
-#### Deprecated
+### Deprecated
 
 - todo
 
 
-### [v0.5.0][github/self/v0.5.0] <a name="v0.5.0"></a>
+## [v0.6.0][github/self/v0.6.0] <a name="v0.6.0"></a>
 
-#### Deprecated
-
-- todo
-
-
-### [v0.4.1][github/self/v0.4.1] <a name="v0.4.1"></a>
-
-#### Deprecated
+### Deprecated
 
 - todo
 
 
-### [v0.4.0][github/self/v0.4.0] <a name="v0.4.0"></a>
+## [v0.5.0][github/self/v0.5.0] <a name="v0.5.0"></a>
 
-#### Deprecated
-
-- todo
-
-
-### [v0.3.1][github/self/v0.3.1] <a name="v0.3.1"></a>
-
-#### Deprecated
+### Deprecated
 
 - todo
 
 
-### [v0.3.0][github/self/v0.3.0] <a name="v0.3.0"></a>
+## [v0.4.1][github/self/v0.4.1] <a name="v0.4.1"></a>
 
-#### Deprecated
-
-- todo
-
-
-### [v0.2.4][github/self/v0.2.4] <a name="v0.2.4"></a>
-
-#### Deprecated
+### Deprecated
 
 - todo
 
 
-### [v0.2.3][github/self/v0.2.3] <a name="v0.2.3"></a>
+## [v0.4.0][github/self/v0.4.0] <a name="v0.4.0"></a>
 
-#### Deprecated
-
-- todo
-
-
-### [v0.2.2][github/self/v0.2.2] <a name="v0.2.2"></a>
-
-#### Deprecated
+### Deprecated
 
 - todo
 
 
-### [v0.2.1][github/self/v0.2.1] <a name="v0.2.1"></a>
+## [v0.3.1][github/self/v0.3.1] <a name="v0.3.1"></a>
 
-#### Deprecated
-
-- todo
-
-
-### [v0.2.0][github/self/v0.2.0] <a name="v0.2.0"></a>
-
-#### Deprecated
+### Deprecated
 
 - todo
 
 
-### [v0.1.5][github/self/v0.1.5] <a name="v0.1.5"></a>
+## [v0.3.0][github/self/v0.3.0] <a name="v0.3.0"></a>
 
-#### Deprecated
-
-- todo
-
-
-### [v0.1.4][github/self/v0.1.4] <a name="v0.1.4"></a>
-
-#### Deprecated
+### Deprecated
 
 - todo
 
 
-### [v0.1.3][github/self/v0.1.3] <a name="v0.1.3"></a>
+## [v0.2.4][github/self/v0.2.4] <a name="v0.2.4"></a>
 
-#### Deprecated
-
-- todo
-
-
-### [v0.1.2][github/self/v0.1.2] <a name="v0.1.2"></a>
-
-#### Deprecated
+### Deprecated
 
 - todo
 
 
-### [v0.1.1][github/self/v0.1.1] <a name="v0.1.1"></a>
+## [v0.2.3][github/self/v0.2.3] <a name="v0.2.3"></a>
 
-#### Deprecated
-
-- todo
-
-
-### [v0.1.0][github/self/v0.1.0] <a name="v0.1.0"></a>
-
-#### Deprecated
+### Deprecated
 
 - todo
 
 
+## [v0.2.2][github/self/v0.2.2] <a name="v0.2.2"></a>
+
+### Deprecated
+
+- todo
+
+
+## [v0.2.1][github/self/v0.2.1] <a name="v0.2.1"></a>
+
+### Deprecated
+
+- todo
+
+
+## [v0.2.0][github/self/v0.2.0] <a name="v0.2.0"></a>
+
+### Deprecated
+
+- todo
+
+
+## [v0.1.5][github/self/v0.1.5] <a name="v0.1.5"></a>
+
+### Deprecated
+
+- todo
+
+
+## [v0.1.4][github/self/v0.1.4] <a name="v0.1.4"></a>
+
+### Deprecated
+
+- todo
+
+
+## [v0.1.3][github/self/v0.1.3] <a name="v0.1.3"></a>
+
+### Deprecated
+
+- todo
+
+
+## [v0.1.2][github/self/v0.1.2] <a name="v0.1.2"></a>
+
+### Deprecated
+
+- todo
+
+
+## [v0.1.1][github/self/v0.1.1] <a name="v0.1.1"></a>
+
+### Deprecated
+
+- todo
+
+
+## [v0.1.0][github/self/v0.1.0] <a name="v0.1.0"></a>
+
+### Deprecated
+
+- todo
 
 
 [keepachangelog]: https://keepachangelog.com/en/
