@@ -120,12 +120,15 @@ mod moving {
 mod borrowing {
     #[derive(Debug)]
     pub struct Edge {
-        treasure: String,
+        treasure: Option<String>,
     }
 
     impl Edge {
-        pub fn treasure(&self) -> &str {
-            &self.treasure
+        pub fn treasure(&self) -> String {
+            match &self.treasure {
+                Some(treasure) => String::from(treasure),
+                None => String::from("Nope, no treasure >.<"),
+            }
         }
     }
 
@@ -134,14 +137,25 @@ mod borrowing {
     #[derive(Debug)]
     pub struct EdgeContainer<'a> {
         graph: &'a Graph,
+        // general name since information is stored in memory, not in code/algorithm/...
+        edges: &'a Vec<usize>,
+        offsets: &'a Vec<usize>,
     }
 
     impl<'a> EdgeContainer<'a> {
-        fn from(graph: &'a Graph) -> EdgeContainer<'a> {
-            EdgeContainer { graph }
+        fn from(
+            graph: &'a Graph,
+            edges: &'a Vec<usize>,
+            offsets: &'a Vec<usize>,
+        ) -> EdgeContainer<'a> {
+            EdgeContainer {
+                graph,
+                edges,
+                offsets,
+            }
         }
 
-        pub fn edge_treasure(&self) -> &str {
+        pub fn edge_treasure(&self) -> String {
             let edge_idx = 0;
             self.graph.edges[edge_idx].treasure()
         }
@@ -152,23 +166,35 @@ mod borrowing {
     #[derive(Debug)]
     pub struct Graph {
         edges: Vec<Edge>,
+        // important: store everything in here, but provide pointers to the EdgeContainer
+        fwd_edges: Vec<usize>,
+        fwd_offsets: Vec<usize>,
+        bwd_edges: Vec<usize>,
+        bwd_offsets: Vec<usize>,
     }
 
     impl Graph {
         pub fn new() -> Graph {
             Graph {
-                edges: vec![Edge {
-                    treasure: String::from("Access this from EdgeContainer hehe"),
-                }],
+                edges: vec![
+                    Edge {
+                        treasure: Some(String::from("Access this from EdgeContainer hehe")),
+                    },
+                    Edge { treasure: None },
+                ],
+                fwd_edges: vec![0, 1],
+                fwd_offsets: vec![0, 1],
+                bwd_edges: vec![1, 0],
+                bwd_offsets: vec![0, 1],
             }
         }
 
         pub fn fwd_edges<'a>(&'a self) -> EdgeContainer<'a> {
-            EdgeContainer::from(self)
+            EdgeContainer::from(self, &(self.fwd_edges), &(self.fwd_offsets))
         }
 
         pub fn bwd_edges<'a>(&'a self) -> EdgeContainer<'a> {
-            EdgeContainer::from(self)
+            EdgeContainer::from(self, &(self.bwd_edges), &(self.bwd_offsets))
         }
     }
 }
