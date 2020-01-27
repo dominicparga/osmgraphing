@@ -46,6 +46,10 @@ name = "playground_actix"
 path = "examples/playground/actix.rs"
 
 [[example]]
+name = "edge-containers"
+path = "examples/playground/edge_containers.rs"
+
+[[example]]
 name = "playground_graph"
 path = "examples/playground/graph.rs"
 
