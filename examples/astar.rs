@@ -76,20 +76,19 @@ fn main() {
     //--------------------------------------------------------------------------------------------//
     // astar
 
+    let nodes = graph.nodes();
     let mut astar = routing::factory::astar::shortest();
 
     let src_idx = 0;
-    let dsts: Vec<usize> = (0..graph.nodes().count()).collect();
+    let dsts: Vec<usize> = (0..nodes.count()).collect();
     // let dsts: Vec<usize> = vec![80]; problem on baden-wuerttemberg.osm.pbf
 
-    let src = graph
-        .nodes()
+    let src = nodes
         .get(src_idx)
         .expect("src-node of idx={} should be in graph");
 
     for dst_idx in dsts {
-        let dst = graph
-            .nodes()
+        let dst = nodes
             .get(dst_idx)
             .expect("dst-node of idx={} should be in graph");
 

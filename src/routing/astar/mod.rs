@@ -135,7 +135,9 @@ where
         //----------------------------------------------------------------------------------------//
         // initialization-stuff
 
-        self.resize(graph.nodes().count());
+        let nodes = graph.nodes();
+        let fwd_edges = graph.fwd_edges();
+        self.resize(nodes.count());
 
         //----------------------------------------------------------------------------------------//
         // compute
@@ -183,7 +185,7 @@ where
             // update costs and add predecessors
             // of nodes, which are dst of current's leaving edges
 
-            let leaving_edges = match graph.fwd_edges().starting_from(current.idx) {
+            let leaving_edges = match fwd_edges.starting_from(current.idx) {
                 Some(e) => e,
                 None => continue,
             };
@@ -193,8 +195,7 @@ where
                     self.predecessors[leaving_edge.dst_idx()] = Some(current.idx);
                     self.costs[leaving_edge.dst_idx()] = new_cost;
 
-                    let leaving_edge_dst = graph
-                        .nodes()
+                    let leaving_edge_dst = nodes
                         .get(leaving_edge.dst_idx())
                         .expect("Edge-node should exist since graph should be consistent.");
                     let estimation = (self.estimate_fn)(leaving_edge_dst, dst);

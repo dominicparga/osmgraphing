@@ -23,12 +23,11 @@ fn assert_correct(
     let graph = super::parse(filepath);
 
     for (src, dst, option_specs) in expected_paths {
-        let graph_src = graph
-            .nodes()
+        let nodes = graph.nodes();
+        let graph_src = nodes
             .get(src.idx)
             .expect(&format!("src-node of idx={} should be in graph.", src.idx));
-        let graph_dst = graph
-            .nodes()
+        let graph_dst = nodes
             .get(dst.idx)
             .expect(&format!("dst-node of idx={} should be in graph.", dst.idx));
         let option_path = astar.compute_best_path(graph_src, graph_dst, &graph);

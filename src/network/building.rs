@@ -184,7 +184,7 @@ impl GraphBuilder {
 
             // add new node
             if let Some(coord) = proto_node.coord {
-                graph.nodes.nodes.push(Node {
+                graph.nodes.push(Node {
                     id: proto_node.id,
                     idx: node_idx,
                     coord,
@@ -199,7 +199,7 @@ impl GraphBuilder {
             }
         }
         debug_assert_eq!(
-            graph.nodes.nodes.len(),
+            graph.nodes.len(),
             node_idx,
             "The (maximum index - 1) should not be more than the number of nodes in the graph."
         );
@@ -211,7 +211,7 @@ impl GraphBuilder {
         info!("Starting creating the offset-array ..");
         let mut offset_node_idx = 0;
         let mut offset = 0;
-        graph.fwd_edges.offsets.push(offset);
+        graph.fwd_offsets.push(offset);
         // high-level-idea
         // count offset for each proto_edge (sorted) and apply offset as far as src changes
         for edge_idx in 0..self.proto_edges.len() {
@@ -220,7 +220,7 @@ impl GraphBuilder {
             let edge_way_id = proto_edge.way_id.unwrap_or(edge_idx as i64);
 
             // find source-index in sorted vec of nodes
-            let edge_src_idx = match graph.nodes.idx_from(proto_edge.src_id) {
+            let edge_src_idx = match graph.nodes().idx_from(proto_edge.src_id) {
                 Ok(idx) => idx,
                 Err(_) => {
                     return Err(format!(
@@ -231,7 +231,7 @@ impl GraphBuilder {
             };
 
             // find destination-index in sorted vec of nodes
-            let edge_dst_idx = match graph.nodes.idx_from(proto_edge.dst_id) {
+            let edge_dst_idx = match graph.nodes().idx_from(proto_edge.dst_id) {
                 Ok(idx) => idx,
                 Err(_) => {
                     return Err(format!(
@@ -274,18 +274,20 @@ impl GraphBuilder {
             // then update offset of new src
             while offset_node_idx != edge_src_idx {
                 offset_node_idx += 1;
-                graph.fwd_edges.offsets.push(offset);
+                graph.fwd_offsets.push(offset);
             }
-            graph.fwd_edges.edges.push(edge);
+            graph.edges.push(edge);
+            graph.fwd_indices.push(edge_idx);
             offset += 1;
         }
         // last node needs an upper bound as well for `leaving_edges(...)`
-        graph.fwd_edges.offsets.push(offset);
+        graph.fwd_offsets.push(offset);
 
         // optimize memory a little
-        graph.nodes.nodes.shrink_to_fit();
-        graph.fwd_edges.edges.shrink_to_fit();
-        graph.fwd_edges.offsets.shrink_to_fit();
+        graph.nodes.shrink_to_fit();
+        graph.edges.shrink_to_fit();
+        graph.fwd_indices.shrink_to_fit();
+        graph.fwd_offsets.shrink_to_fit();
         info!("Finished creating offset-array");
 
         Ok(graph)

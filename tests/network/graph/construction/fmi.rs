@@ -24,8 +24,8 @@ impl TestNode {
     }
 
     fn assert_correct(&self, graph: &Graph) {
-        let node = graph
-            .nodes()
+        let nodes = graph.nodes();
+        let node = nodes
             .get(self.idx)
             .expect(&format!("Node of idx={} should be in graph.", self.idx));
         assert_eq!(
@@ -115,18 +115,18 @@ impl TestEdge {
 
     fn assert_correct(&self, graph: &Graph) {
         // get graph-components dependent on own direction
+        let fwd_edges = graph.fwd_edges();
+        let bwd_edges = graph.bwd_edges();
         let (edge, edge_idx) = {
             if self.is_fwd {
-                graph
-                    .fwd_edges()
+                fwd_edges
                     .between(self.src_idx, self.dst_idx)
                     .expect(&format!(
                         "Fwd-edge (src_idx, dst_idx): ({}, {}) does not exist.",
                         self.src_idx, self.dst_idx
                     ))
             } else {
-                graph
-                    .bwd_edges()
+                bwd_edges
                     .between(self.src_idx, self.dst_idx)
                     .expect(&format!(
                         "Bwd-edge (src_idx, dst_idx): ({}, {}) does not exist.",

@@ -14,6 +14,11 @@ pub mod geo;
 pub use defaults::StreetType;
 
 //------------------------------------------------------------------------------------------------//
+// indices
+
+// todo
+
+//------------------------------------------------------------------------------------------------//
 // node
 
 #[derive(Debug)]
@@ -22,6 +27,7 @@ pub struct Node {
     idx: usize,
     coord: geo::Coordinate,
 }
+
 impl Node {
     pub fn id(&self) -> i64 {
         self.id
@@ -33,12 +39,15 @@ impl Node {
         &self.coord
     }
 }
+
 impl Eq for Node {}
+
 impl PartialEq for Node {
     fn eq(&self, other: &Node) -> bool {
         self.id == other.id && self.idx == other.idx && self.coord == other.coord
     }
 }
+
 impl fmt::Display for Node {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
@@ -61,6 +70,7 @@ pub struct Edge {
     meters: u32,
     maxspeed: u16,
 }
+
 impl Edge {
     pub fn id(&self) -> i64 {
         self.id
@@ -88,7 +98,9 @@ impl Edge {
         self.meters() * 3_600 / (self.maxspeed() as u32)
     }
 }
+
 impl Eq for Edge {}
+
 impl PartialEq for Edge {
     fn eq(&self, other: &Edge) -> bool {
         self.id == other.id
@@ -98,6 +110,7 @@ impl PartialEq for Edge {
             && self.maxspeed == other.maxspeed
     }
 }
+
 impl fmt::Display for Edge {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
@@ -112,15 +125,11 @@ impl fmt::Display for Edge {
 // graph: NodeContainer
 
 #[derive(Debug)]
-pub struct NodeContainer {
-    nodes: Vec<Node>,
+pub struct NodeContainer<'a> {
+    nodes: &'a Vec<Node>,
 }
 
-impl NodeContainer {
-    fn new() -> NodeContainer {
-        NodeContainer { nodes: Vec::new() }
-    }
-
+impl<'a> NodeContainer<'a> {
     pub fn count(&self) -> usize {
         self.nodes.len()
     }
@@ -146,7 +155,7 @@ impl NodeContainer {
     }
 }
 
-impl ops::Index<usize> for NodeContainer {
+impl<'a> ops::Index<usize> for NodeContainer<'a> {
     type Output = Node;
 
     fn index(&self, idx: usize) -> &Self::Output {
@@ -158,31 +167,27 @@ impl ops::Index<usize> for NodeContainer {
 // graph: EdgeContainer
 
 #[derive(Debug)]
-pub struct EdgeContainer {
-    edges: Vec<Edge>,
-    offsets: Vec<usize>,
+pub struct EdgeContainer<'a> {
+    graph: &'a Graph,
+    edge_indices: &'a Vec<usize>,
+    offsets: &'a Vec<usize>,
 }
 
-impl EdgeContainer {
-    fn new() -> EdgeContainer {
-        EdgeContainer {
-            edges: Vec::new(),
-            offsets: Vec::new(),
-        }
-    }
-
+impl<'a> EdgeContainer<'a> {
     //--------------------------------------------------------------------------------------------//
     // getter: counts
 
     pub fn count(&self) -> usize {
-        self.edges.len()
+        self.graph.edges.len()
     }
 
     //--------------------------------------------------------------------------------------------//
     // getter: edges
 
     pub fn get(&self, idx: usize) -> Option<&Edge> {
-        self.edges.get(idx)
+        // indirect mapping to safe memory
+        let idx = *(self.edge_indices.get(idx)?);
+        self.graph.edges.get(idx)
     }
 
     pub fn starting_from(&self, node_idx: usize) -> Option<Vec<&Edge>> {
@@ -197,21 +202,21 @@ impl EdgeContainer {
         Some(leaving_edges)
     }
 
-    /// uses binary-search, but only on src's leaving edges (±3), so more or less in O(1)
+    /// uses linear-search, but only on src's leaving edges (±3), so more or less in O(1)
     ///
-    /// Returns the index of the edge, which can be used in the function `edge`
+    /// Returns the index of the edge, which can be used in the function `edge(...)`
     pub fn between(&self, src_idx: usize, dst_idx: usize) -> Option<(&Edge, usize)> {
+        // get offsets from offset-array for edge-indices (indirect mapping)
         let range = self.offset_indices(src_idx)?;
-        let leaving_edges = &self.edges[range.clone()];
-        let j = leaving_edges
-            .binary_search_by(|edge| edge.dst_idx.cmp(&dst_idx))
-            .ok()?;
-
-        let edge_idx = range.start + j;
-        debug_assert_eq!(leaving_edges[j], self.edges[edge_idx]);
-        let edge = self.get(edge_idx)?;
-
-        Some((edge, edge_idx))
+        let leaving_indices = &(self.edge_indices[range.clone()]);
+        for &idx in leaving_indices {
+            // indirect mapping
+            let edge = self.get(idx)?;
+            if edge.dst_idx == dst_idx {
+                return Some((&edge, idx));
+            }
+        }
+        return None;
     }
 
     //--------------------------------------------------------------------------------------------//
@@ -234,43 +239,65 @@ impl EdgeContainer {
     }
 }
 
-impl ops::Index<usize> for EdgeContainer {
+impl<'a> ops::Index<usize> for EdgeContainer<'a> {
     type Output = Edge;
 
     fn index(&self, idx: usize) -> &Self::Output {
-        &self.edges[idx]
+        &self.get(idx).unwrap()
     }
 }
 
 //------------------------------------------------------------------------------------------------//
 // graph: EdgeContainer
 
+/// Stores nodes and edges and provides methods for accessing them.
+///
+/// Real edges, not their indices, are stored
+///
+/// - `(src-id, dst-id)` with `src-id` having precedence over `dst-id`
+/// - in ascending order
 #[derive(Debug)]
 pub struct Graph {
-    nodes: NodeContainer,
-    fwd_edges: EdgeContainer,
-    bwd_edges: EdgeContainer,
+    nodes: Vec<Node>,
+    edges: Vec<Edge>,
+    fwd_indices: Vec<usize>,
+    fwd_offsets: Vec<usize>,
+    bwd_indices: Vec<usize>,
+    bwd_offsets: Vec<usize>,
 }
 
 impl Graph {
     fn new() -> Graph {
         Graph {
-            nodes: NodeContainer::new(),
-            fwd_edges: EdgeContainer::new(),
-            bwd_edges: EdgeContainer::new(),
+            nodes: Vec::new(),
+            edges: Vec::new(),
+            fwd_indices: Vec::new(),
+            fwd_offsets: Vec::new(),
+            bwd_indices: Vec::new(),
+            bwd_offsets: Vec::new(),
         }
     }
 
-    pub fn nodes(&self) -> &NodeContainer {
-        &(self.nodes)
+    pub fn nodes<'a>(&'a self) -> NodeContainer<'a> {
+        NodeContainer {
+            nodes: &(self.nodes),
+        }
     }
 
-    pub fn fwd_edges(&self) -> &EdgeContainer {
-        &(self.fwd_edges)
+    pub fn fwd_edges<'a>(&'a self) -> EdgeContainer<'a> {
+        EdgeContainer {
+            graph: self,
+            edge_indices: &(self.fwd_indices),
+            offsets: &(self.fwd_offsets),
+        }
     }
 
-    pub fn bwd_edges(&self) -> &EdgeContainer {
-        &(self.bwd_edges)
+    pub fn bwd_edges<'a>(&'a self) -> EdgeContainer<'a> {
+        EdgeContainer {
+            graph: self,
+            edge_indices: &(self.bwd_indices),
+            offsets: &(self.bwd_offsets),
+        }
     }
 }
 
@@ -279,8 +306,8 @@ impl fmt::Display for Graph {
         writeln!(
             f,
             "Graph: {{ number of nodes: {}, number of fwd_edges: {} }}",
-            self.nodes.count(),
-            self.fwd_edges.count()
+            self.nodes().count(),
+            self.fwd_edges().count()
         )?;
 
         writeln!(f, "")?;
@@ -291,16 +318,16 @@ impl fmt::Display for Graph {
         // print nodes
         for mut i in 0..n {
             // if enough nodes are in the graph
-            if i < self.nodes.count() {
+            if i < self.nodes().count() {
                 if i == n - 1 {
                     // if at least 2 nodes are missing -> print `...`
-                    if i + 1 < self.nodes.count() {
+                    if i + 1 < self.nodes().count() {
                         writeln!(f, "...")?;
                     }
                     // print last node
-                    i = self.nodes.count() - 1;
+                    i = self.nodes().count() - 1;
                 }
-                let node = &self.nodes[i];
+                let node = &self.nodes()[i];
                 writeln!(f, "Node: {{ idx: {}, id: {}, {} }}", i, node.id, node.coord,)?;
             } else {
                 break;
@@ -312,16 +339,16 @@ impl fmt::Display for Graph {
         // print fwd-edges
         for mut j in 0..m {
             // if enough edges are in the graph
-            if j < self.fwd_edges.count() {
+            if j < self.fwd_edges().count() {
                 if j == m - 1 {
                     // if at least 2 edges are missing -> print `...`
-                    if j + 1 < self.fwd_edges.count() {
+                    if j + 1 < self.fwd_edges().count() {
                         writeln!(f, "...")?;
                     }
                     // print last edge
-                    j = self.fwd_edges.count() - 1;
+                    j = self.fwd_edges().count() - 1;
                 }
-                let edge = &self.fwd_edges[j];
+                let edge = &self.fwd_edges()[j];
                 writeln!(
                     f,
                     "Edge: {{ idx: {}, id: {}, ({})-{}->({}) }}",
@@ -341,31 +368,23 @@ impl fmt::Display for Graph {
         // print fwd-offsets
         for mut i in 0..n {
             // if enough offsets are in the graph
-            if i < self.nodes.count() {
+            if i < self.nodes().count() {
                 if i == n - 1 {
                     // if at least 2 offsets are missing -> print `...`
-                    if i + 1 < self.nodes.count() {
+                    if i + 1 < self.nodes().count() {
                         writeln!(f, "...")?;
                     }
                     // print last offset
-                    i = self.nodes.count() - 1;
+                    i = self.nodes().count() - 1;
                 }
-                writeln!(
-                    f,
-                    "{{ id: {}, fwd-offset: {} }}",
-                    i, self.fwd_edges.offsets[i]
-                )?;
+                writeln!(f, "{{ id: {}, fwd-offset: {} }}", i, self.fwd_offsets[i])?;
             } else {
                 break;
             }
         }
         // offset has n+1 entries due to `leaving_edges(...)`
-        let i = self.fwd_edges.offsets.len() - 1;
-        writeln!(
-            f,
-            "{{ __: {}, fwd-offset: {} }}",
-            i, self.fwd_edges.offsets[i]
-        )?;
+        let i = self.fwd_offsets.len() - 1;
+        writeln!(f, "{{ __: {}, fwd-offset: {} }}", i, self.fwd_offsets[i])?;
 
         // print bwd-offsets
         // todo
