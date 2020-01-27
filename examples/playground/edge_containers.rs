@@ -57,7 +57,7 @@ mod refcells {
     }
 }
 
-mod moves {
+mod moving {
     #[derive(Debug)]
     pub struct Edge {
         treasure: String,
@@ -68,6 +68,8 @@ mod moves {
             &self.treasure
         }
     }
+
+    //--------------------------------------------------------------------------------------------//
 
     #[derive(Debug)]
     pub struct EdgeContainer {
@@ -89,6 +91,8 @@ mod moves {
         }
     }
 
+    //--------------------------------------------------------------------------------------------//
+
     #[derive(Debug)]
     pub struct Graph {
         edges: Vec<Edge>,
@@ -109,25 +113,100 @@ mod moves {
     }
 }
 
+mod borrowing {
+    #[derive(Debug)]
+    pub struct Edge {
+        treasure: String,
+    }
+
+    impl Edge {
+        pub fn treasure(&self) -> &str {
+            &self.treasure
+        }
+    }
+
+    //--------------------------------------------------------------------------------------------//
+
+    #[derive(Debug)]
+    pub struct EdgeContainer<'a> {
+        graph: &'a Graph,
+    }
+
+    impl<'a> EdgeContainer<'a> {
+        fn from(graph: &'a Graph) -> EdgeContainer<'a> {
+            EdgeContainer { graph }
+        }
+
+        pub fn edge_treasure(&self) -> &str {
+            let edge_idx = 0;
+            self.graph.edges[edge_idx].treasure()
+        }
+    }
+
+    //--------------------------------------------------------------------------------------------//
+
+    #[derive(Debug)]
+    pub struct Graph {
+        edges: Vec<Edge>,
+    }
+
+    impl Graph {
+        pub fn new() -> Graph {
+            Graph {
+                edges: vec![Edge {
+                    treasure: String::from("Access this from EdgeContainer hehe"),
+                }],
+            }
+        }
+
+        pub fn fwd_edges<'a>(&'a self) -> EdgeContainer<'a> {
+            EdgeContainer::from(self)
+        }
+
+        pub fn bwd_edges<'a>(&'a self) -> EdgeContainer<'a> {
+            EdgeContainer::from(self)
+        }
+    }
+}
+
+//------------------------------------------------------------------------------------------------//
+
+fn using_refcells() {
+    println!("Access graph's edges using RefCell");
+    let graph = refcells::Graph::new();
+    let fwd_edges = graph.fwd_edges();
+    drop(graph);
+    fwd_edges.try_using_graph();
+}
+
+fn using_moving() {
+    println!("Access graph's edges using move-semantic");
+    let graph = moving::Graph::new();
+    let fwd_edges = graph.fwd_edges();
+    println!("Treasure found: {}", fwd_edges.edge_treasure());
+    // drop(graph); // doesn't compile due to previous move
+    let graph_after = fwd_edges.graph();
+    drop(graph_after);
+}
+
+fn using_borrowing() {
+    println!("Access graph's edges using borrow-semantic");
+    let graph = borrowing::Graph::new();
+    let fwd_edges = graph.fwd_edges();
+    let bwd_edges = graph.bwd_edges();
+    println!("Forward-treasure found: {}", fwd_edges.edge_treasure());
+    println!("Backward-treasure found: {}", bwd_edges.edge_treasure());
+    drop(graph);
+    // doesn't compile due to previous move in drop(...)
+    // println!("Forward-treasure found: {}", fwd_edges.edge_treasure());
+    // println!("Backward-treasure found: {}", bwd_edges.edge_treasure());
+}
+
 fn main() {
-    // using references
-    {
-        println!("Access graph's edges using RefCell");
-        let graph = refcells::Graph::new();
-        let fwd_edges = graph.fwd_edges();
-        drop(graph);
-        fwd_edges.try_using_graph();
-    }
-
+    // test different access-methods
+    using_refcells();
     println!();
-
-    // using moves
-    {
-        println!("Access graph's edges using move-semantic");
-        let graph = moves::Graph::new();
-        let fwd_edges = graph.fwd_edges();
-        println!("Treasure found: {}", fwd_edges.edge_treasure());
-        // drop(graph); // doesn't compile due to previous move :)
-        let _graph = fwd_edges.graph();
-    }
+    using_moving();
+    println!();
+    using_borrowing();
 }
