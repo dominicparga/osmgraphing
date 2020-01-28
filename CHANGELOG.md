@@ -8,7 +8,7 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 ## Table of contents
 
 1. [Unreleased](#unreleased)
-1. [v1.0.0](#v1.0.0)
+1. [v1.0.0-yanked](#v1.0.0)
 1. [v0.6.1](#v0.6.1)
     1. [v0.6.0](#v0.6.0)
 1. [v0.5.0](#v0.5.0)
@@ -38,7 +38,9 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 
 ### Changed
 
-\-
+- The `graph`-interface allows access via `NodeContainer` and `EdgeContainer` for better maintainability without breaking changes.
+  - The `graph` serves as unit for __memory-storage__, while the containers, based on references from the `graph`, can execute user-queries.
+  - Due to the references, queries for `forward-edges` and `backward-edges` are processed by the same code.
 
 
 ### Deprecated
@@ -46,14 +48,16 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 - `CHANGELOG.md` contains empty version-descriptions.
 - Replace existing tags with ones referring to `CHANGELOG.md` and add old tag-texts to the `CHANGELOG.md`
 - Inconsistent `semver` in tagging -> probably `cargo yank VERSION` needed
-- The `graph`-interface should allow access via `node`- and `edge`-containers for better maintainability without breaking changes.
 - The `graph` containing forward-edges will be extended by backward-edges.
+  - Tests should be extended as well.
 - Routing should be extended by a `bidirectional A*`.
 
 
 ### Removed
 
 - The feature showing whether an `edge is enabled` is being removed to make handling backward-edges easier.
+- `Edge-ID`s are not needed and hence removed.
+- When building and finalizing the graph, `ProtoNode`s and `ProtoEdge`s don't need ordering implemented, hence these implementations are removed.
 
 
 ### Fixed
@@ -66,7 +70,7 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 \-
 
 
-## [v1.0.0][github/self/v1.0.0] <a name="v1.0.0"></a>
+## [v1.0.0-yanked][github/self/v1.0.0] <a name="v1.0.0"></a>
 
 ### Added <a name="v1.0.0/added"></a>
 
@@ -85,7 +89,9 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 - `CHANGELOG.md` contains empty version-descriptions.
 - Replace existing tags with ones referring to `CHANGELOG.md` and add old tag-texts to the `CHANGELOG.md`
 - Inconsistent `semver` in tagging -> probably `cargo yank VERSION` needed
-- The `graph`-interface should allow access via `node`- and `edge`-containers for better maintainability without breaking changes.
+- The `graph`-interface should allow access via `node`- and `edge`-containers
+  - This would improve maintainability and reduce number of breaking changes in the future.
+  - Further, it would allow using multidimensional metrics easier an probably improves caching thanks to `Structure of Arrays` instead of currently used `Array of Structures`
 - The `graph` containing forward-edges will be extended by backward-edges.
   - The feature showing whether an `edge is enabled` will be removed.
 - Routing should be extended by a `bidirectional A*`.
@@ -97,139 +103,137 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 - `Travis-CI` has been replaced by `GitHub`-workflows (-> see section [`Added`](#v1.0.0/added)).
 
 
-### [v0.6.1][github/self/v0.6.1] <a name="v0.6.1"></a>
+## [v0.6.1][github/self/v0.6.1] <a name="v0.6.1"></a>
 
-#### Deprecated
-
-- todo
-
-
-### [v0.6.0][github/self/v0.6.0] <a name="v0.6.0"></a>
-
-#### Deprecated
+### Deprecated
 
 - todo
 
 
-### [v0.5.0][github/self/v0.5.0] <a name="v0.5.0"></a>
+## [v0.6.0][github/self/v0.6.0] <a name="v0.6.0"></a>
 
-#### Deprecated
-
-- todo
-
-
-### [v0.4.1][github/self/v0.4.1] <a name="v0.4.1"></a>
-
-#### Deprecated
+### Deprecated
 
 - todo
 
 
-### [v0.4.0][github/self/v0.4.0] <a name="v0.4.0"></a>
+## [v0.5.0][github/self/v0.5.0] <a name="v0.5.0"></a>
 
-#### Deprecated
-
-- todo
-
-
-### [v0.3.1][github/self/v0.3.1] <a name="v0.3.1"></a>
-
-#### Deprecated
+### Deprecated
 
 - todo
 
 
-### [v0.3.0][github/self/v0.3.0] <a name="v0.3.0"></a>
+## [v0.4.1][github/self/v0.4.1] <a name="v0.4.1"></a>
 
-#### Deprecated
-
-- todo
-
-
-### [v0.2.4][github/self/v0.2.4] <a name="v0.2.4"></a>
-
-#### Deprecated
+### Deprecated
 
 - todo
 
 
-### [v0.2.3][github/self/v0.2.3] <a name="v0.2.3"></a>
+## [v0.4.0][github/self/v0.4.0] <a name="v0.4.0"></a>
 
-#### Deprecated
-
-- todo
-
-
-### [v0.2.2][github/self/v0.2.2] <a name="v0.2.2"></a>
-
-#### Deprecated
+### Deprecated
 
 - todo
 
 
-### [v0.2.1][github/self/v0.2.1] <a name="v0.2.1"></a>
+## [v0.3.1][github/self/v0.3.1] <a name="v0.3.1"></a>
 
-#### Deprecated
-
-- todo
-
-
-### [v0.2.0][github/self/v0.2.0] <a name="v0.2.0"></a>
-
-#### Deprecated
+### Deprecated
 
 - todo
 
 
-### [v0.1.5][github/self/v0.1.5] <a name="v0.1.5"></a>
+## [v0.3.0][github/self/v0.3.0] <a name="v0.3.0"></a>
 
-#### Deprecated
-
-- todo
-
-
-### [v0.1.4][github/self/v0.1.4] <a name="v0.1.4"></a>
-
-#### Deprecated
+### Deprecated
 
 - todo
 
 
-### [v0.1.3][github/self/v0.1.3] <a name="v0.1.3"></a>
+## [v0.2.4][github/self/v0.2.4] <a name="v0.2.4"></a>
 
-#### Deprecated
-
-- todo
-
-
-### [v0.1.2][github/self/v0.1.2] <a name="v0.1.2"></a>
-
-#### Deprecated
+### Deprecated
 
 - todo
 
 
-### [v0.1.1][github/self/v0.1.1] <a name="v0.1.1"></a>
+## [v0.2.3][github/self/v0.2.3] <a name="v0.2.3"></a>
 
-#### Deprecated
-
-- todo
-
-
-### [v0.1.0][github/self/v0.1.0] <a name="v0.1.0"></a>
-
-#### Deprecated
+### Deprecated
 
 - todo
 
 
+## [v0.2.2][github/self/v0.2.2] <a name="v0.2.2"></a>
+
+### Deprecated
+
+- todo
+
+
+## [v0.2.1][github/self/v0.2.1] <a name="v0.2.1"></a>
+
+### Deprecated
+
+- todo
+
+
+## [v0.2.0][github/self/v0.2.0] <a name="v0.2.0"></a>
+
+### Deprecated
+
+- todo
+
+
+## [v0.1.5][github/self/v0.1.5] <a name="v0.1.5"></a>
+
+### Deprecated
+
+- todo
+
+
+## [v0.1.4][github/self/v0.1.4] <a name="v0.1.4"></a>
+
+### Deprecated
+
+- todo
+
+
+## [v0.1.3][github/self/v0.1.3] <a name="v0.1.3"></a>
+
+### Deprecated
+
+- todo
+
+
+## [v0.1.2][github/self/v0.1.2] <a name="v0.1.2"></a>
+
+### Deprecated
+
+- todo
+
+
+## [v0.1.1][github/self/v0.1.1] <a name="v0.1.1"></a>
+
+### Deprecated
+
+- todo
+
+
+## [v0.1.0][github/self/v0.1.0] <a name="v0.1.0"></a>
+
+### Deprecated
+
+- todo
 
 
 [keepachangelog]: https://keepachangelog.com/en/
 [semver]: https://semver.org/
 
-[Unreleased]: https://github.com/dominicparga/osmgraphing/compare/v1.0.0...HEAD
-[github/self/v1.0.0]: https://github.com/dominicparga/osmgraphing/compare/v0.6.1...v1.0.0
+[Unreleased]: https://github.com/dominicparga/osmgraphing/compare/v1.0.0-yanked...HEAD
+[github/self/v1.0.0]: https://github.com/dominicparga/osmgraphing/compare/v0.6.1...v1.0.0-yanked
 [github/self/v0.6.1]: https://github.com/dominicparga/osmgraphing/compare/v0.6.0...v0.6.1
 [github/self/v0.6.0]: https://github.com/dominicparga/osmgraphing/compare/v0.5.0...v0.6.0
 [github/self/v0.5.0]: https://github.com/dominicparga/osmgraphing/compare/v0.4.1...v0.5.0
