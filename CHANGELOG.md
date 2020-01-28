@@ -8,7 +8,7 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 ## Table of contents
 
 1. [Unreleased](#unreleased)
-1. [v1.0.0](#v1.0.0)
+1. [v1.0.0-yanked](#v1.0.0)
 1. [v0.6.1](#v0.6.1)
     1. [v0.6.0](#v0.6.0)
 1. [v0.5.0](#v0.5.0)
@@ -70,7 +70,7 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 \-
 
 
-## [v1.0.0][github/self/v1.0.0] <a name="v1.0.0"></a>
+## [v1.0.0-yanked][github/self/v1.0.0] <a name="v1.0.0"></a>
 
 ### Added <a name="v1.0.0/added"></a>
 
@@ -89,7 +89,9 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 - `CHANGELOG.md` contains empty version-descriptions.
 - Replace existing tags with ones referring to `CHANGELOG.md` and add old tag-texts to the `CHANGELOG.md`
 - Inconsistent `semver` in tagging -> probably `cargo yank VERSION` needed
-- The `graph`-interface should allow access via `node`- and `edge`-containers for better maintainability without breaking changes.
+- The `graph`-interface should allow access via `node`- and `edge`-containers
+  - This would improve maintainability and reduce number of breaking changes in the future.
+  - Further, it would allow using multidimensional metrics easier an probably improves caching thanks to `Structure of Arrays` instead of currently used `Array of Structures`
 - The `graph` containing forward-edges will be extended by backward-edges.
   - The feature showing whether an `edge is enabled` will be removed.
 - Routing should be extended by a `bidirectional A*`.
@@ -230,8 +232,8 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 [keepachangelog]: https://keepachangelog.com/en/
 [semver]: https://semver.org/
 
-[Unreleased]: https://github.com/dominicparga/osmgraphing/compare/v1.0.0...HEAD
-[github/self/v1.0.0]: https://github.com/dominicparga/osmgraphing/compare/v0.6.1...v1.0.0
+[Unreleased]: https://github.com/dominicparga/osmgraphing/compare/v1.0.0-yanked...HEAD
+[github/self/v1.0.0]: https://github.com/dominicparga/osmgraphing/compare/v0.6.1...v1.0.0-yanked
 [github/self/v0.6.1]: https://github.com/dominicparga/osmgraphing/compare/v0.6.0...v0.6.1
 [github/self/v0.6.0]: https://github.com/dominicparga/osmgraphing/compare/v0.5.0...v0.6.0
 [github/self/v0.5.0]: https://github.com/dominicparga/osmgraphing/compare/v0.4.1...v0.5.0
