@@ -206,7 +206,7 @@ fn simple_stuttgart() {
 
     // Due to the offset-array, the fwd-edge-ids should match with sorting by src-id, then by dst-id.
     // -> testing offset-array
-    // name, idx, id, src, dst, meters, maxspeed
+    // name, idx, id, src, dst, meters, maxspeed, ms
     let fwd_edge_opp_bac = TestEdge::from_fwd(None, 0, &node_opp, &node_bac, 8_000, 50, 576_000);
     let fwd_edge_bac_opp = TestEdge::from_fwd(None, 1, &node_bac, &node_opp, 8_000, 50, 576_000);
     let fwd_edge_bac_wai = TestEdge::from_fwd(None, 2, &node_bac, &node_wai, 23_000, 120, 690_000);
@@ -224,21 +224,21 @@ fn simple_stuttgart() {
 
     // Due to the offset-array, the bwd-edge-ids should match with sorting by src-id, then by dst-id.
     // -> testing offset-array
-    // name, idx, id, src, dst, meters, maxspeed
-    let bwd_edge_opp_bac = TestEdge::from_bwd(None, 0, &node_opp, &node_bac, 8_000, 50, 576_000);
-    let bwd_edge_bac_opp = TestEdge::from_bwd(None, 1, &node_bac, &node_opp, 8_000, 50, 576_000);
-    let bwd_edge_bac_wai = TestEdge::from_bwd(None, 2, &node_bac, &node_wai, 23_000, 120, 690_000);
-    let bwd_edge_bac_end = TestEdge::from_bwd(None, 3, &node_bac, &node_end, 22_000, 80, 990_000);
-    let bwd_edge_wai_bac = TestEdge::from_bwd(None, 4, &node_wai, &node_bac, 23_000, 120, 690_000);
-    let bwd_edge_wai_end = TestEdge::from_bwd(None, 5, &node_wai, &node_end, 8_000, 50, 576_000);
-    let bwd_edge_wai_stu = TestEdge::from_bwd(None, 6, &node_wai, &node_stu, 17_000, 100, 612_000);
-    let bwd_edge_end_bac = TestEdge::from_bwd(None, 7, &node_end, &node_bac, 22_000, 80, 990_000);
-    let bwd_edge_end_wai = TestEdge::from_bwd(None, 8, &node_end, &node_wai, 8_000, 50, 576_000);
-    let bwd_edge_end_stu = TestEdge::from_bwd(None, 9, &node_end, &node_stu, 21_000, 80, 945_000);
+    // name, idx, id, src, dst, meters, maxspeed, ms
+    let bwd_edge_bac_opp = TestEdge::from_bwd(None, 0, &node_bac, &node_opp, 8_000, 50, 576_000);
+    let bwd_edge_opp_bac = TestEdge::from_bwd(None, 1, &node_opp, &node_bac, 8_000, 50, 576_000);
+    let bwd_edge_wai_bac = TestEdge::from_bwd(None, 2, &node_wai, &node_bac, 23_000, 120, 690_000);
+    let bwd_edge_end_bac = TestEdge::from_bwd(None, 3, &node_end, &node_bac, 22_000, 80, 990_000);
+    let bwd_edge_bac_wai = TestEdge::from_bwd(None, 4, &node_bac, &node_wai, 23_000, 120, 690_000);
+    let bwd_edge_end_wai = TestEdge::from_bwd(None, 5, &node_end, &node_wai, 8_000, 50, 576_000);
+    let bwd_edge_stu_wai = TestEdge::from_bwd(None, 6, &node_stu, &node_wai, 17_000, 100, 612_000);
+    let bwd_edge_bac_end = TestEdge::from_bwd(None, 7, &node_bac, &node_end, 22_000, 80, 990_000);
+    let bwd_edge_wai_end = TestEdge::from_bwd(None, 8, &node_wai, &node_end, 8_000, 50, 576_000);
+    let bwd_edge_stu_end = TestEdge::from_bwd(None, 9, &node_stu, &node_end, 21_000, 80, 945_000);
     // 1_069 is the length of a straight line, since the file contains trash in there.
-    let bwd_edge_dea_bac = TestEdge::from_bwd(None, 10, &node_dea, &node_bac, 1_069, 30, 128_280);
-    let bwd_edge_stu_wai = TestEdge::from_bwd(None, 11, &node_stu, &node_wai, 17_000, 100, 612_000);
-    let bwd_edge_stu_end = TestEdge::from_bwd(None, 12, &node_stu, &node_end, 21_000, 80, 945_000);
+    let bwd_edge_dea_bac = TestEdge::from_fwd(None, 10, &node_dea, &node_bac, 1_069, 30, 128_280);
+    let bwd_edge_wai_stu = TestEdge::from_bwd(None, 11, &node_wai, &node_stu, 17_000, 100, 612_000);
+    let bwd_edge_end_stu = TestEdge::from_bwd(None, 12, &node_end, &node_stu, 21_000, 80, 945_000);
 
     //--------------------------------------------------------------------------------------------//
     // testing graph
@@ -306,19 +306,19 @@ fn simple_stuttgart() {
     //--------------------------------------------------------------------------------------------//
     // testing fwd-edges
 
-    bwd_edge_opp_bac.assert_correct(&graph);
     bwd_edge_bac_opp.assert_correct(&graph);
-    bwd_edge_bac_wai.assert_correct(&graph);
-    bwd_edge_bac_end.assert_correct(&graph);
+    bwd_edge_opp_bac.assert_correct(&graph);
     bwd_edge_wai_bac.assert_correct(&graph);
-    bwd_edge_wai_end.assert_correct(&graph);
-    bwd_edge_wai_stu.assert_correct(&graph);
     bwd_edge_end_bac.assert_correct(&graph);
+    bwd_edge_bac_wai.assert_correct(&graph);
     bwd_edge_end_wai.assert_correct(&graph);
-    bwd_edge_end_stu.assert_correct(&graph);
-    bwd_edge_dea_bac.assert_correct(&graph);
     bwd_edge_stu_wai.assert_correct(&graph);
+    bwd_edge_bac_end.assert_correct(&graph);
+    bwd_edge_wai_end.assert_correct(&graph);
     bwd_edge_stu_end.assert_correct(&graph);
+    bwd_edge_dea_bac.assert_correct(&graph);
+    bwd_edge_wai_stu.assert_correct(&graph);
+    bwd_edge_end_stu.assert_correct(&graph);
 }
 
 #[test]
@@ -341,7 +341,7 @@ fn small() {
 
     // Due to the offset-array, the fwd-edge-ids should match with sorting by src-id, then by dst-id.
     // -> testing offset-array
-    // name, idx, id, src, dst, meters, maxspeed
+    // name, idx, id, src, dst, meters, maxspeed, ms
     let fwd_edge_b_a = TestEdge::from_fwd(None, 0, &node_b, &node_a, 1, 30, 120);
     let fwd_edge_b_c = TestEdge::from_fwd(None, 1, &node_b, &node_c, 1, 30, 120);
     let fwd_edge_c_a = TestEdge::from_fwd(None, 2, &node_c, &node_a, 1, 30, 120);
@@ -361,7 +361,7 @@ fn small() {
 
     // Due to the offset-array, the bwd-edge-ids should match with sorting by src-id, then by dst-id.
     // -> testing offset-array
-    // name, idx, id, src, dst, meters, maxspeed
+    // name, idx, id, src, dst, meters, maxspeed, ms
     let bwd_edge_a_b = TestEdge::from_bwd(None, 0, &node_a, &node_b, 1, 30, 120);
     let bwd_edge_a_c = TestEdge::from_bwd(None, 1, &node_a, &node_c, 1, 30, 120);
     let bwd_edge_b_c = TestEdge::from_bwd(None, 2, &node_b, &node_c, 1, 30, 120);

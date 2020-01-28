@@ -1,12 +1,14 @@
-use std::cmp::{max, Ordering};
+use std::cmp::max;
 use std::collections::BTreeMap;
 
 use log::{error, info};
 
-use super::{geo, Edge, Graph, Node};
+use super::geo;
+use super::{Edge, Graph, Node};
 
 //------------------------------------------------------------------------------------------------//
 
+#[derive(Debug)]
 pub struct ProtoNode {
     id: i64,
     coord: Option<geo::Coordinate>,
@@ -21,6 +23,7 @@ impl ProtoNode {
 
 //------------------------------------------------------------------------------------------------//
 
+#[derive(Debug)]
 pub struct ProtoEdge {
     way_id: Option<i64>,
     src_id: i64,
@@ -28,8 +31,7 @@ pub struct ProtoEdge {
     lane_count: u8,
     meters: Option<u32>,
     maxspeed: u16,
-    // super handy for getting fwd-/bwd-indices
-    idx: usize,
+    idx: usize, // handy for remembering indices after sorting backwards
 }
 
 //------------------------------------------------------------------------------------------------//
@@ -90,7 +92,7 @@ impl GraphBuilder {
             lane_count,
             meters,
             maxspeed,
-            idx: 0, // needed later when sorting
+            idx: 0, // needed below in finalize
         });
 
         // add or update src-node
@@ -171,20 +173,70 @@ impl GraphBuilder {
         info!("Finished adding nodes");
 
         //----------------------------------------------------------------------------------------//
-        // sort edges by ascending src-id, then by ascending dst-id -> offset-array
+        // sort backward-edges by ascending dst-id, then by ascending src-id -> offset-array
 
-        info!("Starting sorting proto-edges by their src/dst-IDs ..");
+        info!("Starting sorting proto-backward-edges by their dst/src-IDs ..");
+        self.proto_edges.sort_by(|e0, e1| {
+            e0.dst_id
+                .cmp(&e1.dst_id)
+                .then_with(|| e0.src_id.cmp(&e1.src_id))
+        });
+        info!("Finished sorting proto-backward-edges");
+
+        log::error!("bwd-sorted: {:?}", self.proto_edges);
+
+        //----------------------------------------------------------------------------------------//
+        // build backward-offset-array
+
+        info!("Starting creating the backward-offset-array ..");
+        let mut offset_node_idx = 0;
+        let mut offset = 0;
+        graph.bwd_offsets.push(offset);
+        // high-level-idea
+        // count offset for each proto_edge (sorted) and apply offset as far as src changes
+        for edge_idx in 0..self.proto_edges.len() {
+            let proto_edge = &mut self.proto_edges[edge_idx];
+
+            // find destination-index in sorted vec of nodes
+            let edge_dst_idx = match graph.nodes().idx_from(proto_edge.dst_id) {
+                Ok(idx) => idx,
+                Err(_) => {
+                    return Err(format!(
+                        "The given dst-id `{:?}` of way-id `{:?}` doesn't exist as node",
+                        proto_edge.dst_id, proto_edge.way_id
+                    ))
+                }
+            };
+
+            // if coming edges have new src
+            // then update offset of new src
+            while offset_node_idx != edge_dst_idx {
+                offset_node_idx += 1;
+                graph.bwd_offsets.push(offset);
+            }
+            offset += 1;
+            // remember index after sorting forward (for indirect mapping)
+            proto_edge.idx = edge_idx;
+        }
+        // last node needs an upper bound as well for `leaving_edges(...)`
+        graph.bwd_offsets.push(offset);
+        info!("Finished creating the backward-offset-array");
+
+        //----------------------------------------------------------------------------------------//
+        // sort forward-edges by ascending src-id, then by ascending dst-id -> offset-array
+
+        info!("Starting sorting proto-forward-edges by their src/dst-IDs ..");
         self.proto_edges.sort_by(|e0, e1| {
             e0.src_id
                 .cmp(&e1.src_id)
                 .then_with(|| e0.dst_id.cmp(&e1.dst_id))
         });
-        info!("Finished sorting proto-edges");
+        info!("Finished sorting proto-forward-edges");
 
         //----------------------------------------------------------------------------------------//
-        // build offset-array and edges
+        // build forward-offset-array and edges
 
-        info!("Starting creating the offset-array ..");
+        info!("Starting creating the forward-offset-array ..");
         let mut offset_node_idx = 0;
         let mut offset = 0;
         graph.fwd_offsets.push(offset);
@@ -255,13 +307,29 @@ impl GraphBuilder {
         }
         // last node needs an upper bound as well for `leaving_edges(...)`
         graph.fwd_offsets.push(offset);
+        info!("Finished creating forward-offset-array");
 
+        //----------------------------------------------------------------------------------------//
+        // backward-indices are remembered above, but applied to forward-sorted-edges
+        // (there is no specific reason for forward-sorted-edges)
+
+        graph.bwd_indices = vec![0; graph.fwd_indices.len()];
+        for new_edge_pos in 0..graph.bwd_indices.len() {
+            let proto_edge = &self.proto_edges[new_edge_pos];
+            let old_edge_pos = proto_edge.idx;
+            log::error!("old( {} ) -> new( {} )", old_edge_pos, new_edge_pos);
+            graph.bwd_indices[old_edge_pos] = new_edge_pos;
+        }
+
+        //----------------------------------------------------------------------------------------//
         // optimize memory a little
+
         graph.nodes.shrink_to_fit();
         graph.edges.shrink_to_fit();
         graph.fwd_indices.shrink_to_fit();
         graph.fwd_offsets.shrink_to_fit();
-        info!("Finished creating offset-array");
+        graph.bwd_indices.shrink_to_fit();
+        graph.bwd_offsets.shrink_to_fit();
 
         Ok(graph)
     }
