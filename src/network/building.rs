@@ -216,8 +216,6 @@ impl GraphBuilder {
         // count offset for each proto_edge (sorted) and apply offset as far as src changes
         for edge_idx in 0..self.proto_edges.len() {
             let proto_edge = &self.proto_edges[edge_idx];
-            // set way-id to index
-            let edge_way_id = proto_edge.way_id.unwrap_or(edge_idx as i64);
 
             // find source-index in sorted vec of nodes
             let edge_src_idx = match graph.nodes().idx_from(proto_edge.src_id) {
@@ -262,7 +260,6 @@ impl GraphBuilder {
 
             // add new edge to graph
             let edge = Edge {
-                id: edge_way_id,
                 src_idx: edge_src_idx,
                 dst_idx: edge_dst_idx,
                 lane_count: proto_edge.lane_count,

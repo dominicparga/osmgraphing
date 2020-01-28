@@ -56,6 +56,7 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 ### Removed
 
 - The feature showing whether an `edge is enabled` is being removed to make handling backward-edges easier.
+- `Edge-ID`s are not needed and hence removed.
 
 
 ### Fixed

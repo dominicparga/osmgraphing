@@ -63,7 +63,6 @@ impl fmt::Display for Node {
 
 #[derive(Debug)]
 pub struct Edge {
-    id: i64,
     src_idx: usize,
     dst_idx: usize,
     lane_count: u8,
@@ -72,9 +71,6 @@ pub struct Edge {
 }
 
 impl Edge {
-    pub fn id(&self) -> i64 {
-        self.id
-    }
     pub fn src_idx(&self) -> usize {
         self.src_idx
     }
@@ -103,8 +99,7 @@ impl Eq for Edge {}
 
 impl PartialEq for Edge {
     fn eq(&self, other: &Edge) -> bool {
-        self.id == other.id
-            && self.src_idx == other.src_idx
+        self.src_idx == other.src_idx
             && self.dst_idx == other.dst_idx
             && self.meters == other.meters
             && self.maxspeed == other.maxspeed
@@ -115,8 +110,8 @@ impl fmt::Display for Edge {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "Edge: {{ id: {}, ({})-{}->({}) }}",
-            self.id, self.src_idx, self.meters, self.dst_idx,
+            "Edge: {{ ({})-{}->({}) }}",
+            self.src_idx, self.meters, self.dst_idx,
         )
     }
 }
@@ -351,12 +346,8 @@ impl fmt::Display for Graph {
                 let edge = &self.fwd_edges()[j];
                 writeln!(
                     f,
-                    "Edge: {{ idx: {}, id: {}, ({})-{}->({}) }}",
-                    j,
-                    edge.id,
-                    self.nodes[edge.src_idx].id,
-                    edge.meters,
-                    self.nodes[edge.dst_idx].id,
+                    "Edge: {{ idx: {}, ({})-{}->({}) }}",
+                    j, self.nodes[edge.src_idx].id, edge.meters, self.nodes[edge.dst_idx].id,
                 )?;
             } else {
                 break;
