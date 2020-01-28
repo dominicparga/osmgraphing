@@ -12,26 +12,10 @@ pub struct ProtoNode {
     coord: Option<geo::Coordinate>,
     edge_count: u16,
 }
+
 impl ProtoNode {
     fn is_in_edge(&self) -> bool {
         self.edge_count > 0
-    }
-}
-impl Ord for ProtoNode {
-    fn cmp(&self, other: &ProtoNode) -> Ordering {
-        // inverse order since BinaryHeap is max-heap, but min-heap is needed
-        other.id.cmp(&self.id)
-    }
-}
-impl PartialOrd for ProtoNode {
-    fn partial_cmp(&self, other: &ProtoNode) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
-}
-impl Eq for ProtoNode {}
-impl PartialEq for ProtoNode {
-    fn eq(&self, other: &ProtoNode) -> bool {
-        self.cmp(other) == Ordering::Equal
     }
 }
 
@@ -44,17 +28,8 @@ pub struct ProtoEdge {
     lane_count: u8,
     meters: Option<u32>,
     maxspeed: u16,
-}
-impl Eq for ProtoEdge {}
-impl PartialEq for ProtoEdge {
-    fn eq(&self, other: &ProtoEdge) -> bool {
-        self.way_id == other.way_id
-            && self.src_id == other.src_id
-            && self.dst_id == other.dst_id
-            && self.lane_count == other.lane_count
-            && self.meters == other.meters
-            && self.maxspeed == other.maxspeed
-    }
+    // super handy for getting fwd-/bwd-indices
+    idx: usize,
 }
 
 //------------------------------------------------------------------------------------------------//
@@ -115,6 +90,7 @@ impl GraphBuilder {
             lane_count,
             meters,
             maxspeed,
+            idx: 0, // needed later when sorting
         });
 
         // add or update src-node

@@ -57,6 +57,7 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 
 - The feature showing whether an `edge is enabled` is being removed to make handling backward-edges easier.
 - `Edge-ID`s are not needed and hence removed.
+- When building and finalizing the graph, `ProtoNode`s and `ProtoEdge`s don't need ordering implemented, hence these implementations are removed.
 
 
 ### Fixed
