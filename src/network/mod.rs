@@ -173,7 +173,7 @@ impl<'a> EdgeContainer<'a> {
     // getter: counts
 
     pub fn count(&self) -> usize {
-        self.graph.edges.len()
+        self.edge_indices.len()
     }
 
     //--------------------------------------------------------------------------------------------//
@@ -331,54 +331,68 @@ impl fmt::Display for Graph {
 
         writeln!(f, "")?;
 
-        // print fwd-edges
-        for mut j in 0..m {
-            // if enough edges are in the graph
-            if j < self.fwd_edges().count() {
-                if j == m - 1 {
-                    // if at least 2 edges are missing -> print `...`
-                    if j + 1 < self.fwd_edges().count() {
-                        writeln!(f, "...")?;
+        for (xwd_edges, xwd_offsets, xwd_prefix) in vec![
+            (self.fwd_edges(), &(self.fwd_offsets), "fwd-"),
+            (self.bwd_edges(), &(self.bwd_offsets), "bwd-"),
+        ] {
+            // print xwd-edges
+            for mut j in 0..m {
+                // if enough edges are in the graph
+                if j < xwd_edges.count() {
+                    if j == m - 1 {
+                        // if at least 2 edges are missing -> print `...`
+                        if j + 1 < xwd_edges.count() {
+                            writeln!(f, "...")?;
+                        }
+                        // print last edge
+                        j = xwd_edges.count() - 1;
                     }
-                    // print last edge
-                    j = self.fwd_edges().count() - 1;
+                    let edge = &xwd_edges[j];
+                    writeln!(
+                        f,
+                        "{}edge: {{ idx: {}, ({})-{}->({}) }}",
+                        xwd_prefix,
+                        j,
+                        self.nodes[edge.src_idx].id,
+                        edge.meters,
+                        self.nodes[edge.dst_idx].id,
+                    )?;
+                } else {
+                    break;
                 }
-                let edge = &self.fwd_edges()[j];
-                writeln!(
-                    f,
-                    "Edge: {{ idx: {}, ({})-{}->({}) }}",
-                    j, self.nodes[edge.src_idx].id, edge.meters, self.nodes[edge.dst_idx].id,
-                )?;
-            } else {
-                break;
             }
-        }
 
-        writeln!(f, "")?;
+            writeln!(f, "")?;
 
-        // print fwd-offsets
-        for mut i in 0..n {
-            // if enough offsets are in the graph
-            if i < self.nodes().count() {
-                if i == n - 1 {
-                    // if at least 2 offsets are missing -> print `...`
-                    if i + 1 < self.nodes().count() {
-                        writeln!(f, "...")?;
+            // print xwd-offsets
+            for mut i in 0..n {
+                // if enough offsets are in the graph
+                if i < self.nodes().count() {
+                    if i == n - 1 {
+                        // if at least 2 offsets are missing -> print `...`
+                        if i + 1 < self.nodes().count() {
+                            writeln!(f, "...")?;
+                        }
+                        // print last offset
+                        i = self.nodes().count() - 1;
                     }
-                    // print last offset
-                    i = self.nodes().count() - 1;
+                    writeln!(
+                        f,
+                        "{{ id: {}, {}offset: {} }}",
+                        i, xwd_prefix, xwd_offsets[i]
+                    )?;
+                } else {
+                    break;
                 }
-                writeln!(f, "{{ id: {}, fwd-offset: {} }}", i, self.fwd_offsets[i])?;
-            } else {
-                break;
             }
+            // offset has n+1 entries due to `leaving_edges(...)`
+            let i = xwd_offsets.len() - 1;
+            writeln!(
+                f,
+                "{{ __: {}, {}offset: {} }}",
+                i, xwd_prefix, xwd_offsets[i]
+            )?;
         }
-        // offset has n+1 entries due to `leaving_edges(...)`
-        let i = self.fwd_offsets.len() - 1;
-        writeln!(f, "{{ __: {}, fwd-offset: {} }}", i, self.fwd_offsets[i])?;
-
-        // print bwd-offsets
-        // todo
 
         Ok(())
     }
