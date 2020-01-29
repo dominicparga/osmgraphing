@@ -2,7 +2,7 @@
 // other modules
 
 use crate::network;
-use network::{geo, Edge, Node};
+use network::{geo, units::Meters, Edge, Node};
 
 use super::Astar;
 use super::GenericAstar;
@@ -11,12 +11,13 @@ use super::GenericAstar;
 // own modules
 
 pub mod astar {
-    use super::{geo, network, Astar, Edge, GenericAstar, Node};
+    use super::{geo, network, Astar, Edge, GenericAstar, Meters, Node};
 
     pub fn shortest() -> Box<dyn Astar> {
         let cost_fn = |edge: &Edge| edge.meters();
         let estimate_fn = |from: &Node, to: &Node| {
-            (geo::haversine_distance(from.coord(), to.coord()) * 1_000.0) as u32
+            let meters = geo::haversine_distance(from.coord(), to.coord()) * 1_000.0;
+            Meters::from(meters as u32)
         };
         Box::new(GenericAstar::from(cost_fn, estimate_fn))
     }
@@ -33,11 +34,11 @@ pub mod astar {
 }
 
 pub mod dijkstra {
-    use super::{Astar, Edge, GenericAstar, Node};
+    use super::{Astar, Edge, GenericAstar, Node, Meters};
 
     pub fn shortest() -> Box<dyn Astar> {
         let cost_fn = |edge: &Edge| edge.meters();
-        let estimate_fn = |_from: &Node, _to: &Node| 0;
+        let estimate_fn = |_from: &Node, _to: &Node| Meters::zero();
         Box::new(GenericAstar::from(cost_fn, estimate_fn))
     }
 
