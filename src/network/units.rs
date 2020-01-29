@@ -17,6 +17,7 @@ mod meters {
 
     //--------------------------------------------------------------------------------------------//
 
+    #[derive(Debug, Copy, Clone)]
     pub struct Meters {
         metric: Metric<u32>
     }
