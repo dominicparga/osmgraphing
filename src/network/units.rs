@@ -1,12 +1,11 @@
 //------------------------------------------------------------------------------------------------//
+// other modules
+
+//------------------------------------------------------------------------------------------------//
 // own modules
 
 pub use meters::Meters;
-pub use quantities::Kilo;
-
-trait Metric<T>: From<T> + Into<T> {
-    fn value(&mut self) -> &mut T;
-}
+use metrics::Metric;
 
 mod meters {
     //--------------------------------------------------------------------------------------------//
@@ -14,26 +13,19 @@ mod meters {
 
     use super::Metric;
     use crate::network::NodeIdx;
-    use std::cmp::{Ord, Ordering};
-    use std::ops::{Add, Index, IndexMut};
+    use std::ops::{Index, IndexMut};
 
     //--------------------------------------------------------------------------------------------//
-    // meters
 
-    #[derive(Copy, Clone)]
     pub struct Meters {
-        value: u32,
+        metric: Metric<u32>
     }
 
     impl Default for Meters {
         fn default() -> Meters {
-            Meters { value: 0 }
-        }
-    }
-
-    impl Metric<u32> for Meters {
-        fn value(&mut self) -> &mut u32 {
-            &mut self.value
+            Meters {
+                metric: Default::default()
+            }
         }
     }
 
@@ -44,67 +36,20 @@ mod meters {
             }
         }
 
-        pub fn min() -> Meters {
-            std::u32::MIN.into()
-        }
-
-        pub fn max() -> Meters {
-            std::u32::MAX.into()
+        pub fn from<M: Into<Metric<u32>>>(value: M) -> Meters {
+            Meters { metric: value.into() }
         }
 
         pub fn value(&self) -> u32 {
-            self.value
+            self.metric.value()
         }
-    }
 
-    //--------------------------------------------------------------------------------------------//
-    // conversion from/to
-
-    impl Into<u32> for Meters {
-        fn into(self) -> u32 {
-            self.value
+        pub fn min() -> Meters {
+            Meters { metric: Metric::min() }
         }
-    }
 
-    impl From<u32> for Meters {
-        fn from(meters: u32) -> Self {
-            Meters { value: meters }
-        }
-    }
-
-    //--------------------------------------------------------------------------------------------//
-    // ordering
-
-    impl Ord for Meters {
-        fn cmp(&self, other: &Self) -> Ordering {
-            self.value.cmp(&other.value)
-        }
-    }
-
-    impl PartialOrd for Meters {
-        fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-            Some(self.cmp(other))
-        }
-    }
-
-    impl Eq for Meters {}
-
-    impl PartialEq for Meters {
-        fn eq(&self, other: &Self) -> bool {
-            self.value == other.value
-        }
-    }
-
-    //--------------------------------------------------------------------------------------------//
-    // operations
-
-    impl Add<Meters> for Meters {
-        type Output = Meters;
-
-        fn add(self, other: Meters) -> Self {
-            Meters {
-                value: self.value + other.value,
-            }
+        pub fn max() -> Meters {
+            Meters { metric: Metric::max() }
         }
     }
 
@@ -128,34 +73,172 @@ mod meters {
     }
 }
 
-mod quantities {
-    use super::{Metric};
+/// For general functionality like adding, multiplying etc.
+mod metrics {
+    //--------------------------------------------------------------------------------------------//
+    // other modules
 
-    pub struct Kilo<M> {
-        metric: M,
+    use std::cmp::{Ord, Ordering};
+    use std::ops::{Add, AddAssign, Mul, MulAssign};
+
+    //--------------------------------------------------------------------------------------------//
+
+    #[derive(Copy, Clone, Debug)]
+    pub struct Metric<T> {
+        value: T,
     }
 
-    impl<M> Kilo<M>
+    impl<T> Default for Metric<T>
     where
-        M: Metric<u32>,
+        T: Default,
     {
-        pub fn from_u32(value: u32) -> Self {
-            Kilo { metric: (1000 * value).into() }
+        fn default() -> Metric<T> {
+            Metric {
+                value: Default::default(),
+            }
+        }
+    }
+
+    impl<T> Metric<T>
+    where
+        T: Default,
+    {
+        pub fn new() -> Metric<T> {
+            Metric {
+                ..Default::default()
+            }
         }
 
-        /// Note that the result could have rounding errors due to up-scaling (* 1000.0) and cutting afterwards (f64 -> u32)
-        pub fn from_f64(value: f64) -> Self {
-            Kilo { metric: ((1000.0 * value) as u32).into() }
+        pub fn value(&self) -> T {
+            self.value
+        }
+    }
+
+    //--------------------------------------------------------------------------------------------//
+    // min/max values of type T
+
+    impl Metric<u32> {
+        pub fn min() -> Metric<u32> {
+            std::u32::MIN.into()
         }
 
-        pub fn from_metric(metric: M) -> Self {
-            *metric.value() /= 1000;
-            Kilo { metric }
+        pub fn max() -> Metric<u32> {
+            std::u32::MAX.into()
         }
+    }
 
-        pub fn into_metric(self) -> M {
-            *self.metric.value() *= 1000;
-            self.metric
+    //--------------------------------------------------------------------------------------------//
+    // conversion from/to
+
+    impl Into<f64> for Metric<u32> {
+        fn into(self) -> f64 {
+            self.value as f64
+        }
+    }
+
+    impl From<f64> for Metric<u32> {
+        fn from(value: f64) -> Self {
+            Metric {
+                value: value as u32,
+            }
+        }
+    }
+
+    impl Into<u32> for Metric<u32> {
+        fn into(self) -> u32 {
+            self.value
+        }
+    }
+
+    /// Note that the result could have rounding errors due to up-scaling (* 1000.0) and cutting afterwards (f64 -> u32)
+    impl From<u32> for Metric<u32> {
+        fn from(value: u32) -> Self {
+            Metric { value: value }
+        }
+    }
+
+    //--------------------------------------------------------------------------------------------//
+    // ordering
+
+    impl<T> Ord for Metric<T>
+    where
+        T: Ord,
+    {
+        fn cmp(&self, other: &Self) -> Ordering {
+            self.value.cmp(&other.value)
+        }
+    }
+
+    impl<T> PartialOrd for Metric<T>
+    where
+        T: Ord + PartialOrd,
+    {
+        fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+            Some(self.cmp(other))
+        }
+    }
+
+    impl<T> Eq for Metric<T> where T: Eq {}
+
+    impl<T> PartialEq for Metric<T>
+    where
+        T: PartialEq,
+    {
+        fn eq(&self, other: &Self) -> bool {
+            self.value == other.value
+        }
+    }
+
+    //--------------------------------------------------------------------------------------------//
+    // arithmetic operations
+
+    impl Add<Metric<u32>> for Metric<u32> {
+        type Output = Metric<u32>;
+
+        fn add(self, other: Metric<u32>) -> Self {
+            Metric {
+                value: self.value + other.value,
+            }
+        }
+    }
+
+    impl AddAssign<Metric<u32>> for Metric<u32> {
+        fn add_assign(&mut self, other: Metric<u32>) {
+            self.value += other.value;
+        }
+    }
+
+    impl Mul<u32> for Metric<u32> {
+        type Output = Metric<u32>;
+
+        fn mul(self, scale: u32) -> Self {
+            Metric {
+                value: scale * self.value,
+            }
+        }
+    }
+
+    impl MulAssign<u32> for Metric<u32> {
+        fn mul_assign(&mut self, scale: u32) {
+            self.value *= scale;
+        }
+    }
+
+    impl Mul<f64> for Metric<u32> {
+        type Output = Metric<u32>;
+
+        fn mul(self, scale: f64) -> Self {
+            let new_value = scale * (self.value as f64) * scale;
+            Metric {
+                value: new_value as u32,
+            }
+        }
+    }
+
+    impl MulAssign<f64> for Metric<u32> {
+        fn mul_assign(&mut self, scale: f64) {
+            let new_value = scale * (self.value as f64);
+            self.value = new_value as u32;
         }
     }
 }
