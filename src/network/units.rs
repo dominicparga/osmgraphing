@@ -17,20 +17,26 @@ mod meters {
 
     //--------------------------------------------------------------------------------------------//
 
-    #[derive(Debug, Copy, Clone)]
+    #[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
     pub struct Meters {
-        metric: Metric<u32>
+        metric: Metric<u32>,
     }
 
     impl Default for Meters {
         fn default() -> Meters {
             Meters {
-                metric: Default::default()
+                metric: Default::default(),
             }
         }
     }
 
     impl Meters {
+        pub fn zero() -> Meters {
+            Meters {
+                metric: 0.into()
+            }
+        }
+
         pub fn new() -> Meters {
             Meters {
                 ..Default::default()
@@ -38,7 +44,9 @@ mod meters {
         }
 
         pub fn from<M: Into<Metric<u32>>>(value: M) -> Meters {
-            Meters { metric: value.into() }
+            Meters {
+                metric: value.into(),
+            }
         }
 
         pub fn value(&self) -> u32 {
@@ -46,11 +54,15 @@ mod meters {
         }
 
         pub fn min() -> Meters {
-            Meters { metric: Metric::min() }
+            Meters {
+                metric: Metric::min(),
+            }
         }
 
         pub fn max() -> Meters {
-            Meters { metric: Metric::max() }
+            Meters {
+                metric: Metric::max(),
+            }
         }
     }
 
