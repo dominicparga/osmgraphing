@@ -1,5 +1,5 @@
 pub mod astar; // pub for astar::Path
 pub use astar::Astar; // pub bc it's a trait
-use astar::GenericAstar; // pub for own cost-fn or estimation-fn
+                      // use astar::GenericAstar; // pub for own cost-fn or estimation-fn
 
 pub mod factory; // easy to use

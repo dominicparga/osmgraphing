@@ -2,7 +2,8 @@ use std::fs::File;
 
 use log::info;
 
-use crate::network::{geo, GraphBuilder, StreetType};
+use crate::network::{GraphBuilder, StreetType};
+use crate::units::geo::Coordinate;
 
 mod pbf {
     pub use osmpbfreader::reader::OsmPbfReader as Reader;
@@ -86,7 +87,7 @@ impl super::Parsing for Parser {
             if graph_builder.is_node_in_edge(node.id.0) {
                 graph_builder.push_node(
                     node.id.0,
-                    geo::Coordinate::new(node.decimicro_lat, node.decimicro_lon),
+                    Coordinate::new(node.decimicro_lat, node.decimicro_lon),
                 );
             }
         }

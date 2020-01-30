@@ -1,10 +1,12 @@
 //------------------------------------------------------------------------------------------------//
 // other modules
 
-use std::fmt;
-
 use osmgraphing::network::Graph;
+use osmgraphing::network::NodeIdx;
 use osmgraphing::routing;
+use osmgraphing::units::Metric;
+use std::fmt;
+use std::fmt::Display;
 
 //------------------------------------------------------------------------------------------------//
 // own modules
@@ -15,20 +17,22 @@ mod dijkstra;
 //------------------------------------------------------------------------------------------------//
 // helpers
 
-fn assert_correct(
-    astar: &mut Box<dyn routing::Astar>,
-    expected_paths: Vec<(TestNode, TestNode, Option<(u32, Vec<Vec<TestNode>>)>)>,
+fn assert_correct<M>(
+    astar: &mut Box<dyn routing::Astar<M>>,
+    expected_paths: Vec<(TestNode, TestNode, Option<(M, Vec<Vec<TestNode>>)>)>,
     filepath: &str,
-) {
+) where
+    M: Metric + PartialEq + Display,
+{
     let graph = super::parse(filepath);
 
     for (src, dst, option_specs) in expected_paths {
         let nodes = graph.nodes();
         let graph_src = nodes
-            .get(src.idx)
+            .get(src.idx.into())
             .expect(&format!("src-node of idx={} should be in graph.", src.idx));
         let graph_dst = nodes
-            .get(dst.idx)
+            .get(dst.idx.into())
             .expect(&format!("dst-node of idx={} should be in graph.", dst.idx));
         let option_path = astar.compute_best_path(graph_src, graph_dst, &graph);
         assert_eq!(
@@ -45,7 +49,7 @@ fn assert_correct(
         );
 
         if let (Some((cost, nodes)), Some(path)) = (option_specs, option_path) {
-            TestPath::from_alternatives(src, dst, cost, nodes).assert_correct(&path, &graph);
+            TestPath::<M>::from_alternatives(src, dst, cost, nodes).assert_correct(&path, &graph);
         }
     }
 }
@@ -55,20 +59,27 @@ fn assert_correct(
 
 #[derive(Debug, Copy, Clone)]
 struct TestNode {
-    idx: usize,
+    idx: NodeIdx,
     id: i64,
 }
+
 impl TestNode {
-    pub fn from(idx: usize, id: i64) -> TestNode {
-        TestNode { idx, id }
+    pub fn from<I: Into<NodeIdx>>(idx: I, id: i64) -> TestNode {
+        TestNode {
+            idx: idx.into(),
+            id,
+        }
     }
 }
+
 impl Eq for TestNode {}
+
 impl PartialEq for TestNode {
     fn eq(&self, other: &TestNode) -> bool {
-        self.idx.eq(&other.idx) && self.id.eq(&other.id)
+        self.idx.eq(other.idx) && self.id.eq(&other.id)
     }
 }
+
 impl fmt::Display for TestNode {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "(idx: {}, id: {})", self.idx, self.id)
@@ -78,19 +89,25 @@ impl fmt::Display for TestNode {
 //------------------------------------------------------------------------------------------------//
 // test-path
 
-struct TestPath {
+struct TestPath<M>
+where
+    M: Metric,
+{
     src: TestNode,
     dst: TestNode,
-    cost: u32,
+    cost: M,
     alternative_nodes: Vec<Vec<TestNode>>,
 }
-impl TestPath {
+impl<M> TestPath<M>
+where
+    M: Metric + PartialEq + Display,
+{
     fn from_alternatives(
         src: TestNode,
         dst: TestNode,
-        cost: u32,
+        cost: M,
         alternative_nodes: Vec<Vec<TestNode>>,
-    ) -> TestPath {
+    ) -> TestPath<M> {
         TestPath {
             src,
             dst,
@@ -99,13 +116,13 @@ impl TestPath {
         }
     }
 
-    fn assert_correct(&self, path: &routing::astar::Path, graph: &Graph) {
-        let node = |idx: usize| -> TestNode {
+    fn assert_correct(&self, path: &routing::astar::Path<M>, graph: &Graph) {
+        let node = |idx: NodeIdx| -> TestNode {
             TestNode::from(
                 idx,
                 graph
                     .nodes()
-                    .get(idx)
+                    .get(idx.into())
                     .expect("Node should be in graph here.")
                     .id(),
             )

@@ -1,19 +1,21 @@
 //------------------------------------------------------------------------------------------------//
 // other modules
 
+use crate::units::geo::Coordinate;
+use crate::units::length::Meters;
+use crate::units::speed::KilometersPerHour;
+use crate::units::time::Milliseconds;
+use crate::units::Metric;
 use std::fmt;
-use std::ops;
+use std::fmt::Display;
+use std::ops::{Index, Range};
 
 //------------------------------------------------------------------------------------------------//
 // own modules
 
 pub mod building;
-use super::geo;
-
-//------------------------------------------------------------------------------------------------//
-// indices
-
-// todo
+mod indexing;
+pub use indexing::{EdgeIdx, NodeIdx};
 
 //------------------------------------------------------------------------------------------------//
 // node
@@ -21,18 +23,18 @@ use super::geo;
 #[derive(Debug)]
 pub struct Node {
     id: i64,
-    idx: usize,
-    coord: geo::Coordinate,
+    idx: NodeIdx,
+    coord: Coordinate,
 }
 
 impl Node {
     pub fn id(&self) -> i64 {
         self.id
     }
-    pub fn idx(&self) -> usize {
+    pub fn idx(&self) -> NodeIdx {
         self.idx
     }
-    pub fn coord(&self) -> &geo::Coordinate {
+    pub fn coord(&self) -> &Coordinate {
         &self.coord
     }
 }
@@ -45,7 +47,7 @@ impl PartialEq for Node {
     }
 }
 
-impl fmt::Display for Node {
+impl Display for Node {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
@@ -60,35 +62,39 @@ impl fmt::Display for Node {
 
 #[derive(Debug)]
 pub struct Edge {
-    src_idx: usize,
-    dst_idx: usize,
+    src_idx: NodeIdx,
+    dst_idx: NodeIdx,
     lane_count: u8,
-    meters: u32,
-    maxspeed: u16,
+    meters: Meters,
+    maxspeed: KilometersPerHour,
 }
 
 impl Edge {
-    pub fn src_idx(&self) -> usize {
+    pub fn src_idx(&self) -> NodeIdx {
         self.src_idx
     }
-    pub fn dst_idx(&self) -> usize {
+
+    pub fn dst_idx(&self) -> NodeIdx {
         self.dst_idx
     }
+
     pub fn lane_count(&self) -> u8 {
         debug_assert!(self.lane_count > 0, "Edge-lane-count should be > 0");
         self.lane_count
     }
-    pub fn meters(&self) -> u32 {
-        debug_assert!(self.meters > 0, "Edge-length should be > 0");
+
+    pub fn meters(&self) -> Meters {
+        debug_assert!(self.meters > Meters::zero(), "Edge-length should be > 0");
         self.meters
     }
-    pub fn maxspeed(&self) -> u16 {
-        debug_assert!(self.maxspeed > 0, "Edge-maxspeed should be > 0");
+
+    pub fn maxspeed(&self) -> KilometersPerHour {
+        debug_assert!(self.maxspeed.value > 0, "Edge-maxspeed should be > 0");
         self.maxspeed
     }
-    pub fn milliseconds(&self) -> u32 {
-        // length [m] / velocity [km/h]
-        self.meters() * 3_600 / (self.maxspeed() as u32)
+
+    pub fn milliseconds(&self) -> Milliseconds {
+        self.meters() / self.maxspeed()
     }
 }
 
@@ -103,7 +109,7 @@ impl PartialEq for Edge {
     }
 }
 
-impl fmt::Display for Edge {
+impl Display for Edge {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
@@ -126,8 +132,11 @@ impl<'a> NodeContainer<'a> {
         self.nodes.len()
     }
 
-    pub fn idx_from(&self, id: i64) -> Result<usize, usize> {
-        self.nodes.binary_search_by(|node| node.id.cmp(&id))
+    pub fn idx_from(&self, id: i64) -> Result<NodeIdx, NodeIdx> {
+        match self.nodes.binary_search_by(|node| node.id.cmp(&id)) {
+            Ok(idx) => Ok(idx.into()),
+            Err(idx) => Err(idx.into()),
+        }
     }
 
     pub fn get_from(&self, id: i64) -> Option<&Node> {
@@ -138,19 +147,25 @@ impl<'a> NodeContainer<'a> {
         self.get(idx)
     }
 
-    pub fn get(&self, idx: usize) -> Option<&Node> {
-        debug_assert_eq!(
-            self.nodes[idx].idx, idx,
-            "Node's idx in graph and its stored idx should be same."
-        );
+    pub fn get(&self, idx: NodeIdx) -> Option<&Node> {
+        let idx: usize = idx.into();
         self.nodes.get(idx)
     }
 }
 
-impl<'a> ops::Index<usize> for NodeContainer<'a> {
+impl Index<NodeIdx> for Vec<Node> {
     type Output = Node;
 
-    fn index(&self, idx: usize) -> &Self::Output {
+    fn index(&self, idx: NodeIdx) -> &Self::Output {
+        let idx: usize = idx.into();
+        &self[idx]
+    }
+}
+
+impl<'a> Index<NodeIdx> for NodeContainer<'a> {
+    type Output = Node;
+
+    fn index(&self, idx: NodeIdx) -> &Self::Output {
         &self.nodes[idx]
     }
 }
@@ -182,8 +197,8 @@ impl<'a> EdgeContainer<'a> {
         self.graph.edges.get(edge_idx)
     }
 
-    pub fn starting_from(&self, node_idx: usize) -> Option<Vec<&Edge>> {
-        let range = self.offset_indices(node_idx)?;
+    pub fn starting_from(&self, idx: NodeIdx) -> Option<Vec<&Edge>> {
+        let range = self.offset_indices(idx)?;
 
         let mut leaving_edges = vec![];
         for i in range {
@@ -197,7 +212,7 @@ impl<'a> EdgeContainer<'a> {
     /// uses linear-search, but only on src's leaving edges (±3), so more or less in O(1)
     ///
     /// Returns the index of the edge, which can be used in the function `edge(...)`
-    pub fn between(&self, src_idx: usize, dst_idx: usize) -> Option<(&Edge, usize)> {
+    pub fn between(&self, src_idx: NodeIdx, dst_idx: NodeIdx) -> Option<(&Edge, usize)> {
         // get offsets from offset-array for edge-indices (indirect mapping)
         let range = self.offset_indices(src_idx)?;
         let leaving_indices = &(self.edge_indices[range.clone()]);
@@ -215,11 +230,13 @@ impl<'a> EdgeContainer<'a> {
     // getter: offsets
 
     /// Returns a "real" range, where `start_bound < end_bound`
-    fn offset_indices(&self, node_idx: usize) -> Option<ops::Range<usize>> {
+    fn offset_indices(&self, idx: NodeIdx) -> Option<Range<usize>> {
+        let idx: usize = idx.into();
+
         // Use offset-array to get indices for the graph's edges belonging to the given node
-        let &i0 = self.offsets.get(node_idx)?;
+        let &i0 = self.offsets.get(idx)?;
         // (idx + 1) guaranteed by offset-array-length
-        let &i1 = self.offsets.get(node_idx + 1)?;
+        let &i1 = self.offsets.get(idx + 1)?;
 
         // check if i0 and i1 are equal
         // <-> if node has leaving edges
@@ -231,7 +248,7 @@ impl<'a> EdgeContainer<'a> {
     }
 }
 
-impl<'a> ops::Index<usize> for EdgeContainer<'a> {
+impl<'a> Index<usize> for EdgeContainer<'a> {
     type Output = Edge;
 
     fn index(&self, idx: usize) -> &Self::Output {
@@ -293,7 +310,7 @@ impl Graph {
     }
 }
 
-impl fmt::Display for Graph {
+impl Display for Graph {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         writeln!(
             f,
@@ -319,7 +336,7 @@ impl fmt::Display for Graph {
                     // print last node
                     i = self.nodes().count() - 1;
                 }
-                let node = &self.nodes()[i];
+                let node = &self.nodes()[i.into()];
                 writeln!(f, "Node: {{ idx: {}, id: {}, {} }}", i, node.id, node.coord,)?;
             } else {
                 break;

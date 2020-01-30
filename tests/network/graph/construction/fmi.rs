@@ -1,4 +1,9 @@
-use osmgraphing::network::{geo, Graph};
+use osmgraphing::network::Graph;
+use osmgraphing::network::NodeIdx;
+use osmgraphing::units::geo;
+use osmgraphing::units::length::Meters;
+use osmgraphing::units::speed::KilometersPerHour;
+use osmgraphing::units::time::Milliseconds;
 
 //------------------------------------------------------------------------------------------------//
 // TestNode
@@ -6,7 +11,7 @@ use osmgraphing::network::{geo, Graph};
 struct TestNode {
     name: String,
     id: i64,
-    idx: usize,
+    idx: NodeIdx,
     coord: geo::Coordinate,
 }
 impl TestNode {
@@ -26,7 +31,7 @@ impl TestNode {
     fn assert_correct(&self, graph: &Graph) {
         let nodes = graph.nodes();
         let node = nodes
-            .get(self.idx)
+            .get(self.idx.into())
             .expect(&format!("Node of idx={} should be in graph.", self.idx));
         assert_eq!(
             node.id(),
@@ -59,11 +64,11 @@ struct TestEdge {
     name: String,
     edge_idx: usize,
     is_fwd: bool,
-    src_idx: usize,
-    dst_idx: usize,
-    meters: u32,
-    maxspeed: u16,
-    milliseconds: u32,
+    src_idx: NodeIdx,
+    dst_idx: NodeIdx,
+    meters: Meters,
+    maxspeed: KilometersPerHour,
+    milliseconds: Milliseconds,
 }
 impl TestEdge {
     fn from_fwd(
@@ -79,11 +84,11 @@ impl TestEdge {
             name: (name.unwrap_or(&format!("{}->{}", src.name, dst.name))).to_owned(),
             edge_idx,
             is_fwd: true,
-            src_idx: src.idx,
-            dst_idx: dst.idx,
-            meters,
-            maxspeed,
-            milliseconds,
+            src_idx: src.idx.into(),
+            dst_idx: dst.idx.into(),
+            meters: meters.into(),
+            maxspeed: maxspeed.into(),
+            milliseconds: milliseconds.into(),
         }
     }
 
@@ -100,11 +105,11 @@ impl TestEdge {
             name: (name.unwrap_or(&format!("{}->{}", src.name, dst.name))).to_owned(),
             edge_idx,
             is_fwd: false,
-            src_idx: src.idx,
-            dst_idx: dst.idx,
-            meters,
-            maxspeed,
-            milliseconds,
+            src_idx: src.idx.into(),
+            dst_idx: dst.idx.into(),
+            meters: meters.into(),
+            maxspeed: maxspeed.into(),
+            milliseconds: milliseconds.into(),
         }
     }
 
@@ -249,11 +254,11 @@ fn simple_stuttgart() {
     // fwd-edges
     assert_eq!(graph.fwd_edges().count(), 13, "Wrong fwd-edge-count");
     assert!(
-        graph.fwd_edges().between(24, 42).is_none(),
+        graph.fwd_edges().between(24.into(), 42.into()).is_none(),
         "Fwd-edge doesn't exist, so graph should return None."
     );
     assert!(
-        graph.fwd_edges().starting_from(424).is_none(),
+        graph.fwd_edges().starting_from(424.into()).is_none(),
         "Node's idx is too high, thus the node should not have any leaving edges."
     );
     assert!(
@@ -264,11 +269,11 @@ fn simple_stuttgart() {
     // bwd-edges
     assert_eq!(graph.bwd_edges().count(), 13, "Wrong bwd-edge-count");
     assert!(
-        graph.bwd_edges().between(42, 24).is_none(),
+        graph.bwd_edges().between(42.into(), 24.into()).is_none(),
         "Bwd-edge doesn't exist, so graph should return None."
     );
     assert!(
-        graph.bwd_edges().starting_from(424).is_none(),
+        graph.bwd_edges().starting_from(424.into()).is_none(),
         "Node's idx is too high, thus the node should not have any incoming edges."
     );
     // assert!(
@@ -388,11 +393,11 @@ fn small() {
     // fwd-edges
     assert_eq!(graph.fwd_edges().count(), 16, "Wrong fwd-edge-count");
     assert!(
-        graph.fwd_edges().between(24, 42).is_none(),
+        graph.fwd_edges().between(24.into(), 42.into()).is_none(),
         "Fwd-edge doesn't exist, so graph should return None."
     );
     assert!(
-        graph.fwd_edges().starting_from(424).is_none(),
+        graph.fwd_edges().starting_from(424.into()).is_none(),
         "Node's idx is too high, thus the node should not have any leaving edges."
     );
     assert!(
@@ -403,11 +408,11 @@ fn small() {
     // bwd-edges
     assert_eq!(graph.bwd_edges().count(), 16, "Wrong bwd-edge-count");
     assert!(
-        graph.bwd_edges().between(42, 24).is_none(),
+        graph.bwd_edges().between(42.into(), 24.into()).is_none(),
         "Bwd-edge doesn't exist, so graph should return None."
     );
     assert!(
-        graph.bwd_edges().starting_from(424).is_none(),
+        graph.bwd_edges().starting_from(424.into()).is_none(),
         "Node's idx is too high, thus the node should not have any incoming edges."
     );
     assert!(

@@ -1,10 +1,11 @@
 //------------------------------------------------------------------------------------------------//
 // other modules
 
+use crate::network::{Edge, Graph, Node, NodeIdx};
+use crate::units::Metric;
 use std::cmp::Ordering;
 use std::collections::BinaryHeap;
-
-use crate::network::{Edge, Graph, Node};
+use std::ops::Add;
 
 //------------------------------------------------------------------------------------------------//
 // own modules
@@ -15,11 +16,17 @@ mod paths;
 // Path
 
 #[derive(Clone)]
-pub struct Path {
-    core: paths::HashPath,
+pub struct Path<M>
+where
+    M: Metric,
+{
+    core: paths::HashPath<M>,
 }
-impl Path {
-    fn from(src_idx: usize, dst_idx: usize, _graph: &Graph) -> Self {
+impl<M> Path<M>
+where
+    M: Metric,
+{
+    fn from(src_idx: NodeIdx, dst_idx: NodeIdx, _graph: &Graph) -> Self {
         // let core = paths::VecPath::with_capacity(src_idx, dst_idx, graph.node_count());
         let core = paths::HashPath::new(src_idx, dst_idx);
         Path { core }
@@ -27,23 +34,23 @@ impl Path {
 
     //--------------------------------------------------------------------------------------------//
 
-    pub fn src_idx(&self) -> usize {
+    pub fn src_idx(&self) -> NodeIdx {
         self.core.src_idx
     }
-    pub fn dst_idx(&self) -> usize {
+    pub fn dst_idx(&self) -> NodeIdx {
         self.core.dst_idx
     }
 
-    pub fn cost(&self) -> u32 {
+    pub fn cost(&self) -> M {
         self.core.cost
     }
 
     /// Return idx of predecessor-node
-    pub fn pred_node_idx(&self, idx: usize) -> Option<usize> {
+    pub fn pred_node_idx(&self, idx: NodeIdx) -> Option<NodeIdx> {
         self.core.pred_node_idx(idx)
     }
     /// Return idx of successor-node
-    pub fn succ_node_idx(&self, idx: usize) -> Option<usize> {
+    pub fn succ_node_idx(&self, idx: NodeIdx) -> Option<NodeIdx> {
         self.core.succ_node_idx(idx)
     }
 }
@@ -52,29 +59,45 @@ impl Path {
 // CostNode
 
 #[derive(Copy, Clone)]
-struct CostNode {
-    pub idx: usize,
-    pub cost: u32,
-    pub estimation: u32,
-    pub pred_idx: Option<usize>,
+struct CostNode<M>
+where
+    M: Metric,
+{
+    pub idx: NodeIdx,
+    pub cost: M,
+    pub estimation: M,
+    pub pred_idx: Option<NodeIdx>,
 }
-impl Ord for CostNode {
-    fn cmp(&self, other: &CostNode) -> Ordering {
+
+impl<M> Ord for CostNode<M>
+where
+    M: Metric + Ord + Add<M, Output = M>,
+{
+    fn cmp(&self, other: &CostNode<M>) -> Ordering {
         // (1) cost in float, but cmp uses only m, which is ok
         // (2) inverse order since BinaryHeap is max-heap, but min-heap is needed
         (other.cost + other.estimation)
             .cmp(&(self.cost + self.estimation))
-            .then_with(|| other.idx.cmp(&self.idx))
+            .then_with(|| other.idx.cmp(self.idx))
     }
 }
-impl PartialOrd for CostNode {
-    fn partial_cmp(&self, other: &CostNode) -> Option<Ordering> {
+
+impl<M> PartialOrd for CostNode<M>
+where
+    M: Metric + Ord + Add<M, Output = M>,
+{
+    fn partial_cmp(&self, other: &CostNode<M>) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
-impl Eq for CostNode {}
-impl PartialEq for CostNode {
-    fn eq(&self, other: &CostNode) -> bool {
+
+impl<M> Eq for CostNode<M> where M: Metric + Ord + Add<M, Output = M> {}
+
+impl<M> PartialEq for CostNode<M>
+where
+    M: Metric + Ord + Add<M, Output = M>,
+{
+    fn eq(&self, other: &CostNode<M>) -> bool {
         self.cmp(other) == Ordering::Equal
     }
 }
@@ -82,30 +105,42 @@ impl PartialEq for CostNode {
 //------------------------------------------------------------------------------------------------//
 // Astar
 
-pub trait Astar {
-    fn compute_best_path(&mut self, src: &Node, dst: &Node, graph: &Graph) -> Option<Path>;
+pub trait Astar<M>
+where
+    M: Metric,
+{
+    fn compute_best_path(&mut self, src: &Node, dst: &Node, graph: &Graph) -> Option<Path<M>>
+    where
+        M: Metric;
 }
 
 //------------------------------------------------------------------------------------------------//
 // GenericAstar
 
-pub struct GenericAstar<C, E>
+/// Cost-function, Estimation-function and Metric
+pub struct GenericAstar<C, E, M>
 where
-    C: Fn(&Edge) -> u32,
-    E: Fn(&Node, &Node) -> u32,
+    C: Fn(&Edge) -> M,
+    E: Fn(&Node, &Node) -> M,
+    M: Metric,
 {
     cost_fn: C,
     estimate_fn: E,
-    costs: Vec<u32>,
-    predecessors: Vec<Option<usize>>,
-    queue: BinaryHeap<CostNode>, // max-heap, but CostNode's natural order is reversed
+    costs: Vec<M>,
+    predecessors: Vec<Option<NodeIdx>>,
+    queue: BinaryHeap<CostNode<M>>, // max-heap, but CostNode's natural order is reversed
 }
-impl<C: Fn(&Edge) -> u32, E: Fn(&Node, &Node) -> u32> GenericAstar<C, E> {
-    pub fn from(cost_fn: C, estimate_fn: E) -> GenericAstar<C, E> {
+impl<C, E, M> GenericAstar<C, E, M>
+where
+    C: Fn(&Edge) -> M,
+    E: Fn(&Node, &Node) -> M,
+    M: Metric + Ord + Add<M, Output = M>,
+{
+    pub fn from(cost_fn: C, estimate_fn: E) -> GenericAstar<C, E, M> {
         GenericAstar {
             cost_fn,
             estimate_fn,
-            costs: vec![std::u32::MAX; 0],
+            costs: vec![M::inf(); 0],
             predecessors: vec![None; 0],
             queue: BinaryHeap::new(),
         }
@@ -115,23 +150,24 @@ impl<C: Fn(&Edge) -> u32, E: Fn(&Node, &Node) -> u32> GenericAstar<C, E> {
         let old_len = self.costs.len();
         let min_len = std::cmp::min(old_len, new_len);
         for i in 0..min_len {
-            self.costs[i] = std::u32::MAX;
+            self.costs[i] = M::inf();
             self.predecessors[i] = None;
         }
-        self.costs.resize(new_len, std::u32::MAX);
+        self.costs.resize(new_len, M::inf().into());
         self.predecessors.resize(new_len, None);
 
         self.queue.clear();
     }
 }
-impl<C, E> Astar for GenericAstar<C, E>
+impl<C, E, M> Astar<M> for GenericAstar<C, E, M>
 where
-    C: Fn(&Edge) -> u32,
-    E: Fn(&Node, &Node) -> u32,
+    C: Fn(&Edge) -> M,
+    E: Fn(&Node, &Node) -> M,
+    M: Metric + Ord + Add<M, Output = M>,
 {
     /// Note:
     /// This method uses the graph-structure (offset-array) and works with idx instead of id for better performance.
-    fn compute_best_path(&mut self, src: &Node, dst: &Node, graph: &Graph) -> Option<Path> {
+    fn compute_best_path(&mut self, src: &Node, dst: &Node, graph: &Graph) -> Option<Path<M>> {
         //----------------------------------------------------------------------------------------//
         // initialization-stuff
 
@@ -145,11 +181,12 @@ where
         // prepare first iteration
         self.queue.push(CostNode {
             idx: src.idx(),
-            cost: 0,
-            estimation: 0,
+            cost: M::zero(),
+            estimation: M::zero(),
             pred_idx: None,
         });
-        self.costs[src.idx()] = 0;
+        let src_idx: usize = src.idx().into();
+        self.costs[src_idx] = M::zero();
 
         //----------------------------------------------------------------------------------------//
         // search for shortest path
@@ -177,7 +214,8 @@ where
             // first occurrence has lowest cost
             // -> check if current has already been visited
 
-            if current.cost > self.costs[current.idx] {
+            let current_idx: usize = current.idx.into();
+            if current.cost > self.costs[current_idx] {
                 continue;
             }
 
@@ -191,9 +229,11 @@ where
             };
             for leaving_edge in leaving_edges {
                 let new_cost = current.cost + (self.cost_fn)(leaving_edge);
-                if new_cost < self.costs[leaving_edge.dst_idx()] {
+                let leaving_edge_dst_idx: usize = leaving_edge.dst_idx().into();
+                if new_cost < self.costs[leaving_edge_dst_idx] {
                     self.predecessors[leaving_edge.dst_idx()] = Some(current.idx);
-                    self.costs[leaving_edge.dst_idx()] = new_cost;
+                    let leaving_edge_dst_idx: usize = leaving_edge.dst_idx().into();
+                    self.costs[leaving_edge_dst_idx] = new_cost;
 
                     let leaving_edge_dst = nodes
                         .get(leaving_edge.dst_idx())

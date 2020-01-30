@@ -3,7 +3,9 @@ use std::time::Instant;
 
 use log::{error, info};
 
-use osmgraphing::{routing, Parser};
+use osmgraphing::network::NodeIdx;
+use osmgraphing::routing;
+use osmgraphing::Parser;
 
 //------------------------------------------------------------------------------------------------//
 // points in Germany
@@ -79,8 +81,8 @@ fn main() {
     let nodes = graph.nodes();
     let mut astar = routing::factory::astar::shortest();
 
-    let src_idx = 0;
-    let dsts: Vec<usize> = (0..nodes.count()).collect();
+    let src_idx = NodeIdx::zero();
+    let dsts: Vec<NodeIdx> = (0..nodes.count()).map(NodeIdx::from).collect();
     // let dsts: Vec<usize> = vec![80]; problem on baden-wuerttemberg.osm.pbf
 
     let src = nodes

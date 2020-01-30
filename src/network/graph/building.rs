@@ -3,15 +3,17 @@ use std::collections::BTreeMap;
 
 use log::{error, info};
 
-use super::geo;
+use super::Meters;
 use super::{Edge, Graph, Node};
+use crate::units::geo;
+use crate::units::geo::Coordinate;
 
 //------------------------------------------------------------------------------------------------//
 
 #[derive(Debug)]
 pub struct ProtoNode {
     id: i64,
-    coord: Option<geo::Coordinate>,
+    coord: Option<Coordinate>,
     edge_count: u16,
 }
 
@@ -29,7 +31,7 @@ pub struct ProtoEdge {
     src_id: i64,
     dst_id: i64,
     lane_count: u8,
-    meters: Option<u32>,
+    meters: Option<Meters>,
     maxspeed: u16,
     idx: usize, // handy for remembering indices after sorting backwards
 }
@@ -90,7 +92,10 @@ impl GraphBuilder {
             src_id,
             dst_id,
             lane_count,
-            meters,
+            meters: match meters {
+                Some(meters) => Some(Meters::from(meters)),
+                None => None,
+            },
             maxspeed,
             idx: 0, // needed below in finalize
         });
@@ -153,7 +158,7 @@ impl GraphBuilder {
             if let Some(coord) = proto_node.coord {
                 graph.nodes.push(Node {
                     id: proto_node.id,
-                    idx: node_idx,
+                    idx: node_idx.into(),
                     coord,
                 });
                 node_idx += 1;
@@ -189,7 +194,7 @@ impl GraphBuilder {
         // build backward-offset-array
 
         info!("Starting creating the backward-offset-array ..");
-        let mut offset_node_idx = 0;
+        let mut offset_node_idx: usize = 0;
         let mut offset = 0;
         graph.bwd_offsets.push(offset);
         // high-level-idea
@@ -210,7 +215,7 @@ impl GraphBuilder {
 
             // if coming edges have new src
             // then update offset of new src
-            while offset_node_idx != edge_dst_idx {
+            while offset_node_idx != edge_dst_idx.into() {
                 offset_node_idx += 1;
                 graph.bwd_offsets.push(offset);
             }
@@ -237,7 +242,7 @@ impl GraphBuilder {
         // build forward-offset-array and edges
 
         info!("Starting creating the forward-offset-array ..");
-        let mut offset_node_idx = 0;
+        let mut offset_node_idx: usize = 0;
         let mut offset = 0;
         graph.fwd_offsets.push(offset);
         // high-level-idea
@@ -269,19 +274,15 @@ impl GraphBuilder {
 
             // calculate distance if not provided
             let meters = max(
-                1,
+                Meters::from(1),
                 match proto_edge.meters {
                     Some(meters) => meters,
                     None => {
-                        let src = graph
-                            .nodes
-                            .get(edge_src_idx)
-                            .expect("src-node should exist.");
-                        let dst = graph
-                            .nodes
-                            .get(edge_dst_idx)
-                            .expect("dst-node should exist.");
-                        (geo::haversine_distance(&src.coord, &dst.coord) * 1_000.0) as u32
+                        let tmp_idx: usize = edge_src_idx.into();
+                        let src = graph.nodes.get(tmp_idx).expect("src-node should exist.");
+                        let tmp_idx: usize = edge_dst_idx.into();
+                        let dst = graph.nodes.get(tmp_idx).expect("dst-node should exist.");
+                        geo::haversine_distance_m(&src.coord, &dst.coord)
                     }
                 },
             );
@@ -292,12 +293,12 @@ impl GraphBuilder {
                 dst_idx: edge_dst_idx,
                 lane_count: proto_edge.lane_count,
                 meters,
-                maxspeed: proto_edge.maxspeed,
+                maxspeed: proto_edge.maxspeed.into(),
             };
 
             // if coming edges have new src
             // then update offset of new src
-            while offset_node_idx != edge_src_idx {
+            while offset_node_idx != edge_src_idx.into() {
                 offset_node_idx += 1;
                 graph.fwd_offsets.push(offset);
             }

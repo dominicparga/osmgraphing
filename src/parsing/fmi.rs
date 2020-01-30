@@ -8,10 +8,9 @@ use crate::network::GraphBuilder;
 //------------------------------------------------------------------------------------------------//
 
 mod fmi {
+    use crate::units::geo;
     pub use std::io::BufReader as Reader;
     use std::str;
-
-    use crate::network::geo;
 
     //--------------------------------------------------------------------------------------------//
 

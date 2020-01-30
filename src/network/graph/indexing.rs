@@ -29,7 +29,7 @@ mod nodes {
     }
 
     impl NodeIdx {
-        pub fn new() -> NodeIdx {
+        pub fn zero() -> NodeIdx {
             NodeIdx { value: 0 }
         }
 
