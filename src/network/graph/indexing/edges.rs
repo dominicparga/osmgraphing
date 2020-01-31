@@ -16,6 +16,10 @@ pub struct EdgeIdx {
 }
 
 impl EdgeIdx {
+    pub fn usize(&self) -> usize {
+        self.value
+    }
+
     pub fn zero() -> EdgeIdx {
         EdgeIdx { value: 0 }
     }
@@ -43,18 +47,6 @@ impl Into<usize> for EdgeIdx {
 impl From<usize> for EdgeIdx {
     fn from(idx: usize) -> Self {
         EdgeIdx { value: idx }
-    }
-}
-
-//------------------------------------------------------------------------------------------------//
-// iterating
-
-impl Iterator for EdgeIdx {
-    type Item = usize;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.value += 1;
-        Some(self.value)
     }
 }
 

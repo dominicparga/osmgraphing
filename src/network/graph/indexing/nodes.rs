@@ -16,6 +16,10 @@ pub struct NodeIdx {
 }
 
 impl NodeIdx {
+    pub fn usize(&self) -> usize {
+        self.value
+    }
+
     pub fn zero() -> NodeIdx {
         NodeIdx { value: 0 }
     }
@@ -43,18 +47,6 @@ impl Into<usize> for NodeIdx {
 impl From<usize> for NodeIdx {
     fn from(idx: usize) -> Self {
         NodeIdx { value: idx }
-    }
-}
-
-//------------------------------------------------------------------------------------------------//
-// iterating
-
-impl Iterator for NodeIdx {
-    type Item = usize;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.value += 1;
-        Some(self.value)
     }
 }
 

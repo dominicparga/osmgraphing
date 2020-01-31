@@ -1,5 +1,11 @@
 mod graph;
-pub use graph::building::{GraphBuilder, ProtoEdge, ProtoNode};
-pub use graph::{Edge, EdgeIdx, Graph, Node, NodeIdx};
+pub use graph::building::GraphBuilder;
+pub use graph::building::ProtoEdge;
+pub use graph::building::ProtoNode;
+pub use graph::EdgeIdx;
+pub use graph::Graph;
+pub use graph::HalfEdge;
+pub use graph::Node;
+pub use graph::NodeIdx;
 pub mod defaults;
 pub use defaults::StreetType;

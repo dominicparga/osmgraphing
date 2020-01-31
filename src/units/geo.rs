@@ -53,7 +53,7 @@ impl fmt::Display for Coordinate {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "(dµ_lat, dµ_lon): ({}, {})",
+            "(dµ_lat: {}, dµ_lon: {})",
             self.decimicro_lat, self.decimicro_lon
         )
     }

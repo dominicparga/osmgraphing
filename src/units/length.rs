@@ -15,7 +15,7 @@ use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign};
 
 #[derive(Debug, Default, Clone, Copy, Ord, PartialOrd, Eq, PartialEq)]
 pub struct Meters {
-    pub value: u32,
+    value: u32,
 }
 
 impl Display for Meters {
@@ -47,10 +47,8 @@ impl Metric for Meters {
 }
 
 impl Meters {
-    pub fn new() -> Meters {
-        Meters {
-            ..Default::default()
-        }
+    pub fn value(&self) -> u32 {
+        self.value
     }
 }
 
@@ -159,7 +157,7 @@ impl Div<Milliseconds> for Meters {
 
     fn div(self, rhs: Milliseconds) -> KilometersPerHour {
         KilometersPerHour {
-            value: (3600 * self.value / rhs.value) as u16,
+            value: (3600 * self.value / rhs.value()) as u16,
         }
     }
 }
@@ -170,7 +168,7 @@ impl Div<KilometersPerHour> for Meters {
 
     fn div(self, rhs: KilometersPerHour) -> Milliseconds {
         Milliseconds {
-            value: (3600 * self.value / (rhs.value as u32)),
+            value: (3600 * self.value / (rhs.value() as u32)),
         }
     }
 }

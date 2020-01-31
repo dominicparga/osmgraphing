@@ -15,7 +15,7 @@ use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign};
 
 #[derive(Debug, Default, Clone, Copy, Ord, PartialOrd, Eq, PartialEq)]
 pub struct KilometersPerHour {
-    pub value: u16,
+    value: u16,
 }
 
 impl Display for KilometersPerHour {
@@ -47,10 +47,8 @@ impl Metric for KilometersPerHour {
 }
 
 impl KilometersPerHour {
-    pub fn new() -> KilometersPerHour {
-        KilometersPerHour {
-            ..Default::default()
-        }
+    pub fn value(&self) -> u16 {
+        self.value
     }
 }
 
@@ -111,7 +109,7 @@ impl Mul<Milliseconds> for KilometersPerHour {
 
     fn mul(self, rhs: Milliseconds) -> Meters {
         let speed = self.value as u32;
-        let time = rhs.value;
+        let time = rhs.value();
         (speed * time / 3_600).into()
     }
 }

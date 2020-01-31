@@ -1,7 +1,10 @@
 //------------------------------------------------------------------------------------------------//
 // other modules
 
-use crate::network::{Edge, Graph, Node, NodeIdx};
+use crate::network::Graph;
+use crate::network::HalfEdge;
+use crate::network::Node;
+use crate::network::NodeIdx;
 use crate::units::Metric;
 use std::cmp::Ordering;
 use std::collections::BinaryHeap;
@@ -22,6 +25,7 @@ where
 {
     core: paths::HashPath<M>,
 }
+
 impl<M> Path<M>
 where
     M: Metric,
@@ -78,7 +82,7 @@ where
         // (2) inverse order since BinaryHeap is max-heap, but min-heap is needed
         (other.cost + other.estimation)
             .cmp(&(self.cost + self.estimation))
-            .then_with(|| other.idx.cmp(self.idx))
+            .then_with(|| other.idx.cmp(&self.idx))
     }
 }
 
@@ -120,7 +124,7 @@ where
 /// Cost-function, Estimation-function and Metric
 pub struct GenericAstar<C, E, M>
 where
-    C: Fn(&Edge) -> M,
+    C: Fn(&HalfEdge) -> M,
     E: Fn(&Node, &Node) -> M,
     M: Metric,
 {
@@ -132,7 +136,7 @@ where
 }
 impl<C, E, M> GenericAstar<C, E, M>
 where
-    C: Fn(&Edge) -> M,
+    C: Fn(&HalfEdge) -> M,
     E: Fn(&Node, &Node) -> M,
     M: Metric + Ord + Add<M, Output = M>,
 {
@@ -161,7 +165,7 @@ where
 }
 impl<C, E, M> Astar<M> for GenericAstar<C, E, M>
 where
-    C: Fn(&Edge) -> M,
+    C: Fn(&HalfEdge) -> M,
     E: Fn(&Node, &Node) -> M,
     M: Metric + Ord + Add<M, Output = M>,
 {
@@ -185,8 +189,7 @@ where
             estimation: M::zero(),
             pred_idx: None,
         });
-        let src_idx: usize = src.idx().into();
-        self.costs[src_idx] = M::zero();
+        self.costs[src.idx().usize()] = M::zero();
 
         //----------------------------------------------------------------------------------------//
         // search for shortest path
@@ -214,8 +217,7 @@ where
             // first occurrence has lowest cost
             // -> check if current has already been visited
 
-            let current_idx: usize = current.idx.into();
-            if current.cost > self.costs[current_idx] {
+            if current.cost > self.costs[current.idx.usize()] {
                 continue;
             }
 
@@ -228,17 +230,13 @@ where
                 None => continue,
             };
             for leaving_edge in leaving_edges {
-                let new_cost = current.cost + (self.cost_fn)(leaving_edge);
-                let leaving_edge_dst_idx: usize = leaving_edge.dst_idx().into();
-                if new_cost < self.costs[leaving_edge_dst_idx] {
+                let new_cost = current.cost + (self.cost_fn)(&leaving_edge);
+                if new_cost < self.costs[leaving_edge.dst_idx().usize()] {
                     self.predecessors[leaving_edge.dst_idx()] = Some(current.idx);
-                    let leaving_edge_dst_idx: usize = leaving_edge.dst_idx().into();
-                    self.costs[leaving_edge_dst_idx] = new_cost;
+                    self.costs[leaving_edge.dst_idx().usize()] = new_cost;
 
-                    let leaving_edge_dst = nodes
-                        .get(leaving_edge.dst_idx())
-                        .expect("Edge-node should exist since graph should be consistent.");
-                    let estimation = (self.estimate_fn)(leaving_edge_dst, dst);
+                    let leaving_edge_of_dst = nodes.create(leaving_edge.dst_idx());
+                    let estimation = (self.estimate_fn)(&leaving_edge_of_dst, dst);
                     self.queue.push(CostNode {
                         idx: leaving_edge.dst_idx(),
                         cost: new_cost,
