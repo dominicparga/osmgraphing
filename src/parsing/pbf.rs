@@ -2,7 +2,8 @@ use std::fs::File;
 
 use log::info;
 
-use crate::network::{geo, GraphBuilder, StreetType};
+use crate::network::{GraphBuilder, StreetType};
+use crate::units::geo::Coordinate;
 
 mod pbf {
     pub use osmpbfreader::reader::OsmPbfReader as Reader;
@@ -14,7 +15,7 @@ mod pbf {
 pub struct Parser;
 impl super::Parsing for Parser {
     fn parse_ways(file: File, graph_builder: &mut GraphBuilder) {
-        info!("Starting edge-creation ..");
+        info!("START Create edges from input-file.");
         for mut way in pbf::Reader::new(file)
             .par_iter()
             .filter_map(Result::ok)
@@ -69,11 +70,11 @@ impl super::Parsing for Parser {
                 src_id = dst_id;
             }
         }
-        info!("Finished edge-creation");
+        info!("FINISHED");
     }
 
     fn parse_nodes(file: File, graph_builder: &mut GraphBuilder) {
-        info!("Starting node-creation ..");
+        info!("START Create nodes from input-file.");
         for node in pbf::Reader::new(file)
             .par_iter()
             .filter_map(Result::ok)
@@ -86,10 +87,10 @@ impl super::Parsing for Parser {
             if graph_builder.is_node_in_edge(node.id.0) {
                 graph_builder.push_node(
                     node.id.0,
-                    geo::Coordinate::new(node.decimicro_lat, node.decimicro_lon),
+                    Coordinate::new(node.decimicro_lat, node.decimicro_lon),
                 );
             }
         }
-        info!("Finished node-creation");
+        info!("FINISHED");
     }
 }

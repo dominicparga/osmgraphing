@@ -1,3 +1,4 @@
+use crate::units::length::Meters;
 use std::cmp::Ordering;
 use std::fmt;
 
@@ -6,6 +7,7 @@ pub struct Coordinate {
     decimicro_lat: i32,
     decimicro_lon: i32,
 }
+
 impl Coordinate {
     pub fn new(decimicro_lat: i32, decimicro_lon: i32) -> Coordinate {
         Coordinate {
@@ -37,25 +39,26 @@ impl Coordinate {
         self.decimicro_lon
     }
 }
+
 impl Eq for Coordinate {}
+
 impl PartialEq for Coordinate {
     fn eq(&self, other: &Coordinate) -> bool {
         self.decimicro_lat.cmp(&other.decimicro_lat) == Ordering::Equal
             && self.decimicro_lon.cmp(&other.decimicro_lon) == Ordering::Equal
     }
 }
+
 impl fmt::Display for Coordinate {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "(dµ_lat, dµ_lon): ({}, {})",
+            "(dµ_lat: {}, dµ_lon: {})",
             self.decimicro_lat, self.decimicro_lon
         )
     }
 }
 
-// TODO enum/struct Distance
-/// return value is in kilometers
 pub fn haversine_distance(from: &Coordinate, to: &Coordinate) -> f64 {
     let earth_mean_radius = 6_371.0; // kilometers
 
@@ -77,4 +80,8 @@ pub fn haversine_distance(from: &Coordinate, to: &Coordinate) -> f64 {
         .sqrt()
         .asin()
         * (2.0 * earth_mean_radius)
+}
+
+pub fn haversine_distance_m(from: &Coordinate, to: &Coordinate) -> Meters {
+    Meters::from(1_000.0 * haversine_distance(from, to))
 }

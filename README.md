@@ -3,8 +3,8 @@
 [![Build Status master][github/self/actions/badge]][github/self/actions]
 
 [![Tag][github/self/tags/badge]][github/self/tags]
-[![Crates.io][crates.io/osmgraphing/badge]][crates.io/osmgraphing]
-[![Docs][docs.rs/osmgraphing/badge]][docs.rs/osmgraphing]
+[![Crates.io][crates.io/self/badge]][crates.io/self]
+[![Docs][docs.rs/self/badge]][docs.rs/self]
 
 [![Changelog][github/self/blob/changelog/badge]][github/self/blob/changelog]
 [![Last commit][github/self/last-commit/badge]][github/self/last-commit]
@@ -20,10 +20,10 @@ Please refer to the [examples][github/self/tree/examples].
 Further, refer to [setup and usage][github/self/wiki/usage] to get details about the repo's setup and implementation.
 
 
-[crates.io/osmgraphing]: https://crates.io/crates/osmgraphing
-[crates.io/osmgraphing/badge]: https://img.shields.io/crates/v/osmgraphing?style=for-the-badge
-[docs.rs/osmgraphing]: https://docs.rs/osmgraphing/
-[docs.rs/osmgraphing/badge]: https://img.shields.io/crates/v/osmgraphing?color=informational&label=docs&style=for-the-badge
+[crates.io/self]: https://crates.io/crates/osmgraphing
+[crates.io/self/badge]: https://img.shields.io/crates/v/osmgraphing?style=for-the-badge
+[docs.rs/self]: https://docs.rs/osmgraphing/
+[docs.rs/self/badge]: https://img.shields.io/crates/v/osmgraphing?color=informational&label=docs&style=for-the-badge
 [github/self/actions]: https://github.com/dominicparga/osmgraphing/actions
 [github/self/actions/badge]: https://img.shields.io/github/workflow/status/dominicparga/osmgraphing/Rust?label=master-build&style=for-the-badge
 [github/self/blob/changelog]: https://github.com/dominicparga/osmgraphing/blob/master/CHANGELOG.md

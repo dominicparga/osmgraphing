@@ -1,42 +1,59 @@
-use crate::network;
-use network::{geo, Edge, Node};
-
-use super::Astar;
-use super::GenericAstar;
+//------------------------------------------------------------------------------------------------//
+// other modules
 
 //------------------------------------------------------------------------------------------------//
-// shortest path
+// own modules
 
-pub fn new_shortest_path_astar() -> Box<dyn Astar> {
-    let cost_fn = |edge: &Edge| edge.meters();
-    let estimate_fn = |from: &Node, to: &Node| {
-        (geo::haversine_distance(from.coord(), to.coord()) * 1_000.0) as u32
-    };
-    Box::new(GenericAstar::from(cost_fn, estimate_fn))
+pub mod astar {
+    use crate::network;
+    use crate::network::HalfEdge;
+    use crate::network::Node;
+    use crate::units::geo;
+    use crate::units::length::Meters;
+    use crate::units::speed::KilometersPerHour;
+    use crate::units::time::Milliseconds;
+
+    use crate::routing::astar::GenericAstar;
+    use crate::routing::Astar;
+
+    pub fn shortest() -> Box<dyn Astar<Meters>> {
+        let cost_fn = |edge: &HalfEdge| edge.meters();
+        let estimate_fn =
+            |from: &Node, to: &Node| geo::haversine_distance_m(&from.coord(), &to.coord());
+        Box::new(GenericAstar::from(cost_fn, estimate_fn))
+    }
+
+    pub fn fastest() -> Box<dyn Astar<Milliseconds>> {
+        let cost_fn = |edge: &HalfEdge| edge.milliseconds();
+        let estimate_fn = |from: &Node, to: &Node| {
+            let meters = geo::haversine_distance_m(&from.coord(), &to.coord());
+            let maxspeed: KilometersPerHour = (network::defaults::MAX_SPEED_KMH as u16).into();
+            meters / maxspeed
+        };
+        Box::new(GenericAstar::from(cost_fn, estimate_fn))
+    }
 }
 
-pub fn new_shortest_path_dijkstra() -> Box<dyn Astar> {
-    let cost_fn = |edge: &Edge| edge.meters();
-    let estimate_fn = |_from: &Node, _to: &Node| 0;
-    Box::new(GenericAstar::from(cost_fn, estimate_fn))
-}
+pub mod dijkstra {
+    use crate::network::HalfEdge;
+    use crate::network::Node;
+    use crate::units::length::Meters;
+    use crate::units::time::Milliseconds;
+    use crate::units::Metric;
 
-//------------------------------------------------------------------------------------------------//
-// fastest path
+    use crate::routing::astar::GenericAstar;
+    use crate::routing::Astar;
 
-pub fn new_fastest_path_astar() -> Box<dyn Astar> {
-    let cost_fn = |edge: &Edge| edge.milliseconds();
-    let estimate_fn = |from: &Node, to: &Node| {
-        let kilometers = geo::haversine_distance(from.coord(), to.coord());
-        let maxspeed: u16 = network::defaults::MAX_SPEED_KMH.into();
-        (kilometers * ((3600 / maxspeed) as f64)) as u32
-    };
-    Box::new(GenericAstar::from(cost_fn, estimate_fn))
-}
+    pub fn shortest() -> Box<dyn Astar<Meters>> {
+        let cost_fn = |edge: &HalfEdge| edge.meters();
+        let estimate_fn = |_from: &Node, _to: &Node| Meters::zero();
+        Box::new(GenericAstar::from(cost_fn, estimate_fn))
+    }
 
-pub fn new_fastest_path_dijkstra() -> Box<dyn Astar> {
-    // length [m] / velocity [km/h]
-    let cost_fn = |edge: &Edge| edge.milliseconds();
-    let estimate_fn = |_from: &Node, _to: &Node| 0;
-    Box::new(GenericAstar::from(cost_fn, estimate_fn))
+    pub fn fastest() -> Box<dyn Astar<Milliseconds>> {
+        // length [m] / velocity [km/h]
+        let cost_fn = |edge: &HalfEdge| edge.milliseconds();
+        let estimate_fn = |_from: &Node, _to: &Node| Milliseconds::zero();
+        Box::new(GenericAstar::from(cost_fn, estimate_fn))
+    }
 }

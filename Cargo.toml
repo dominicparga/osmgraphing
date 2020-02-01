@@ -1,9 +1,11 @@
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
 [package]
 name = "osmgraphing"
 # Changing this version in master and pushing to GitHub
 # will lead to publishing it automatically to crates.io.
 # Hence do not forget updating Unreleased in CHANGELOG.md.
-version = "1.0.0" # !!!
+version = "0.6.1" # !!!
 description = "Playing around with graphs created via parsing OpenStreetMap data"
 edition = "2018"
 
@@ -23,14 +25,10 @@ clap = "2.33" # cmdline-parsing
 env_logger = "0.6" # logging for external use, e.g. main.rs and examples
 log = "0.4"        # logging for internal use, e.g. lib.rs
 osmpbfreader = "0.13" # read osm.pbf-files
-rand = "0.7" # generate random routes
-rand_pcg = "0.2" # generate random routes
-serde = "1.0"
-csv = "1.1"
-progressing = "2" # progressbar
+progressing = "2" # progress-bar
 
 [dev-dependencies]
-actix-web = "1.0" # backend-server
+actix-web = "1" # backend-server
 actix-rt = "0.2" # backend-server
 futures = "0.1" # backend-server
 quick-xml = "0.14" # read xml-files
@@ -48,6 +46,10 @@ path = "examples/astar.rs"
 [[example]]
 name = "playground_actix"
 path = "examples/playground/actix.rs"
+
+[[example]]
+name = "edge-containers"
+path = "examples/playground/edge_containers.rs"
 
 [[example]]
 name = "playground_graph"
