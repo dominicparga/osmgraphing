@@ -22,7 +22,7 @@ Further, refer to [setup and usage][github/self/wiki/usage] to get details about
 
 [crates.io/self]: https://crates.io/crates/osmgraphing
 [crates.io/self/badge]: https://img.shields.io/crates/v/osmgraphing?style=for-the-badge
-[docs.rs/self]: https://docs.rs/osmgraphing/
+[docs.rs/self]: https://docs.rs/osmgraphing/0/
 [docs.rs/self/badge]: https://img.shields.io/crates/v/osmgraphing?color=informational&label=docs&style=for-the-badge
 [github/self/actions]: https://github.com/dominicparga/osmgraphing/actions
 [github/self/actions/badge]: https://img.shields.io/github/workflow/status/dominicparga/osmgraphing/Rust?label=master-build&style=for-the-badge

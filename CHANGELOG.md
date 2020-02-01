@@ -8,7 +8,8 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 ## Table of contents
 
 1. [Unreleased](#unreleased)
-1. [v0.7.0](#v0.7.0)
+1. [v0.7.1](#v0.7.1)
+    1. [v0.7.0](#v0.7.0)
 1. [v1.0.0-yanked](#v1.0.0-yanked)
 1. [v0.6.1](#v0.6.1)
     1. [v0.6.0](#v0.6.0)
@@ -49,6 +50,7 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
   - Replace existing tags with ones referring to `CHANGELOG.md` and add old tag-texts to the `CHANGELOG.md`
   - Inconsistent `semver` in old tags -> probably `cargo yank VERSION` needed
 - Routing should be extended by a `bidirectional A*`.
+- The link to `doc.rs` is hardcoded to `major.minor.patch=0.y.z` because `docs.rs` chooses version `1.0.0` though it's yanked..
 
 
 ### Removed
@@ -64,6 +66,23 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 ### Security
 
 \-
+
+
+## [v0.7.1][github/self/v0.7.1] <a name="v0.7.1"></a>
+
+### Changed
+
+- Fix link to `docs.rs` in `README.md`
+
+
+### Deprecated
+
+- Documentation is missing, though comments are very well.
+- `CHANGELOG.md` contains empty version-descriptions.
+  - Replace existing tags with ones referring to `CHANGELOG.md` and add old tag-texts to the `CHANGELOG.md`
+  - Inconsistent `semver` in old tags -> probably `cargo yank VERSION` needed
+- Routing should be extended by a `bidirectional A*`.
+- The link to `doc.rs` is hardcoded to `major.minor.patch=0.y.z` because `docs.rs` chooses version `1.0.0` though it's yanked..
 
 
 ## [v0.7.0][github/self/v0.7.0] <a name="v0.7.0"></a>
@@ -281,7 +300,8 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 [keepachangelog]: https://keepachangelog.com/en/
 [semver]: https://semver.org/
 
-[github/self/unreleased]: https://github.com/dominicparga/osmgraphing/compare/v0.7.0...HEAD
+[github/self/unreleased]: https://github.com/dominicparga/osmgraphing/compare/v0.7.1...HEAD
+[github/self/v0.7.1]: https://github.com/dominicparga/osmgraphing/compare/v0.7.0...v0.7.1
 [github/self/v0.7.0]: https://github.com/dominicparga/osmgraphing/compare/v1.0.0-yanked...v0.7.0
 [github/self/v1.0.0-yanked]: https://github.com/dominicparga/osmgraphing/compare/v0.6.1...v1.0.0-yanked
 [github/self/v0.6.1]: https://github.com/dominicparga/osmgraphing/compare/v0.6.0...v0.6.1
