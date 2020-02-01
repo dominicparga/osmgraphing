@@ -1,22 +1,19 @@
 //------------------------------------------------------------------------------------------------//
-// other modules
-
-use crate::units::geo::Coordinate;
-use crate::units::length::Meters;
-use crate::units::speed::KilometersPerHour;
-use std::fmt;
-use std::fmt::Display;
-
-//------------------------------------------------------------------------------------------------//
 // own modules
 
 pub mod building;
 mod indexing;
-pub use indexing::EdgeIdx;
-pub use indexing::NodeIdx;
+pub use indexing::{EdgeIdx, NodeIdx};
 mod container;
-pub use container::HalfEdge;
-pub use container::Node;
+pub use container::{HalfEdge, Node};
+
+//------------------------------------------------------------------------------------------------//
+// other modules
+
+use crate::units::{geo::Coordinate, length::Meters, speed::KilometersPerHour};
+use std::{fmt, fmt::Display};
+
+//------------------------------------------------------------------------------------------------//
 
 /// A shallow container for accessing nodes.
 /// Shallow means that it does only contain references to the graph's data-arrays.

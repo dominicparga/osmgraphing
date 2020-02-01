@@ -1,5 +1,4 @@
-use super::EdgeContainer;
-use super::NodeContainer;
+use super::{EdgeContainer, NodeContainer};
 
 mod edges;
 pub use edges::HalfEdge;

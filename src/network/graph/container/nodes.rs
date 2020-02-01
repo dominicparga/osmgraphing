@@ -2,10 +2,8 @@
 // other modules
 
 use super::NodeContainer;
-use crate::network::NodeIdx;
-use crate::units::geo::Coordinate;
-use std::fmt;
-use std::fmt::Display;
+use crate::{network::NodeIdx, units::geo::Coordinate};
+use std::{fmt, fmt::Display};
 
 //------------------------------------------------------------------------------------------------//
 // own modules

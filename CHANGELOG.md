@@ -8,7 +8,8 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 ## Table of contents
 
 1. [Unreleased](#unreleased)
-1. [v1.0.0-yanked](#v1.0.0)
+1. [v0.7.0](#v0.7.0)
+1. [v1.0.0-yanked](#v1.0.0-yanked)
 1. [v0.6.1](#v0.6.1)
     1. [v0.6.0](#v0.6.0)
 1. [v0.5.0](#v0.5.0)
@@ -29,27 +30,75 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
     1. [v0.1.0](#v0.1.0)
 
 
-## [Unreleased] <a name="unreleased"></a>
+## [Unreleased][github/self/unreleased] <a name="unreleased"></a>
 
-### Added <a name="unreleased/added"></a>
+### Added
 
-- Comment in `Cargo.toml`, over changing the version, to not forget changing the `CHANGELOG.md`.
+\-
 
 
 ### Changed
 
-- The `graph`-interface allows access via `NodeContainer` and `EdgeContainer` for better maintainability without breaking changes.
-  - The `graph` serves as unit for __memory-storage__, while the containers, based on references from the `graph`, can execute user-queries.
-  - Due to the references, queries for `forward-edges` and `backward-edges` are processed by the same code.
+\-
 
 
 ### Deprecated
 
+- Documentation is missing, though comments are very well.
 - `CHANGELOG.md` contains empty version-descriptions.
-- Replace existing tags with ones referring to `CHANGELOG.md` and add old tag-texts to the `CHANGELOG.md`
-- Inconsistent `semver` in tagging -> probably `cargo yank VERSION` needed
-- The `graph` containing forward-edges will be extended by backward-edges.
-  - Tests should be extended as well.
+  - Replace existing tags with ones referring to `CHANGELOG.md` and add old tag-texts to the `CHANGELOG.md`
+  - Inconsistent `semver` in old tags -> probably `cargo yank VERSION` needed
+- Routing should be extended by a `bidirectional A*`.
+
+
+### Removed
+
+\-
+
+
+### Fixed
+
+\-
+
+
+### Security
+
+\-
+
+
+## [v0.7.0][github/self/v0.7.0] <a name="v0.7.0"></a>
+
+### Added
+
+- Implement access to forward-edges and backward-edges, as preparation to the `bidirectional Dijkstra`, .
+  - Process queries for forward-edges and backward-edges by the same code, due to the new pattern with the shallow containers.
+    To achieve this without additional performance-cost, use a index-mapping for offsets, while accessing all other components (node-indices and metrics) directly.
+  - Extend graph-construction-tests for backward-edges.
+- Add documentation for the graph.
+- Add a metric-system replacing primitive data-types.
+  - Support typical calculations as `v = s/t`, typed correctly (`meters / milliseconds -> km/h`).
+
+
+### Changed
+
+- Comment in `Cargo.toml`, over changing the version, to not forget changing the `CHANGELOG.md`.
+- Refactor the graph by a new pattern.
+  - Add new examples playing around with different patterns (`RefCell` vs `moving` vs `borrowing`).
+  - Store the data in arrays in one single struct (the graph), while granting access over layer-structs borrowing these arrays and executing user-queries.
+    This makes maintainability without breaking changes easier.
+  - Let the graph-interface allow access via `NodeContainer` and `EdgeContainer`.
+- Replace the use of usize by new structs, `NodeIdx` and `EdgeIdx`, to control the access to graph-components.
+- Refactor logging slightly by adding progress-bars to parsing and building.
+- Use a new type-parameter in the `A*` for a metric-type, which are added in this release.
+  - Change the access to best-path-algorithms slightly.
+
+
+### Deprecated
+
+- Documentation is missing, though comments are very well.
+- `CHANGELOG.md` contains empty version-descriptions.
+  - Replace existing tags with ones referring to `CHANGELOG.md` and add old tag-texts to the `CHANGELOG.md`
+  - Inconsistent `semver` in old tags -> probably `cargo yank VERSION` needed
 - Routing should be extended by a `bidirectional A*`.
 
 
@@ -70,7 +119,7 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 \-
 
 
-## [v1.0.0-yanked][github/self/v1.0.0] <a name="v1.0.0"></a>
+## [v1.0.0-yanked][github/self/v1.0.0-yanked] <a name="v1.0.0-yanked"></a>
 
 ### Added <a name="v1.0.0/added"></a>
 
@@ -232,8 +281,9 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 [keepachangelog]: https://keepachangelog.com/en/
 [semver]: https://semver.org/
 
-[Unreleased]: https://github.com/dominicparga/osmgraphing/compare/v1.0.0-yanked...HEAD
-[github/self/v1.0.0]: https://github.com/dominicparga/osmgraphing/compare/v0.6.1...v1.0.0-yanked
+[github/self/unreleased]: https://github.com/dominicparga/osmgraphing/compare/v0.7.0...HEAD
+[github/self/v0.7.0]: https://github.com/dominicparga/osmgraphing/compare/v1.0.0-yanked...v0.7.0
+[github/self/v1.0.0-yanked]: https://github.com/dominicparga/osmgraphing/compare/v0.6.1...v1.0.0-yanked
 [github/self/v0.6.1]: https://github.com/dominicparga/osmgraphing/compare/v0.6.0...v0.6.1
 [github/self/v0.6.0]: https://github.com/dominicparga/osmgraphing/compare/v0.5.0...v0.6.0
 [github/self/v0.5.0]: https://github.com/dominicparga/osmgraphing/compare/v0.4.1...v0.5.0

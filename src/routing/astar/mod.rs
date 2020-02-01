@@ -1,19 +1,16 @@
 //------------------------------------------------------------------------------------------------//
-// other modules
-
-use crate::network::Graph;
-use crate::network::HalfEdge;
-use crate::network::Node;
-use crate::network::NodeIdx;
-use crate::units::Metric;
-use std::cmp::Ordering;
-use std::collections::BinaryHeap;
-use std::ops::Add;
-
-//------------------------------------------------------------------------------------------------//
 // own modules
 
 mod paths;
+
+//------------------------------------------------------------------------------------------------//
+// other modules
+
+use crate::{
+    network::{Graph, HalfEdge, Node, NodeIdx},
+    units::Metric,
+};
+use std::{cmp::Ordering, collections::BinaryHeap, ops::Add};
 
 //------------------------------------------------------------------------------------------------//
 // Path

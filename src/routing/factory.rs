@@ -1,20 +1,13 @@
 //------------------------------------------------------------------------------------------------//
-// other modules
-
-//------------------------------------------------------------------------------------------------//
 // own modules
 
 pub mod astar {
-    use crate::network;
-    use crate::network::HalfEdge;
-    use crate::network::Node;
-    use crate::units::geo;
-    use crate::units::length::Meters;
-    use crate::units::speed::KilometersPerHour;
-    use crate::units::time::Milliseconds;
-
-    use crate::routing::astar::GenericAstar;
-    use crate::routing::Astar;
+    use crate::{
+        network,
+        network::{HalfEdge, Node},
+        routing::{Astar, GenericAstar},
+        units::{geo, length::Meters, speed::KilometersPerHour, time::Milliseconds},
+    };
 
     pub fn shortest() -> Box<dyn Astar<Meters>> {
         let cost_fn = |edge: &HalfEdge| edge.meters();
@@ -35,14 +28,11 @@ pub mod astar {
 }
 
 pub mod dijkstra {
-    use crate::network::HalfEdge;
-    use crate::network::Node;
-    use crate::units::length::Meters;
-    use crate::units::time::Milliseconds;
-    use crate::units::Metric;
-
-    use crate::routing::astar::GenericAstar;
-    use crate::routing::Astar;
+    use crate::{
+        network::{HalfEdge, Node},
+        routing::{Astar, GenericAstar},
+        units::{length::Meters, time::Milliseconds, Metric},
+    };
 
     pub fn shortest() -> Box<dyn Astar<Meters>> {
         let cost_fn = |edge: &HalfEdge| edge.meters();
@@ -57,3 +47,6 @@ pub mod dijkstra {
         Box::new(GenericAstar::from(cost_fn, estimate_fn))
     }
 }
+
+//------------------------------------------------------------------------------------------------//
+// other modules

@@ -1,18 +1,13 @@
 //------------------------------------------------------------------------------------------------//
+// own modules
+
+//------------------------------------------------------------------------------------------------//
 // other modules
 
 use super::EdgeContainer;
-use crate::network::EdgeIdx;
-use crate::network::NodeIdx;
-use crate::units::length::Meters;
-use crate::units::speed::KilometersPerHour;
-use crate::units::time::Milliseconds;
-use crate::units::Metric;
-use std::fmt;
-use std::fmt::Display;
-
-//------------------------------------------------------------------------------------------------//
-// own modules
+use crate::network::{EdgeIdx, NodeIdx};
+use crate::units::{length::Meters, speed::KilometersPerHour, time::Milliseconds, Metric};
+use std::{fmt, fmt::Display};
 
 //------------------------------------------------------------------------------------------------//
 

@@ -1,7 +1,5 @@
 use super::TestNode;
-use osmgraphing::network::NodeIdx;
-use osmgraphing::routing;
-use osmgraphing::units::time::Milliseconds;
+use osmgraphing::{network::NodeIdx, routing, units::time::Milliseconds};
 
 #[test]
 fn simple_stuttgart() {

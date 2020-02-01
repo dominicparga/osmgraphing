@@ -1,12 +1,12 @@
 //------------------------------------------------------------------------------------------------//
 // other modules
 
-use std::cmp::Ord;
-use std::cmp::Ordering;
-use std::fmt;
-use std::fmt::Display;
-use std::ops::Add;
-use std::ops::AddAssign;
+use std::{
+    cmp::{Ord, Ordering},
+    fmt,
+    fmt::Display,
+    ops::{Add, AddAssign},
+};
 
 //------------------------------------------------------------------------------------------------//
 // basic stuff

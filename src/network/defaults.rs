@@ -1,7 +1,5 @@
-use std::{cmp, fmt, str};
-
 use log::warn;
-
+use std::{cmp, fmt, str};
 mod pbf {
     pub use osmpbfreader::Way;
 }

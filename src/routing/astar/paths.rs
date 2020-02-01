@@ -1,5 +1,4 @@
-use crate::network::NodeIdx;
-use crate::units::Metric;
+use crate::{network::NodeIdx, units::Metric};
 use std::collections::HashMap;
 
 //------------------------------------------------------------------------------------------------//
