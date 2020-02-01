@@ -28,24 +28,24 @@ trait Parsing {
     fn parse<P: AsRef<Path> + ?Sized>(path: &P) -> Result<GraphBuilder, String> {
         let mut graph_builder = GraphBuilder::new();
 
-        info!("Starting processing given file ..");
+        info!("START Process given file");
         let file = Self::open_file(path)?;
         Self::parse_ways(file, &mut graph_builder);
         let file = Self::open_file(path)?;
         Self::parse_nodes(file, &mut graph_builder);
-        info!("Finished processing given file");
+        info!("FINISHED");
 
         Ok(graph_builder)
     }
 
     fn parse_and_finalize<P: AsRef<Path> + ?Sized>(path: &P) -> Result<Graph, String> {
-        info!("Starting parsing given path {} ..", path.as_ref().display());
+        info!("START Parse given path {}", path.as_ref().display());
 
         // TODO parse "cycleway" and others
         // see https://wiki.openstreetmap.org/wiki/Key:highway
 
         let result = Self::parse(path)?.finalize();
-        info!("Finished parsing");
+        info!("FINISHED");
         result
     }
 }

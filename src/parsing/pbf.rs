@@ -15,7 +15,7 @@ mod pbf {
 pub struct Parser;
 impl super::Parsing for Parser {
     fn parse_ways(file: File, graph_builder: &mut GraphBuilder) {
-        info!("Starting edge-creation ..");
+        info!("START Create edges from input-file.");
         for mut way in pbf::Reader::new(file)
             .par_iter()
             .filter_map(Result::ok)
@@ -70,11 +70,11 @@ impl super::Parsing for Parser {
                 src_id = dst_id;
             }
         }
-        info!("Finished edge-creation");
+        info!("FINISHED");
     }
 
     fn parse_nodes(file: File, graph_builder: &mut GraphBuilder) {
-        info!("Starting node-creation ..");
+        info!("START Create nodes from input-file.");
         for node in pbf::Reader::new(file)
             .par_iter()
             .filter_map(Result::ok)
@@ -91,6 +91,6 @@ impl super::Parsing for Parser {
                 );
             }
         }
-        info!("Finished node-creation");
+        info!("FINISHED");
     }
 }
