@@ -1,14 +1,19 @@
-use std::fs::File;
-
-use log::info;
-
-use crate::network::{GraphBuilder, StreetType};
-use crate::units::geo::Coordinate;
+//------------------------------------------------------------------------------------------------//
+// own modules
 
 mod pbf {
-    pub use osmpbfreader::reader::OsmPbfReader as Reader;
-    pub use osmpbfreader::OsmObj;
+    pub use osmpbfreader::{reader::OsmPbfReader as Reader, OsmObj};
 }
+
+//------------------------------------------------------------------------------------------------//
+// other modules
+
+use crate::{
+    network::{GraphBuilder, StreetType},
+    units::geo::Coordinate,
+};
+use log::info;
+use std::fs::File;
 
 //------------------------------------------------------------------------------------------------//
 

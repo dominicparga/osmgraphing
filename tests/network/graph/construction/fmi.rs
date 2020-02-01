@@ -1,9 +1,7 @@
-use osmgraphing::network::Graph;
-use osmgraphing::network::NodeIdx;
-use osmgraphing::units::geo;
-use osmgraphing::units::length::Meters;
-use osmgraphing::units::speed::KilometersPerHour;
-use osmgraphing::units::time::Milliseconds;
+use osmgraphing::{
+    network::{Graph, NodeIdx},
+    units::{geo, length::Meters, speed::KilometersPerHour, time::Milliseconds},
+};
 
 //------------------------------------------------------------------------------------------------//
 // TestNode

@@ -1,15 +1,15 @@
 //------------------------------------------------------------------------------------------------//
-// other modules
-
-use super::length::Meters;
-use super::time::Milliseconds;
-use super::Metric;
-use std::fmt;
-use std::fmt::Display;
-use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign};
+// own modules
 
 //------------------------------------------------------------------------------------------------//
-// own modules
+// other modules
+
+use super::{length::Meters, time::Milliseconds, Metric};
+use std::{
+    fmt,
+    fmt::Display,
+    ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign},
+};
 
 //------------------------------------------------------------------------------------------------//
 

@@ -1,6 +1,5 @@
 use crate::units::length::Meters;
-use std::cmp::Ordering;
-use std::fmt;
+use std::{cmp::Ordering, fmt};
 
 #[derive(Copy, Clone, Debug)]
 pub struct Coordinate {

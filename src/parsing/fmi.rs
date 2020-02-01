@@ -1,16 +1,9 @@
-use std::fs::File;
-use std::io::BufRead;
-
-use log::{info, warn};
-
-use crate::network::GraphBuilder;
-
 //------------------------------------------------------------------------------------------------//
+// own modules
 
 mod fmi {
     use crate::units::geo;
-    pub use std::io::BufReader as Reader;
-    use std::str;
+    pub use std::{io::BufReader as Reader, str};
 
     //--------------------------------------------------------------------------------------------//
 
@@ -146,6 +139,13 @@ mod fmi {
         }
     }
 }
+
+//------------------------------------------------------------------------------------------------//
+// other modules
+
+use crate::network::GraphBuilder;
+use log::{info, warn};
+use std::{fs::File, io::BufRead};
 
 //------------------------------------------------------------------------------------------------//
 

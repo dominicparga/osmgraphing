@@ -1,12 +1,8 @@
 //------------------------------------------------------------------------------------------------//
 // other modules
 
-use osmgraphing::network::Graph;
-use osmgraphing::network::NodeIdx;
-use osmgraphing::routing;
-use osmgraphing::units::Metric;
-use std::fmt;
-use std::fmt::Display;
+use osmgraphing::{network::Graph, network::NodeIdx, routing, units::Metric};
+use std::{fmt, fmt::Display};
 
 //------------------------------------------------------------------------------------------------//
 // own modules

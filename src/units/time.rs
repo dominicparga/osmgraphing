@@ -1,16 +1,16 @@
 //------------------------------------------------------------------------------------------------//
-// other modules
-
-use super::length::Meters;
-use super::speed::KilometersPerHour;
-use super::Metric;
-use crate::network::NodeIdx;
-use std::fmt;
-use std::fmt::Display;
-use std::ops::{Add, AddAssign, Index, IndexMut, Mul, MulAssign};
+// own modules
 
 //------------------------------------------------------------------------------------------------//
-// own modules
+// other modules
+
+use super::{length::Meters, speed::KilometersPerHour, Metric};
+use crate::network::NodeIdx;
+use std::{
+    fmt,
+    fmt::Display,
+    ops::{Add, AddAssign, Index, IndexMut, Mul, MulAssign},
+};
 
 //------------------------------------------------------------------------------------------------//
 
