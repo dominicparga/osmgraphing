@@ -339,7 +339,7 @@ impl GraphBuilder {
 
             // print progress
             progress_bar.set(edge_idx);
-            if progress_bar.progress() % (1 + (progress_bar.end() % 10)) == 0 {
+            if progress_bar.progress() % (1 + (progress_bar.end() / 10)) == 0 {
                 info!("{}", progress_bar);
             }
         }
