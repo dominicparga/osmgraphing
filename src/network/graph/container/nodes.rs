@@ -1,6 +1,7 @@
 //------------------------------------------------------------------------------------------------//
 // other modules
 
+use super::NodeContainer;
 use crate::network::NodeIdx;
 use crate::units::geo::Coordinate;
 use std::fmt;
@@ -54,29 +55,23 @@ impl Display for Node {
 
 //------------------------------------------------------------------------------------------------//
 
-#[derive(Debug)]
-pub struct NodeContainer<'a> {
-    node_ids: &'a Vec<i64>,
-    node_coords: &'a Vec<Coordinate>,
-}
-
 impl<'a> NodeContainer<'a> {
     pub fn count(&self) -> usize {
         self.node_ids.len()
     }
 
     pub fn id(&self, idx: NodeIdx) -> i64 {
-        self.node_ids[idx.usize()]
+        self.node_ids[idx.to_usize()]
     }
 
     pub fn coord(&self, idx: NodeIdx) -> Coordinate {
-        self.node_coords[idx.usize()]
+        self.node_coords[idx.to_usize()]
     }
 
     pub fn idx_from(&self, id: i64) -> Result<NodeIdx, NodeIdx> {
         match self.node_ids.binary_search(&id) {
-            Ok(idx) => Ok(idx.into()),
-            Err(idx) => Err(idx.into()),
+            Ok(idx) => Ok(NodeIdx::new(idx)),
+            Err(idx) => Err(NodeIdx::new(idx)),
         }
     }
 

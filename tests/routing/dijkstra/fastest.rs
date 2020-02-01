@@ -1,4 +1,5 @@
 use super::TestNode;
+use osmgraphing::network::NodeIdx;
 use osmgraphing::routing;
 use osmgraphing::units::time::Milliseconds;
 
@@ -26,12 +27,12 @@ fn expected_paths_simple_stuttgart() -> Vec<(
     Option<(Milliseconds, Vec<Vec<TestNode>>)>,
 )> {
     // (idx, id)
-    let opp = TestNode::from(0, 26_033_921);
-    let bac = TestNode::from(1, 26_160_028);
-    let wai = TestNode::from(2, 252_787_940);
-    let end = TestNode::from(3, 298_249_467);
-    let dea = TestNode::from(4, 1_621_605_361);
-    let stu = TestNode::from(5, 2_933_335_353);
+    let opp = TestNode::from(NodeIdx::new(0), 26_033_921);
+    let bac = TestNode::from(NodeIdx::new(1), 26_160_028);
+    let wai = TestNode::from(NodeIdx::new(2), 252_787_940);
+    let end = TestNode::from(NodeIdx::new(3), 298_249_467);
+    let dea = TestNode::from(NodeIdx::new(4), 1_621_605_361);
+    let stu = TestNode::from(NodeIdx::new(5), 2_933_335_353);
 
     vec![
         // opp
@@ -125,14 +126,14 @@ fn expected_paths_small() -> Vec<(
     Option<(Milliseconds, Vec<Vec<TestNode>>)>,
 )> {
     // (idx, id)
-    let a = TestNode::from(0, 0);
-    let b = TestNode::from(1, 1);
-    let c = TestNode::from(2, 2);
-    let d = TestNode::from(3, 3);
-    let e = TestNode::from(4, 4);
-    let f = TestNode::from(5, 5);
-    let g = TestNode::from(6, 6);
-    let h = TestNode::from(7, 7);
+    let a = TestNode::from(NodeIdx::new(0), 0);
+    let b = TestNode::from(NodeIdx::new(1), 1);
+    let c = TestNode::from(NodeIdx::new(2), 2);
+    let d = TestNode::from(NodeIdx::new(3), 3);
+    let e = TestNode::from(NodeIdx::new(4), 4);
+    let f = TestNode::from(NodeIdx::new(5), 5);
+    let g = TestNode::from(NodeIdx::new(6), 6);
+    let h = TestNode::from(NodeIdx::new(7), 7);
 
     vec![
         // a

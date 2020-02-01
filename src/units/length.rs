@@ -25,12 +25,12 @@ impl Display for Meters {
 }
 
 impl Metric for Meters {
-    fn zero() -> Meters {
-        Meters { value: 0 }
+    fn new<M: Into<Meters>>(meters: M) -> Meters {
+        meters.into()
     }
 
-    fn from<M: Into<Meters>>(meters: M) -> Meters {
-        meters.into()
+    fn zero() -> Meters {
+        Meters { value: 0 }
     }
 
     fn neg_inf() -> Meters {
@@ -156,9 +156,7 @@ impl Div<Milliseconds> for Meters {
     type Output = KilometersPerHour;
 
     fn div(self, rhs: Milliseconds) -> KilometersPerHour {
-        KilometersPerHour {
-            value: (3600 * self.value / rhs.value()) as u16,
-        }
+        KilometersPerHour::new((3600 * self.value / rhs.value()) as u16)
     }
 }
 
@@ -167,8 +165,6 @@ impl Div<KilometersPerHour> for Meters {
     type Output = Milliseconds;
 
     fn div(self, rhs: KilometersPerHour) -> Milliseconds {
-        Milliseconds {
-            value: (3600 * self.value / (rhs.value() as u32)),
-        }
+        Milliseconds::new(3600 * self.value / (rhs.value() as u32))
     }
 }

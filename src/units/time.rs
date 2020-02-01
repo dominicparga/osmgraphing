@@ -26,12 +26,12 @@ impl Display for Milliseconds {
 }
 
 impl Metric for Milliseconds {
-    fn zero() -> Milliseconds {
-        Milliseconds { value: 0 }
+    fn new<M: Into<Milliseconds>>(meters: M) -> Milliseconds {
+        meters.into()
     }
 
-    fn from<M: Into<Milliseconds>>(meters: M) -> Milliseconds {
-        meters.into()
+    fn zero() -> Milliseconds {
+        Milliseconds { value: 0 }
     }
 
     fn neg_inf() -> Milliseconds {
@@ -60,14 +60,14 @@ impl Index<NodeIdx> for Vec<Milliseconds> {
     type Output = Milliseconds;
 
     fn index(&self, idx: NodeIdx) -> &Self::Output {
-        let idx: usize = idx.into();
+        let idx: usize = idx.to_usize();
         &self[idx]
     }
 }
 
 impl IndexMut<NodeIdx> for Vec<Milliseconds> {
     fn index_mut(&mut self, idx: NodeIdx) -> &mut Self::Output {
-        let idx: usize = idx.into();
+        let idx: usize = idx.to_usize();
         &mut self[idx]
     }
 }

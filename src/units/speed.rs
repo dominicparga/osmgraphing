@@ -25,12 +25,12 @@ impl Display for KilometersPerHour {
 }
 
 impl Metric for KilometersPerHour {
-    fn zero() -> KilometersPerHour {
-        KilometersPerHour { value: 0 }
+    fn new<M: Into<KilometersPerHour>>(meters: M) -> KilometersPerHour {
+        meters.into()
     }
 
-    fn from<M: Into<KilometersPerHour>>(meters: M) -> KilometersPerHour {
-        meters.into()
+    fn zero() -> KilometersPerHour {
+        KilometersPerHour { value: 0 }
     }
 
     fn neg_inf() -> KilometersPerHour {

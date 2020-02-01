@@ -189,7 +189,7 @@ where
             estimation: M::zero(),
             pred_idx: None,
         });
-        self.costs[src.idx().usize()] = M::zero();
+        self.costs[src.idx().to_usize()] = M::zero();
 
         //----------------------------------------------------------------------------------------//
         // search for shortest path
@@ -204,7 +204,7 @@ where
 
                 let mut path = Path::from(src.idx(), dst.idx(), &graph);
                 path.core.cost = current.cost;
-                while let Some(pred_idx) = self.predecessors[cur_idx] {
+                while let Some(pred_idx) = self.predecessors[cur_idx.to_usize()] {
                     path.core.add_pred_succ(pred_idx, cur_idx);
                     cur_idx = pred_idx;
                 }
@@ -217,7 +217,7 @@ where
             // first occurrence has lowest cost
             // -> check if current has already been visited
 
-            if current.cost > self.costs[current.idx.usize()] {
+            if current.cost > self.costs[current.idx.to_usize()] {
                 continue;
             }
 
@@ -231,9 +231,9 @@ where
             };
             for leaving_edge in leaving_edges {
                 let new_cost = current.cost + (self.cost_fn)(&leaving_edge);
-                if new_cost < self.costs[leaving_edge.dst_idx().usize()] {
-                    self.predecessors[leaving_edge.dst_idx()] = Some(current.idx);
-                    self.costs[leaving_edge.dst_idx().usize()] = new_cost;
+                if new_cost < self.costs[leaving_edge.dst_idx().to_usize()] {
+                    self.predecessors[leaving_edge.dst_idx().to_usize()] = Some(current.idx);
+                    self.costs[leaving_edge.dst_idx().to_usize()] = new_cost;
 
                     let leaving_edge_of_dst = nodes.create(leaving_edge.dst_idx());
                     let estimation = (self.estimate_fn)(&leaving_edge_of_dst, dst);

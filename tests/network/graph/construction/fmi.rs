@@ -30,9 +30,7 @@ impl TestNode {
 
     fn assert_correct(&self, graph: &Graph) {
         let nodes = graph.nodes();
-        let node = nodes
-            .get(self.idx.into())
-            .expect(&format!("Node of idx={} should be in graph.", self.idx));
+        let node = nodes.create(self.idx);
         assert_eq!(
             node.id(),
             self.id,
@@ -49,7 +47,7 @@ impl TestNode {
         );
         assert_eq!(
             node.coord(),
-            &self.coord,
+            self.coord,
             "Wrong coordinate {} for {}",
             node.coord(),
             self.name
@@ -143,16 +141,11 @@ impl TestEdge {
         };
 
         assert_eq!(
-            edge_idx, self.edge_idx,
+            edge_idx.to_usize(),
+            self.edge_idx,
             "Wrong {}edge-idx={} for {}",
-            prefix, edge_idx, self.name
-        );
-        assert_eq!(
-            edge.src_idx(),
-            self.src_idx,
-            "Wrong src_idx={} for {}edge {}",
-            edge.src_idx(),
             prefix,
+            edge_idx,
             self.name
         );
         assert_eq!(
@@ -210,7 +203,6 @@ fn simple_stuttgart() {
     let node_stu = TestNode::from("Stuttgart", 2_933_335_353, 48.7701757, 9.1565768, &graph);
 
     // Due to the offset-array, the fwd-edge-ids should match with sorting by src-id, then by dst-id.
-    // -> testing offset-array
     // name, idx, id, src, dst, meters, maxspeed, ms
     let fwd_edge_opp_bac = TestEdge::from_fwd(None, 0, &node_opp, &node_bac, 8_000, 50, 576_000);
     let fwd_edge_bac_opp = TestEdge::from_fwd(None, 1, &node_bac, &node_opp, 8_000, 50, 576_000);
@@ -228,58 +220,69 @@ fn simple_stuttgart() {
     let fwd_edge_stu_end = TestEdge::from_fwd(None, 12, &node_stu, &node_end, 21_000, 80, 945_000);
 
     // Due to the offset-array, the bwd-edge-ids should match with sorting by src-id, then by dst-id.
-    // -> testing offset-array
+    // But the graph-structure changes that to the same as fwd-edges (dst-id, then src-id).
     // name, idx, id, src, dst, meters, maxspeed, ms
     let bwd_edge_bac_opp = TestEdge::from_bwd(None, 0, &node_bac, &node_opp, 8_000, 50, 576_000);
     let bwd_edge_opp_bac = TestEdge::from_bwd(None, 1, &node_opp, &node_bac, 8_000, 50, 576_000);
     let bwd_edge_wai_bac = TestEdge::from_bwd(None, 2, &node_wai, &node_bac, 23_000, 120, 690_000);
     let bwd_edge_end_bac = TestEdge::from_bwd(None, 3, &node_end, &node_bac, 22_000, 80, 990_000);
-    let bwd_edge_bac_wai = TestEdge::from_bwd(None, 4, &node_bac, &node_wai, 23_000, 120, 690_000);
-    let bwd_edge_end_wai = TestEdge::from_bwd(None, 5, &node_end, &node_wai, 8_000, 50, 576_000);
-    let bwd_edge_stu_wai = TestEdge::from_bwd(None, 6, &node_stu, &node_wai, 17_000, 100, 612_000);
-    let bwd_edge_bac_end = TestEdge::from_bwd(None, 7, &node_bac, &node_end, 22_000, 80, 990_000);
-    let bwd_edge_wai_end = TestEdge::from_bwd(None, 8, &node_wai, &node_end, 8_000, 50, 576_000);
-    let bwd_edge_stu_end = TestEdge::from_bwd(None, 9, &node_stu, &node_end, 21_000, 80, 945_000);
     // 1_069 is the length of a straight line, since the file contains trash in there.
-    let bwd_edge_dea_bac = TestEdge::from_fwd(None, 10, &node_dea, &node_bac, 1_069, 30, 128_280);
+    let bwd_edge_dea_bac = TestEdge::from_bwd(None, 4, &node_dea, &node_bac, 1_069, 30, 128_280);
+    let bwd_edge_bac_wai = TestEdge::from_bwd(None, 5, &node_bac, &node_wai, 23_000, 120, 690_000);
+    let bwd_edge_end_wai = TestEdge::from_bwd(None, 6, &node_end, &node_wai, 8_000, 50, 576_000);
+    let bwd_edge_stu_wai = TestEdge::from_bwd(None, 7, &node_stu, &node_wai, 17_000, 100, 612_000);
+    let bwd_edge_bac_end = TestEdge::from_bwd(None, 8, &node_bac, &node_end, 22_000, 80, 990_000);
+    let bwd_edge_wai_end = TestEdge::from_bwd(None, 9, &node_wai, &node_end, 8_000, 50, 576_000);
+    let bwd_edge_stu_end = TestEdge::from_bwd(None, 10, &node_stu, &node_end, 21_000, 80, 945_000);
     let bwd_edge_wai_stu = TestEdge::from_bwd(None, 11, &node_wai, &node_stu, 17_000, 100, 612_000);
     let bwd_edge_end_stu = TestEdge::from_bwd(None, 12, &node_end, &node_stu, 21_000, 80, 945_000);
 
     //--------------------------------------------------------------------------------------------//
     // testing graph
 
-    // nodes
-    assert_eq!(graph.nodes().count(), 6, "Wrong node-count");
+    let _nodes = graph.nodes();
+    let nodes = graph.nodes(); // calling twice should be fine
+    let _fwd_edges = graph.fwd_edges();
+    let fwd_edges = graph.fwd_edges(); // calling twice should be fine
+    let _bwd_edges = graph.bwd_edges();
+    let bwd_edges = graph.bwd_edges(); // calling twice should be fine
 
-    // fwd-edges
-    assert_eq!(graph.fwd_edges().count(), 13, "Wrong fwd-edge-count");
-    assert!(
-        graph.fwd_edges().between(24.into(), 42.into()).is_none(),
-        "Fwd-edge doesn't exist, so graph should return None."
-    );
-    assert!(
-        graph.fwd_edges().starting_from(424.into()).is_none(),
-        "Node's idx is too high, thus the node should not have any leaving edges."
-    );
-    assert!(
-        graph.fwd_edges().starting_from(node_dea.idx).is_none(),
-        "Node has no leaving edges, so the method should return None."
-    );
+    assert_eq!(nodes.count(), 6, "Wrong node-count");
+    assert_eq!(fwd_edges.count(), 13, "Wrong fwd-edge-count");
+    assert_eq!(bwd_edges.count(), 13, "Wrong bwd-edge-count");
 
-    // bwd-edges
-    assert_eq!(graph.bwd_edges().count(), 13, "Wrong bwd-edge-count");
-    assert!(
-        graph.bwd_edges().between(42.into(), 24.into()).is_none(),
-        "Bwd-edge doesn't exist, so graph should return None."
-    );
-    assert!(
-        graph.bwd_edges().starting_from(424.into()).is_none(),
-        "Node's idx is too high, thus the node should not have any incoming edges."
-    );
-    // assert!(
-    //     graph.bwd_edges().starting_from(node.idx).is_none(),
-    //     "Node has no incoming edges, so the method should return None."
-    // );
+    for i in nodes.count()..(2 * nodes.count()) {
+        for j in nodes.count()..(2 * nodes.count()) {
+            assert!(
+                fwd_edges.starting_from(NodeIdx::new(i)).is_none(),
+                "NodeIdx {} >= n={} shouldn't have leaving-edges in fwd-edges",
+                i,
+                nodes.count()
+            );
+            assert!(
+                bwd_edges.starting_from(NodeIdx::new(j)).is_none(),
+                "NodeIdx {} >= n={} shouldn't have leaving-edges in bwd-edges",
+                j,
+                nodes.count()
+            );
+            assert!(
+                fwd_edges
+                    .between(NodeIdx::new(i), NodeIdx::new(j))
+                    .is_none(),
+                "There should be no fwd-edge from NodeIdx {} to NodeIdx {}.",
+                i,
+                j
+            );
+            assert!(
+                bwd_edges
+                    .between(NodeIdx::new(j), NodeIdx::new(i))
+                    .is_none(),
+                "There should be no bwd-edge from NodeIdx {} to NodeIdx {}.",
+                j,
+                i
+            );
+        }
+    }
 
     //--------------------------------------------------------------------------------------------//
     // testing nodes
@@ -345,7 +348,6 @@ fn small() {
     let node_h = TestNode::from("h", 7, 0.0000000, 0.0000000, &graph);
 
     // Due to the offset-array, the fwd-edge-ids should match with sorting by src-id, then by dst-id.
-    // -> testing offset-array
     // name, idx, id, src, dst, meters, maxspeed, ms
     let fwd_edge_b_a = TestEdge::from_fwd(None, 0, &node_b, &node_a, 1, 30, 120);
     let fwd_edge_b_c = TestEdge::from_fwd(None, 1, &node_b, &node_c, 1, 30, 120);
@@ -365,60 +367,71 @@ fn small() {
     let fwd_edge_h_f = TestEdge::from_fwd(None, 15, &node_h, &node_f, 1, 30, 120);
 
     // Due to the offset-array, the bwd-edge-ids should match with sorting by src-id, then by dst-id.
-    // -> testing offset-array
+    // But the graph-structure changes that to the same as fwd-edges (dst-id, then src-id).
     // name, idx, id, src, dst, meters, maxspeed, ms
     let bwd_edge_a_b = TestEdge::from_bwd(None, 0, &node_a, &node_b, 1, 30, 120);
-    let bwd_edge_a_c = TestEdge::from_bwd(None, 1, &node_a, &node_c, 1, 30, 120);
-    let bwd_edge_b_c = TestEdge::from_bwd(None, 2, &node_b, &node_c, 1, 30, 120);
-    let bwd_edge_b_d = TestEdge::from_bwd(None, 3, &node_b, &node_d, 1, 30, 120);
-    let bwd_edge_c_b = TestEdge::from_bwd(None, 4, &node_c, &node_b, 1, 30, 120);
-    let bwd_edge_c_h = TestEdge::from_bwd(None, 5, &node_c, &node_h, 4, 30, 480);
-    let bwd_edge_d_e = TestEdge::from_bwd(None, 6, &node_d, &node_e, 2, 30, 240);
-    let bwd_edge_d_h = TestEdge::from_bwd(None, 7, &node_d, &node_h, 1, 30, 120);
-    let bwd_edge_e_d = TestEdge::from_bwd(None, 8, &node_e, &node_d, 2, 30, 240);
+    let bwd_edge_c_b = TestEdge::from_bwd(None, 1, &node_c, &node_b, 1, 30, 120);
+    let bwd_edge_a_c = TestEdge::from_bwd(None, 2, &node_a, &node_c, 1, 30, 120);
+    let bwd_edge_b_c = TestEdge::from_bwd(None, 3, &node_b, &node_c, 1, 30, 120);
+    let bwd_edge_b_d = TestEdge::from_bwd(None, 4, &node_b, &node_d, 1, 30, 120);
+    let bwd_edge_e_d = TestEdge::from_bwd(None, 5, &node_e, &node_d, 2, 30, 240);
+    let bwd_edge_h_d = TestEdge::from_bwd(None, 6, &node_h, &node_d, 1, 30, 120);
+    let bwd_edge_d_e = TestEdge::from_bwd(None, 7, &node_d, &node_e, 2, 30, 240);
+    let bwd_edge_f_e = TestEdge::from_bwd(None, 8, &node_f, &node_e, 1, 30, 120);
     let bwd_edge_e_f = TestEdge::from_bwd(None, 9, &node_e, &node_f, 1, 30, 120);
-    let bwd_edge_e_g = TestEdge::from_bwd(None, 10, &node_e, &node_g, 1, 30, 120);
-    let bwd_edge_f_e = TestEdge::from_bwd(None, 11, &node_f, &node_e, 1, 30, 120);
+    let bwd_edge_h_f = TestEdge::from_bwd(None, 10, &node_h, &node_f, 1, 30, 120);
+    let bwd_edge_e_g = TestEdge::from_bwd(None, 11, &node_e, &node_g, 1, 30, 120);
     let bwd_edge_f_g = TestEdge::from_bwd(None, 12, &node_f, &node_g, 1, 30, 120);
-    let bwd_edge_f_h = TestEdge::from_bwd(None, 13, &node_f, &node_h, 1, 30, 120);
-    let bwd_edge_h_d = TestEdge::from_bwd(None, 14, &node_h, &node_d, 1, 30, 120);
-    let bwd_edge_h_f = TestEdge::from_bwd(None, 15, &node_h, &node_f, 1, 30, 120);
+    let bwd_edge_c_h = TestEdge::from_bwd(None, 13, &node_c, &node_h, 4, 30, 480);
+    let bwd_edge_d_h = TestEdge::from_bwd(None, 14, &node_d, &node_h, 1, 30, 120);
+    let bwd_edge_f_h = TestEdge::from_bwd(None, 15, &node_f, &node_h, 1, 30, 120);
 
     //--------------------------------------------------------------------------------------------//
     // testing graph
 
-    // nodes
-    assert_eq!(graph.nodes().count(), 8, "Wrong node-count");
+    let _nodes = graph.nodes();
+    let nodes = graph.nodes(); // calling twice should be fine
+    let _fwd_edges = graph.fwd_edges();
+    let fwd_edges = graph.fwd_edges(); // calling twice should be fine
+    let _bwd_edges = graph.bwd_edges();
+    let bwd_edges = graph.bwd_edges(); // calling twice should be fine
 
-    // fwd-edges
-    assert_eq!(graph.fwd_edges().count(), 16, "Wrong fwd-edge-count");
-    assert!(
-        graph.fwd_edges().between(24.into(), 42.into()).is_none(),
-        "Fwd-edge doesn't exist, so graph should return None."
-    );
-    assert!(
-        graph.fwd_edges().starting_from(424.into()).is_none(),
-        "Node's idx is too high, thus the node should not have any leaving edges."
-    );
-    assert!(
-        graph.fwd_edges().starting_from(node_a.idx).is_none(),
-        "Node has no leaving edges, so the method should return None."
-    );
+    assert_eq!(nodes.count(), 8, "Wrong node-count");
+    assert_eq!(fwd_edges.count(), 16, "Wrong fwd-edge-count");
+    assert_eq!(bwd_edges.count(), 16, "Wrong bwd-edge-count");
 
-    // bwd-edges
-    assert_eq!(graph.bwd_edges().count(), 16, "Wrong bwd-edge-count");
-    assert!(
-        graph.bwd_edges().between(42.into(), 24.into()).is_none(),
-        "Bwd-edge doesn't exist, so graph should return None."
-    );
-    assert!(
-        graph.bwd_edges().starting_from(424.into()).is_none(),
-        "Node's idx is too high, thus the node should not have any incoming edges."
-    );
-    assert!(
-        graph.bwd_edges().starting_from(node_g.idx).is_none(),
-        "Node has no incoming edges, so the method should return None."
-    );
+    for i in nodes.count()..(2 * nodes.count()) {
+        for j in nodes.count()..(2 * nodes.count()) {
+            assert!(
+                fwd_edges.starting_from(NodeIdx::new(i)).is_none(),
+                "NodeIdx {} >= n={} shouldn't have leaving-edges in fwd-edges",
+                i,
+                nodes.count()
+            );
+            assert!(
+                bwd_edges.starting_from(NodeIdx::new(j)).is_none(),
+                "NodeIdx {} >= n={} shouldn't have leaving-edges in bwd-edges",
+                j,
+                nodes.count()
+            );
+            assert!(
+                fwd_edges
+                    .between(NodeIdx::new(i), NodeIdx::new(j))
+                    .is_none(),
+                "There should be no fwd-edge from NodeIdx {} to NodeIdx {}.",
+                i,
+                j
+            );
+            assert!(
+                bwd_edges
+                    .between(NodeIdx::new(j), NodeIdx::new(i))
+                    .is_none(),
+                "There should be no bwd-edge from NodeIdx {} to NodeIdx {}.",
+                j,
+                i
+            );
+        }
+    }
 
     //--------------------------------------------------------------------------------------------//
     // testing nodes

@@ -28,13 +28,9 @@ fn assert_correct<M>(
 
     for (src, dst, option_specs) in expected_paths {
         let nodes = graph.nodes();
-        let graph_src = nodes
-            .get(src.idx.into())
-            .expect(&format!("src-node of idx={} should be in graph.", src.idx));
-        let graph_dst = nodes
-            .get(dst.idx.into())
-            .expect(&format!("dst-node of idx={} should be in graph.", dst.idx));
-        let option_path = astar.compute_best_path(graph_src, graph_dst, &graph);
+        let graph_src = nodes.create(src.idx);
+        let graph_dst = nodes.create(dst.idx);
+        let option_path = astar.compute_best_path(&graph_src, &graph_dst, &graph);
         assert_eq!(
             option_path.is_some(),
             option_specs.is_some(),
@@ -64,7 +60,7 @@ struct TestNode {
 }
 
 impl TestNode {
-    pub fn from<I: Into<NodeIdx>>(idx: I, id: i64) -> TestNode {
+    pub fn from(idx: NodeIdx, id: i64) -> TestNode {
         TestNode {
             idx: idx.into(),
             id,
@@ -76,7 +72,7 @@ impl Eq for TestNode {}
 
 impl PartialEq for TestNode {
     fn eq(&self, other: &TestNode) -> bool {
-        self.idx.eq(other.idx) && self.id.eq(&other.id)
+        self.idx.eq(&other.idx) && self.id.eq(&other.id)
     }
 }
 
@@ -117,16 +113,7 @@ where
     }
 
     fn assert_correct(&self, path: &routing::astar::Path<M>, graph: &Graph) {
-        let node = |idx: NodeIdx| -> TestNode {
-            TestNode::from(
-                idx,
-                graph
-                    .nodes()
-                    .get(idx.into())
-                    .expect("Node should be in graph here.")
-                    .id(),
-            )
-        };
+        let node = |idx: NodeIdx| -> TestNode { TestNode::from(idx, graph.nodes().id(idx)) };
 
         //----------------------------------------------------------------------------------------//
         // check meta-info

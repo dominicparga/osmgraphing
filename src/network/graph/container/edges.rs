@@ -1,6 +1,7 @@
 //------------------------------------------------------------------------------------------------//
 // other modules
 
+use super::EdgeContainer;
 use crate::network::EdgeIdx;
 use crate::network::NodeIdx;
 use crate::units::length::Meters;
@@ -9,7 +10,6 @@ use crate::units::time::Milliseconds;
 use crate::units::Metric;
 use std::fmt;
 use std::fmt::Display;
-use std::ops::Range;
 
 //------------------------------------------------------------------------------------------------//
 // own modules
@@ -70,70 +70,48 @@ impl Display for HalfEdge {
 
 //------------------------------------------------------------------------------------------------//
 
-#[derive(Debug)]
-pub struct EdgeContainer<'a> {
-    edge_dsts: &'a Vec<NodeIdx>,
-    offsets: &'a Vec<EdgeIdx>,
-    // indirect mapping to save memory
-    idx_map: &'a Vec<EdgeIdx>,
-    // metrics
-    meters: &'a Vec<Meters>,
-    maxspeed: &'a Vec<KilometersPerHour>,
-    lane_count: &'a Vec<u8>,
-}
-
 impl<'a> EdgeContainer<'a> {
     pub fn count(&self) -> usize {
         self.edge_dsts.len()
     }
 
-    pub fn create(&self, idx: EdgeIdx) -> HalfEdge {
-        let dst_idx = self.edge_dsts[idx];
-        let mapped_idx = self.idx_map[idx].usize();
-        let meters = self.meters[mapped_idx];
-        let maxspeed = self.maxspeed[mapped_idx];
-        let lane_count = self.lane_count[mapped_idx];
+    pub fn half_edge(&self, idx: EdgeIdx) -> Option<HalfEdge> {
+        let idx = idx.to_usize();
 
-        HalfEdge {
-            dst_idx,
-            lane_count,
-            meters,
-            maxspeed,
-        }
+        Some(HalfEdge {
+            dst_idx: *(self.edge_dsts.get(idx)?),
+            lane_count: *(self.lane_count.get(idx)?),
+            meters: *(self.meters.get(idx)?),
+            maxspeed: *(self.maxspeed.get(idx)?),
+        })
     }
 
-    /// indirect access
-    pub fn dst_idx(&self, idx: EdgeIdx) -> NodeIdx {
-        self.edge_dsts[idx]
+    pub fn dst_idx(&self, idx: EdgeIdx) -> Option<NodeIdx> {
+        Some(*(self.edge_dsts.get(idx.to_usize())?))
     }
 
-    pub fn meters(&self, idx: EdgeIdx) -> Meters {
-        let mapped_idx = self.idx_map[idx].usize();
-        self.meters[mapped_idx]
+    pub fn meters(&self, idx: EdgeIdx) -> Option<Meters> {
+        Some(*(self.meters.get(idx.to_usize())?))
     }
 
-    pub fn maxspeed(&self, idx: EdgeIdx) -> KilometersPerHour {
-        let mapped_idx = self.idx_map[idx].usize();
-        self.maxspeed[mapped_idx]
+    pub fn maxspeed(&self, idx: EdgeIdx) -> Option<KilometersPerHour> {
+        Some(*(self.maxspeed.get(idx.to_usize())?))
     }
 
-    pub fn lane_count(&self, idx: EdgeIdx) -> u8 {
-        let mapped_idx = self.idx_map[idx].usize();
-        self.lane_count[mapped_idx]
+    pub fn lane_count(&self, idx: EdgeIdx) -> Option<u8> {
+        Some(*(self.lane_count.get(idx.to_usize())?))
     }
 
     /// Creates `HalfEdge`s containing all metric-data.
     /// For only indices, see `dsts_starting_from(...)`
     pub fn starting_from(&self, idx: NodeIdx) -> Option<Vec<HalfEdge>> {
         // get indices by reading offset-array
-        let range = self.offset_indices(idx)?;
-        let leaving_indices = range.start.usize()..range.end.usize();
+        let leaving_indices = self.offset_indices(idx)?;
 
         // create array of leaving edges
         let mut leaving_edges = vec![];
-        for idx in leaving_indices {
-            let edge_idx = EdgeIdx::from(idx);
-            let edge = self.create(edge_idx);
+        for edge_idx in leaving_indices {
+            let edge = self.half_edge(edge_idx)?;
             leaving_edges.push(edge);
         }
         Some(leaving_edges)
@@ -141,35 +119,39 @@ impl<'a> EdgeContainer<'a> {
 
     /// uses linear-search, but only on src's leaving edges (±3), so more or less in O(1)
     ///
-    /// Returns the index of the edge, which can be used in the function `edge(...)`
+    /// Returns the index of the edge, which can be used in the function `half_edge(...)`
     pub fn between(&self, src_idx: NodeIdx, dst_idx: NodeIdx) -> Option<(HalfEdge, EdgeIdx)> {
-        // get indices by reading offset-array
-        let range = self.offset_indices(src_idx)?;
-        let leaving_indices = range.start.usize()..range.end.usize();
+        // get indices by reading offset-array if src-node has leaving edges
+        let leaving_indices = self.offset_indices(src_idx)?;
 
         // find edge of same dst-idx and create edge
-        for idx in leaving_indices {
-            let edge_idx = idx.into();
-            if self.dst_idx(edge_idx) == dst_idx {
-                let edge = self.create(edge_idx);
-                return Some((edge, edge_idx));
+        for edge_idx in leaving_indices {
+            if self.dst_idx(edge_idx)? == dst_idx {
+                return Some((self.half_edge(edge_idx)?, edge_idx));
             }
         }
 
-        // no edge of given src-dst-pair
-        return None;
+        None
     }
 
-    /// Returns a "real" range, where `start_bound < end_bound`
-    fn offset_indices(&self, idx: NodeIdx) -> Option<Range<EdgeIdx>> {
+    /// Returns None if
+    ///
+    /// - no node with given idx is in the graph
+    /// - if this node has no leaving edges
+    fn offset_indices(&self, idx: NodeIdx) -> Option<Vec<EdgeIdx>> {
         // Use offset-array to get indices for the graph's edges belonging to the given node
-        let i0 = self.offsets[idx];
+        let i0 = *(self.offsets.get(idx.to_usize())?);
         // (idx + 1) guaranteed by offset-array-length
-        let i1 = self.offsets[idx + 1];
+        let i1 = *(self.offsets.get(idx.to_usize() + 1)?);
 
         // i0 < i1 <-> node has leaving edges
         if i0 < i1 {
-            Some(i0..i1)
+            // map usizes to respective EdgeIdx
+            let mut edge_indices = vec![];
+            for i in i0..i1 {
+                edge_indices.push(self.xwd_to_fwd_map[i])
+            }
+            Some(edge_indices)
         } else {
             None
         }

@@ -1,11 +1,12 @@
 //------------------------------------------------------------------------------------------------//
 // other modules
 
-use super::NodeIdx;
-use std::cmp::{Ord, Ordering};
+use std::cmp::Ord;
+use std::cmp::Ordering;
 use std::fmt;
 use std::fmt::Display;
-use std::ops::{Add, Index, IndexMut};
+use std::ops::Add;
+use std::ops::AddAssign;
 
 //------------------------------------------------------------------------------------------------//
 // basic stuff
@@ -16,37 +17,22 @@ pub struct EdgeIdx {
 }
 
 impl EdgeIdx {
-    pub fn usize(&self) -> usize {
+    pub fn new(n: usize) -> EdgeIdx {
+        EdgeIdx { value: n }
+    }
+
+    pub fn to_usize(&self) -> usize {
         self.value
     }
 
     pub fn zero() -> EdgeIdx {
         EdgeIdx { value: 0 }
     }
-
-    pub fn from<I: Into<usize>>(n: I) -> EdgeIdx {
-        EdgeIdx { value: n.into() }
-    }
 }
 
 impl Display for EdgeIdx {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         self.value.fmt(f)
-    }
-}
-
-//------------------------------------------------------------------------------------------------//
-// conversion from/to usize
-
-impl Into<usize> for EdgeIdx {
-    fn into(self) -> usize {
-        self.value
-    }
-}
-
-impl From<usize> for EdgeIdx {
-    fn from(idx: usize) -> Self {
-        EdgeIdx { value: idx }
     }
 }
 
@@ -74,73 +60,6 @@ impl PartialEq for EdgeIdx {
 }
 
 //------------------------------------------------------------------------------------------------//
-// indexing
-
-impl Index<EdgeIdx> for Vec<EdgeIdx> {
-    type Output = EdgeIdx;
-
-    fn index(&self, idx: EdgeIdx) -> &Self::Output {
-        let idx: usize = idx.into();
-        &self[idx]
-    }
-}
-
-impl IndexMut<EdgeIdx> for Vec<EdgeIdx> {
-    fn index_mut(&mut self, idx: EdgeIdx) -> &mut Self::Output {
-        let idx: usize = idx.into();
-        &mut self[idx]
-    }
-}
-
-impl Index<EdgeIdx> for Vec<Option<EdgeIdx>> {
-    type Output = Option<EdgeIdx>;
-
-    fn index(&self, idx: EdgeIdx) -> &Self::Output {
-        let idx: usize = idx.into();
-        &self[idx]
-    }
-}
-
-impl IndexMut<EdgeIdx> for Vec<Option<EdgeIdx>> {
-    fn index_mut(&mut self, idx: EdgeIdx) -> &mut Self::Output {
-        let idx: usize = idx.into();
-        &mut self[idx]
-    }
-}
-
-impl Index<EdgeIdx> for Vec<NodeIdx> {
-    type Output = NodeIdx;
-
-    fn index(&self, idx: EdgeIdx) -> &Self::Output {
-        let idx: usize = idx.into();
-        &self[idx]
-    }
-}
-
-impl IndexMut<EdgeIdx> for Vec<NodeIdx> {
-    fn index_mut(&mut self, idx: EdgeIdx) -> &mut Self::Output {
-        let idx: usize = idx.into();
-        &mut self[idx]
-    }
-}
-
-impl Index<EdgeIdx> for Vec<Option<NodeIdx>> {
-    type Output = Option<NodeIdx>;
-
-    fn index(&self, idx: EdgeIdx) -> &Self::Output {
-        let idx: usize = idx.into();
-        &self[idx]
-    }
-}
-
-impl IndexMut<EdgeIdx> for Vec<Option<NodeIdx>> {
-    fn index_mut(&mut self, idx: EdgeIdx) -> &mut Self::Output {
-        let idx: usize = idx.into();
-        &mut self[idx]
-    }
-}
-
-//------------------------------------------------------------------------------------------------//
 // operations
 
 impl Add<EdgeIdx> for EdgeIdx {
@@ -153,6 +72,12 @@ impl Add<EdgeIdx> for EdgeIdx {
     }
 }
 
+impl AddAssign<EdgeIdx> for EdgeIdx {
+    fn add_assign(&mut self, other: EdgeIdx) {
+        self.value += other.value;
+    }
+}
+
 impl Add<usize> for EdgeIdx {
     type Output = Self;
 
@@ -160,5 +85,11 @@ impl Add<usize> for EdgeIdx {
         Self {
             value: self.value + other,
         }
+    }
+}
+
+impl AddAssign<usize> for EdgeIdx {
+    fn add_assign(&mut self, other: usize) {
+        self.value += other;
     }
 }

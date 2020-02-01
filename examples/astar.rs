@@ -1,11 +1,7 @@
+use log::{error, info};
+use osmgraphing::{network::NodeIdx, routing, Parser};
 use std::ffi::OsString;
 use std::time::Instant;
-
-use log::{error, info};
-
-use osmgraphing::network::NodeIdx;
-use osmgraphing::routing;
-use osmgraphing::Parser;
 
 //------------------------------------------------------------------------------------------------//
 // points in Germany
@@ -82,22 +78,18 @@ fn main() {
     let mut astar = routing::factory::astar::shortest();
 
     let src_idx = NodeIdx::zero();
-    let dsts: Vec<NodeIdx> = (0..nodes.count()).map(NodeIdx::from).collect();
+    let dsts: Vec<NodeIdx> = (0..nodes.count()).map(NodeIdx::new).collect();
     // let dsts: Vec<usize> = vec![80]; problem on baden-wuerttemberg.osm.pbf
 
-    let src = nodes
-        .get(src_idx)
-        .expect("src-node of idx={} should be in graph");
+    let src = nodes.create(src_idx);
 
     for dst_idx in dsts {
-        let dst = nodes
-            .get(dst_idx)
-            .expect("dst-node of idx={} should be in graph");
+        let dst = nodes.create(dst_idx);
 
         info!("");
 
         let now = Instant::now();
-        let option_path = astar.compute_best_path(src, dst, &graph);
+        let option_path = astar.compute_best_path(&src, &dst, &graph);
         info!(
             "Ran A* in {} µs a.k.a {} seconds",
             now.elapsed().as_micros(),
