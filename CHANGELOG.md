@@ -128,16 +128,6 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 - When building and finalizing the graph, `ProtoNode`s and `ProtoEdge`s don't need ordering implemented, hence these implementations are removed.
 
 
-### Fixed
-
-\-
-
-
-### Security
-
-\-
-
-
 ## [v1.0.0-yanked][github/self/v1.0.0-yanked] <a name="v1.0.0-yanked"></a>
 
 ### Added <a name="v1.0.0/added"></a>
