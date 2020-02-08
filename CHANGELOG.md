@@ -42,6 +42,7 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 
 - Reduce additional memory-usage when building graph.
   When data is not used anymore, but already stored in the graph, it is dropped.
+- Remove `way-id` from the graphbuilder since it is not used anyways.
 
 
 ### Deprecated
