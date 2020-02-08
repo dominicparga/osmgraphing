@@ -5,35 +5,38 @@ use std::collections::HashMap;
 // Path using Vec
 
 #[derive(Clone)]
-pub struct VecPath {
-    pub src_idx: usize,
-    pub dst_idx: usize,
-    pub cost: u32,
-    predecessors: Vec<Option<usize>>,
-    successors: Vec<Option<usize>>,
+pub struct VecPath<M> {
+    pub src_idx: NodeIdx,
+    pub dst_idx: NodeIdx,
+    pub cost: M,
+    predecessors: Vec<Option<NodeIdx>>,
+    successors: Vec<Option<NodeIdx>>,
 }
 #[allow(dead_code)]
-impl VecPath {
-    pub fn with_capacity(src_idx: usize, dst_idx: usize, capacity: usize) -> Self {
+impl<M> VecPath<M>
+where
+    M: Metric,
+{
+    pub fn with_capacity(src_idx: NodeIdx, dst_idx: NodeIdx, capacity: usize) -> Self {
         VecPath {
             src_idx,
             dst_idx,
-            cost: 0,
+            cost: M::zero(),
             predecessors: vec![None; capacity],
             successors: vec![None; capacity],
         }
     }
 
-    pub fn add_pred_succ(&mut self, pred: usize, succ: usize) {
-        self.predecessors[succ] = Some(pred);
-        self.successors[pred] = Some(succ);
+    pub fn add_pred_succ(&mut self, pred: NodeIdx, succ: NodeIdx) {
+        self.predecessors[succ.to_usize()] = Some(pred);
+        self.successors[pred.to_usize()] = Some(succ);
     }
 
-    pub fn pred_node_idx(&self, idx: usize) -> Option<usize> {
-        *(self.predecessors.get(idx)?)
+    pub fn pred_node_idx(&self, idx: NodeIdx) -> Option<NodeIdx> {
+        *(self.predecessors.get(idx.to_usize())?)
     }
-    pub fn succ_node_idx(&self, idx: usize) -> Option<usize> {
-        *(self.successors.get(idx)?)
+    pub fn succ_node_idx(&self, idx: NodeIdx) -> Option<NodeIdx> {
+        *(self.successors.get(idx.to_usize())?)
     }
 }
 

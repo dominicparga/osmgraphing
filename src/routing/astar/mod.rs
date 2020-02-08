@@ -20,6 +20,7 @@ pub struct Path<M>
 where
     M: Metric,
 {
+    // core: paths::VecPath<M>,
     core: paths::HashPath<M>,
 }
 
@@ -28,7 +29,7 @@ where
     M: Metric,
 {
     fn from(src_idx: NodeIdx, dst_idx: NodeIdx, _graph: &Graph) -> Self {
-        // let core = paths::VecPath::with_capacity(src_idx, dst_idx, graph.node_count());
+        // let core = paths::VecPath::with_capacity(src_idx, dst_idx, graph.nodes().count());
         let core = paths::HashPath::new(src_idx, dst_idx);
         Path { core }
     }
@@ -38,6 +39,7 @@ where
     pub fn src_idx(&self) -> NodeIdx {
         self.core.src_idx
     }
+
     pub fn dst_idx(&self) -> NodeIdx {
         self.core.dst_idx
     }
@@ -50,6 +52,7 @@ where
     pub fn pred_node_idx(&self, idx: NodeIdx) -> Option<NodeIdx> {
         self.core.pred_node_idx(idx)
     }
+
     /// Return idx of successor-node
     pub fn succ_node_idx(&self, idx: NodeIdx) -> Option<NodeIdx> {
         self.core.succ_node_idx(idx)
@@ -131,6 +134,7 @@ where
     predecessors: Vec<Option<NodeIdx>>,
     queue: BinaryHeap<CostNode<M>>, // max-heap, but CostNode's natural order is reversed
 }
+
 impl<C, E, M> GenericAstar<C, E, M>
 where
     C: Fn(&HalfEdge) -> M,
@@ -147,6 +151,7 @@ where
         }
     }
 
+    /// Resizes existing datastructures storing routing-data like costs saving re-allocations.
     fn resize(&mut self, new_len: usize) {
         let old_len = self.costs.len();
         let min_len = std::cmp::min(old_len, new_len);
@@ -154,32 +159,32 @@ where
             self.costs[i] = M::inf();
             self.predecessors[i] = None;
         }
-        self.costs.resize(new_len, M::inf().into());
+        self.costs.resize(new_len, M::inf());
         self.predecessors.resize(new_len, None);
 
         self.queue.clear();
     }
 }
+
 impl<C, E, M> Astar<M> for GenericAstar<C, E, M>
 where
     C: Fn(&HalfEdge) -> M,
     E: Fn(&Node, &Node) -> M,
     M: Metric + Ord + Add<M, Output = M>,
 {
-    /// Note:
-    /// This method uses the graph-structure (offset-array) and works with idx instead of id for better performance.
     fn compute_best_path(&mut self, src: &Node, dst: &Node, graph: &Graph) -> Option<Path<M>> {
         //----------------------------------------------------------------------------------------//
         // initialization-stuff
 
         let nodes = graph.nodes();
         let fwd_edges = graph.fwd_edges();
+        let bwd_edges = graph.bwd_edges();
         self.resize(nodes.count());
 
         //----------------------------------------------------------------------------------------//
-        // compute
+        // prepare first iteration(s)
 
-        // prepare first iteration
+        // push src-node
         self.queue.push(CostNode {
             idx: src.idx(),
             cost: M::zero(),
@@ -187,6 +192,14 @@ where
             pred_idx: None,
         });
         self.costs[src.idx().to_usize()] = M::zero();
+        // // push dst-node
+        // self.queue.push(CostNode {
+        //     idx: dst.idx(),
+        //     cost: M::zero(),
+        //     estimation: M::zero(),
+        //     pred_idx: None,
+        // });
+        // self.costs[dst.idx().to_usize()] = M::zero();
 
         //----------------------------------------------------------------------------------------//
         // search for shortest path
