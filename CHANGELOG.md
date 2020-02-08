@@ -40,7 +40,8 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 
 ### Changed
 
-\-
+- Reduce additional memory-usage when building graph.
+  When data is not used anymore, but already stored in the graph, it is dropped.
 
 
 ### Deprecated
@@ -83,6 +84,7 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
   - Inconsistent `semver` in old tags -> probably `cargo yank VERSION` needed
 - Routing should be extended by a `bidirectional A*`.
 - The link to `doc.rs` is hardcoded to `major.minor.patch=0.y.z` because `docs.rs` chooses version `1.0.0` though it's yanked..
+- Building the graph uses too much additional memory due to not dropping unused data though it is already stored in the graph.
 
 
 ## [v0.7.0][github/self/v0.7.0] <a name="v0.7.0"></a>
