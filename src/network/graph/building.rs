@@ -1,5 +1,5 @@
-use super::{EdgeIdx, Graph, Meters, NodeIdx};
-use crate::units::{geo, geo::Coordinate};
+use super::{EdgeIdx, Graph, NodeIdx};
+use crate::units::{geo, geo::Coordinate, length::Meters, speed::KilometersPerHour};
 use log::{error, info, trace};
 use progressing;
 use progressing::Bar;
@@ -24,13 +24,18 @@ impl ProtoNode {
 
 #[derive(Debug)]
 pub struct ProtoEdge {
-    way_id: Option<i64>,
     src_id: i64,
     dst_id: i64,
     lane_count: u8,
     meters: Option<Meters>,
-    maxspeed: u16,
-    idx: usize, // handy for remembering indices after sorting backwards
+    maxspeed: KilometersPerHour,
+}
+
+/// handy for remembering indices after sorting backwards
+struct MiniProtoEdge {
+    src_id: i64,
+    dst_id: i64,
+    idx: usize,
 }
 
 //------------------------------------------------------------------------------------------------//
@@ -76,16 +81,14 @@ impl GraphBuilder {
 
     pub fn push_edge(
         &mut self,
-        way_id: Option<i64>,
         src_id: i64,
         dst_id: i64,
         lane_count: u8,
-        meters: Option<u32>,
-        maxspeed: u16,
+        meters: Option<Meters>,
+        maxspeed: KilometersPerHour,
     ) -> &mut Self {
         // add edge
         self.proto_edges.push(ProtoEdge {
-            way_id,
             src_id,
             dst_id,
             lane_count,
@@ -94,7 +97,6 @@ impl GraphBuilder {
                 None => None,
             },
             maxspeed,
-            idx: 0, // needed below in finalize
         });
 
         // add or update src-node
@@ -149,7 +151,7 @@ impl GraphBuilder {
         // start looping
         let mut node_idx = 0;
         // BTreeMap's iter returns sorted by key (asc)
-        for (_id, proto_node) in self.proto_nodes.iter() {
+        for (_id, proto_node) in self.proto_nodes.into_iter() {
             // add nodes only if they belong to an edge
             if !proto_node.is_in_edge() {
                 trace!(
@@ -181,6 +183,10 @@ impl GraphBuilder {
             }
         }
         info!("{}", progress_bar);
+        // reduce and optimize memory-usage
+        // already dropped via iterator: drop(self.proto_nodes);
+        graph.node_ids.shrink_to_fit();
+        graph.node_coords.shrink_to_fit();
         info!("FINISHED");
         assert_eq!(
             graph.node_ids.len() == graph.node_coords.len(),
@@ -212,19 +218,28 @@ impl GraphBuilder {
         graph.fwd_offsets.push(offset);
         // high-level-idea
         // count offset for each proto_edge (sorted) and apply offset as far as src doesn't change
-        for edge_idx in 0..self.proto_edges.len() {
-            let proto_edge = &mut self.proto_edges[edge_idx];
-
+        let mut edge_idx = 0;
+        let mut new_proto_edges = Vec::with_capacity(self.proto_edges.len());
+        for proto_edge in self.proto_edges.into_iter() {
             // find edge-data to compare it with expected data later (when setting offset)
             let src_id = proto_edge.src_id;
             let dst_id = proto_edge.dst_id;
+
+            // Add edge-idx here to remember it for indirect mapping bwd->fwd.
+            // Update it at the end of the loop.
+            new_proto_edges.push(MiniProtoEdge {
+                src_id,
+                dst_id,
+                idx: edge_idx,
+            });
+
             // do not swap src and dst since this is a forward-edge
             let edge_src_idx = match graph.nodes().idx_from(src_id) {
                 Ok(idx) => idx,
                 Err(_) => {
                     return Err(format!(
-                        "The given src-id `{:?}` of edge-id `{:?}` doesn't exist as node",
-                        proto_edge.src_id, proto_edge.way_id
+                        "The given src-id `{:?}` doesn't exist as node",
+                        proto_edge.src_id
                     ))
                 }
             };
@@ -232,8 +247,8 @@ impl GraphBuilder {
                 Ok(idx) => idx,
                 Err(_) => {
                     return Err(format!(
-                        "The given dst-id `{:?}` of edge-id `{:?}` doesn't exist as node",
-                        proto_edge.dst_id, proto_edge.way_id
+                        "The given dst-id `{:?}` doesn't exist as node",
+                        proto_edge.dst_id
                     ))
                 }
             };
@@ -251,8 +266,6 @@ impl GraphBuilder {
             graph.fwd_dsts.push(edge_dst_idx);
             // mapping fwd to fwd is just the identity
             graph.fwd_to_fwd_map.push(EdgeIdx::new(edge_idx));
-            // remember index for indirect mapping bwd->fwd
-            proto_edge.idx = edge_idx;
 
             // metrics
             // calculate distance if not provided
@@ -276,17 +289,29 @@ impl GraphBuilder {
             if progress_bar.progress() % (1 + (progress_bar.end() / 10)) == 0 {
                 info!("{}", progress_bar);
             }
+
+            // update edge-idx
+            edge_idx += 1;
         }
         // last node needs an upper bound as well for `leaving_edges(...)`
         graph.fwd_offsets.push(offset);
         info!("{}", progress_bar.set(offset));
+        // reduce and optimize memory-usage
+        // already dropped via iterator: drop(self.proto_edges);
+        graph.fwd_dsts.shrink_to_fit();
+        graph.fwd_offsets.shrink_to_fit();
+        graph.fwd_to_fwd_map.shrink_to_fit();
+        graph.bwd_dsts.shrink_to_fit();
+        graph.meters.shrink_to_fit();
+        graph.maxspeed.shrink_to_fit();
+        graph.lane_count.shrink_to_fit();
         info!("FINISHED");
 
         //----------------------------------------------------------------------------------------//
         // sort backward-edges by ascending dst-id, then by ascending src-id -> offset-array
 
         info!("START Sort proto-backward-edges by their dst/src-IDs.");
-        self.proto_edges.sort_by(|e0, e1| {
+        new_proto_edges.sort_by(|e0, e1| {
             e0.dst_id
                 .cmp(&e1.dst_id)
                 .then_with(|| e0.src_id.cmp(&e1.src_id))
@@ -298,7 +323,7 @@ impl GraphBuilder {
 
         // logging
         info!("START Create the backward-offset-array.");
-        let mut progress_bar = progressing::MappingBar::new(0..=self.proto_edges.len());
+        let mut progress_bar = progressing::MappingBar::new(0..=new_proto_edges.len());
         info!("{}", progress_bar);
         // start looping
         let mut src_idx = NodeIdx::zero();
@@ -306,8 +331,8 @@ impl GraphBuilder {
         graph.bwd_offsets.push(offset);
         // high-level-idea
         // count offset for each proto_edge (sorted) and apply offset as far as src doesn't change
-        for edge_idx in 0..self.proto_edges.len() {
-            let proto_edge = &mut self.proto_edges[edge_idx];
+        for edge_idx in 0..new_proto_edges.len() {
+            let proto_edge = &mut new_proto_edges[edge_idx];
 
             // find edge-data to compare it with expected data later (when setting offset)
             let dst_id = proto_edge.dst_id;
@@ -316,8 +341,8 @@ impl GraphBuilder {
                 Ok(idx) => idx,
                 Err(_) => {
                     return Err(format!(
-                        "The given dst-id `{:?}` of way-id `{:?}` doesn't exist as node",
-                        proto_edge.dst_id, proto_edge.way_id
+                        "The given dst-id `{:?}` doesn't exist as node",
+                        proto_edge.dst_id
                     ));
                 }
             };
@@ -346,27 +371,15 @@ impl GraphBuilder {
         // last node needs an upper bound as well for `leaving_edges(...)`
         debug_assert_eq!(
             offset,
-            self.proto_edges.len(),
+            new_proto_edges.len(),
             "Last offset-value should be as big as the number of proto-edges."
         );
         graph.bwd_offsets.push(offset);
         info!("{}", progress_bar.set(offset));
-        info!("FINISHED");
-
-        //----------------------------------------------------------------------------------------//
-        // optimize memory a little
-
-        graph.node_ids.shrink_to_fit();
-        graph.node_coords.shrink_to_fit();
-        graph.fwd_dsts.shrink_to_fit();
-        graph.fwd_offsets.shrink_to_fit();
-        graph.fwd_to_fwd_map.shrink_to_fit();
-        graph.bwd_dsts.shrink_to_fit();
+        // reduce and optimize memory-usage
         graph.bwd_offsets.shrink_to_fit();
         graph.bwd_to_fwd_map.shrink_to_fit();
-        graph.meters.shrink_to_fit();
-        graph.maxspeed.shrink_to_fit();
-        graph.lane_count.shrink_to_fit();
+        info!("FINISHED");
 
         info!("FINISHED");
 
