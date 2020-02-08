@@ -40,7 +40,8 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 
 ### Changed
 
-\-
+- Reduce additional memory-usage when building graph.
+  When data is not used anymore, but already stored in the graph, it is dropped.
 
 
 ### Deprecated
@@ -83,6 +84,7 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
   - Inconsistent `semver` in old tags -> probably `cargo yank VERSION` needed
 - Routing should be extended by a `bidirectional A*`.
 - The link to `doc.rs` is hardcoded to `major.minor.patch=0.y.z` because `docs.rs` chooses version `1.0.0` though it's yanked..
+- Building the graph uses too much additional memory due to not dropping unused data though it is already stored in the graph.
 
 
 ## [v0.7.0][github/self/v0.7.0] <a name="v0.7.0"></a>
@@ -126,16 +128,6 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 - The feature showing whether an `edge is enabled` is being removed to make handling backward-edges easier.
 - `Edge-ID`s are not needed and hence removed.
 - When building and finalizing the graph, `ProtoNode`s and `ProtoEdge`s don't need ordering implemented, hence these implementations are removed.
-
-
-### Fixed
-
-\-
-
-
-### Security
-
-\-
 
 
 ## [v1.0.0-yanked][github/self/v1.0.0-yanked] <a name="v1.0.0-yanked"></a>

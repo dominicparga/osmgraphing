@@ -10,7 +10,7 @@ mod pbf {
 
 use crate::{
     network::{GraphBuilder, StreetType},
-    units::geo::Coordinate,
+    units::{geo::Coordinate, speed::KilometersPerHour, Metric},
 };
 use log::info;
 use std::fs::File;
@@ -43,7 +43,7 @@ impl super::Parsing for Parser {
                 continue;
             }
             let lane_count = highway_tag.parse_lane_count(&way);
-            let maxspeed = highway_tag.parse_maxspeed(&way);
+            let maxspeed = KilometersPerHour::new(highway_tag.parse_maxspeed(&way));
             let (is_oneway, is_reverse) = highway_tag.parse_oneway(&way);
 
             // create (proto-)edges
@@ -65,12 +65,8 @@ impl super::Parsing for Parser {
                 .expect(format!("Way.nodes.len()={} but should be >1.", way.nodes.len()).as_ref());
             for dst_id in nodes_iter {
                 graph_builder.push_edge(
-                    Some(way.id.0),
-                    src_id.0,
-                    dst_id.0,
-                    lane_count,
-                    None,
-                    maxspeed,
+                    // Some(way.id.0),
+                    src_id.0, dst_id.0, lane_count, None, maxspeed,
                 );
                 src_id = dst_id;
             }

@@ -1,4 +1,4 @@
-use crate::units::length::Meters;
+use crate::units::{length::Meters, Metric};
 use std::{cmp::Ordering, fmt};
 
 #[derive(Copy, Clone, Debug)]
@@ -82,5 +82,5 @@ pub fn haversine_distance(from: &Coordinate, to: &Coordinate) -> f64 {
 }
 
 pub fn haversine_distance_m(from: &Coordinate, to: &Coordinate) -> Meters {
-    Meters::from(1_000.0 * haversine_distance(from, to))
+    Meters::new(1_000.0 * haversine_distance(from, to))
 }
