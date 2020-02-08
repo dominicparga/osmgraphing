@@ -15,6 +15,12 @@ use std::{cmp::Ordering, collections::BinaryHeap, ops::Add};
 //------------------------------------------------------------------------------------------------//
 // Path
 
+/// A path from a src to a dst storing predecessors and successors.
+///
+/// The implementation bases either on vectors or on hashmaps.
+/// Some words about it without doing a benchmark:
+/// - Since the vector-approach stores two fully allocated vectors, it probably consumes more memory than the hashmap-approach.
+/// - Just by looking at resulting times of long paths (~600 km) in Germany, the hashmap-approach seems to be slightly better in performance, but both approaches take around 7 seconds for it.
 #[derive(Clone)]
 pub struct Path<M>
 where
