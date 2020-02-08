@@ -159,14 +159,8 @@ where
 
     /// Resizes existing datastructures storing routing-data like costs saving re-allocations.
     fn resize(&mut self, new_len: usize) {
-        let old_len = self.costs.len();
-        let min_len = std::cmp::min(old_len, new_len);
-        for i in 0..min_len {
-            self.costs[i] = M::inf();
-            self.predecessors[i] = None;
-        }
-        self.costs.resize(new_len, M::inf());
-        self.predecessors.resize(new_len, None);
+        self.costs.splice(.., vec![M::inf(); new_len]);
+        self.predecessors.splice(.., vec![None; new_len]);
 
         self.queue.clear();
     }
