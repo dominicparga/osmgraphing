@@ -12,6 +12,9 @@ where
         M: Metric;
 }
 
+//------------------------------------------------------------------------------------------------//
+// path
+
 /// A path from a src to a dst storing predecessors and successors.
 ///
 /// The implementation bases either on vectors or on hashmaps.
@@ -164,6 +167,8 @@ mod paths {
     }
 }
 
+//------------------------------------------------------------------------------------------------//
+
 pub mod unidirectional {
     use super::{Astar, Path};
     use crate::{
@@ -306,6 +311,8 @@ pub mod unidirectional {
         }
     }
 
+    //--------------------------------------------------------------------------------------------//
+
     #[derive(Copy, Clone)]
     struct CostNode<M>
     where
@@ -356,6 +363,8 @@ pub mod unidirectional {
         }
     }
 }
+
+//------------------------------------------------------------------------------------------------//
 
 pub mod bidirectional {
     use super::{Astar, Path};
@@ -574,6 +583,8 @@ pub mod bidirectional {
             }
         }
     }
+
+    //--------------------------------------------------------------------------------------------//
 
     #[derive(Copy, Clone)]
     struct CostNode<M>
