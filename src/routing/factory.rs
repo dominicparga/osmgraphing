@@ -1,11 +1,8 @@
-//------------------------------------------------------------------------------------------------//
-// own modules
-
 pub mod astar {
     use crate::{
         network,
         network::{HalfEdge, Node},
-        routing::{Astar, GenericAstar},
+        routing::astar::{Astar, GenericAstar},
         units::{geo, length::Meters, speed::KilometersPerHour, time::Milliseconds},
     };
 
@@ -30,7 +27,7 @@ pub mod astar {
 pub mod dijkstra {
     use crate::{
         network::{HalfEdge, Node},
-        routing::{Astar, GenericAstar},
+        routing::astar::{Astar, GenericAstar},
         units::{length::Meters, time::Milliseconds, Metric},
     };
 
@@ -47,6 +44,3 @@ pub mod dijkstra {
         Box::new(GenericAstar::from(cost_fn, estimate_fn))
     }
 }
-
-//------------------------------------------------------------------------------------------------//
-// other modules
