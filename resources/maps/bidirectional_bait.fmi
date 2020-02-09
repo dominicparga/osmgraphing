@@ -1,0 +1,30 @@
+# node_count
+5
+
+# edge_count
+10
+
+# nodes
+#       id     osm-id        lat       lon
+         0       -     0.0000000 0.0000000 # l  (left, src)
+         1       -     0.0000000 0.0000000 # b  (bottom)
+         2       -     0.0000000 0.0000000 # r  (right, dst)
+         3       -     0.0000000 0.0000000 # tr (top-right)
+         4       -     0.0000000 0.0000000 # tl (top-left)
+
+# edges
+# Consider a path from left to right.
+# It is important to have the smaller hop-distance at the bottom-path,
+# but the smaller weight-distance at the top-path.
+#   src-id     dst-id distance ? maxspeed
+         0          1        5 _       30 # l -> b
+         1          2        5 _       30 # b -> r
+         2          3        3 _       30 # r -> tr
+         3          4        3 _       30 # tr -> tl
+         4          0        3 _       30 # tl -> l
+
+         0          4        3 _       30 # l -> tl
+         4          3        3 _       30 # tl -> tr
+         3          2        3 _       30 # tr -> r
+         2          1        5 _       30 # r -> b
+         1          0        5 _       30 # b -> l

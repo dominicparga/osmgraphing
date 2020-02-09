@@ -5,7 +5,10 @@ mod shortest {
     use osmgraphing::{network::NodeIdx, units::length::Meters};
 
     pub mod unidirectional {
-        use super::{super::assert_correct, expected_paths_simple_stuttgart, expected_paths_small};
+        use super::{
+            super::assert_correct, expected_paths_bait, expected_paths_simple_stuttgart,
+            expected_paths_small,
+        };
         use osmgraphing::routing;
 
         #[test]
@@ -21,12 +24,23 @@ mod shortest {
             let mut astar = routing::factory::astar::unidirectional::shortest();
             let expected_paths = expected_paths_small();
             let filepath = "resources/maps/small.fmi";
+            assert_correct(&mut astar, expected_paths, filepath);
+        }
+
+        #[test]
+        fn bait() {
+            let mut astar = routing::factory::astar::unidirectional::shortest();
+            let expected_paths = expected_paths_bait();
+            let filepath = "resources/maps/bidirectional_bait.fmi";
             assert_correct(&mut astar, expected_paths, filepath);
         }
     }
 
     pub mod bidirectional {
-        use super::{super::assert_correct, expected_paths_simple_stuttgart, expected_paths_small};
+        use super::{
+            super::assert_correct, expected_paths_bait, expected_paths_simple_stuttgart,
+            expected_paths_small,
+        };
         use osmgraphing::routing;
 
         #[test]
@@ -42,6 +56,14 @@ mod shortest {
             let mut astar = routing::factory::astar::bidirectional::shortest();
             let expected_paths = expected_paths_small();
             let filepath = "resources/maps/small.fmi";
+            assert_correct(&mut astar, expected_paths, filepath);
+        }
+
+        #[test]
+        fn bait() {
+            let mut astar = routing::factory::astar::bidirectional::shortest();
+            let expected_paths = expected_paths_bait();
+            let filepath = "resources/maps/bidirectional_bait.fmi";
             assert_correct(&mut astar, expected_paths, filepath);
         }
     }
@@ -246,6 +268,10 @@ mod shortest {
             (h, h, Some((0.into(), vec![vec![]]))),
         ]
     }
+
+    fn expected_paths_bait() -> Vec<(TestNode, TestNode, Option<(Meters, Vec<Vec<TestNode>>)>)> {
+        panic!("todo")
+    }
 }
 
 mod fastest {
@@ -253,7 +279,10 @@ mod fastest {
     use osmgraphing::{network::NodeIdx, units::time::Milliseconds};
 
     pub mod unidirectional {
-        use super::{super::assert_correct, expected_paths_simple_stuttgart, expected_paths_small};
+        use super::{
+            super::assert_correct, expected_paths_bait, expected_paths_simple_stuttgart,
+            expected_paths_small,
+        };
         use osmgraphing::routing;
 
         #[test]
@@ -269,12 +298,23 @@ mod fastest {
             let mut astar = routing::factory::astar::unidirectional::fastest();
             let expected_paths = expected_paths_small();
             let filepath = "resources/maps/small.fmi";
+            assert_correct(&mut astar, expected_paths, filepath);
+        }
+
+        #[test]
+        fn bait() {
+            let mut astar = routing::factory::astar::unidirectional::fastest();
+            let expected_paths = expected_paths_bait();
+            let filepath = "resources/maps/bidirectional_bait.fmi";
             assert_correct(&mut astar, expected_paths, filepath);
         }
     }
 
     pub mod bidirectional {
-        use super::{super::assert_correct, expected_paths_simple_stuttgart, expected_paths_small};
+        use super::{
+            super::assert_correct, expected_paths_bait, expected_paths_simple_stuttgart,
+            expected_paths_small,
+        };
         use osmgraphing::routing;
 
         #[test]
@@ -290,6 +330,14 @@ mod fastest {
             let mut astar = routing::factory::astar::bidirectional::fastest();
             let expected_paths = expected_paths_small();
             let filepath = "resources/maps/small.fmi";
+            assert_correct(&mut astar, expected_paths, filepath);
+        }
+
+        #[test]
+        fn bait() {
+            let mut astar = routing::factory::astar::bidirectional::fastest();
+            let expected_paths = expected_paths_bait();
+            let filepath = "resources/maps/bidirectional_bait.fmi";
             assert_correct(&mut astar, expected_paths, filepath);
         }
     }
@@ -546,5 +594,13 @@ mod fastest {
             (h, g, None),
             (h, h, Some((0.into(), vec![vec![]]))),
         ]
+    }
+
+    fn expected_paths_bait() -> Vec<(
+        TestNode,
+        TestNode,
+        Option<(Milliseconds, Vec<Vec<TestNode>>)>,
+    )> {
+        panic!("todo")
     }
 }
