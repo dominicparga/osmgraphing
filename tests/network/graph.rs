@@ -14,191 +14,7 @@ mod construction {
     }
 
     mod fmi {
-        use osmgraphing::{
-            network::{Graph, NodeIdx},
-            units::{geo, length::Meters, speed::KilometersPerHour, time::Milliseconds},
-        };
-
         //------------------------------------------------------------------------------------------------//
-        // TestNode
-
-        struct TestNode {
-            name: String,
-            id: i64,
-            idx: NodeIdx,
-            coord: geo::Coordinate,
-        }
-        impl TestNode {
-            fn from(name: &str, id: i64, lat: f64, lon: f64, graph: &Graph) -> TestNode {
-                let idx = graph
-                    .nodes()
-                    .idx_from(id)
-                    .expect(&format!("The node-id {} is not in graph.", id));
-                TestNode {
-                    name: String::from(name),
-                    id,
-                    idx,
-                    coord: geo::Coordinate::from(lat, lon),
-                }
-            }
-
-            fn assert_correct(&self, graph: &Graph) {
-                let nodes = graph.nodes();
-                let node = nodes.create(self.idx);
-                assert_eq!(
-                    node.id(),
-                    self.id,
-                    "Wrong node-id={} for {}",
-                    node.id(),
-                    self.name
-                );
-                assert_eq!(
-                    node.idx(),
-                    self.idx,
-                    "Wrong node-idx={} for {}",
-                    node.idx(),
-                    self.name
-                );
-                assert_eq!(
-                    node.coord(),
-                    self.coord,
-                    "Wrong coordinate {} for {}",
-                    node.coord(),
-                    self.name
-                );
-            }
-        }
-
-        //------------------------------------------------------------------------------------------------//
-        // TestEdge
-
-        struct TestEdge {
-            name: String,
-            edge_idx: usize,
-            is_fwd: bool,
-            src_idx: NodeIdx,
-            dst_idx: NodeIdx,
-            meters: Meters,
-            maxspeed: KilometersPerHour,
-            milliseconds: Milliseconds,
-        }
-        impl TestEdge {
-            fn from_fwd(
-                name: Option<&str>,
-                edge_idx: usize,
-                src: &TestNode,
-                dst: &TestNode,
-                meters: u32,
-                maxspeed: u16,
-                milliseconds: u32,
-            ) -> TestEdge {
-                TestEdge {
-                    name: (name.unwrap_or(&format!("{}->{}", src.name, dst.name))).to_owned(),
-                    edge_idx,
-                    is_fwd: true,
-                    src_idx: src.idx.into(),
-                    dst_idx: dst.idx.into(),
-                    meters: meters.into(),
-                    maxspeed: maxspeed.into(),
-                    milliseconds: milliseconds.into(),
-                }
-            }
-
-            fn from_bwd(
-                name: Option<&str>,
-                edge_idx: usize,
-                src: &TestNode,
-                dst: &TestNode,
-                meters: u32,
-                maxspeed: u16,
-                milliseconds: u32,
-            ) -> TestEdge {
-                TestEdge {
-                    name: (name.unwrap_or(&format!("{}->{}", src.name, dst.name))).to_owned(),
-                    edge_idx,
-                    is_fwd: false,
-                    src_idx: src.idx.into(),
-                    dst_idx: dst.idx.into(),
-                    meters: meters.into(),
-                    maxspeed: maxspeed.into(),
-                    milliseconds: milliseconds.into(),
-                }
-            }
-
-            fn assert_correct(&self, graph: &Graph) {
-                // get graph-components dependent on own direction
-                let fwd_edges = graph.fwd_edges();
-                let bwd_edges = graph.bwd_edges();
-                let (edge, edge_idx) = {
-                    if self.is_fwd {
-                        fwd_edges
-                            .between(self.src_idx, self.dst_idx)
-                            .expect(&format!(
-                                "Fwd-edge (src_idx, dst_idx): ({}, {}) does not exist.",
-                                self.src_idx, self.dst_idx
-                            ))
-                    } else {
-                        bwd_edges
-                            .between(self.src_idx, self.dst_idx)
-                            .expect(&format!(
-                                "Bwd-edge (src_idx, dst_idx): ({}, {}) does not exist.",
-                                self.src_idx, self.dst_idx
-                            ))
-                    }
-                };
-                let prefix = {
-                    if self.is_fwd {
-                        "fwd-"
-                    } else {
-                        "bwd-"
-                    }
-                };
-
-                assert_eq!(
-                    edge_idx.to_usize(),
-                    self.edge_idx,
-                    "Wrong {}edge-idx={} for {}",
-                    prefix,
-                    edge_idx,
-                    self.name
-                );
-                assert_eq!(
-                    edge.dst_idx(),
-                    self.dst_idx,
-                    "Wrong dst_idx={} for {}edge {}",
-                    edge.dst_idx(),
-                    prefix,
-                    self.name
-                );
-                assert_eq!(
-                    edge.meters(),
-                    self.meters,
-                    "Wrong meters={} for {}edge {}",
-                    edge.meters(),
-                    prefix,
-                    self.name
-                );
-                assert_eq!(
-                    edge.maxspeed(),
-                    self.maxspeed,
-                    "Wrong maxspeed={} for {}edge {}",
-                    edge.maxspeed(),
-                    prefix,
-                    self.name
-                );
-                assert_eq!(
-                    edge.milliseconds(),
-                    self.milliseconds,
-                    "Wrong milliseconds={} for {}edge {}",
-                    edge.milliseconds(),
-                    prefix,
-                    self.name
-                );
-            }
-        }
-
-        //------------------------------------------------------------------------------------------------//
-        // tests
 
         #[test]
         fn simple_stuttgart() {
@@ -525,6 +341,318 @@ mod construction {
             bwd_edge_c_h.assert_correct(&graph);
             bwd_edge_d_h.assert_correct(&graph);
             bwd_edge_f_h.assert_correct(&graph);
+        }
+
+        #[test]
+        fn bait() {
+            let graph = super::parse("resources/maps/bidirectional_bait.fmi");
+
+            //--------------------------------------------------------------------------------------------//
+            // setup correct data
+
+            // nodes sorted by id
+            // name, id, decimicro_lat, decimicro_lon
+            let node_ll = TestNode::from("left", 0, 0.0000000, 0.0000000, &graph);
+            let node_bb = TestNode::from("bottom", 1, 0.0000000, 0.0000000, &graph);
+            let node_rr = TestNode::from("right", 2, 0.0000000, 0.0000000, &graph);
+            let node_tr = TestNode::from("top-right", 3, 0.0000000, 0.0000000, &graph);
+            let node_tl = TestNode::from("top-left", 4, 0.0000000, 0.0000000, &graph);
+
+            // Due to the offset-array, the fwd-edge-ids should match with sorting by src-id, then by dst-id.
+            // name, idx, id, src, dst, meters, maxspeed, ms
+            let fwd_edge_ll_bb = TestEdge::from_fwd(None, 0, &node_ll, &node_bb, 5, 30, 600);
+            let fwd_edge_ll_tl = TestEdge::from_fwd(None, 1, &node_ll, &node_tl, 3, 30, 360);
+            let fwd_edge_bb_ll = TestEdge::from_fwd(None, 2, &node_bb, &node_ll, 5, 30, 600);
+            let fwd_edge_bb_rr = TestEdge::from_fwd(None, 3, &node_bb, &node_rr, 5, 30, 600);
+            let fwd_edge_rr_bb = TestEdge::from_fwd(None, 4, &node_rr, &node_bb, 5, 30, 600);
+            let fwd_edge_rr_tr = TestEdge::from_fwd(None, 5, &node_rr, &node_tr, 3, 30, 360);
+            let fwd_edge_tr_rr = TestEdge::from_fwd(None, 6, &node_tr, &node_rr, 3, 30, 360);
+            let fwd_edge_tr_tl = TestEdge::from_fwd(None, 7, &node_tr, &node_tl, 3, 30, 360);
+            let fwd_edge_tl_ll = TestEdge::from_fwd(None, 8, &node_tl, &node_ll, 3, 30, 360);
+            let fwd_edge_tl_tr = TestEdge::from_fwd(None, 9, &node_tl, &node_tr, 3, 30, 360);
+
+            // Due to the offset-array, the bwd-edge-ids should match with sorting by src-id, then by dst-id.
+            // But the graph-structure changes that to the same as fwd-edges (dst-id, then src-id).
+            // name, idx, id, src, dst, meters, maxspeed, ms
+            let bwd_edge_bb_ll = TestEdge::from_bwd(None, 0, &node_bb, &node_ll, 5, 30, 600);
+            let bwd_edge_tl_ll = TestEdge::from_bwd(None, 1, &node_tl, &node_ll, 3, 30, 360);
+            let bwd_edge_ll_bb = TestEdge::from_bwd(None, 2, &node_ll, &node_bb, 5, 30, 600);
+            let bwd_edge_rr_bb = TestEdge::from_bwd(None, 3, &node_rr, &node_bb, 5, 30, 600);
+            let bwd_edge_bb_rr = TestEdge::from_bwd(None, 4, &node_bb, &node_rr, 5, 30, 600);
+            let bwd_edge_tr_rr = TestEdge::from_bwd(None, 5, &node_tr, &node_rr, 3, 30, 360);
+            let bwd_edge_rr_tr = TestEdge::from_bwd(None, 6, &node_rr, &node_tr, 3, 30, 360);
+            let bwd_edge_tl_tr = TestEdge::from_bwd(None, 7, &node_tl, &node_tr, 3, 30, 360);
+            let bwd_edge_ll_tl = TestEdge::from_bwd(None, 8, &node_ll, &node_tl, 3, 30, 360);
+            let bwd_edge_tr_tl = TestEdge::from_bwd(None, 9, &node_tr, &node_tl, 3, 30, 360);
+
+            //--------------------------------------------------------------------------------------------//
+            // testing graph
+
+            let _nodes = graph.nodes();
+            let nodes = graph.nodes(); // calling twice should be fine
+            let _fwd_edges = graph.fwd_edges();
+            let fwd_edges = graph.fwd_edges(); // calling twice should be fine
+            let _bwd_edges = graph.bwd_edges();
+            let bwd_edges = graph.bwd_edges(); // calling twice should be fine
+
+            assert_eq!(nodes.count(), 5, "Wrong node-count");
+            assert_eq!(fwd_edges.count(), 10, "Wrong fwd-edge-count");
+            assert_eq!(bwd_edges.count(), 10, "Wrong bwd-edge-count");
+
+            for i in nodes.count()..(2 * nodes.count()) {
+                for j in nodes.count()..(2 * nodes.count()) {
+                    assert!(
+                        fwd_edges.starting_from(NodeIdx::new(i)).is_none(),
+                        "NodeIdx {} >= n={} shouldn't have leaving-edges in fwd-edges",
+                        i,
+                        nodes.count()
+                    );
+                    assert!(
+                        bwd_edges.starting_from(NodeIdx::new(j)).is_none(),
+                        "NodeIdx {} >= n={} shouldn't have leaving-edges in bwd-edges",
+                        j,
+                        nodes.count()
+                    );
+                    assert!(
+                        fwd_edges
+                            .between(NodeIdx::new(i), NodeIdx::new(j))
+                            .is_none(),
+                        "There should be no fwd-edge from NodeIdx {} to NodeIdx {}.",
+                        i,
+                        j
+                    );
+                    assert!(
+                        bwd_edges
+                            .between(NodeIdx::new(j), NodeIdx::new(i))
+                            .is_none(),
+                        "There should be no bwd-edge from NodeIdx {} to NodeIdx {}.",
+                        j,
+                        i
+                    );
+                }
+            }
+
+            //--------------------------------------------------------------------------------------------//
+            // testing nodes
+
+            node_ll.assert_correct(&graph);
+            node_bb.assert_correct(&graph);
+            node_rr.assert_correct(&graph);
+            node_tr.assert_correct(&graph);
+            node_tl.assert_correct(&graph);
+
+            //--------------------------------------------------------------------------------------------//
+            // testing fwd-edges
+
+            fwd_edge_ll_bb.assert_correct(&graph);
+            fwd_edge_bb_rr.assert_correct(&graph);
+            fwd_edge_rr_tr.assert_correct(&graph);
+            fwd_edge_tr_tl.assert_correct(&graph);
+            fwd_edge_tl_ll.assert_correct(&graph);
+            fwd_edge_ll_tl.assert_correct(&graph);
+            fwd_edge_tl_tr.assert_correct(&graph);
+            fwd_edge_tr_rr.assert_correct(&graph);
+            fwd_edge_rr_bb.assert_correct(&graph);
+            fwd_edge_bb_ll.assert_correct(&graph);
+
+            //--------------------------------------------------------------------------------------------//
+            // testing bwd-edges
+
+            bwd_edge_bb_ll.assert_correct(&graph);
+            bwd_edge_rr_bb.assert_correct(&graph);
+            bwd_edge_tr_rr.assert_correct(&graph);
+            bwd_edge_tl_tr.assert_correct(&graph);
+            bwd_edge_ll_tl.assert_correct(&graph);
+            bwd_edge_tl_ll.assert_correct(&graph);
+            bwd_edge_tr_tl.assert_correct(&graph);
+            bwd_edge_rr_tr.assert_correct(&graph);
+            bwd_edge_bb_rr.assert_correct(&graph);
+            bwd_edge_ll_bb.assert_correct(&graph);
+        }
+
+        use osmgraphing::{
+            network::{Graph, NodeIdx},
+            units::{geo, length::Meters, speed::KilometersPerHour, time::Milliseconds},
+        };
+
+        //------------------------------------------------------------------------------------------------//
+        // TestNode
+
+        struct TestNode {
+            name: String,
+            id: i64,
+            idx: NodeIdx,
+            coord: geo::Coordinate,
+        }
+
+        impl TestNode {
+            fn from(name: &str, id: i64, lat: f64, lon: f64, graph: &Graph) -> TestNode {
+                let idx = graph
+                    .nodes()
+                    .idx_from(id)
+                    .expect(&format!("The node-id {} is not in graph.", id));
+                TestNode {
+                    name: String::from(name),
+                    id,
+                    idx,
+                    coord: geo::Coordinate::from(lat, lon),
+                }
+            }
+
+            fn assert_correct(&self, graph: &Graph) {
+                let nodes = graph.nodes();
+                let node = nodes.create(self.idx);
+                assert_eq!(
+                    node.id(),
+                    self.id,
+                    "Wrong node-id={} for {}",
+                    node.id(),
+                    self.name
+                );
+                assert_eq!(
+                    node.idx(),
+                    self.idx,
+                    "Wrong node-idx={} for {}",
+                    node.idx(),
+                    self.name
+                );
+                assert_eq!(
+                    node.coord(),
+                    self.coord,
+                    "Wrong coordinate {} for {}",
+                    node.coord(),
+                    self.name
+                );
+            }
+        }
+
+        //------------------------------------------------------------------------------------------------//
+        // TestEdge
+
+        struct TestEdge {
+            name: String,
+            edge_idx: usize,
+            is_fwd: bool,
+            src_idx: NodeIdx,
+            dst_idx: NodeIdx,
+            meters: Meters,
+            maxspeed: KilometersPerHour,
+            milliseconds: Milliseconds,
+        }
+
+        impl TestEdge {
+            fn from_fwd(
+                name: Option<&str>,
+                edge_idx: usize,
+                src: &TestNode,
+                dst: &TestNode,
+                meters: u32,
+                maxspeed: u16,
+                milliseconds: u32,
+            ) -> TestEdge {
+                TestEdge {
+                    name: (name.unwrap_or(&format!("{}->{}", src.name, dst.name))).to_owned(),
+                    edge_idx,
+                    is_fwd: true,
+                    src_idx: src.idx.into(),
+                    dst_idx: dst.idx.into(),
+                    meters: meters.into(),
+                    maxspeed: maxspeed.into(),
+                    milliseconds: milliseconds.into(),
+                }
+            }
+
+            fn from_bwd(
+                name: Option<&str>,
+                edge_idx: usize,
+                src: &TestNode,
+                dst: &TestNode,
+                meters: u32,
+                maxspeed: u16,
+                milliseconds: u32,
+            ) -> TestEdge {
+                TestEdge {
+                    name: (name.unwrap_or(&format!("{}->{}", src.name, dst.name))).to_owned(),
+                    edge_idx,
+                    is_fwd: false,
+                    src_idx: src.idx.into(),
+                    dst_idx: dst.idx.into(),
+                    meters: meters.into(),
+                    maxspeed: maxspeed.into(),
+                    milliseconds: milliseconds.into(),
+                }
+            }
+
+            fn assert_correct(&self, graph: &Graph) {
+                // get graph-components dependent on own direction
+                let fwd_edges = graph.fwd_edges();
+                let bwd_edges = graph.bwd_edges();
+                let (edge, edge_idx) = {
+                    if self.is_fwd {
+                        fwd_edges
+                            .between(self.src_idx, self.dst_idx)
+                            .expect(&format!(
+                                "Fwd-edge (src_idx, dst_idx): ({}, {}) does not exist.",
+                                self.src_idx, self.dst_idx
+                            ))
+                    } else {
+                        bwd_edges
+                            .between(self.src_idx, self.dst_idx)
+                            .expect(&format!(
+                                "Bwd-edge (src_idx, dst_idx): ({}, {}) does not exist.",
+                                self.src_idx, self.dst_idx
+                            ))
+                    }
+                };
+                let prefix = {
+                    if self.is_fwd {
+                        "fwd-"
+                    } else {
+                        "bwd-"
+                    }
+                };
+
+                assert_eq!(
+                    edge_idx.to_usize(),
+                    self.edge_idx,
+                    "Wrong {}edge-idx={} for {}",
+                    prefix,
+                    edge_idx,
+                    self.name
+                );
+                assert_eq!(
+                    edge.dst_idx(),
+                    self.dst_idx,
+                    "Wrong dst_idx={} for {}edge {}",
+                    edge.dst_idx(),
+                    prefix,
+                    self.name
+                );
+                assert_eq!(
+                    edge.meters(),
+                    self.meters,
+                    "Wrong meters={} for {}edge {}",
+                    edge.meters(),
+                    prefix,
+                    self.name
+                );
+                assert_eq!(
+                    edge.maxspeed(),
+                    self.maxspeed,
+                    "Wrong maxspeed={} for {}edge {}",
+                    edge.maxspeed(),
+                    prefix,
+                    self.name
+                );
+                assert_eq!(
+                    edge.milliseconds(),
+                    self.milliseconds,
+                    "Wrong milliseconds={} for {}edge {}",
+                    edge.milliseconds(),
+                    prefix,
+                    self.name
+                );
+            }
         }
     }
 }
