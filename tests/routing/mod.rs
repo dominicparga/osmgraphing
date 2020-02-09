@@ -14,7 +14,7 @@ mod dijkstra;
 // helpers
 
 fn assert_correct<M>(
-    astar: &mut Box<dyn routing::Astar<M>>,
+    astar: &mut Box<dyn routing::astar::Astar<M>>,
     expected_paths: Vec<(TestNode, TestNode, Option<(M, Vec<Vec<TestNode>>)>)>,
     filepath: &str,
 ) where

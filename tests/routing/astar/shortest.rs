@@ -1,20 +1,46 @@
 use super::TestNode;
-use osmgraphing::{network::NodeIdx, routing, units::length::Meters};
+use osmgraphing::{network::NodeIdx, units::length::Meters};
 
-#[test]
-fn simple_stuttgart() {
-    let mut astar = routing::factory::astar::shortest();
-    let expected_paths = expected_paths_simple_stuttgart();
-    let filepath = "resources/maps/simple_stuttgart.fmi";
-    super::assert_correct(&mut astar, expected_paths, filepath);
+pub mod unidirectional {
+    use super::{super::assert_correct, expected_paths_simple_stuttgart, expected_paths_small};
+    use osmgraphing::routing;
+
+    #[test]
+    fn simple_stuttgart() {
+        let mut astar = routing::factory::astar::unidirectional::shortest();
+        let expected_paths = expected_paths_simple_stuttgart();
+        let filepath = "resources/maps/simple_stuttgart.fmi";
+        assert_correct(&mut astar, expected_paths, filepath);
+    }
+
+    #[test]
+    fn small() {
+        let mut astar = routing::factory::astar::unidirectional::shortest();
+        let expected_paths = expected_paths_small();
+        let filepath = "resources/maps/small.fmi";
+        assert_correct(&mut astar, expected_paths, filepath);
+    }
 }
 
-#[test]
-fn small() {
-    let mut astar = routing::factory::astar::shortest();
-    let expected_paths = expected_paths_small();
-    let filepath = "resources/maps/small.fmi";
-    super::assert_correct(&mut astar, expected_paths, filepath);
+pub mod bidirectional {
+    use super::{super::assert_correct, expected_paths_simple_stuttgart, expected_paths_small};
+    use osmgraphing::routing;
+
+    #[test]
+    fn simple_stuttgart() {
+        let mut astar = routing::factory::astar::bidirectional::shortest();
+        let expected_paths = expected_paths_simple_stuttgart();
+        let filepath = "resources/maps/simple_stuttgart.fmi";
+        assert_correct(&mut astar, expected_paths, filepath);
+    }
+
+    #[test]
+    fn small() {
+        let mut astar = routing::factory::astar::bidirectional::shortest();
+        let expected_paths = expected_paths_small();
+        let filepath = "resources/maps/small.fmi";
+        assert_correct(&mut astar, expected_paths, filepath);
+    }
 }
 
 //------------------------------------------------------------------------------------------------//

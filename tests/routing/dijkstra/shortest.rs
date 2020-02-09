@@ -1,20 +1,46 @@
 use super::TestNode;
-use osmgraphing::{network::NodeIdx, routing, units::length::Meters};
+use osmgraphing::{network::NodeIdx, units::length::Meters};
 
-#[test]
-fn simple_stuttgart() {
-    let mut dijkstra = routing::factory::dijkstra::shortest();
-    let expected_paths = expected_paths_simple_stuttgart();
-    let filepath = "resources/maps/simple_stuttgart.fmi";
-    super::assert_correct(&mut dijkstra, expected_paths, filepath);
+pub mod unidirectional {
+    use super::{super::assert_correct, expected_paths_simple_stuttgart, expected_paths_small};
+    use osmgraphing::routing;
+
+    #[test]
+    fn simple_stuttgart() {
+        let mut dijkstra = routing::factory::dijkstra::unidirectional::shortest();
+        let expected_paths = expected_paths_simple_stuttgart();
+        let filepath = "resources/maps/simple_stuttgart.fmi";
+        assert_correct(&mut dijkstra, expected_paths, filepath);
+    }
+
+    #[test]
+    fn small() {
+        let mut dijkstra = routing::factory::dijkstra::unidirectional::shortest();
+        let expected_paths = expected_paths_small();
+        let filepath = "resources/maps/small.fmi";
+        assert_correct(&mut dijkstra, expected_paths, filepath);
+    }
 }
 
-#[test]
-fn small() {
-    let mut dijkstra = routing::factory::dijkstra::shortest();
-    let expected_paths = expected_paths_small();
-    let filepath = "resources/maps/small.fmi";
-    super::assert_correct(&mut dijkstra, expected_paths, filepath);
+pub mod bidirectional {
+    use super::{super::assert_correct, expected_paths_simple_stuttgart, expected_paths_small};
+    use osmgraphing::routing;
+
+    #[test]
+    fn simple_stuttgart() {
+        let mut dijkstra = routing::factory::dijkstra::bidirectional::shortest();
+        let expected_paths = expected_paths_simple_stuttgart();
+        let filepath = "resources/maps/simple_stuttgart.fmi";
+        assert_correct(&mut dijkstra, expected_paths, filepath);
+    }
+
+    #[test]
+    fn small() {
+        let mut dijkstra = routing::factory::dijkstra::bidirectional::shortest();
+        let expected_paths = expected_paths_small();
+        let filepath = "resources/maps/small.fmi";
+        assert_correct(&mut dijkstra, expected_paths, filepath);
+    }
 }
 
 //------------------------------------------------------------------------------------------------//

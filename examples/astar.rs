@@ -75,10 +75,11 @@ fn main() {
     // astar
 
     let nodes = graph.nodes();
-    let mut astar = routing::factory::astar::shortest();
+    let mut astar = routing::factory::astar::unidirectional::shortest();
 
     let src_idx = NodeIdx::zero();
-    let dsts: Vec<NodeIdx> = (185..199).map(NodeIdx::new).collect();
+    let dsts: Vec<NodeIdx> = (0..nodes.count()).map(NodeIdx::new).collect();
+    // let dsts: Vec<NodeIdx> = (185..199).map(nNodeIdx::new).collect();
     // let dsts: Vec<usize> = vec![80]; problem on baden-wuerttemberg.osm.pbf
 
     let src = nodes.create(src_idx);
