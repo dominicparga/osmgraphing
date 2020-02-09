@@ -340,6 +340,67 @@ fn expected_paths_small() -> Vec<(TestNode, TestNode, Option<(Meters, Vec<Vec<Te
     ]
 }
 
+/// Consider a path from left to right.
+/// It is important to have the smaller hop-distance at the bottom-path,
+/// but the smaller weight-distance at the top-path.
 fn expected_paths_bait() -> Vec<(TestNode, TestNode, Option<(Meters, Vec<Vec<TestNode>>)>)> {
-    panic!("todo")
+    // (idx, id)
+    // ll left
+    // bb bottom
+    // rr right
+    // tr top-right
+    // tl top-left
+    let ll = TestNode {
+        idx: NodeIdx::new(0),
+        id: 0,
+    };
+    let bb = TestNode {
+        idx: NodeIdx::new(1),
+        id: 1,
+    };
+    let rr = TestNode {
+        idx: NodeIdx::new(2),
+        id: 2,
+    };
+    let tr = TestNode {
+        idx: NodeIdx::new(3),
+        id: 3,
+    };
+    let tl = TestNode {
+        idx: NodeIdx::new(4),
+        id: 4,
+    };
+
+    vec![
+        // ll
+        (ll, ll, Some((0.into(), vec![vec![]]))),
+        (ll, bb, Some((5.into(), vec![vec![ll, bb]]))),
+        (ll, rr, Some((9.into(), vec![vec![ll, tl, tr, rr]]))),
+        (ll, tr, Some((6.into(), vec![vec![ll, tl, tr]]))),
+        (ll, tl, Some((3.into(), vec![vec![ll, tl]]))),
+        // bb
+        (bb, ll, Some((5.into(), vec![vec![bb, ll]]))),
+        (bb, bb, Some((0.into(), vec![vec![]]))),
+        (bb, rr, Some((5.into(), vec![vec![bb, rr]]))),
+        (bb, tr, Some((8.into(), vec![vec![bb, rr, tr]]))),
+        (bb, tl, Some((8.into(), vec![vec![bb, ll, tl]]))),
+        // rr
+        (rr, ll, Some((9.into(), vec![vec![rr, tr, tl, ll]]))),
+        (rr, bb, Some((5.into(), vec![vec![rr, bb]]))),
+        (rr, rr, Some((0.into(), vec![vec![]]))),
+        (rr, tr, Some((3.into(), vec![vec![rr, tr]]))),
+        (rr, tl, Some((6.into(), vec![vec![rr, tr, tl]]))),
+        // tr
+        (tr, ll, Some((6.into(), vec![vec![tr, tl, ll]]))),
+        (tr, bb, Some((8.into(), vec![vec![tr, rr, bb]]))),
+        (tr, rr, Some((3.into(), vec![vec![tr, rr]]))),
+        (tr, tr, Some((0.into(), vec![vec![]]))),
+        (tr, tl, Some((3.into(), vec![vec![tr, tl]]))),
+        // tl
+        (tl, ll, Some((3.into(), vec![vec![tl, ll]]))),
+        (tl, bb, Some((8.into(), vec![vec![tl, ll, bb]]))),
+        (tl, rr, Some((6.into(), vec![vec![tl, tr, rr]]))),
+        (tl, tr, Some((3.into(), vec![vec![tl, tr]]))),
+        (tl, tl, Some((0.into(), vec![vec![]]))),
+    ]
 }
