@@ -155,7 +155,11 @@ fn expected_paths_small() -> Vec<(TestNode, TestNode, Option<(Meters, Vec<Vec<Te
         (f, h, Some((1.into(), vec![vec![f, h]]))),
         // g
         (g, a, Some((5.into(), vec![vec![g, e, d, b, a]]))),
-        (g, b, Some((4.into(), vec![vec![g, e, d, b]]))),
+        (
+            g,
+            b,
+            Some((4.into(), vec![vec![g, e, d, b], vec![g, f, h, d, b]])),
+        ),
         (g, c, Some((5.into(), vec![vec![g, e, d, b, c]]))),
         (g, d, Some((3.into(), vec![vec![g, e, d], vec![g, f, d]]))),
         (g, e, Some((1.into(), vec![vec![g, e]]))),
