@@ -66,7 +66,13 @@ where
 }
 
 //------------------------------------------------------------------------------------------------//
-// CostNode
+// storing costs and local information
+
+#[derive(Copy, Clone)]
+enum Direction {
+    FWD,
+    BWD,
+}
 
 #[derive(Copy, Clone)]
 struct CostNode<M>
@@ -77,6 +83,7 @@ where
     pub cost: M,
     pub estimation: M,
     pub pred_idx: Option<NodeIdx>,
+    pub direction: Direction,
 }
 
 impl<M> Ord for CostNode<M>
@@ -136,8 +143,10 @@ where
 {
     cost_fn: C,
     estimate_fn: E,
-    costs: Vec<M>,
+    fwd_costs: Vec<M>,
+    bwd_costs: Vec<M>,
     predecessors: Vec<Option<NodeIdx>>,
+    successors: Vec<Option<NodeIdx>>,
     queue: BinaryHeap<CostNode<M>>, // max-heap, but CostNode's natural order is reversed
 }
 
@@ -151,18 +160,29 @@ where
         GenericAstar {
             cost_fn,
             estimate_fn,
-            costs: vec![M::inf(); 0],
+            fwd_costs: vec![M::inf(); 0],
+            bwd_costs: vec![M::inf(); 0],
             predecessors: vec![None; 0],
+            successors: vec![None; 0],
             queue: BinaryHeap::new(),
         }
     }
 
     /// Resizes existing datastructures storing routing-data like costs saving re-allocations.
     fn resize(&mut self, new_len: usize) {
-        self.costs.splice(.., vec![M::inf(); new_len]);
+        self.fwd_costs.splice(.., vec![M::inf(); new_len]);
+        self.bwd_costs.splice(.., vec![M::inf(); new_len]);
         self.predecessors.splice(.., vec![None; new_len]);
+        self.successors.splice(.., vec![None; new_len]);
 
         self.queue.clear();
+    }
+
+    fn is_visited(&self, idx: NodeIdx, direction: Direction) -> bool {
+        match direction {
+            Direction::FWD => self.predecessors[idx.to_usize()] != None,
+            Direction::BWD => self.successors[idx.to_usize()] != None,
+        }
     }
 }
 
@@ -190,25 +210,27 @@ where
             cost: M::zero(),
             estimation: M::zero(),
             pred_idx: None,
+            direction: Direction::FWD,
         });
-        self.costs[src.idx().to_usize()] = M::zero();
         // // push dst-node
         // self.queue.push(CostNode {
         //     idx: dst.idx(),
         //     cost: M::zero(),
         //     estimation: M::zero(),
         //     pred_idx: None,
+        //     direction: Direction::BWD,
         // });
-        // self.costs[dst.idx().to_usize()] = M::zero();
+        // update their cost
+        self.fwd_costs[src.idx().to_usize()] = M::zero();
+        // self.bwd_costs[dst.idx().to_usize()] = M::zero();
 
         //----------------------------------------------------------------------------------------//
         // search for shortest path
 
         while let Some(current) = self.queue.pop() {
-            //------------------------------------------------------------------------------------//
             // if shortest path found
             // -> create path
-
+            // TODO still dependent on fwd-directed-search
             if current.idx == dst.idx() {
                 let mut cur_idx = current.idx;
 
@@ -223,35 +245,38 @@ where
                 return Some(path);
             }
 
-            //------------------------------------------------------------------------------------//
+            // distinguish between fwd and bwd
+            let (costs, xwd_edges, predecessors) = match current.direction {
+                Direction::FWD => (&mut self.fwd_costs, &fwd_edges, &mut self.predecessors),
+                Direction::BWD => (&mut self.bwd_costs, &bwd_edges, &mut self.successors),
+            };
+
             // first occurrence has lowest cost
             // -> check if current has already been visited
-
-            if current.cost > self.costs[current.idx.to_usize()] {
+            if current.cost > costs[current.idx.to_usize()] {
                 continue;
             }
 
-            //------------------------------------------------------------------------------------//
             // update costs and add predecessors
             // of nodes, which are dst of current's leaving edges
-
-            let leaving_edges = match fwd_edges.starting_from(current.idx) {
+            let leaving_edges = match xwd_edges.starting_from(current.idx) {
                 Some(e) => e,
                 None => continue,
             };
             for leaving_edge in leaving_edges {
                 let new_cost = current.cost + (self.cost_fn)(&leaving_edge);
-                if new_cost < self.costs[leaving_edge.dst_idx().to_usize()] {
-                    self.predecessors[leaving_edge.dst_idx().to_usize()] = Some(current.idx);
-                    self.costs[leaving_edge.dst_idx().to_usize()] = new_cost;
+                if new_cost < costs[leaving_edge.dst_idx().to_usize()] {
+                    predecessors[leaving_edge.dst_idx().to_usize()] = Some(current.idx);
+                    costs[leaving_edge.dst_idx().to_usize()] = new_cost;
 
-                    let leaving_edge_of_dst = nodes.create(leaving_edge.dst_idx());
-                    let estimation = (self.estimate_fn)(&leaving_edge_of_dst, dst);
+                    let leaving_edge_dst = nodes.create(leaving_edge.dst_idx());
+                    let estimation = (self.estimate_fn)(&leaving_edge_dst, dst);
                     self.queue.push(CostNode {
                         idx: leaving_edge.dst_idx(),
                         cost: new_cost,
                         estimation: estimation,
                         pred_idx: Some(current.idx),
+                        direction: current.direction,
                     });
                 }
             }
