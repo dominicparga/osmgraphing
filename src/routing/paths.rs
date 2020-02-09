@@ -85,7 +85,7 @@ where
         VecPath {
             src_idx,
             dst_idx,
-            cost: M::zero(),
+            cost: M::inf(),
             predecessors: vec![None; capacity],
             successors: vec![None; capacity],
         }
@@ -127,7 +127,7 @@ where
         HashPath {
             src_idx,
             dst_idx,
-            cost: M::zero(),
+            cost: M::inf(),
             predecessors: HashMap::new(),
             successors: HashMap::new(),
         }
