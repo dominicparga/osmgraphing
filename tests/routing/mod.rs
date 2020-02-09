@@ -1,8 +1,8 @@
 use osmgraphing::{network::Graph, network::NodeIdx, routing, units::Metric};
 use std::{fmt, fmt::Display};
 
-mod astar;
-mod dijkstra;
+mod fastest;
+mod shortest;
 
 fn assert_correct<M>(
     astar: &mut Box<dyn routing::astar::Astar<M>>,
