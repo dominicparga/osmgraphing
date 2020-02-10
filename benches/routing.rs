@@ -43,7 +43,7 @@ fn criterion_benchmark(c: &mut Criterion) {
     let labelled_routes = vec![
         // short route (~3 km)
         (
-            "with short routes (~3 km)",
+            "---------- ", " with short routes (~3 km) ----------",
             vec![(
                 nodes.idx_from(283500532).unwrap(),
                 nodes.idx_from(283501263).unwrap(),
@@ -51,7 +51,7 @@ fn criterion_benchmark(c: &mut Criterion) {
         ),
         // medium route (~30 km)
         (
-            "with medium routes (~30 km)",
+            "---------- ", " with medium routes (~30 km) ----------",
             vec![(
                 nodes.idx_from(283483998).unwrap(),
                 nodes.idx_from(1746745421).unwrap(),
@@ -59,7 +59,7 @@ fn criterion_benchmark(c: &mut Criterion) {
         ),
         // long route (~56 km)
         (
-            "with long routes (~56 km)",
+            "---------- ", " with long routes (~56 km) ----------",
             vec![(
                 nodes.idx_from(1151603193).unwrap(),
                 nodes.idx_from(456478793).unwrap(),
@@ -67,34 +67,34 @@ fn criterion_benchmark(c: &mut Criterion) {
         ),
     ];
 
-    for (label, routes) in labelled_routes.iter() {
+    for (prefix, suffix, routes) in labelled_routes.iter() {
         // benchmarking routing
-        c.bench_function(&format!("unidir-shortest-dijkstra {}", label), |b| {
+        c.bench_function(&format!("{}unidir-shortest-dijkstra{}",prefix, suffix), |b| {
             b.iter(|| unidir_shortest_dijkstra(black_box(&graph), black_box(&routes)))
         });
-        c.bench_function(&format!("bidir-shortest-dijkstra {}", label), |b| {
+        c.bench_function(&format!("{}bidir-shortest-dijkstra{}", prefix,suffix), |b| {
             b.iter(|| bidir_shortest_dijkstra(black_box(&graph), black_box(&routes)))
         });
-        c.bench_function(&format!("unidir-shortest-astar {}", label), |b| {
+        c.bench_function(&format!("{}unidir-shortest-astar{}", prefix,suffix), |b| {
             b.iter(|| unidir_shortest_astar(black_box(&graph), black_box(&routes)))
         });
-        c.bench_function(&format!("bidir-shortest-astar {}", label), |b| {
+        c.bench_function(&format!("{}bidir-shortest-astar{}", prefix,suffix), |b| {
             b.iter(|| bidir_shortest_astar(black_box(&graph), black_box(&routes)))
         });
     }
 
-    for (label, routes) in labelled_routes.iter() {
+    for (prefix, suffix, routes) in labelled_routes.iter() {
         // benchmarking routing
-        c.bench_function(&format!("unidir-fastest-dijkstra {}", label), |b| {
+        c.bench_function(&format!("{}unidir-fastest-dijkstra{}", prefix, suffix), |b| {
             b.iter(|| unidir_fastest_dijkstra(black_box(&graph), black_box(&routes)))
         });
-        c.bench_function(&format!("bidir-fastest-dijkstra {}", label), |b| {
+        c.bench_function(&format!("{}bidir-fastest-dijkstra{}", prefix, suffix), |b| {
             b.iter(|| bidir_fastest_dijkstra(black_box(&graph), black_box(&routes)))
         });
-        c.bench_function(&format!("unidir-fastest-astar {}", label), |b| {
+        c.bench_function(&format!("{}unidir-fastest-astar{}", prefix, suffix), |b| {
             b.iter(|| unidir_fastest_astar(black_box(&graph), black_box(&routes)))
         });
-        c.bench_function(&format!("bidir-fastest-astar {}", label), |b| {
+        c.bench_function(&format!("{}bidir-fastest-astar{}", prefix, suffix), |b| {
             b.iter(|| bidir_fastest_astar(black_box(&graph), black_box(&routes)))
         });
     }
