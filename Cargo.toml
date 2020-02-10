@@ -35,6 +35,7 @@ quick-xml = "0.14" # read xml-files
 serde = "1.0" # serialization
 rand = "0.7" # generate random numbers
 rand_pcg = "0.2" # generate random numbers
+criterion = "0.3" # benchmarking
 
 
 [[example]]
@@ -72,3 +73,8 @@ path = "examples/playground/pipes_and_filters.rs"
 [[example]]
 name = "playground_xml_reader"
 path = "examples/playground/xml_reader.rs"
+
+
+[[bench]]
+name = "routing"
+harness = false
