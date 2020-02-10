@@ -10,7 +10,7 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 1. [Unreleased](#unreleased)
 1. [v0.7.1](#v0.7.1)
     1. [v0.7.0](#v0.7.0)
-1. [v1.0.0-yanked](#v1.0.0-yanked)
+1. [v1.0.0-yanked](#v1.0.0)
 1. [v0.6.1](#v0.6.1)
     1. [v0.6.0](#v0.6.0)
 1. [v0.5.0](#v0.5.0)
@@ -131,13 +131,14 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 - When building and finalizing the graph, `ProtoNode`s and `ProtoEdge`s don't need ordering implemented, hence these implementations are removed.
 
 
-## [v1.0.0-yanked][github/self/v1.0.0-yanked] <a name="v1.0.0-yanked"></a>
+## [v1.0.0-yanked][github/self/v1.0.0-yanked] <a name="v1.0.0"></a>
 
 ### Added <a name="v1.0.0/added"></a>
 
 - Add `CHANGELOG.md`. `:)`
-- Add `GitHub`-workflow automatically testing and deploying.
-  As improvement over `travis-ci`, it tags commits automatically if the `Cargo.toml`-version has changed.
+- Add GitHub-action automatically testing and deploying.
+  As improvement over travis-ci, it tags commits automatically if the `Cargo.toml`-version has changed and pushed.
+  Before, both (tag and `Cargo.toml`) had to be updated.
 
 
 ### Changed
