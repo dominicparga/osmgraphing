@@ -7,10 +7,37 @@ use std::{fs::File, path::Path};
 
 //------------------------------------------------------------------------------------------------//
 
-/// The parser parsing `*osm.pbf`- and `*.fmi`-files into a graphbuilder or a graph.
+/// The parser parsing `*.osm.pbf`- and `*.fmi`-files into a graphbuilder or a graph.
 ///
-/// Some libraries processing openstreetmap-data can be found [here](https://wiki.openstreetmap.org/wiki/Frameworks#Data_Processing_or_Parsing_Libraries).
-/// The `pbf`-parser uses [osmpbfreader-rs](https://crates.io/crates/osmpbfreader), the 
+///
+/// ## The filter-pipeline
+///
+/// 1. Download raw osm-data (see [README](https://github.com/dominicparga/osmgraphing/blob/master/README.md))
+/// 1. Read in this data
+/// 1. Filter and process osm-components like nodes and edges, e.g. filtering via tags
+/// 1. Create a memory- and runtime-efficient routing-graph.
+///
+///
+/// ### Nodes
+///
+/// - Coordinates:
+///   Nodes have coordinates given in `(latitude, longitude)`.
+/// - Height: Nodes have a height, which is ignored right now.
+///
+///
+/// ### Edges
+///
+/// Every edge will have a street-type with respective default speed-limit.
+/// These defaults depend on the street-network and can be found in the respective module `network`.
+///
+///
+/// ## Additional information
+///
+/// This `pbf`-parser uses [osmpbfreader-rs](https://crates.io/crates/osmpbfreader).
+/// An own implementation would need [the pbf-impl of rust](https://github.com/stepancheg/rust-protobuf), but the previously mentioned osmpbfreader works well.
+/// `*.osm`-xml-files are not supported, but could be read with [quick-xml](https://github.com/tafia/quick-xml).
+///
+/// Other libraries processing openstreetmap-data can be found [in the osm-wiki](https://wiki.openstreetmap.org/wiki/Frameworks#Data_Processing_or_Parsing_Libraries).
 pub struct Parser;
 impl Parser {
     pub fn parse<P: AsRef<Path> + ?Sized>(path: &P) -> Result<GraphBuilder, String> {

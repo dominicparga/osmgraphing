@@ -59,7 +59,15 @@ impl fmt::Display for Coordinate {
     }
 }
 
-/// Info can be found here
+/// The haversince-distance is the distance (e.g. in meters) between two points on a sphere (given in latitude and longitude).
+///
+/// The earth-radius is taken as `6371 km` since
+///
+/// 1. the resuluting sphere has same volume as the earth-ellipsoid, and
+/// 1. it is the average radius.
+///
+///
+/// ## Additional info
 ///
 /// - [detailled information](http://www.movable-type.co.uk/scripts/latlong.html)
 /// - [cpp](https://geographiclib.sourceforge.io/)

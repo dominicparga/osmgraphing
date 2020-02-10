@@ -43,7 +43,8 @@ fn criterion_benchmark(c: &mut Criterion) {
     let labelled_routes = vec![
         // short route (~3 km)
         (
-            "", " with short routes (~3 km)",
+            "",
+            " with short routes (~3 km)",
             vec![(
                 nodes.idx_from(283500532).unwrap(),
                 nodes.idx_from(283501263).unwrap(),
@@ -51,7 +52,8 @@ fn criterion_benchmark(c: &mut Criterion) {
         ),
         // medium route (~30 km)
         (
-            "", " with medium routes (~30 km)",
+            "",
+            " with medium routes (~30 km)",
             vec![(
                 nodes.idx_from(283483998).unwrap(),
                 nodes.idx_from(1746745421).unwrap(),
@@ -59,7 +61,8 @@ fn criterion_benchmark(c: &mut Criterion) {
         ),
         // long route (~56 km)
         (
-            "", " with long routes (~56 km)",
+            "",
+            " with long routes (~56 km)",
             vec![(
                 nodes.idx_from(1151603193).unwrap(),
                 nodes.idx_from(456478793).unwrap(),
@@ -69,31 +72,38 @@ fn criterion_benchmark(c: &mut Criterion) {
 
     // benchmarking shortest routing
     for (prefix, suffix, routes) in labelled_routes.iter() {
-        c.bench_function(&format!("{}Shortest Dijkstra (unidir){}",prefix, suffix), |b| {
-            b.iter(|| unidir_shortest_dijkstra(black_box(&graph), black_box(&routes)))
-        });
-        c.bench_function(&format!("{}Shortest Dijkstra (bidir){}", prefix,suffix), |b| {
-            b.iter(|| bidir_shortest_dijkstra(black_box(&graph), black_box(&routes)))
-        });
-        c.bench_function(&format!("{}Shortest Astar (unidir){}", prefix,suffix), |b| {
-            b.iter(|| unidir_shortest_astar(black_box(&graph), black_box(&routes)))
-        });
-        c.bench_function(&format!("{}Shortest Astar (bidir){}", prefix,suffix), |b| {
-            b.iter(|| bidir_shortest_astar(black_box(&graph), black_box(&routes)))
-        });
+        c.bench_function(
+            &format!("{}Shortest Dijkstra (unidir){}", prefix, suffix),
+            |b| b.iter(|| unidir_shortest_dijkstra(black_box(&graph), black_box(&routes))),
+        );
+        c.bench_function(
+            &format!("{}Shortest Dijkstra (bidir){}", prefix, suffix),
+            |b| b.iter(|| bidir_shortest_dijkstra(black_box(&graph), black_box(&routes))),
+        );
+        c.bench_function(
+            &format!("{}Shortest Astar (unidir){}", prefix, suffix),
+            |b| b.iter(|| unidir_shortest_astar(black_box(&graph), black_box(&routes))),
+        );
+        c.bench_function(
+            &format!("{}Shortest Astar (bidir){}", prefix, suffix),
+            |b| b.iter(|| bidir_shortest_astar(black_box(&graph), black_box(&routes))),
+        );
     }
 
     // benchmarking fastest routing
     for (prefix, suffix, routes) in labelled_routes.iter() {
-        c.bench_function(&format!("{}Fastest Dijkstra (unidir){}", prefix, suffix), |b| {
-            b.iter(|| unidir_fastest_dijkstra(black_box(&graph), black_box(&routes)))
-        });
-        c.bench_function(&format!("{}Fastest Dijkstra (bidir){}", prefix, suffix), |b| {
-            b.iter(|| bidir_fastest_dijkstra(black_box(&graph), black_box(&routes)))
-        });
-        c.bench_function(&format!("{}Fastest Astar (unidir){}", prefix, suffix), |b| {
-            b.iter(|| unidir_fastest_astar(black_box(&graph), black_box(&routes)))
-        });
+        c.bench_function(
+            &format!("{}Fastest Dijkstra (unidir){}", prefix, suffix),
+            |b| b.iter(|| unidir_fastest_dijkstra(black_box(&graph), black_box(&routes))),
+        );
+        c.bench_function(
+            &format!("{}Fastest Dijkstra (bidir){}", prefix, suffix),
+            |b| b.iter(|| bidir_fastest_dijkstra(black_box(&graph), black_box(&routes))),
+        );
+        c.bench_function(
+            &format!("{}Fastest Astar (unidir){}", prefix, suffix),
+            |b| b.iter(|| unidir_fastest_astar(black_box(&graph), black_box(&routes))),
+        );
         c.bench_function(&format!("{}Fastest Astar (bidir){}", prefix, suffix), |b| {
             b.iter(|| bidir_fastest_astar(black_box(&graph), black_box(&routes)))
         });
