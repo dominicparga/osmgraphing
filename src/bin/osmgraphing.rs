@@ -71,7 +71,7 @@ fn main() -> Result<(), ()> {
     setup_logging(matches.is_present("quiet"));
 
     if matches.args.len() == 0 {
-        println!("Execute '.../osmgraphing --help' (or 'cargo run -- --help') for more info.");
+        println!("Execute 'path/to/built/binary --help' (or 'cargo run -- --help') for more info.");
     }
 
     Ok(())

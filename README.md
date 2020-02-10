@@ -16,8 +16,8 @@ Goal of this repo is parsing [openstreetmap][osm] data to calculate traffic-rout
 
 ## Setup and usage
 
-Please refer to the [examples][github/self/tree/examples].
-Further, refer to [setup and usage][github/self/wiki/usage] to get details about the repo's setup and implementation.
+Please refer to the [examples][github/self/tree/examples] or simply execute `cargo run`.
+Further, refer to [cargo-docs][docs.rs/self] to get details about the repo's setup and implementation.
 
 
 [crates.io/self]: https://crates.io/crates/osmgraphing

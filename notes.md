@@ -19,4 +19,4 @@ Maybe, it is concept for later documentation, or just keep-up-the-good-work (`ku
 
 ## TODOs
 
-- Add first TODO here lol
+- Add first TODO here
