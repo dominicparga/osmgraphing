@@ -100,6 +100,9 @@ fn criterion_benchmark(c: &mut Criterion) {
     }
 }
 
+criterion_group!(benches, criterion_benchmark);
+criterion_main!(benches);
+
 //------------------------------------------------------------------------------------------------//
 
 fn unidir_fastest_dijkstra(graph: &Graph, routes: &Vec<(NodeIdx, NodeIdx)>) {
@@ -189,6 +192,3 @@ fn bidir_shortest_astar(graph: &Graph, routes: &Vec<(NodeIdx, NodeIdx)>) {
         let _option_path = astar.compute_best_path(&src, &dst, graph);
     }
 }
-
-criterion_group!(benches, criterion_benchmark);
-criterion_main!(benches);
