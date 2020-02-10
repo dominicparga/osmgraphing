@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------------------------//
 // own modules
 
-mod fmi {
+mod intern {
     use crate::units::{geo, length::Meters, speed::KilometersPerHour, Metric};
     pub use std::{io::BufReader as Reader, str};
 
@@ -156,12 +156,12 @@ impl Parser {
 impl super::Parsing for Parser {
     fn parse_ways(file: File, graph_builder: &mut GraphBuilder) {
         info!("START Create edges from input-file.");
-        for line in fmi::Reader::new(file)
+        for line in intern::Reader::new(file)
             .lines()
             .map(Result::unwrap)
             .filter(Self::is_line_functional)
         {
-            if let Ok(proto_edge) = line.parse::<fmi::ProtoEdge>() {
+            if let Ok(proto_edge) = line.parse::<intern::ProtoEdge>() {
                 graph_builder.push_edge(
                     proto_edge.src_id,
                     proto_edge.dst_id,
@@ -170,7 +170,7 @@ impl super::Parsing for Parser {
                     proto_edge.maxspeed,
                 );
             } else {
-                if line.parse::<fmi::ProtoNode>().is_err() {
+                if line.parse::<intern::ProtoNode>().is_err() {
                     warn!("Could not parse line `{}`", line);
                 }
             }
@@ -180,12 +180,12 @@ impl super::Parsing for Parser {
 
     fn parse_nodes(file: File, graph_builder: &mut GraphBuilder) {
         info!("START Create nodes from input-file.");
-        for line in fmi::Reader::new(file)
+        for line in intern::Reader::new(file)
             .lines()
             .map(Result::unwrap)
             .filter(Self::is_line_functional)
         {
-            if let Ok(proto_node) = line.parse::<fmi::ProtoNode>() {
+            if let Ok(proto_node) = line.parse::<intern::ProtoNode>() {
                 graph_builder.push_node(proto_node.id, proto_node.coord);
             }
         }

@@ -1,6 +1,7 @@
 use crate::units::{length::Meters, Metric};
 use std::{cmp::Ordering, fmt};
 
+/// Coordinate storing `lat`/`lon` as `i32` with accuracy `1e-7`.
 #[derive(Copy, Clone, Debug)]
 pub struct Coordinate {
     decimicro_lat: i32,
@@ -58,6 +59,10 @@ impl fmt::Display for Coordinate {
     }
 }
 
+/// Info can be found here
+///
+/// - [detailled information](http://www.movable-type.co.uk/scripts/latlong.html)
+/// - [cpp](https://geographiclib.sourceforge.io/)
 pub fn haversine_distance(from: &Coordinate, to: &Coordinate) -> f64 {
     let earth_mean_radius = 6_371.0; // kilometers
 

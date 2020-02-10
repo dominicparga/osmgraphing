@@ -1,17 +1,32 @@
-//------------------------------------------------------------------------------------------------//
-// own modules
-
 pub mod fmi;
 pub mod pbf;
-
-//------------------------------------------------------------------------------------------------//
-// other modules
 
 use crate::network::{Graph, GraphBuilder};
 use log::info;
 use std::{fs::File, path::Path};
 
 //------------------------------------------------------------------------------------------------//
+
+/// The parser parsing `*osm.pbf`- and `*.fmi`-files into a graphbuilder or a graph.
+///
+/// Some libraries processing openstreetmap-data can be found [here](https://wiki.openstreetmap.org/wiki/Frameworks#Data_Processing_or_Parsing_Libraries).
+/// The `pbf`-parser uses [osmpbfreader-rs](https://crates.io/crates/osmpbfreader), the 
+pub struct Parser;
+impl Parser {
+    pub fn parse<P: AsRef<Path> + ?Sized>(path: &P) -> Result<GraphBuilder, String> {
+        match Type::from_path(path)? {
+            Type::PBF => pbf::Parser::parse(path),
+            Type::FMI => fmi::Parser::parse(path),
+        }
+    }
+
+    pub fn parse_and_finalize<P: AsRef<Path> + ?Sized>(path: &P) -> Result<Graph, String> {
+        match Type::from_path(path)? {
+            Type::PBF => pbf::Parser::parse_and_finalize(path),
+            Type::FMI => fmi::Parser::parse_and_finalize(path),
+        }
+    }
+}
 
 trait Parsing {
     fn open_file<P: AsRef<Path> + ?Sized>(path: &P) -> Result<File, String> {
@@ -84,23 +99,6 @@ impl Type {
                 "The file {:?} has no extension. Supported extensions are {:?}",
                 &path, supported_exts
             ))
-        }
-    }
-}
-
-pub struct Parser;
-impl Parser {
-    pub fn parse<P: AsRef<Path> + ?Sized>(path: &P) -> Result<GraphBuilder, String> {
-        match Type::from_path(path)? {
-            Type::PBF => pbf::Parser::parse(path),
-            Type::FMI => fmi::Parser::parse(path),
-        }
-    }
-
-    pub fn parse_and_finalize<P: AsRef<Path> + ?Sized>(path: &P) -> Result<Graph, String> {
-        match Type::from_path(path)? {
-            Type::PBF => pbf::Parser::parse_and_finalize(path),
-            Type::FMI => fmi::Parser::parse_and_finalize(path),
         }
     }
 }
