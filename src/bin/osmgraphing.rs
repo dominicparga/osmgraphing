@@ -37,7 +37,7 @@ fn parse_cmdline<'a>() -> clap::ArgMatches<'a> {
                 "for all supported example files",
                 "",
                 "In addition, you can execute benchmarks, e.g.",
-                "    cargo bench --bench routing -- --warm-up-time 10 --measurement-time 30",
+                "    cargo bench --bench routing -- --warm-up-time 10 --measurement-time 120",
                 "and view the results in ./target/criterion/<bench>/report/index.html",
             ]
             .join("\n"))

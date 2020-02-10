@@ -60,7 +60,7 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v2
     - name: Run benchmarks
-      run: cargo bench --bench routing -- --warm-up-time 10 --measurement-time 30
+      run: cargo bench --bench routing -- --warm-up-time 10 --measurement-time 120
     - name: Upload results
       uses: actions/upload-artifact@v1
       with:
