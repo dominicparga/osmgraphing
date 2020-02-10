@@ -1,9 +1,10 @@
 #!/usr/bin/env sh
 
 #------------------------------------------------------------------------------#
-# notes
 # This file uses gitignore.io, which uses CRLF.
 # To replace them by LF, you can use dos2unix
+#
+# ./scripts/echo_gitignore.sh > .gitignore && dos2unix .gitignore
 
 echo '#------------------------------------------------------------------------------#'
 echo '# gitignore'
@@ -15,3 +16,4 @@ echo ''
 echo '/custom/'
 echo ''
 echo '.vscode/'
+echo '!Cargo.lock'

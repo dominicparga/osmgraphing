@@ -299,3 +299,4 @@ $RECYCLE.BIN/
 /custom/
 
 .vscode/
+!Cargo.lock
