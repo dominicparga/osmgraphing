@@ -53,9 +53,22 @@ jobs:
         cargo run --example astar
         cargo run --example parser
       continue-on-error: true
-  deploy-and-tag:
+  benches:
     runs-on: ubuntu-latest
     needs: [stable]
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+    - name: Run benchmarks
+      run: cargo bench --bench routing -- --warm-up-time 10 --measurement-time 30
+    - name: Upload results
+      uses: actions/upload-artifact@v1
+      with:
+        name: benches
+        path: target/criterion
+  deploy-and-tag:
+    runs-on: ubuntu-latest
+    needs: [stable, benches]
     steps:
     - name: Checkout
       uses: actions/checkout@v2
@@ -75,13 +88,4 @@ jobs:
         cargo publish --token "${CRATES_TOKEN}"
         git tag --annotate "v$(cargo pkgid | cut -d# -f2 | cut -d: -f2)" --message='See CHANGELOG.md'
         git push --tags
-      continue-on-error: true
-  benches:
-    runs-on: ubuntu-latest
-    needs: [stable]
-    steps:
-    - name: Checkout
-      uses: actions/checkout@v2
-    - name: Run benchmarks
-      run: cargo bench --bench routing -- --warm-up-time 10 --measurement-time 30
       continue-on-error: true
