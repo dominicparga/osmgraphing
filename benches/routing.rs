@@ -69,32 +69,32 @@ fn criterion_benchmark(c: &mut Criterion) {
 
     // benchmarking shortest routing
     for (prefix, suffix, routes) in labelled_routes.iter() {
-        c.bench_function(&format!("{}Dijkstra (shortest, unidir){}",prefix, suffix), |b| {
+        c.bench_function(&format!("{}Shortest Dijkstra (unidir){}",prefix, suffix), |b| {
             b.iter(|| unidir_shortest_dijkstra(black_box(&graph), black_box(&routes)))
         });
-        c.bench_function(&format!("{}Dijkstra (shortest, bidir){}", prefix,suffix), |b| {
+        c.bench_function(&format!("{}Shortest Dijkstra (bidir){}", prefix,suffix), |b| {
             b.iter(|| bidir_shortest_dijkstra(black_box(&graph), black_box(&routes)))
         });
-        c.bench_function(&format!("{}Astar (shortest, unidir){}", prefix,suffix), |b| {
+        c.bench_function(&format!("{}Shortest Astar (unidir){}", prefix,suffix), |b| {
             b.iter(|| unidir_shortest_astar(black_box(&graph), black_box(&routes)))
         });
-        c.bench_function(&format!("{}Astar (shortest, bidir){}", prefix,suffix), |b| {
+        c.bench_function(&format!("{}Shortest Astar (bidir){}", prefix,suffix), |b| {
             b.iter(|| bidir_shortest_astar(black_box(&graph), black_box(&routes)))
         });
     }
 
     // benchmarking fastest routing
     for (prefix, suffix, routes) in labelled_routes.iter() {
-        c.bench_function(&format!("{}Dijkstra (fastest, unidir){}", prefix, suffix), |b| {
+        c.bench_function(&format!("{}Fastest Dijkstra (unidir){}", prefix, suffix), |b| {
             b.iter(|| unidir_fastest_dijkstra(black_box(&graph), black_box(&routes)))
         });
-        c.bench_function(&format!("{}Dijkstra (fastest, bidir){}", prefix, suffix), |b| {
+        c.bench_function(&format!("{}Fastest Dijkstra (bidir){}", prefix, suffix), |b| {
             b.iter(|| bidir_fastest_dijkstra(black_box(&graph), black_box(&routes)))
         });
-        c.bench_function(&format!("{}Astar (fastest, unidir){}", prefix, suffix), |b| {
+        c.bench_function(&format!("{}Fastest Astar (unidir){}", prefix, suffix), |b| {
             b.iter(|| unidir_fastest_astar(black_box(&graph), black_box(&routes)))
         });
-        c.bench_function(&format!("{}Astar (fastest, bidir){}", prefix, suffix), |b| {
+        c.bench_function(&format!("{}Fastest Astar (bidir){}", prefix, suffix), |b| {
             b.iter(|| bidir_fastest_astar(black_box(&graph), black_box(&routes)))
         });
     }
