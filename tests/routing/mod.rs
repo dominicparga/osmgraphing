@@ -1,20 +1,11 @@
-//------------------------------------------------------------------------------------------------//
-// other modules
-
 use osmgraphing::{network::Graph, network::NodeIdx, routing, units::Metric};
 use std::{fmt, fmt::Display};
 
-//------------------------------------------------------------------------------------------------//
-// own modules
-
-mod astar;
-mod dijkstra;
-
-//------------------------------------------------------------------------------------------------//
-// helpers
+mod fastest;
+mod shortest;
 
 fn assert_correct<M>(
-    astar: &mut Box<dyn routing::Astar<M>>,
+    astar: &mut Box<dyn routing::astar::Astar<M>>,
     expected_paths: Vec<(TestNode, TestNode, Option<(M, Vec<Vec<TestNode>>)>)>,
     filepath: &str,
 ) where
@@ -46,21 +37,15 @@ fn assert_correct<M>(
     }
 }
 
-//------------------------------------------------------------------------------------------------//
-// test-node
-
 #[derive(Debug, Copy, Clone)]
 struct TestNode {
-    idx: NodeIdx,
-    id: i64,
+    pub idx: NodeIdx,
+    pub id: i64,
 }
 
-impl TestNode {
-    pub fn from(idx: NodeIdx, id: i64) -> TestNode {
-        TestNode {
-            idx: idx.into(),
-            id,
-        }
+impl Display for TestNode {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "(idx: {}, id: {})", self.idx, self.id)
     }
 }
 
@@ -72,15 +57,6 @@ impl PartialEq for TestNode {
     }
 }
 
-impl fmt::Display for TestNode {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "(idx: {}, id: {})", self.idx, self.id)
-    }
-}
-
-//------------------------------------------------------------------------------------------------//
-// test-path
-
 struct TestPath<M>
 where
     M: Metric,
@@ -90,6 +66,7 @@ where
     cost: M,
     alternative_nodes: Vec<Vec<TestNode>>,
 }
+
 impl<M> TestPath<M>
 where
     M: Metric + PartialEq + Display,
@@ -108,11 +85,13 @@ where
         }
     }
 
-    fn assert_correct(&self, path: &routing::astar::Path<M>, graph: &Graph) {
-        let node = |idx: NodeIdx| -> TestNode { TestNode::from(idx, graph.nodes().id(idx)) };
-
-        //----------------------------------------------------------------------------------------//
-        // check meta-info
+    fn assert_correct(&self, path: &routing::paths::Path<M>, graph: &Graph) {
+        let node = |idx: NodeIdx| -> TestNode {
+            TestNode {
+                idx,
+                id: graph.nodes().id(idx),
+            }
+        };
 
         let path_src = node(path.src_idx());
         assert_eq!(
@@ -134,9 +113,6 @@ where
             self.dst,
             self.cost,
         );
-
-        //----------------------------------------------------------------------------------------//
-        // check predecessors/successors
 
         // src has no predecessor
         assert_eq!(

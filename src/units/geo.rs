@@ -1,4 +1,4 @@
-use crate::units::length::Meters;
+use crate::units::{length::Meters, Metric};
 use std::{cmp::Ordering, fmt};
 
 #[derive(Copy, Clone, Debug)]
@@ -15,7 +15,7 @@ impl Coordinate {
         }
     }
 
-    pub fn from(lat: f64, lon: f64) -> Coordinate {
+    pub fn from_f64(lat: f64, lon: f64) -> Coordinate {
         Coordinate {
             decimicro_lat: (lat * 1e7) as i32,
             decimicro_lon: (lon * 1e7) as i32,
@@ -82,5 +82,5 @@ pub fn haversine_distance(from: &Coordinate, to: &Coordinate) -> f64 {
 }
 
 pub fn haversine_distance_m(from: &Coordinate, to: &Coordinate) -> Meters {
-    Meters::from(1_000.0 * haversine_distance(from, to))
+    Meters::new(1_000.0 * haversine_distance(from, to))
 }

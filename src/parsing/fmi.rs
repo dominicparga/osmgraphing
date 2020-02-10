@@ -2,7 +2,7 @@
 // own modules
 
 mod fmi {
-    use crate::units::geo;
+    use crate::units::{geo, length::Meters, speed::KilometersPerHour, Metric};
     pub use std::{io::BufReader as Reader, str};
 
     //--------------------------------------------------------------------------------------------//
@@ -57,7 +57,7 @@ mod fmi {
 
             Ok(ProtoNode {
                 id,
-                coord: geo::Coordinate::from(lat, lon),
+                coord: geo::Coordinate::from_f64(lat, lon),
             })
         }
     }
@@ -65,12 +65,11 @@ mod fmi {
     //--------------------------------------------------------------------------------------------//
 
     pub struct ProtoEdge {
-        pub way_id: Option<i64>,
         pub src_id: i64,
         pub dst_id: i64,
         pub lane_count: u8,
-        pub meters: Option<u32>,
-        pub maxspeed: u16,
+        pub meters: Option<Meters>,
+        pub maxspeed: KilometersPerHour,
     }
 
     impl str::FromStr for ProtoEdge {
@@ -109,7 +108,7 @@ mod fmi {
             let meters = match params[2] {
                 "calc" => None,
                 _ => match params[2].parse::<u32>() {
-                    Ok(meters) => Some(meters),
+                    Ok(meters) => Some(Meters::new(meters)),
                     Err(_) => {
                         return Err(format!(
                             "Parsing length '{}' of edge ({}->{}) didn't work.",
@@ -119,7 +118,7 @@ mod fmi {
                 },
             };
             let maxspeed = match params[4].parse::<u16>() {
-                Ok(maxspeed) => maxspeed,
+                Ok(maxspeed) => KilometersPerHour::new(maxspeed),
                 Err(_) => {
                     return Err(format!(
                         "Parse maxspeed in km/h '{:?}' from fmi-file into u16.",
@@ -129,7 +128,6 @@ mod fmi {
             };
 
             Ok(ProtoEdge {
-                way_id: None,
                 src_id,
                 dst_id,
                 lane_count: 1, // TODO
@@ -165,7 +163,6 @@ impl super::Parsing for Parser {
         {
             if let Ok(proto_edge) = line.parse::<fmi::ProtoEdge>() {
                 graph_builder.push_edge(
-                    proto_edge.way_id,
                     proto_edge.src_id,
                     proto_edge.dst_id,
                     proto_edge.lane_count,

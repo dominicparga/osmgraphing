@@ -1,13 +1,24 @@
 use super::parse;
 use osmgraphing::Parser;
 
-//------------------------------------------------------------------------------------------------//
+mod fmi {
+    #[test]
+    fn simple_stuttgart() {
+        let _graph = super::parse("resources/maps/simple_stuttgart.fmi");
+    }
 
-mod fmi;
-mod pbf;
+    #[test]
+    fn small() {
+        let _graph = super::parse("resources/maps/small.fmi");
+    }
+}
 
-//------------------------------------------------------------------------------------------------//
-// tests
+mod pbf {
+    #[test]
+    fn isle_of_man() {
+        let _graph = super::parse("resources/maps/isle-of-man_2019-09-05.osm.pbf");
+    }
+}
 
 #[test]
 fn wrong_extension() {

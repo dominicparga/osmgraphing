@@ -1,3 +1,3 @@
-mod graph;
-
 use super::parse;
+
+mod graph;
