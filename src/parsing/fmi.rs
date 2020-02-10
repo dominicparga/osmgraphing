@@ -57,7 +57,7 @@ mod fmi {
 
             Ok(ProtoNode {
                 id,
-                coord: geo::Coordinate::from(lat, lon),
+                coord: geo::Coordinate::from_f64(lat, lon),
             })
         }
     }

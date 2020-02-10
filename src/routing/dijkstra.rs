@@ -1,17 +1,5 @@
+pub use super::astar::Astar;
 use super::paths::Path;
-use crate::{
-    network::{Graph, Node},
-    units::Metric,
-};
-
-pub trait Astar<M>
-where
-    M: Metric,
-{
-    fn compute_best_path(&mut self, src: &Node, dst: &Node, graph: &Graph) -> Option<Path<M>>
-    where
-        M: Metric;
-}
 
 //------------------------------------------------------------------------------------------------//
 
@@ -24,29 +12,25 @@ pub mod unidirectional {
     use std::{collections::BinaryHeap, ops::Add};
 
     /// Cost-function, Estimation-function and Metric
-    pub struct GenericAstar<C, E, M>
+    pub struct GenericAstar<C, M>
     where
         C: Fn(&HalfEdge) -> M,
-        E: Fn(&Node, &Node) -> M,
         M: Metric,
     {
         cost_fn: C,
-        estimate_fn: E,
         costs: Vec<M>,
         predecessors: Vec<Option<NodeIdx>>,
         queue: BinaryHeap<CostNode<M>>, // max-heap, but CostNode's natural order is reversed
     }
 
-    impl<C, E, M> GenericAstar<C, E, M>
+    impl<C, M> GenericAstar<C, M>
     where
         C: Fn(&HalfEdge) -> M,
-        E: Fn(&Node, &Node) -> M,
-        M: Metric + Ord + Add<M, Output = M>,
+        M: Metric + Ord,
     {
-        pub fn new(cost_fn: C, estimate_fn: E) -> GenericAstar<C, E, M> {
+        pub fn new(cost_fn: C) -> GenericAstar<C, M> {
             GenericAstar {
                 cost_fn,
-                estimate_fn,
                 costs: vec![M::inf(); 0],
                 predecessors: vec![None; 0],
                 queue: BinaryHeap::new(),
@@ -62,10 +46,9 @@ pub mod unidirectional {
         }
     }
 
-    impl<C, E, M> Astar<M> for GenericAstar<C, E, M>
+    impl<C, M> Astar<M> for GenericAstar<C, M>
     where
         C: Fn(&HalfEdge) -> M,
-        E: Fn(&Node, &Node) -> M,
         M: Metric + Ord + Add<M, Output = M>,
     {
         fn compute_best_path(&mut self, src: &Node, dst: &Node, graph: &Graph) -> Option<Path<M>> {
@@ -83,7 +66,6 @@ pub mod unidirectional {
             self.queue.push(CostNode {
                 idx: src.idx(),
                 cost: M::zero(),
-                estimation: M::zero(),
                 pred_idx: None,
             });
             self.costs[src.idx().to_usize()] = M::zero();
@@ -132,12 +114,9 @@ pub mod unidirectional {
                         self.predecessors[leaving_edge.dst_idx().to_usize()] = Some(current.idx);
                         self.costs[leaving_edge.dst_idx().to_usize()] = new_cost;
 
-                        let leaving_edge_of_dst = nodes.create(leaving_edge.dst_idx());
-                        let estimation = (self.estimate_fn)(&leaving_edge_of_dst, dst);
                         self.queue.push(CostNode {
                             idx: leaving_edge.dst_idx(),
                             cost: new_cost,
-                            estimation: estimation,
                             pred_idx: Some(current.idx),
                         });
                     }
@@ -157,42 +136,42 @@ pub mod unidirectional {
     {
         idx: NodeIdx,
         cost: M,
-        estimation: M,
         pred_idx: Option<NodeIdx>,
     }
 
     mod costnode {
         use super::CostNode;
         use crate::units::Metric;
-        use std::{cmp::Ordering, ops::Add};
+        use std::cmp::Ordering;
 
         impl<M> Ord for CostNode<M>
         where
-            M: Metric + Ord + Add<M, Output = M>,
+            M: Metric + Ord,
         {
             fn cmp(&self, other: &CostNode<M>) -> Ordering {
                 // (1) cost in float, but cmp uses only m, which is ok
                 // (2) inverse order since BinaryHeap is max-heap, but min-heap is needed
-                (other.cost + other.estimation)
-                    .cmp(&(self.cost + self.estimation))
+                other
+                    .cost
+                    .cmp(&(self.cost))
                     .then_with(|| other.idx.cmp(&self.idx))
             }
         }
 
         impl<M> PartialOrd for CostNode<M>
         where
-            M: Metric + Ord + Add<M, Output = M>,
+            M: Metric + Ord,
         {
             fn partial_cmp(&self, other: &CostNode<M>) -> Option<Ordering> {
                 Some(self.cmp(other))
             }
         }
 
-        impl<M> Eq for CostNode<M> where M: Metric + Ord + Add<M, Output = M> {}
+        impl<M> Eq for CostNode<M> where M: Metric + Ord {}
 
         impl<M> PartialEq for CostNode<M>
         where
-            M: Metric + Ord + Add<M, Output = M>,
+            M: Metric + Ord,
         {
             fn eq(&self, other: &CostNode<M>) -> bool {
                 self.cmp(other) == Ordering::Equal
@@ -212,14 +191,12 @@ pub mod bidirectional {
     use std::{collections::BinaryHeap, ops::Add};
 
     /// Cost-function, Estimation-function and Metric
-    pub struct GenericAstar<C, E, M>
+    pub struct GenericAstar<C, M>
     where
         C: Fn(&HalfEdge) -> M,
-        E: Fn(&Node, &Node) -> M,
         M: Metric,
     {
         cost_fn: C,
-        estimate_fn: E,
         queue: BinaryHeap<CostNode<M>>, // max-heap, but CostNode's natural order is reversed
         // fwd
         fwd_costs: Vec<M>,
@@ -231,16 +208,14 @@ pub mod bidirectional {
         is_visited_by_dst: Vec<bool>,
     }
 
-    impl<C, E, M> GenericAstar<C, E, M>
+    impl<C, M> GenericAstar<C, M>
     where
         C: Fn(&HalfEdge) -> M,
-        E: Fn(&Node, &Node) -> M,
         M: Metric + Ord + Add<M, Output = M>,
     {
-        pub fn new(cost_fn: C, estimate_fn: E) -> GenericAstar<C, E, M> {
+        pub fn new(cost_fn: C) -> GenericAstar<C, M> {
             GenericAstar {
                 cost_fn,
-                estimate_fn,
                 queue: BinaryHeap::new(),
                 // fwd
                 fwd_costs: vec![M::inf(); 0],
@@ -285,10 +260,9 @@ pub mod bidirectional {
         }
     }
 
-    impl<C, E, M> Astar<M> for GenericAstar<C, E, M>
+    impl<C, M> Astar<M> for GenericAstar<C, M>
     where
         C: Fn(&HalfEdge) -> M,
-        E: Fn(&Node, &Node) -> M,
         M: Metric + Ord + Add<M, Output = M>,
     {
         fn compute_best_path(&mut self, src: &Node, dst: &Node, graph: &Graph) -> Option<Path<M>> {
@@ -308,7 +282,6 @@ pub mod bidirectional {
             self.queue.push(CostNode {
                 idx: src.idx(),
                 cost: M::zero(),
-                estimation: M::zero(),
                 pred_idx: None,
                 direction: Direction::FWD,
             });
@@ -316,7 +289,6 @@ pub mod bidirectional {
             self.queue.push(CostNode {
                 idx: dst.idx(),
                 cost: M::zero(),
-                estimation: M::zero(),
                 pred_idx: None,
                 direction: Direction::BWD,
             });
@@ -346,14 +318,9 @@ pub mod bidirectional {
                 }
 
                 // distinguish between fwd and bwd
-                let (xwd_costs, xwd_edges, xwd_predecessors, xwd_dst) = match current.direction {
-                    Direction::FWD => (
-                        &mut self.fwd_costs,
-                        &fwd_edges,
-                        &mut self.predecessors,
-                        &dst,
-                    ),
-                    Direction::BWD => (&mut self.bwd_costs, &bwd_edges, &mut self.successors, &src),
+                let (xwd_costs, xwd_edges, xwd_predecessors) = match current.direction {
+                    Direction::FWD => (&mut self.fwd_costs, &fwd_edges, &mut self.predecessors),
+                    Direction::BWD => (&mut self.bwd_costs, &bwd_edges, &mut self.successors),
                 };
 
                 // first occurrence has lowest cost
@@ -379,12 +346,9 @@ pub mod bidirectional {
                         //    since the shortest path could have longer hop-distance
                         //    with shorter weight-distance than currently found node.
                         if best_meeting.is_none() {
-                            let leaving_edge_dst = nodes.create(leaving_edge.dst_idx());
-                            let estimation = (self.estimate_fn)(&leaving_edge_dst, xwd_dst);
                             self.queue.push(CostNode {
                                 idx: leaving_edge.dst_idx(),
                                 cost: new_cost,
-                                estimation: estimation,
                                 pred_idx: Some(current.idx),
                                 direction: current.direction,
                             });
@@ -432,7 +396,6 @@ pub mod bidirectional {
     {
         idx: NodeIdx,
         cost: M,
-        estimation: M,
         pred_idx: Option<NodeIdx>,
         direction: Direction,
     }
@@ -446,7 +409,7 @@ pub mod bidirectional {
     mod costnode {
         use super::{CostNode, Direction};
         use crate::units::Metric;
-        use std::{cmp::Ordering, fmt, fmt::Display, ops::Add};
+        use std::{cmp::Ordering, fmt, fmt::Display};
 
         impl<M> Display for CostNode<M>
         where
@@ -455,10 +418,9 @@ pub mod bidirectional {
             fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
                 write!(
                     f,
-                    "{{ idx: {}, cost: {}, esti: {}, pred-idx: {}, {} }}",
+                    "{{ idx: {}, cost: {}, pred-idx: {}, {} }}",
                     self.idx,
                     self.cost,
-                    self.estimation,
                     match self.pred_idx {
                         Some(idx) => format!("{}", idx),
                         None => String::from("None"),
@@ -470,13 +432,14 @@ pub mod bidirectional {
 
         impl<M> Ord for CostNode<M>
         where
-            M: Metric + Ord + Add<M, Output = M>,
+            M: Metric + Ord,
         {
             fn cmp(&self, other: &CostNode<M>) -> Ordering {
                 // (1) cost in float, but cmp uses only m, which is ok
                 // (2) inverse order since BinaryHeap is max-heap, but min-heap is needed
-                (other.cost + other.estimation)
-                    .cmp(&(self.cost + self.estimation))
+                other
+                    .cost
+                    .cmp(&(self.cost))
                     .then_with(|| other.idx.cmp(&self.idx))
                     .then_with(|| other.direction.cmp(&self.direction))
             }
@@ -484,18 +447,18 @@ pub mod bidirectional {
 
         impl<M> PartialOrd for CostNode<M>
         where
-            M: Metric + Ord + Add<M, Output = M>,
+            M: Metric + Ord,
         {
             fn partial_cmp(&self, other: &CostNode<M>) -> Option<Ordering> {
                 Some(self.cmp(other))
             }
         }
 
-        impl<M> Eq for CostNode<M> where M: Metric + Ord + Add<M, Output = M> {}
+        impl<M> Eq for CostNode<M> where M: Metric + Ord {}
 
         impl<M> PartialEq for CostNode<M>
         where
-            M: Metric + Ord + Add<M, Output = M>,
+            M: Metric + Ord,
         {
             fn eq(&self, other: &CostNode<M>) -> bool {
                 self.cmp(other) == Ordering::Equal

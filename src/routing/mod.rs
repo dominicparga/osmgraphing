@@ -1,2 +1,4 @@
 pub mod astar;
-pub mod factory; // easy to use
+pub mod dijkstra;
+pub mod factory;
+pub mod paths;

@@ -85,7 +85,7 @@ where
         }
     }
 
-    fn assert_correct(&self, path: &routing::astar::Path<M>, graph: &Graph) {
+    fn assert_correct(&self, path: &routing::paths::Path<M>, graph: &Graph) {
         let node = |idx: NodeIdx| -> TestNode {
             TestNode {
                 idx,
