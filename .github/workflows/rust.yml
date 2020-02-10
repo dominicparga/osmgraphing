@@ -83,5 +83,5 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v2
     - name: Run benchmarks
-      run: cargo bench
+      run: cargo bench --bench routing -- --warm-up-time 10 --measurement-time 30
       continue-on-error: true
