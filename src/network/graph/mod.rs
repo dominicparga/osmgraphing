@@ -222,8 +222,7 @@ impl Display for Graph {
 
         writeln!(f, "")?;
 
-        for (fwd_dsts, bwd_dsts, xwd_offsets, xwd_prefix) in vec![
-            (
+        let graph_stuff = vec![            (
                 self.fwd_edges(),
                 self.bwd_edges(),
                 &(self.fwd_offsets),
@@ -234,8 +233,10 @@ impl Display for Graph {
                 self.fwd_edges(),
                 &(self.bwd_offsets),
                 "bwd-",
-            ),
-        ] {
+            ),];
+        for stuff_idx in 0..graph_stuff.len() {
+            let (fwd_dsts, bwd_dsts, xwd_offsets, xwd_prefix) = &graph_stuff[stuff_idx];
+
             // print up to m xwd-edges
             for mut j in 0..m {
                 // if enough edges are in the graph
@@ -296,6 +297,11 @@ impl Display for Graph {
                 "{{ __: {}, {}offset: {} }}",
                 i, xwd_prefix, xwd_offsets[i]
             )?;
+
+            // if not graph-stuff -> print empty line
+            if stuff_idx < graph_stuff.len() - 1 {
+                writeln!(f, "")?;
+            }
         }
 
         Ok(())
