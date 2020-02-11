@@ -1,6 +1,7 @@
 use crate::units::{length::Meters, Metric};
 use std::{cmp::Ordering, fmt};
 
+/// Coordinate storing `lat`/`lon` as `i32` with accuracy `1e-7`.
 #[derive(Copy, Clone, Debug)]
 pub struct Coordinate {
     decimicro_lat: i32,
@@ -58,6 +59,18 @@ impl fmt::Display for Coordinate {
     }
 }
 
+/// The haversince-distance is the distance (e.g. in meters) between two points on a sphere (given in latitude and longitude).
+///
+/// The earth-radius is taken as `6371 km` since
+///
+/// 1. the resuluting sphere has same volume as the earth-ellipsoid, and
+/// 1. it is the average radius.
+///
+///
+/// ## Additional info
+///
+/// - [detailled information](http://www.movable-type.co.uk/scripts/latlong.html)
+/// - [cpp](https://geographiclib.sourceforge.io/)
 pub fn haversine_distance(from: &Coordinate, to: &Coordinate) -> f64 {
     let earth_mean_radius = 6_371.0; // kilometers
 

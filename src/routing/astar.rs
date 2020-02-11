@@ -4,6 +4,15 @@ use crate::{
     units::Metric,
 };
 
+/// Metric-based trait for computing shortest paths with Astar.
+///
+/// Get default-implementations from the factory-module in routing.
+///
+/// Short note about the implementation: The Astar-creation abstracts over the cost-fn and estimation-fn in a handy way, such that they can be created dynamically (via closures) and with factory-methods outside of the Astar, but are hold by the Astar directly, so no extra heap-call from Astar is needed.
+/// This is achieved by using a Box for the whole Astar.
+///
+/// Besides that, implementations of this trait are implemented to keep allocated data for repeaded calls.
+/// That's why `&mut self` is required.
 pub trait Astar<M>
 where
     M: Metric,
@@ -23,7 +32,7 @@ pub mod unidirectional {
     };
     use std::{collections::BinaryHeap, ops::Add};
 
-    /// Cost-function, Estimation-function and Metric
+    /// A generic Astar-implementation using a cost- and estimation-function.
     pub struct GenericAstar<C, E, M>
     where
         C: Fn(&HalfEdge) -> M,

@@ -35,6 +35,10 @@ fn parse_cmdline<'a>() -> clap::ArgMatches<'a> {
                 "In case you're using cargo, please use",
                 "    cargo run --example",
                 "for all supported example files",
+                "",
+                "In addition, you can execute benchmarks, e.g.",
+                "    cargo bench --bench routing -- --warm-up-time 10 --measurement-time 120",
+                "and view the results in ./target/criterion/<bench>/report/index.html",
             ]
             .join("\n"))
                 .as_ref(),
@@ -67,7 +71,7 @@ fn main() -> Result<(), ()> {
     setup_logging(matches.is_present("quiet"));
 
     if matches.args.len() == 0 {
-        println!("Execute '.../osmgraphing --help' (or 'cargo run -- --help') for more info.");
+        println!("Execute 'path/to/built/binary --help' (or 'cargo run -- --help') for more info.");
     }
 
     Ok(())

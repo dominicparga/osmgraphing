@@ -1,17 +1,59 @@
-//------------------------------------------------------------------------------------------------//
-// own modules
-
 pub mod fmi;
 pub mod pbf;
-
-//------------------------------------------------------------------------------------------------//
-// other modules
 
 use crate::network::{Graph, GraphBuilder};
 use log::info;
 use std::{fs::File, path::Path};
 
 //------------------------------------------------------------------------------------------------//
+
+/// The parser parsing `*.osm.pbf`- and `*.fmi`-files into a graphbuilder or a graph.
+///
+///
+/// ## The filter-pipeline
+///
+/// 1. Download raw osm-data (see [README](https://github.com/dominicparga/osmgraphing/blob/master/README.md))
+/// 1. Read in this data
+/// 1. Filter and process osm-components like nodes and edges, e.g. filtering via tags
+/// 1. Create a memory- and runtime-efficient routing-graph.
+///
+///
+/// ### Nodes
+///
+/// - Coordinates:
+///   Nodes have coordinates given in `(latitude, longitude)`.
+/// - Height: Nodes have a height, which is ignored right now.
+///
+///
+/// ### Edges
+///
+/// Every edge will have a street-type with respective default speed-limit.
+/// These defaults depend on the street-network and can be found in the respective module `network`.
+///
+///
+/// ## Additional information
+///
+/// This `pbf`-parser uses [osmpbfreader-rs](https://crates.io/crates/osmpbfreader).
+/// An own implementation would need [the pbf-impl of rust](https://github.com/stepancheg/rust-protobuf), but the previously mentioned osmpbfreader works well.
+/// `*.osm`-xml-files are not supported, but could be read with [quick-xml](https://github.com/tafia/quick-xml).
+///
+/// Other libraries processing openstreetmap-data can be found [in the osm-wiki](https://wiki.openstreetmap.org/wiki/Frameworks#Data_Processing_or_Parsing_Libraries).
+pub struct Parser;
+impl Parser {
+    pub fn parse<P: AsRef<Path> + ?Sized>(path: &P) -> Result<GraphBuilder, String> {
+        match Type::from_path(path)? {
+            Type::PBF => pbf::Parser::parse(path),
+            Type::FMI => fmi::Parser::parse(path),
+        }
+    }
+
+    pub fn parse_and_finalize<P: AsRef<Path> + ?Sized>(path: &P) -> Result<Graph, String> {
+        match Type::from_path(path)? {
+            Type::PBF => pbf::Parser::parse_and_finalize(path),
+            Type::FMI => fmi::Parser::parse_and_finalize(path),
+        }
+    }
+}
 
 trait Parsing {
     fn open_file<P: AsRef<Path> + ?Sized>(path: &P) -> Result<File, String> {
@@ -84,23 +126,6 @@ impl Type {
                 "The file {:?} has no extension. Supported extensions are {:?}",
                 &path, supported_exts
             ))
-        }
-    }
-}
-
-pub struct Parser;
-impl Parser {
-    pub fn parse<P: AsRef<Path> + ?Sized>(path: &P) -> Result<GraphBuilder, String> {
-        match Type::from_path(path)? {
-            Type::PBF => pbf::Parser::parse(path),
-            Type::FMI => fmi::Parser::parse(path),
-        }
-    }
-
-    pub fn parse_and_finalize<P: AsRef<Path> + ?Sized>(path: &P) -> Result<Graph, String> {
-        match Type::from_path(path)? {
-            Type::PBF => pbf::Parser::parse_and_finalize(path),
-            Type::FMI => fmi::Parser::parse_and_finalize(path),
         }
     }
 }
