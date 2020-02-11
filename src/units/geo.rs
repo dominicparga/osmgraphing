@@ -1,11 +1,17 @@
 use crate::units::{length::Meters, Metric};
-use std::{cmp::Ordering, fmt};
+use std::{cmp::Ordering, fmt, fmt::Display};
 
 /// Coordinate storing `lat`/`lon` as `i32` with accuracy `1e-7`.
 #[derive(Copy, Clone, Debug)]
 pub struct Coordinate {
     decimicro_lat: i32,
     decimicro_lon: i32,
+}
+
+impl Default for Coordinate {
+    fn default() -> Self {
+        Coordinate::zero()
+    }
 }
 
 impl Coordinate {
@@ -20,6 +26,12 @@ impl Coordinate {
         Coordinate {
             decimicro_lat: (lat * 1e7) as i32,
             decimicro_lon: (lon * 1e7) as i32,
+        }
+    }
+
+    pub fn zero() -> Coordinate {
+        Coordinate {
+            decimicro_lat: 0, decimicro_lon: 0
         }
     }
 
@@ -49,7 +61,7 @@ impl PartialEq for Coordinate {
     }
 }
 
-impl fmt::Display for Coordinate {
+impl Display for Coordinate {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
