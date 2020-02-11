@@ -20,6 +20,6 @@ Maybe, it is concept for later documentation, or just keep-up-the-good-work (`ku
 ## Other
 
 - Write down alternative implementation-approaches
-- Building the graph could be improved in memory-usage by processing edge-packets and replacing them instead of processing all at once.
-- Implement shortcut-edges more memory-efficient storing list of costs per src-dst-pair instead of per edge.
-- Routing from src-node to dst-node where dst-node has at least the city-level of the src-node.
+  - Building the graph could be improved in memory-usage by processing edge-packets and replacing them instead of processing all at once.
+  - Implement shortcut-edges more memory-efficient storing list of costs per src-dst-pair instead of per edge.
+  - Routing from src-node to dst-node where dst-node has at least the city-level of the src-node.
