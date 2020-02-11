@@ -82,14 +82,28 @@ fn main() {
     // generate random route-pairs
     let route_count = 100;
     let seed = 42;
-    let mut rng = rand_pcg::Pcg32::seed_from_u64(seed);
-    let die = Uniform::from(0..nodes.count());
-    let mut routes = vec![];
-    for _ in 0..route_count {
-        let src_idx = NodeIdx::new(die.sample(&mut rng));
-        let dst_idx = NodeIdx::new(die.sample(&mut rng));
-        routes.push((src_idx, dst_idx));
-    }
+    let routes = {
+        let mut routes = vec![];
+        // if all possible routes are less than the preferred route-count
+        // -> just print all possible routes
+        // else: print random routes
+        if nodes.count() * nodes.count() <= route_count {
+            for src_idx in (0..nodes.count()).map(NodeIdx::new) {
+                for dst_idx in (0..nodes.count()).map(NodeIdx::new) {
+                    routes.push((src_idx, dst_idx));
+                }
+            }
+        } else {
+            let mut rng = rand_pcg::Pcg32::seed_from_u64(seed);
+            let die = Uniform::from(0..nodes.count());
+            for _ in 0..route_count {
+                let src_idx = NodeIdx::new(die.sample(&mut rng));
+                let dst_idx = NodeIdx::new(die.sample(&mut rng));
+                routes.push((src_idx, dst_idx));
+            }
+        }
+        routes
+    };
 
     // calculate best paths
     for (src_idx, dst_idx) in routes {

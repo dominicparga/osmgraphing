@@ -58,7 +58,7 @@ __[Dominic Parga Cacheiro][github/dominicparga]__
 has been part of the project's first weeks when project-planning and learning Rust was on the scope.
 He continues the work and is writing and improving the simulation.
 
-__[Jena Satkunarajan][github/jenasatkunarajan]__  
+__[Jena Satkunarajan][github/jenasat]__  
 has been part of the project's first weeks when project-planning and learning Rust was on the scope.
 He has implemented the first (and running) approach of the `A*`-algorithm.
 
@@ -69,7 +69,7 @@ He has implemented the first (and running) approach of the `A*`-algorithm.
 [docs.rs/self/badge]: https://img.shields.io/crates/v/osmgraphing?color=informational&label=docs&style=for-the-badge
 [geofabrik]: https://geofabrik.de
 [github/dominicparga]: https://github.com/dominicparga
-[github/jenasatkunarajan]: https://github.com/praisethefun
+[github/jenasat]: https://github.com/JenaSat
 [github/lesstat]: https://github.com/lesstat
 [github/lesstat/multi-ch-constructor]: https://github.com/Lesstat/multi-ch-constructor
 [github/lesstat/pbfextractor]: https://github.com/Lesstat/pbfextractor
