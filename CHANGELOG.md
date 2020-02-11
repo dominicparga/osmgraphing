@@ -8,30 +8,67 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 ## Table of contents
 
 1. [Unreleased](#unreleased)
-1. [v0.7.1](#v0.7.1)
-    1. [v0.7.0](#v0.7.0)
+1. [v0.8.0](#v0.8.0)
+    1. [v0.7.1](#v0.7.1)
+        1. [v0.7.0](#v0.7.0)
 1. [v1.0.0-yanked](#v1.0.0)
 1. [v0.6.1](#v0.6.1)
     1. [v0.6.0](#v0.6.0)
-1. [v0.5.0](#v0.5.0)
+    1. [v0.5.0](#v0.5.0)
     1. [v0.4.1](#v0.4.1)
-    1. [v0.4.0](#v0.4.0)
-1. [v0.3.1](#v0.3.1)
-    1. [v0.3.0](#v0.3.0)
-1. [v0.2.4](#v0.2.4)
-    1. [v0.2.3](#v0.2.3)
-    1. [v0.2.2](#v0.2.2)
-    1. [v0.2.1](#v0.2.1)
-    1. [v0.2.0](#v0.2.0)
-1. [v0.1.5](#v0.1.5)
-    1. [v0.1.4](#v0.1.4)
-    1. [v0.1.3](#v0.1.3)
-    1. [v0.1.2](#v0.1.2)
-    1. [v0.1.1](#v0.1.1)
-    1. [v0.1.0](#v0.1.0)
+        1. [v0.4.0](#v0.4.0)
+    1. [v0.3.1](#v0.3.1)
+        1. [v0.3.0](#v0.3.0)
+    1. [v0.2.4](#v0.2.4)
+        1. [v0.2.3](#v0.2.3)
+        1. [v0.2.2](#v0.2.2)
+        1. [v0.2.1](#v0.2.1)
+        1. [v0.2.0](#v0.2.0)
+    1. [v0.1.5](#v0.1.5)
+        1. [v0.1.4](#v0.1.4)
+        1. [v0.1.3](#v0.1.3)
+        1. [v0.1.2](#v0.1.2)
+        1. [v0.1.1](#v0.1.1)
+        1. [v0.1.0](#v0.1.0)
 
 
 ## [Unreleased][github/self/unreleased] <a name="unreleased"></a>
+
+### Added <a name="unreleased/added"></a>
+
+\-
+
+
+### Changed <a name="unreleased/changed"></a>
+
+\-
+
+
+### Deprecated <a name="unreleased/deprecated"></a>
+
+- Documentation is missing, though comments are very well.
+- `CHANGELOG.md` contains empty version-descriptions.
+  - Replace existing tags with ones referring to `CHANGELOG.md` and add old tag-texts to the `CHANGELOG.md`
+  - Inconsistent `semver` in old tags -> probably `cargo yank VERSION` needed
+- The link to `doc.rs` is hardcoded to `major.minor.patch=0.y.z` because `docs.rs` chooses version `1.0.0` though it's yanked..
+
+
+### Removed <a name="unreleased/removed"></a>
+
+\-
+
+
+### Fixed <a name="unreleased/fixed"></a>
+
+\-
+
+
+### Security <a name="unreleased/security"></a>
+
+\-
+
+
+## [v0.8.0][github/self/v0.8.0] <a name="v0.8.0"></a>
 
 ### Added <a name="v0.8.0/added"></a>
 
@@ -53,7 +90,7 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 - Add trait `Display` as dependency for trait `Metric`.
 
 
-### Changed
+### Changed <a name="v0.8.0/changed"></a>
 
 - Change graph-building
   - __Reduce additional memory-usage__ when building graph.
@@ -69,7 +106,7 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 - Rename some methods more explicetly, like `geo::Coordinate::from -> geo::Coordinate::from_64`.
 
 
-### Deprecated
+### Deprecated <a name="v0.8.0/deprecated"></a>
 
 - Documentation is missing, though comments are very well.
 - `CHANGELOG.md` contains empty version-descriptions.
@@ -78,21 +115,11 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 - The link to `doc.rs` is hardcoded to `major.minor.patch=0.y.z` because `docs.rs` chooses version `1.0.0` though it's yanked..
 
 
-### Removed
-
-\-
-
-
-### Fixed
+### Fixed <a name="v0.8.0/fixed"></a>
 
 - In `CHANGELOG.md`, markdown-links (not URLs!) in the table-of-contents should be persistent, meaning `#v1.0.0-yanked` should be `#v1.0.0`.
 - In example `astar`, the distance has been printed with two units (`123 m m`).
 - Add an alternative best route to a test-case of the small graph, that has been missing.
-
-
-### Security
-
-\-
 
 
 ## [v0.7.1][github/self/v0.7.1] <a name="v0.7.1"></a>
@@ -115,7 +142,7 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 
 ## [v0.7.0][github/self/v0.7.0] <a name="v0.7.0"></a>
 
-### Added
+### Added <a name="v0.7.0/added"></a>
 
 - Implement __access to forward-edges and backward-edges__, as preparation to the `bidirectional Dijkstra`, .
   - Process queries for forward-edges and backward-edges by the same code, due to the new pattern with the __shallow containers__.
@@ -126,7 +153,7 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
   - Support typical calculations as `v = s/t`, typed correctly (`meters / milliseconds -> km/h`).
 
 
-### Changed
+### Changed <a name="v0.7.0/changed"></a>
 
 - Comment in `Cargo.toml`, over changing the version, to not forget changing the `CHANGELOG.md`.
 - Refactor the graph by a new pattern.
@@ -140,7 +167,7 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
   - Change the access to best-path-algorithms slightly.
 
 
-### Deprecated
+### Deprecated <a name="v0.7.0/deprecated"></a>
 
 - Documentation is missing, though comments are very well.
 - `CHANGELOG.md` contains empty version-descriptions.
@@ -149,7 +176,7 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 - Routing should be extended by a `bidirectional Astar`.
 
 
-### Removed
+### Removed <a name="v0.7.0/removed"></a>
 
 - The feature showing whether an `edge is enabled` is being removed to make handling backward-edges easier.
 - `Edge-ID`s are not needed and hence removed.
@@ -166,12 +193,12 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
   Before, both (tag and `Cargo.toml`) had to be updated.
 
 
-### Changed
+### Changed <a name="v1.0.0/changed"></a>
 
 - The `README.md` has no longer `News` due to the new `CHANGELOG.md`.
 
 
-### Deprecated
+### Deprecated <a name="v1.0.0/deprecated></a>
 
 - `CHANGELOG.md` contains empty version-descriptions.
 - Replace existing tags with ones referring to `CHANGELOG.md` and add old tag-texts to the `CHANGELOG.md`
@@ -184,7 +211,7 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 - Routing should be extended by a `bidirectional Astar`.
 
 
-### Removed
+### Removed <a name="v1.0.0/removed></a>
 
 - The `braess-optimization` has been removed (to a `kutgw`-branch), since it's just kind of a big playground and interferes with future code, at least when testing.
 - `Travis-CI` has been replaced by `GitHub`-workflows (-> see section [`Added`](#v1.0.0/added)).
@@ -192,126 +219,126 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 
 ## [v0.6.1][github/self/v0.6.1] <a name="v0.6.1"></a>
 
-### Deprecated
+### Deprecated <a name="0.6.1/deprecated"></a>
 
 - todo
 
 
 ## [v0.6.0][github/self/v0.6.0] <a name="v0.6.0"></a>
 
-### Deprecated
+### Deprecated <a name="0.6.0/deprecated"></a>
 
 - todo
 
 
 ## [v0.5.0][github/self/v0.5.0] <a name="v0.5.0"></a>
 
-### Deprecated
+### Deprecated <a name="0.5.0/deprecated"></a>
 
 - todo
 
 
 ## [v0.4.1][github/self/v0.4.1] <a name="v0.4.1"></a>
 
-### Deprecated
+### Deprecated <a name="0.4.1/deprecated"></a>
 
 - todo
 
 
 ## [v0.4.0][github/self/v0.4.0] <a name="v0.4.0"></a>
 
-### Deprecated
+### Deprecated <a name="0.4.0/deprecated"></a>
 
 - todo
 
 
 ## [v0.3.1][github/self/v0.3.1] <a name="v0.3.1"></a>
 
-### Deprecated
+### Deprecated <a name="0.3.1/deprecated"></a>
 
 - todo
 
 
 ## [v0.3.0][github/self/v0.3.0] <a name="v0.3.0"></a>
 
-### Deprecated
+### Deprecated <a name="0.3.0/deprecated"></a>
 
 - todo
 
 
 ## [v0.2.4][github/self/v0.2.4] <a name="v0.2.4"></a>
 
-### Deprecated
+### Deprecated <a name="0.2.4/deprecated"></a>
 
 - todo
 
 
 ## [v0.2.3][github/self/v0.2.3] <a name="v0.2.3"></a>
 
-### Deprecated
+### Deprecated <a name="0.2.3/deprecated"></a>
 
 - todo
 
 
 ## [v0.2.2][github/self/v0.2.2] <a name="v0.2.2"></a>
 
-### Deprecated
+### Deprecated <a name="0.2.2/deprecated"></a>
 
 - todo
 
 
 ## [v0.2.1][github/self/v0.2.1] <a name="v0.2.1"></a>
 
-### Deprecated
+### Deprecated <a name="0.2.1/deprecated"></a>
 
 - todo
 
 
 ## [v0.2.0][github/self/v0.2.0] <a name="v0.2.0"></a>
 
-### Deprecated
+### Deprecated <a name="0.2.0/deprecated"></a>
 
 - todo
 
 
 ## [v0.1.5][github/self/v0.1.5] <a name="v0.1.5"></a>
 
-### Deprecated
+### Deprecated <a name="0.1.5/deprecated"></a>
 
 - todo
 
 
 ## [v0.1.4][github/self/v0.1.4] <a name="v0.1.4"></a>
 
-### Deprecated
+### Deprecated <a name="0.1.4/deprecated"></a>
 
 - todo
 
 
 ## [v0.1.3][github/self/v0.1.3] <a name="v0.1.3"></a>
 
-### Deprecated
+### Deprecated <a name="0.1.3/deprecated"></a>
 
 - todo
 
 
 ## [v0.1.2][github/self/v0.1.2] <a name="v0.1.2"></a>
 
-### Deprecated
+### Deprecated <a name="0.1.2/deprecated"></a>
 
 - todo
 
 
 ## [v0.1.1][github/self/v0.1.1] <a name="v0.1.1"></a>
 
-### Deprecated
+### Deprecated <a name="0.1.1/deprecated"></a>
 
 - todo
 
 
 ## [v0.1.0][github/self/v0.1.0] <a name="v0.1.0"></a>
 
-### Deprecated
+### Deprecated <a name="0.1.0/deprecated"></a>
 
 - todo
 
@@ -319,7 +346,8 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 [keepachangelog]: https://keepachangelog.com/en/
 [semver]: https://semver.org/
 
-[github/self/unreleased]: https://github.com/dominicparga/osmgraphing/compare/v0.7.1...HEAD
+[github/self/unreleased]: https://github.com/dominicparga/osmgraphing/compare/v0.8.0...HEAD
+[github/self/v0.8.0]: https://github.com/dominicparga/osmgraphing/compare/v0.7.1...v0.8.0
 [github/self/v0.7.1]: https://github.com/dominicparga/osmgraphing/compare/v0.7.0...v0.7.1
 [github/self/v0.7.0]: https://github.com/dominicparga/osmgraphing/compare/v1.0.0-yanked...v0.7.0
 [github/self/v1.0.0-yanked]: https://github.com/dominicparga/osmgraphing/compare/v0.6.1...v1.0.0-yanked
