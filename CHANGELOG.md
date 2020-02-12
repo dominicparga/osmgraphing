@@ -37,6 +37,7 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 ### Added <a name="unreleased/added"></a>
 
 - Implement `zero()` for `geo::Coordinate`.
+- Implement __multi-dimensional metrics__, being comparable according to __pareto-optimality__.
 
 
 ### Changed <a name="unreleased/changed"></a>
