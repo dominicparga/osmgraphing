@@ -9,7 +9,6 @@ use std::{
 };
 
 //------------------------------------------------------------------------------------------------//
-// basic stuff
 
 #[derive(Copy, Clone, Debug, Hash)]
 pub struct NodeIdx {

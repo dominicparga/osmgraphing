@@ -11,25 +11,25 @@ use std::{
 //------------------------------------------------------------------------------------------------//
 
 #[derive(Copy, Clone, Debug, Hash)]
-pub struct EdgeIdx {
+pub struct MetricIdx {
     value: usize,
 }
 
-impl EdgeIdx {
-    pub fn new(n: usize) -> EdgeIdx {
-        EdgeIdx { value: n }
+impl MetricIdx {
+    pub fn new(n: usize) -> MetricIdx {
+        MetricIdx { value: n }
     }
 
     pub fn to_usize(&self) -> usize {
         self.value
     }
 
-    pub fn zero() -> EdgeIdx {
-        EdgeIdx { value: 0 }
+    pub fn zero() -> MetricIdx {
+        MetricIdx { value: 0 }
     }
 }
 
-impl Display for EdgeIdx {
+impl Display for MetricIdx {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         self.value.fmt(f)
     }
@@ -38,21 +38,21 @@ impl Display for EdgeIdx {
 //------------------------------------------------------------------------------------------------//
 // ordering
 
-impl Ord for EdgeIdx {
+impl Ord for MetricIdx {
     fn cmp(&self, other: &Self) -> Ordering {
         self.value.cmp(&other.value)
     }
 }
 
-impl PartialOrd for EdgeIdx {
+impl PartialOrd for MetricIdx {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
 
-impl Eq for EdgeIdx {}
+impl Eq for MetricIdx {}
 
-impl PartialEq for EdgeIdx {
+impl PartialEq for MetricIdx {
     fn eq(&self, other: &Self) -> bool {
         self.value == other.value
     }
@@ -61,23 +61,23 @@ impl PartialEq for EdgeIdx {
 //------------------------------------------------------------------------------------------------//
 // operations
 
-impl Add<EdgeIdx> for EdgeIdx {
+impl Add<MetricIdx> for MetricIdx {
     type Output = Self;
 
-    fn add(self, other: EdgeIdx) -> Self {
+    fn add(self, other: MetricIdx) -> Self {
         Self {
             value: self.value + other.value,
         }
     }
 }
 
-impl AddAssign<EdgeIdx> for EdgeIdx {
-    fn add_assign(&mut self, other: EdgeIdx) {
+impl AddAssign<MetricIdx> for MetricIdx {
+    fn add_assign(&mut self, other: MetricIdx) {
         self.value += other.value;
     }
 }
 
-impl Add<usize> for EdgeIdx {
+impl Add<usize> for MetricIdx {
     type Output = Self;
 
     fn add(self, other: usize) -> Self {
@@ -87,7 +87,7 @@ impl Add<usize> for EdgeIdx {
     }
 }
 
-impl AddAssign<usize> for EdgeIdx {
+impl AddAssign<usize> for MetricIdx {
     fn add_assign(&mut self, other: usize) {
         self.value += other;
     }

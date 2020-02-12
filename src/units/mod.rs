@@ -8,6 +8,13 @@ use std::{
     fmt::{Debug, Display},
 };
 
+pub enum MetricType {
+    Length,
+    Speed,
+    Time,
+    U32,
+}
+
 pub trait Metric: Clone + Copy + Debug + Default + Display {
     fn new<M: Into<Self>>(value: M) -> Self;
 

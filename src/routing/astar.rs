@@ -210,7 +210,8 @@ pub mod unidirectional {
             M: Metric + PartialEq + Add<M, Output = M>,
         {
             fn eq(&self, other: &CostNode<M>) -> bool {
-                self.idx == other.idx && (self.cost + self.estimation) == (other.cost + other.estimation)
+                self.idx == other.idx
+                    && (self.cost + self.estimation) == (other.cost + other.estimation)
             }
         }
     }
