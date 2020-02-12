@@ -1,6 +1,3 @@
-//------------------------------------------------------------------------------------------------//
-// other modules
-
 use std::{
     cmp::{Ord, Ordering},
     fmt,
@@ -8,24 +5,21 @@ use std::{
     ops::{Add, AddAssign},
 };
 
-//------------------------------------------------------------------------------------------------//
-
+/// An index for accessing different metrices if the amount of them is known at runtime, like unspecified u32-metrices from the user.
+///
+/// If multiple data-types are needed, an enum `MetricType` could be implemented and added to MetricIdx.
 #[derive(Copy, Clone, Debug, Hash)]
 pub struct MetricIdx {
     value: usize,
 }
 
 impl MetricIdx {
-    pub fn new(n: usize) -> MetricIdx {
-        MetricIdx { value: n }
+    pub fn new(metric_idx: usize) -> MetricIdx {
+        MetricIdx { value: metric_idx }
     }
 
     pub fn to_usize(&self) -> usize {
         self.value
-    }
-
-    pub fn zero() -> MetricIdx {
-        MetricIdx { value: 0 }
     }
 }
 
@@ -60,22 +54,6 @@ impl PartialEq for MetricIdx {
 
 //------------------------------------------------------------------------------------------------//
 // operations
-
-impl Add<MetricIdx> for MetricIdx {
-    type Output = Self;
-
-    fn add(self, other: MetricIdx) -> Self {
-        Self {
-            value: self.value + other.value,
-        }
-    }
-}
-
-impl AddAssign<MetricIdx> for MetricIdx {
-    fn add_assign(&mut self, other: MetricIdx) {
-        self.value += other.value;
-    }
-}
 
 impl Add<usize> for MetricIdx {
     type Output = Self;

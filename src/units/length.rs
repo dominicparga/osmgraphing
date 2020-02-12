@@ -25,10 +25,6 @@ impl Display for Meters {
 }
 
 impl Metric for Meters {
-    fn new<M: Into<Meters>>(meters: M) -> Meters {
-        meters.into()
-    }
-
     fn zero() -> Meters {
         Meters { value: 0 }
     }

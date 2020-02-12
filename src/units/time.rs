@@ -26,10 +26,6 @@ impl Display for Milliseconds {
 }
 
 impl Metric for Milliseconds {
-    fn new<M: Into<Milliseconds>>(meters: M) -> Milliseconds {
-        meters.into()
-    }
-
     fn zero() -> Milliseconds {
         Milliseconds { value: 0 }
     }

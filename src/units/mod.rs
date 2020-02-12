@@ -8,21 +8,45 @@ use std::{
     fmt::{Debug, Display},
 };
 
-pub enum MetricType {
-    Length,
-    Speed,
-    Time,
-    U32,
-}
-
 pub trait Metric: Clone + Copy + Debug + Default + Display {
-    fn new<M: Into<Self>>(value: M) -> Self;
+    fn new<M: Into<Self>>(value: M) -> Self {
+        value.into()
+    }
 
     fn zero() -> Self;
 
     fn neg_inf() -> Self;
 
     fn inf() -> Self;
+}
+
+#[derive(Clone, Copy, Debug, Default)]
+pub struct MetricU32 {
+    value: u32,
+}
+
+impl Metric for MetricU32 {
+    fn zero() -> Self {
+        MetricU32 { value: 0 }
+    }
+
+    fn neg_inf() -> Self {
+        MetricU32 {
+            value: std::u32::MIN,
+        }
+    }
+
+    fn inf() -> Self {
+        MetricU32 {
+            value: std::u32::MAX,
+        }
+    }
+}
+
+impl Display for MetricU32 {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(f, "{}", self.value)
+    }
 }
 
 #[derive(Clone, Copy, Debug, Default)]
