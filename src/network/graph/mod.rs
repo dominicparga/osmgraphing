@@ -222,7 +222,8 @@ impl Display for Graph {
 
         writeln!(f, "")?;
 
-        let graph_stuff = vec![            (
+        let graph_stuff = vec![
+            (
                 self.fwd_edges(),
                 self.bwd_edges(),
                 &(self.fwd_offsets),
@@ -233,7 +234,8 @@ impl Display for Graph {
                 self.fwd_edges(),
                 &(self.bwd_offsets),
                 "bwd-",
-            ),];
+            ),
+        ];
         for stuff_idx in 0..graph_stuff.len() {
             let (fwd_dsts, bwd_dsts, xwd_offsets, xwd_prefix) = &graph_stuff[stuff_idx];
 

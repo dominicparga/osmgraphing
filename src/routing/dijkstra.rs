@@ -160,21 +160,26 @@ pub mod unidirectional {
 
         impl<M> PartialOrd for CostNode<M>
         where
-            M: Metric + Ord,
+            M: Metric + PartialOrd,
         {
             fn partial_cmp(&self, other: &CostNode<M>) -> Option<Ordering> {
-                Some(self.cmp(other))
+                let order = other.cost.partial_cmp(&(self.cost))?;
+                if order == Ordering::Equal {
+                    other.idx.partial_cmp(&self.idx)
+                } else {
+                    Some(order)
+                }
             }
         }
 
-        impl<M> Eq for CostNode<M> where M: Metric + Ord {}
+        impl<M> Eq for CostNode<M> where M: Metric + Eq {}
 
         impl<M> PartialEq for CostNode<M>
         where
-            M: Metric + Ord,
+            M: Metric + PartialEq,
         {
             fn eq(&self, other: &CostNode<M>) -> bool {
-                self.cmp(other) == Ordering::Equal
+                self.idx == other.idx && self.cost == other.cost
             }
         }
     }

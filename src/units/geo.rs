@@ -31,7 +31,8 @@ impl Coordinate {
 
     pub fn zero() -> Coordinate {
         Coordinate {
-            decimicro_lat: 0, decimicro_lon: 0
+            decimicro_lat: 0,
+            decimicro_lon: 0,
         }
     }
 
