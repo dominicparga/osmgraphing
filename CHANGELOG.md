@@ -36,12 +36,12 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 
 ### Added <a name="unreleased/added"></a>
 
-\-
+- Implement `zero()` for `geo::Coordinate`.
 
 
 ### Changed <a name="unreleased/changed"></a>
 
-\-
+- Implement clean ordering- and equal-traits for `CostNode`s in the routing-modules.
 
 
 ### Deprecated <a name="unreleased/deprecated"></a>
@@ -113,6 +113,7 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
   - Replace existing tags with ones referring to `CHANGELOG.md` and add old tag-texts to the `CHANGELOG.md`
   - Inconsistent `semver` in old tags -> probably `cargo yank VERSION` needed
 - The link to `doc.rs` is hardcoded to `major.minor.patch=0.y.z` because `docs.rs` chooses version `1.0.0` though it's yanked..
+- `CostNode`s in the routing-modules are implementing ordering- and equal-traits sloppy.
 
 
 ### Fixed <a name="v0.8.0/fixed"></a>
