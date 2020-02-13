@@ -236,7 +236,7 @@ impl Display for Graph {
                         xwd_prefix,
                         j,
                         self.node_ids[src_idx.to_usize()],
-                        half_edge.meters().unwrap(),
+                        half_edge.meters(),
                         self.node_ids[half_edge.dst_idx().to_usize()],
                     )?;
                 } else {
@@ -328,14 +328,14 @@ impl Display for Node {
 
 #[derive(Debug)]
 pub struct HalfEdge<'a> {
-    dst_idx: NodeIdx,
     idx: EdgeIdx,
+    edge_dsts: &'a Vec<NodeIdx>,
     metrics: &'a MetricContainer<'a>,
 }
 
 impl<'a> HalfEdge<'a> {
     pub fn dst_idx(&self) -> NodeIdx {
-        self.dst_idx
+        self.edge_dsts[self.idx.to_usize()]
     }
 
     pub fn lane_count(&self) -> u8 {
@@ -346,28 +346,28 @@ impl<'a> HalfEdge<'a> {
         self.metrics.lane_count(self.idx).unwrap()
     }
 
-    pub fn meters(&self) -> Option<Meters> {
+    pub fn meters(&self) -> Meters {
         debug_assert!(
-            self.metrics.meters(self.idx)? > Meters::zero(),
+            self.metrics.meters(self.idx).unwrap() > Meters::zero(),
             "Edge-length should be > 0"
         );
-        self.metrics.meters(self.idx)
+        self.metrics.meters(self.idx).unwrap()
     }
 
-    pub fn maxspeed(&self) -> Option<KilometersPerHour> {
+    pub fn maxspeed(&self) -> KilometersPerHour {
         debug_assert!(
-            self.metrics.maxspeed(self.idx)? > KilometersPerHour::zero(),
+            self.metrics.maxspeed(self.idx).unwrap() > KilometersPerHour::zero(),
             "Edge-maxspeed should be > 0"
         );
-        self.metrics.maxspeed(self.idx)
+        self.metrics.maxspeed(self.idx).unwrap()
     }
 
-    pub fn milliseconds(&self) -> Option<Milliseconds> {
+    pub fn milliseconds(&self) -> Milliseconds {
         debug_assert!(
-            self.metrics.milliseconds(self.idx)? > Milliseconds::zero(),
+            self.metrics.milliseconds(self.idx).unwrap() > Milliseconds::zero(),
             "Edge-milliseconds should be > 0"
         );
-        self.metrics.milliseconds(self.idx)
+        self.metrics.milliseconds(self.idx).unwrap()
     }
 }
 
@@ -384,11 +384,8 @@ impl<'a> Display for HalfEdge<'a> {
         write!(
             f,
             "{{ (src)-{}->({}) }}",
-            match self.meters() {
-                Some(meters) => format!("{}", meters),
-                None => format!("none"),
-            },
-            self.dst_idx,
+            self.meters(),
+            self.dst_idx(),
         )
     }
 }
@@ -455,7 +452,7 @@ impl<'a> EdgeContainer<'a> {
     pub fn half_edge(&'a self, idx: EdgeIdx) -> Option<HalfEdge> {
         Some(HalfEdge {
             idx,
-            dst_idx: *(self.edge_dsts.get(idx.to_usize())?),
+            edge_dsts: &self.edge_dsts,
             metrics: &self.metrics,
         })
     }
