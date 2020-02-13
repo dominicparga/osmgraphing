@@ -628,22 +628,19 @@ mod construction {
                     prefix,
                     self.name
                 );
-                // let meters = edge.meters().expect("Edge should have a length.");
-                let meters = edge.meters();
+                let meters = edge.meters().expect("Edge should have a length.");
                 assert_eq!(
                     meters, self.meters,
                     "Wrong meters={} for {}edge {}",
                     meters, prefix, self.name
                 );
-                // let maxspeed = edge.maxspeed().expect("Edge should have a maxspeed.");
-                let maxspeed = edge.maxspeed();
+                let maxspeed = edge.maxspeed().expect("Edge should have a maxspeed.");
                 assert_eq!(
                     maxspeed, self.maxspeed,
                     "Wrong maxspeed={} for {}edge {}",
                     maxspeed, prefix, self.name
                 );
-                // let milliseconds = edge.milliseconds().expect("Edge should have a duration.");
-                let milliseconds = edge.milliseconds();
+                let milliseconds = edge.milliseconds().expect("Edge should have a duration.");
                 assert_eq!(
                     milliseconds, self.milliseconds,
                     "Wrong milliseconds={} for {}edge {}",

@@ -26,7 +26,6 @@ The example below shows a case, where the metric `length` is weighted with `169 
 
 ```yaml
 graph:
-  relative_path: ./resources/...
   metrics:
   - id: "length"
     type: meters
