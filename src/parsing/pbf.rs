@@ -34,7 +34,7 @@ impl super::Parsing for Parser {
             if !highway_tag.is_for_vehicles(false) {
                 continue;
             }
-            let lane_count = highway_tag.parse_lane_count(&way);
+            let lane_count = MetricU8::new(highway_tag.parse_lane_count(&way));
             let maxspeed = KilometersPerHour::new(highway_tag.parse_maxspeed(&way));
             let (is_oneway, is_reverse) = highway_tag.parse_oneway(&way);
 
@@ -58,11 +58,7 @@ impl super::Parsing for Parser {
             for dst_id in nodes_iter {
                 graph_builder.push_edge(
                     // Some(way.id.0),
-                    src_id.0,
-                    dst_id.0,
-                    None,
-                    maxspeed,
-                    Some(vec![MetricU8::new(lane_count)]),
+                    src_id.0, dst_id.0, None, maxspeed, lane_count,
                 );
                 src_id = dst_id;
             }

@@ -22,7 +22,7 @@ impl super::Parsing for Parser {
                     proto_edge.dst_id,
                     proto_edge.meters,
                     proto_edge.maxspeed,
-                    None, // TODO metrics_u8
+                    proto_edge.lane_count,
                 );
             } else {
                 if line.parse::<intern::ProtoNode>().is_err() {
@@ -49,7 +49,7 @@ impl super::Parsing for Parser {
 }
 
 mod intern {
-    use crate::units::{geo, length::Meters, speed::KilometersPerHour};
+    use crate::units::{geo, length::Meters, speed::KilometersPerHour, MetricU8};
     pub use std::{io::BufReader as Reader, str};
 
     pub struct ProtoNode {
@@ -114,6 +114,7 @@ mod intern {
         pub dst_id: i64,
         pub meters: Option<Meters>,
         pub maxspeed: KilometersPerHour,
+        pub lane_count: MetricU8,
     }
 
     impl str::FromStr for ProtoEdge {
@@ -176,6 +177,7 @@ mod intern {
                 dst_id,
                 meters,
                 maxspeed,
+                lane_count: MetricU8::new(1), // TODO
             })
         }
     }

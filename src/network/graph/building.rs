@@ -26,9 +26,9 @@ impl ProtoNode {
 pub struct ProtoEdge {
     src_id: i64,
     dst_id: i64,
-    meters: Option<Meters>,
+    length: Option<Meters>,
     maxspeed: KilometersPerHour,
-    metrics_u8: Option<Vec<MetricU8>>,
+    lane_count: MetricU8,
 }
 
 /// handy for remembering indices after sorting backwards
@@ -83,20 +83,20 @@ impl GraphBuilder {
         &mut self,
         src_id: i64,
         dst_id: i64,
-        meters: Option<Meters>,
+        length: Option<Meters>,
         maxspeed: KilometersPerHour,
-        metrics_u8: Option<Vec<MetricU8>>,
+        lane_count: MetricU8,
     ) -> &mut Self {
         // add edge
         self.proto_edges.push(ProtoEdge {
             src_id,
             dst_id,
-            meters: match meters {
+            length: match length {
                 Some(meters) => Some(Meters::from(meters)),
                 None => None,
             },
             maxspeed,
-            metrics_u8,
+            lane_count,
         });
 
         // add or update src-node
@@ -269,9 +269,9 @@ impl GraphBuilder {
 
             // metrics
             // calculate distance if not provided
-            let meters = max(
+            let length = max(
                 Meters::new(1),
-                match proto_edge.meters {
+                match proto_edge.length {
                     Some(meters) => meters,
                     None => {
                         let src_coord = graph.nodes().coord(edge_src_idx);
@@ -280,11 +280,9 @@ impl GraphBuilder {
                     }
                 },
             );
-            graph.meters.push(meters);
-            graph.maxspeed.push(proto_edge.maxspeed.into());
-            graph
-                .metrics_u8
-                .push(proto_edge.metrics_u8.unwrap_or(Vec::with_capacity(0)));
+            graph.lengths.push(length);
+            graph.maxspeeds.push(proto_edge.maxspeed.into());
+            graph.lane_counts.push(proto_edge.lane_count);
 
             // print progress
             progress_bar.set(edge_idx);
@@ -304,12 +302,10 @@ impl GraphBuilder {
         graph.fwd_offsets.shrink_to_fit();
         graph.fwd_to_fwd_map.shrink_to_fit();
         graph.bwd_dsts.shrink_to_fit();
-        graph.meters.shrink_to_fit();
-        graph.maxspeed.shrink_to_fit();
-        for metrics in graph.metrics_u8.iter_mut() {
-            metrics.shrink_to_fit();
-        }
-        graph.metrics_u8.shrink_to_fit();
+        graph.lengths.shrink_to_fit();
+        graph.maxspeeds.shrink_to_fit();
+        graph.lane_counts.shrink_to_fit();
+        graph.metrics_u32.shrink_to_fit();
         info!("FINISHED");
 
         //----------------------------------------------------------------------------------------//

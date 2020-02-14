@@ -4,7 +4,7 @@ use crate::units::{
     geo::Coordinate, length::Meters, speed::KilometersPerHour, time::Milliseconds, Metric,
     MetricU32, MetricU8,
 };
-pub use indexing::{EdgeIdx, MetricIdx, NodeIdx};
+pub use indexing::{EdgeIdx, NodeIdx};
 use std::{fmt, fmt::Display};
 
 /// Stores graph-data as offset-graph in arrays and provides methods and shallow structs for accessing them.
@@ -85,10 +85,10 @@ pub struct Graph {
     bwd_offsets: Vec<usize>,
     bwd_to_fwd_map: Vec<EdgeIdx>,
     // edge-metrics (sorted according to fwd_dsts)
-    meters: Vec<Meters>,
-    maxspeed: Vec<KilometersPerHour>,
-    metrics_u8: Vec<Vec<MetricU8>>,
-    metrics_u32: Vec<Vec<MetricU32>>,
+    lengths: Vec<Meters>,
+    maxspeeds: Vec<KilometersPerHour>,
+    lane_counts: Vec<MetricU8>,
+    metrics_u32: Vec<MetricU32>,
 }
 
 impl Default for Graph {
@@ -106,9 +106,9 @@ impl Default for Graph {
             bwd_offsets: Vec::new(),
             bwd_to_fwd_map: Vec::new(),
             // edge-metrics
-            meters: Vec::new(),
-            maxspeed: Vec::new(),
-            metrics_u8: Vec::new(),
+            lengths: Vec::new(),
+            maxspeeds: Vec::new(),
+            lane_counts: Vec::new(),
             metrics_u32: Vec::new(),
         }
     }
@@ -148,9 +148,9 @@ impl Graph {
 
     pub fn metrics<'a>(&'a self) -> MetricContainer<'a> {
         MetricContainer {
-            meters: &self.meters,
-            maxspeed: &self.maxspeed,
-            metrics_u8: &self.metrics_u8,
+            lengths: &self.lengths,
+            maxspeeds: &self.maxspeeds,
+            lane_counts: &self.lane_counts,
             metrics_u32: &self.metrics_u32,
         }
     }
@@ -362,12 +362,12 @@ impl<'a> HalfEdge<'a> {
         self.metrics.duration(self.idx)
     }
 
-    pub fn metric_u8(&self, metric_idx: MetricIdx) -> Option<MetricU8> {
-        self.metrics.metric_u8(metric_idx, self.idx)
+    pub fn lane_count(&self) -> Option<MetricU8> {
+        self.metrics.lane_count(self.idx)
     }
 
-    pub fn metric_u32(&self, metric_idx: MetricIdx) -> Option<MetricU32> {
-        self.metrics.metric_u32(metric_idx, self.idx)
+    pub fn metric_u32(&self) -> Option<MetricU32> {
+        self.metrics.metric_u32(self.idx)
     }
 }
 
@@ -524,22 +524,22 @@ impl<'a> EdgeContainer<'a> {
 /// Shallow means that it does only contain references to the graph's data-arrays.
 #[derive(Debug)]
 pub struct MetricContainer<'a> {
-    meters: &'a Vec<Meters>,
-    maxspeed: &'a Vec<KilometersPerHour>,
-    metrics_u8: &'a Vec<Vec<MetricU8>>,
-    metrics_u32: &'a Vec<Vec<MetricU32>>,
+    lengths: &'a Vec<Meters>,
+    maxspeeds: &'a Vec<KilometersPerHour>,
+    lane_counts: &'a Vec<MetricU8>,
+    metrics_u32: &'a Vec<MetricU32>,
 }
 
 impl<'a> MetricContainer<'a> {
     pub fn length(&self, edge_idx: EdgeIdx) -> Option<Meters> {
         let edge_idx = edge_idx.to_usize();
-        let meters = *(self.meters.get(edge_idx)?);
-        Some(meters)
+        let length = *(self.lengths.get(edge_idx)?);
+        Some(length)
     }
 
     pub fn maxspeed(&self, edge_idx: EdgeIdx) -> Option<KilometersPerHour> {
         let edge_idx = edge_idx.to_usize();
-        let maxspeed = *(self.maxspeed.get(edge_idx)?);
+        let maxspeed = *(self.maxspeeds.get(edge_idx)?);
         Some(maxspeed)
     }
 
@@ -547,17 +547,13 @@ impl<'a> MetricContainer<'a> {
         Some(self.length(edge_idx)? / self.maxspeed(edge_idx)?)
     }
 
-    pub fn metric_u8(&self, metric_idx: MetricIdx, edge_idx: EdgeIdx) -> Option<MetricU8> {
-        let metric_idx = metric_idx.to_usize();
-        let metrics = self.metrics_u8.get(metric_idx)?;
+    pub fn lane_count(&self, edge_idx: EdgeIdx) -> Option<MetricU8> {
         let edge_idx = edge_idx.to_usize();
-        Some(*(metrics.get(edge_idx)?))
+        Some(*(self.lane_counts.get(edge_idx)?))
     }
 
-    pub fn metric_u32(&self, metric_idx: MetricIdx, edge_idx: EdgeIdx) -> Option<MetricU32> {
-        let metric_idx = metric_idx.to_usize();
-        let metrics = self.metrics_u32.get(metric_idx)?;
+    pub fn metric_u32(&self, edge_idx: EdgeIdx) -> Option<MetricU32> {
         let edge_idx = edge_idx.to_usize();
-        Some(*(metrics.get(edge_idx)?))
+        Some(*(self.metrics_u32.get(edge_idx)?))
     }
 }
