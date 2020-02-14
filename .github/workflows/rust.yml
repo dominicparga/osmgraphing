@@ -62,14 +62,15 @@ jobs:
       run: cargo bench --bench routing -- --warm-up-time 10 --measurement-time 120
     - name: Prepare upload
       run: |
-        mkdir artifacts
-        mv target/criterion/ artifacts/
-        echo "commit \`$(git rev-parse --verify HEAD)\`" > artifacts/README.md
+        mkdir 'artifacts' && cd 'artifacts'
+        __ARTIFACTS="$(git rev-parse --verify HEAD)"
+        mkdir "${__ARTIFACTS}"
+        mv target/criterion/ "${__ARTIFACTS}/"
     - name: Upload results
       uses: actions/upload-artifact@v1
       with:
         name: benches
-        path: artifacts
+        path: artifacts/
   deploy-and-tag:
     runs-on: ubuntu-latest
     needs: [stable, benches]
