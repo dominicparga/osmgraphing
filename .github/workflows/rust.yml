@@ -53,21 +53,6 @@ jobs:
         cargo run --example astar
         cargo run --example parser
       continue-on-error: true
-  test-benches:
-    runs-on: ubuntu-latest
-    steps:
-    - name: Checkout
-      uses: actions/checkout@v2
-    - name: Prepare upload
-      run: |
-        mkdir 'artifacts' && cd 'artifacts'
-        __ARTIFACTS="$(git rev-parse --verify HEAD)"
-        mkdir "${__ARTIFACTS}"
-    - name: Upload results
-      uses: actions/upload-artifact@v1
-      with:
-        name: benches
-        path: artifacts/
   benches:
     runs-on: ubuntu-latest
     steps:
