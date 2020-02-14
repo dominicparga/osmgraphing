@@ -106,10 +106,10 @@ impl Default for Graph {
             bwd_offsets: Vec::new(),
             bwd_to_fwd_map: Vec::new(),
             // edge-metrics
-            lengths: Vec::new(),
-            maxspeeds: Vec::new(),
-            lane_counts: Vec::new(),
-            metrics_u32: Vec::new(),
+            lengths: Vec::with_capacity(0),
+            maxspeeds: Vec::with_capacity(0),
+            lane_counts: Vec::with_capacity(0),
+            metrics_u32: Vec::with_capacity(0),
         }
     }
 }
