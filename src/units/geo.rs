@@ -9,7 +9,7 @@ pub struct Coordinate {
 }
 
 impl Default for Coordinate {
-    fn default() -> Self {
+    fn default() -> Coordinate {
         Coordinate::zero()
     }
 }
@@ -107,6 +107,7 @@ pub fn haversine_distance(from: &Coordinate, to: &Coordinate) -> f64 {
         * (2.0 * earth_mean_radius)
 }
 
+/// Note that the result could have rounding errors due to up-scaling (* 1000.0) and cutting afterwards (f64 -> u32)
 pub fn haversine_distance_m(from: &Coordinate, to: &Coordinate) -> Meters {
-    Meters::new(1_000.0 * haversine_distance(from, to))
+    Meters::new((1_000.0 * haversine_distance(from, to)) as u32)
 }

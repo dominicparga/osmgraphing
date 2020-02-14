@@ -535,9 +535,9 @@ mod construction {
             is_fwd: bool,
             src_idx: NodeIdx,
             dst_idx: NodeIdx,
-            meters: Meters,
+            length: Meters,
             maxspeed: KilometersPerHour,
-            milliseconds: Milliseconds,
+            duration: Milliseconds,
         }
 
         impl TestEdge {
@@ -546,9 +546,9 @@ mod construction {
                 edge_idx: usize,
                 src: &TestNode,
                 dst: &TestNode,
-                meters: u32,
+                length: u32,
                 maxspeed: u16,
-                milliseconds: u32,
+                duration: u32,
             ) -> TestEdge {
                 TestEdge {
                     name: (name.unwrap_or(&format!("{}->{}", src.name, dst.name))).to_owned(),
@@ -556,9 +556,9 @@ mod construction {
                     is_fwd: true,
                     src_idx: src.idx.into(),
                     dst_idx: dst.idx.into(),
-                    meters: meters.into(),
-                    maxspeed: maxspeed.into(),
-                    milliseconds: milliseconds.into(),
+                    length: Meters::new(length),
+                    maxspeed: KilometersPerHour::new(maxspeed),
+                    duration: Milliseconds::new(duration),
                 }
             }
 
@@ -567,9 +567,9 @@ mod construction {
                 edge_idx: usize,
                 src: &TestNode,
                 dst: &TestNode,
-                meters: u32,
+                length: u32,
                 maxspeed: u16,
-                milliseconds: u32,
+                duration: u32,
             ) -> TestEdge {
                 TestEdge {
                     name: (name.unwrap_or(&format!("{}->{}", src.name, dst.name))).to_owned(),
@@ -577,9 +577,9 @@ mod construction {
                     is_fwd: false,
                     src_idx: src.idx.into(),
                     dst_idx: dst.idx.into(),
-                    meters: meters.into(),
-                    maxspeed: maxspeed.into(),
-                    milliseconds: milliseconds.into(),
+                    length: Meters::new(length),
+                    maxspeed: KilometersPerHour::new(maxspeed),
+                    duration: Milliseconds::new(duration),
                 }
             }
 
@@ -628,11 +628,11 @@ mod construction {
                     prefix,
                     self.name
                 );
-                let meters = edge.meters().expect("Edge should have a length.");
+                let length = edge.length().expect("Edge should have a length.");
                 assert_eq!(
-                    meters, self.meters,
-                    "Wrong meters={} for {}edge {}",
-                    meters, prefix, self.name
+                    length, self.length,
+                    "Wrong length={} for {}edge {}",
+                    length, prefix, self.name
                 );
                 let maxspeed = edge.maxspeed().expect("Edge should have a maxspeed.");
                 assert_eq!(
@@ -640,11 +640,11 @@ mod construction {
                     "Wrong maxspeed={} for {}edge {}",
                     maxspeed, prefix, self.name
                 );
-                let milliseconds = edge.milliseconds().expect("Edge should have a duration.");
+                let duration = edge.duration().expect("Edge should have a duration.");
                 assert_eq!(
-                    milliseconds, self.milliseconds,
-                    "Wrong milliseconds={} for {}edge {}",
-                    milliseconds, prefix, self.name
+                    duration, self.duration,
+                    "Wrong duration={} for {}edge {}",
+                    duration, prefix, self.name
                 );
             }
         }

@@ -43,24 +43,12 @@ impl Metric for KilometersPerHour {
 }
 
 impl KilometersPerHour {
+    pub fn new(value: u16) -> KilometersPerHour {
+        KilometersPerHour {value}
+    }
+
     pub fn value(&self) -> u16 {
         self.value
-    }
-}
-
-//--------------------------------------------------------------------------------------------//
-// conversion from/to
-
-impl Into<u16> for KilometersPerHour {
-    fn into(self) -> u16 {
-        self.value
-    }
-}
-
-/// Note that the result could have rounding errors due to up-scaling (* 1000.0) and cutting afterwards (f64 -> u16)
-impl From<u16> for KilometersPerHour {
-    fn from(value: u16) -> Self {
-        KilometersPerHour { value: value }
     }
 }
 
@@ -70,7 +58,7 @@ impl From<u16> for KilometersPerHour {
 impl Add<KilometersPerHour> for KilometersPerHour {
     type Output = KilometersPerHour;
 
-    fn add(self, other: KilometersPerHour) -> Self {
+    fn add(self, other: KilometersPerHour) -> KilometersPerHour {
         KilometersPerHour {
             value: self.value + other.value,
         }
@@ -86,7 +74,7 @@ impl AddAssign<KilometersPerHour> for KilometersPerHour {
 impl Mul<u16> for KilometersPerHour {
     type Output = KilometersPerHour;
 
-    fn mul(self, scale: u16) -> Self {
+    fn mul(self, scale: u16) -> KilometersPerHour {
         KilometersPerHour {
             value: scale * self.value,
         }
@@ -106,7 +94,7 @@ impl Mul<Milliseconds> for KilometersPerHour {
     fn mul(self, rhs: Milliseconds) -> Meters {
         let speed = self.value as u32;
         let time = rhs.value();
-        (speed * time / 3_600).into()
+        Meters::new(speed * time / 3_600)
     }
 }
 
@@ -129,7 +117,7 @@ impl DivAssign<u16> for KilometersPerHour {
 impl Mul<f64> for KilometersPerHour {
     type Output = KilometersPerHour;
 
-    fn mul(self, scale: f64) -> Self {
+    fn mul(self, scale: f64) -> KilometersPerHour {
         let new_value = scale * (self.value as f64) * scale;
         KilometersPerHour {
             value: new_value as u16,

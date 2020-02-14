@@ -44,6 +44,10 @@ impl Metric for Milliseconds {
 }
 
 impl Milliseconds {
+    pub fn new(value: u32) -> Milliseconds {
+        Milliseconds {value}
+    }
+
     pub fn value(&self) -> u32 {
         self.value
     }
@@ -55,46 +59,16 @@ impl Milliseconds {
 impl Index<NodeIdx> for Vec<Milliseconds> {
     type Output = Milliseconds;
 
-    fn index(&self, idx: NodeIdx) -> &Self::Output {
+    fn index(&self, idx: NodeIdx) -> &Milliseconds {
         let idx: usize = idx.to_usize();
         &self[idx]
     }
 }
 
 impl IndexMut<NodeIdx> for Vec<Milliseconds> {
-    fn index_mut(&mut self, idx: NodeIdx) -> &mut Self::Output {
+    fn index_mut(&mut self, idx: NodeIdx) -> &mut Milliseconds {
         let idx: usize = idx.to_usize();
         &mut self[idx]
-    }
-}
-
-//--------------------------------------------------------------------------------------------//
-// conversion from/to
-
-impl Into<f64> for Milliseconds {
-    fn into(self) -> f64 {
-        self.value as f64
-    }
-}
-
-impl From<f64> for Milliseconds {
-    fn from(value: f64) -> Self {
-        Milliseconds {
-            value: value as u32,
-        }
-    }
-}
-
-impl Into<u32> for Milliseconds {
-    fn into(self) -> u32 {
-        self.value
-    }
-}
-
-/// Note that the result could have rounding errors due to up-scaling (* 1000.0) and cutting afterwards (f64 -> u32)
-impl From<u32> for Milliseconds {
-    fn from(value: u32) -> Self {
-        Milliseconds { value: value }
     }
 }
 
@@ -104,7 +78,7 @@ impl From<u32> for Milliseconds {
 impl Add<Milliseconds> for Milliseconds {
     type Output = Milliseconds;
 
-    fn add(self, other: Milliseconds) -> Self {
+    fn add(self, other: Milliseconds) -> Milliseconds {
         Milliseconds {
             value: self.value + other.value,
         }
@@ -120,7 +94,7 @@ impl AddAssign<Milliseconds> for Milliseconds {
 impl Mul<u32> for Milliseconds {
     type Output = Milliseconds;
 
-    fn mul(self, scale: u32) -> Self {
+    fn mul(self, scale: u32) -> Milliseconds {
         Milliseconds {
             value: scale * self.value,
         }
@@ -136,7 +110,7 @@ impl MulAssign<u32> for Milliseconds {
 impl Mul<f64> for Milliseconds {
     type Output = Milliseconds;
 
-    fn mul(self, scale: f64) -> Self {
+    fn mul(self, scale: f64) -> Milliseconds {
         let new_value = scale * (self.value as f64) * scale;
         Milliseconds {
             value: new_value as u32,
@@ -158,6 +132,6 @@ impl Mul<KilometersPerHour> for Milliseconds {
     fn mul(self, rhs: KilometersPerHour) -> Meters {
         let time = self.value;
         let speed = rhs.value() as u32;
-        (speed * time / 3_600).into()
+        Meters::new(speed * time / 3_600)
     }
 }

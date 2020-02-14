@@ -9,10 +9,6 @@ use std::{
 };
 
 pub trait Metric: Clone + Copy + Debug + Default + Display {
-    fn new<M: Into<Self>>(value: M) -> Self {
-        value.into()
-    }
-
     fn zero() -> Self;
 
     fn neg_inf() -> Self;
@@ -21,31 +17,72 @@ pub trait Metric: Clone + Copy + Debug + Default + Display {
 }
 
 #[derive(Clone, Copy, Debug, Default)]
+pub struct MetricU8 {
+    value: u8,
+}
+
+impl Display for MetricU8 {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(f, "{}", self.value)
+    }
+}
+
+impl Metric for MetricU8 {
+    fn zero() -> MetricU8 {
+        MetricU8 { value: 0 }
+    }
+
+    fn neg_inf() -> MetricU8 {
+        MetricU8 {
+            value: std::u8::MIN,
+        }
+    }
+
+    fn inf() -> MetricU8 {
+        MetricU8 {
+            value: std::u8::MAX,
+        }
+    }
+}
+
+impl MetricU8 {
+    pub fn new(value: u8) -> MetricU8 {
+        MetricU8 { value }
+    }
+}
+
+#[derive(Clone, Copy, Debug, Default)]
 pub struct MetricU32 {
     value: u32,
 }
 
+impl Display for MetricU32 {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(f, "{}", self.value)
+    }
+}
+
 impl Metric for MetricU32 {
-    fn zero() -> Self {
+    fn zero() -> MetricU32 {
         MetricU32 { value: 0 }
     }
 
-    fn neg_inf() -> Self {
+    fn neg_inf() -> MetricU32 {
         MetricU32 {
             value: std::u32::MIN,
         }
     }
 
-    fn inf() -> Self {
+    fn inf() -> MetricU32 {
         MetricU32 {
             value: std::u32::MAX,
         }
     }
 }
 
-impl Display for MetricU32 {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        writeln!(f, "{}", self.value)
+impl MetricU32 {
+    pub fn new(value: u32) -> MetricU32 {
+        MetricU32 { value }
     }
 }
 
@@ -74,29 +111,35 @@ where
     M0: Metric,
     M1: Metric,
 {
-    fn new<M: Into<Self>>(value: M) -> Self {
-        value.into()
-    }
-
-    fn zero() -> Self {
+    fn zero() -> Metric2D<M0, M1> {
         Metric2D {
             m0: M0::zero(),
             m1: M1::zero(),
         }
     }
 
-    fn neg_inf() -> Self {
+    fn neg_inf() -> Metric2D<M0, M1> {
         Metric2D {
             m0: M0::zero(),
             m1: M1::zero(),
         }
     }
 
-    fn inf() -> Self {
+    fn inf() -> Metric2D<M0, M1> {
         Metric2D {
             m0: M0::inf(),
             m1: M1::inf(),
         }
+    }
+}
+
+impl<M0, M1> Metric2D<M0, M1>
+where
+    M0: Metric,
+    M1: Metric,
+{
+    fn new(m0: M0, m1: M1) -> Metric2D<M0, M1> {
+        Metric2D { m0, m1 }
     }
 }
 

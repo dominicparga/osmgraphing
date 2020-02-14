@@ -1,21 +1,13 @@
-//------------------------------------------------------------------------------------------------//
-// own modules
-
 mod pbf {
     pub use osmpbfreader::{reader::OsmPbfReader as Reader, OsmObj};
 }
 
-//------------------------------------------------------------------------------------------------//
-// other modules
-
 use crate::{
     network::{GraphBuilder, StreetType},
-    units::{geo::Coordinate, speed::KilometersPerHour, Metric},
+    units::{geo::Coordinate, speed::KilometersPerHour, Metric, MetricU8},
 };
 use log::info;
 use std::fs::File;
-
-//------------------------------------------------------------------------------------------------//
 
 pub struct Parser;
 impl super::Parsing for Parser {
@@ -66,7 +58,11 @@ impl super::Parsing for Parser {
             for dst_id in nodes_iter {
                 graph_builder.push_edge(
                     // Some(way.id.0),
-                    src_id.0, dst_id.0, lane_count, None, maxspeed,
+                    src_id.0,
+                    dst_id.0,
+                    None,
+                    maxspeed,
+                    Some(vec![MetricU8::new(lane_count)]),
                 );
                 src_id = dst_id;
             }

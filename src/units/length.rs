@@ -43,38 +43,12 @@ impl Metric for Meters {
 }
 
 impl Meters {
+    pub fn new(value: u32) -> Meters {
+        Meters { value }
+    }
+
     pub fn value(&self) -> u32 {
         self.value
-    }
-}
-
-//--------------------------------------------------------------------------------------------//
-// conversion from/to
-
-impl Into<f64> for Meters {
-    fn into(self) -> f64 {
-        self.value as f64
-    }
-}
-
-impl From<f64> for Meters {
-    fn from(value: f64) -> Self {
-        Meters {
-            value: value as u32,
-        }
-    }
-}
-
-impl Into<u32> for Meters {
-    fn into(self) -> u32 {
-        self.value
-    }
-}
-
-/// Note that the result could have rounding errors due to up-scaling (* 1000.0) and cutting afterwards (f64 -> u32)
-impl From<u32> for Meters {
-    fn from(value: u32) -> Self {
-        Meters { value: value }
     }
 }
 
@@ -84,7 +58,7 @@ impl From<u32> for Meters {
 impl Add<Meters> for Meters {
     type Output = Meters;
 
-    fn add(self, other: Meters) -> Self {
+    fn add(self, other: Meters) -> Meters {
         Meters {
             value: self.value + other.value,
         }
@@ -100,7 +74,7 @@ impl AddAssign<Meters> for Meters {
 impl Mul<u32> for Meters {
     type Output = Meters;
 
-    fn mul(self, scale: u32) -> Self {
+    fn mul(self, scale: u32) -> Meters {
         Meters {
             value: scale * self.value,
         }
@@ -116,7 +90,7 @@ impl MulAssign<u32> for Meters {
 impl Mul<f64> for Meters {
     type Output = Meters;
 
-    fn mul(self, scale: f64) -> Self {
+    fn mul(self, scale: f64) -> Meters {
         let new_value = scale * (self.value as f64) * scale;
         Meters {
             value: new_value as u32,

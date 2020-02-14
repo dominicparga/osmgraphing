@@ -1,5 +1,5 @@
 use super::{EdgeIdx, Graph, NodeIdx};
-use crate::units::{geo, geo::Coordinate, length::Meters, speed::KilometersPerHour};
+use crate::units::{geo, geo::Coordinate, length::Meters, speed::KilometersPerHour, MetricU8};
 use log::{error, info, trace};
 use progressing;
 use progressing::Bar;
@@ -26,9 +26,9 @@ impl ProtoNode {
 pub struct ProtoEdge {
     src_id: i64,
     dst_id: i64,
-    lane_count: u8,
     meters: Option<Meters>,
     maxspeed: KilometersPerHour,
+    metrics_u8: Option<Vec<MetricU8>>,
 }
 
 /// handy for remembering indices after sorting backwards
@@ -83,20 +83,20 @@ impl GraphBuilder {
         &mut self,
         src_id: i64,
         dst_id: i64,
-        lane_count: u8,
         meters: Option<Meters>,
         maxspeed: KilometersPerHour,
+        metrics_u8: Option<Vec<MetricU8>>,
     ) -> &mut Self {
         // add edge
         self.proto_edges.push(ProtoEdge {
             src_id,
             dst_id,
-            lane_count,
             meters: match meters {
                 Some(meters) => Some(Meters::from(meters)),
                 None => None,
             },
             maxspeed,
+            metrics_u8,
         });
 
         // add or update src-node
@@ -270,7 +270,7 @@ impl GraphBuilder {
             // metrics
             // calculate distance if not provided
             let meters = max(
-                Meters::from(1),
+                Meters::new(1),
                 match proto_edge.meters {
                     Some(meters) => meters,
                     None => {
@@ -282,7 +282,9 @@ impl GraphBuilder {
             );
             graph.meters.push(meters);
             graph.maxspeed.push(proto_edge.maxspeed.into());
-            graph.lane_count.push(proto_edge.lane_count);
+            graph
+                .metrics_u8
+                .push(proto_edge.metrics_u8.unwrap_or(Vec::with_capacity(0)));
 
             // print progress
             progress_bar.set(edge_idx);
@@ -304,7 +306,10 @@ impl GraphBuilder {
         graph.bwd_dsts.shrink_to_fit();
         graph.meters.shrink_to_fit();
         graph.maxspeed.shrink_to_fit();
-        graph.lane_count.shrink_to_fit();
+        for metrics in graph.metrics_u8.iter_mut() {
+            metrics.shrink_to_fit();
+        }
+        graph.metrics_u8.shrink_to_fit();
         info!("FINISHED");
 
         //----------------------------------------------------------------------------------------//
