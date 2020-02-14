@@ -44,7 +44,7 @@ impl Metric for KilometersPerHour {
 
 impl KilometersPerHour {
     pub fn new(value: u16) -> KilometersPerHour {
-        KilometersPerHour {value}
+        KilometersPerHour { value }
     }
 
     pub fn value(&self) -> u16 {

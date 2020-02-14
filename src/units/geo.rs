@@ -1,4 +1,4 @@
-use crate::units::{length::Meters, Metric};
+use crate::units::length::Meters;
 use std::{cmp::Ordering, fmt, fmt::Display};
 
 /// Coordinate storing `lat`/`lon` as `i32` with accuracy `1e-7`.

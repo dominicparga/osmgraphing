@@ -4,7 +4,7 @@ mod pbf {
 
 use crate::{
     network::{GraphBuilder, StreetType},
-    units::{geo::Coordinate, speed::KilometersPerHour, Metric, MetricU8},
+    units::{geo::Coordinate, speed::KilometersPerHour, MetricU8},
 };
 use log::info;
 use std::fs::File;

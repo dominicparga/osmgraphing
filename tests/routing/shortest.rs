@@ -171,9 +171,21 @@ fn expected_paths_simple_stuttgart(
         // opp
         (opp, opp, Some((Meters::new(0), vec![vec![]]))),
         (opp, bac, Some((Meters::new(8_000), vec![vec![opp, bac]]))),
-        (opp, wai, Some((Meters::new(31_000), vec![vec![opp, bac, wai]]))),
-        (opp, end, Some((Meters::new(30_000), vec![vec![opp, bac, end]]))),
-        (opp, dea, Some((Meters::new(9_069), vec![vec![opp, bac, dea]]))),
+        (
+            opp,
+            wai,
+            Some((Meters::new(31_000), vec![vec![opp, bac, wai]])),
+        ),
+        (
+            opp,
+            end,
+            Some((Meters::new(30_000), vec![vec![opp, bac, end]])),
+        ),
+        (
+            opp,
+            dea,
+            Some((Meters::new(9_069), vec![vec![opp, bac, dea]])),
+        ),
         (
             opp,
             stu,
@@ -185,20 +197,40 @@ fn expected_paths_simple_stuttgart(
         (bac, wai, Some((Meters::new(23_000), vec![vec![bac, wai]]))),
         (bac, end, Some((Meters::new(22_000), vec![vec![bac, end]]))),
         (bac, dea, Some((Meters::new(1_069), vec![vec![bac, dea]]))),
-        (bac, stu, Some((Meters::new(40_000), vec![vec![bac, wai, stu]]))),
+        (
+            bac,
+            stu,
+            Some((Meters::new(40_000), vec![vec![bac, wai, stu]])),
+        ),
         // wai
-        (wai, opp, Some((Meters::new(31_000), vec![vec![wai, bac, opp]]))),
+        (
+            wai,
+            opp,
+            Some((Meters::new(31_000), vec![vec![wai, bac, opp]])),
+        ),
         (wai, bac, Some((Meters::new(23_000), vec![vec![wai, bac]]))),
         (wai, wai, Some((Meters::new(0), vec![vec![]]))),
         (wai, end, Some((Meters::new(8_000), vec![vec![wai, end]]))),
-        (wai, dea, Some((Meters::new(24_069), vec![vec![wai, bac, dea]]))),
+        (
+            wai,
+            dea,
+            Some((Meters::new(24_069), vec![vec![wai, bac, dea]])),
+        ),
         (wai, stu, Some((Meters::new(17_000), vec![vec![wai, stu]]))),
         // end
-        (end, opp, Some((Meters::new(30_000), vec![vec![end, bac, opp]]))),
+        (
+            end,
+            opp,
+            Some((Meters::new(30_000), vec![vec![end, bac, opp]])),
+        ),
         (end, bac, Some((Meters::new(22_000), vec![vec![end, bac]]))),
         (end, wai, Some((Meters::new(8_000), vec![vec![end, wai]]))),
         (end, end, Some((Meters::new(0), vec![vec![]]))),
-        (end, dea, Some((Meters::new(23_069), vec![vec![end, bac, dea]]))),
+        (
+            end,
+            dea,
+            Some((Meters::new(23_069), vec![vec![end, bac, dea]])),
+        ),
         (end, stu, Some((Meters::new(21_000), vec![vec![end, stu]]))),
         // dea
         (dea, opp, None),
@@ -213,7 +245,11 @@ fn expected_paths_simple_stuttgart(
             opp,
             Some((Meters::new(48_000), vec![vec![stu, wai, bac, opp]])),
         ),
-        (stu, bac, Some((Meters::new(40_000), vec![vec![stu, wai, bac]]))),
+        (
+            stu,
+            bac,
+            Some((Meters::new(40_000), vec![vec![stu, wai, bac]])),
+        ),
         (stu, wai, Some((Meters::new(17_000), vec![vec![stu, wai]]))),
         (stu, end, Some((Meters::new(21_000), vec![vec![stu, end]]))),
         (
@@ -323,7 +359,11 @@ fn expected_paths_small() -> Vec<(TestNode, TestNode, Option<(Meters, Vec<Vec<Te
             Some((Meters::new(4), vec![vec![g, e, d, b], vec![g, f, h, d, b]])),
         ),
         (g, c, Some((Meters::new(5), vec![vec![g, e, d, b, c]]))),
-        (g, d, Some((Meters::new(3), vec![vec![g, e, d], vec![g, f, d]]))),
+        (
+            g,
+            d,
+            Some((Meters::new(3), vec![vec![g, e, d], vec![g, f, d]])),
+        ),
         (g, e, Some((Meters::new(1), vec![vec![g, e]]))),
         (g, f, Some((Meters::new(1), vec![vec![g, f]]))),
         (g, g, Some((Meters::new(0), vec![vec![]]))),

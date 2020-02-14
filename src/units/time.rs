@@ -45,7 +45,7 @@ impl Metric for Milliseconds {
 
 impl Milliseconds {
     pub fn new(value: u32) -> Milliseconds {
-        Milliseconds {value}
+        Milliseconds { value }
     }
 
     pub fn value(&self) -> u32 {

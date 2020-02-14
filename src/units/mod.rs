@@ -138,7 +138,7 @@ where
     M0: Metric,
     M1: Metric,
 {
-    fn new(m0: M0, m1: M1) -> Metric2D<M0, M1> {
+    pub fn new(m0: M0, m1: M1) -> Metric2D<M0, M1> {
         Metric2D { m0, m1 }
     }
 }

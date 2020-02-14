@@ -49,7 +49,7 @@ impl super::Parsing for Parser {
 }
 
 mod intern {
-    use crate::units::{geo, length::Meters, speed::KilometersPerHour, Metric};
+    use crate::units::{geo, length::Meters, speed::KilometersPerHour};
     pub use std::{io::BufReader as Reader, str};
 
     pub struct ProtoNode {

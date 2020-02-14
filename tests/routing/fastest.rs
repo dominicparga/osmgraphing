@@ -173,7 +173,11 @@ fn expected_paths_simple_stuttgart() -> Vec<(
     vec![
         // opp
         (opp, opp, Some((Milliseconds::new(0), vec![vec![]]))),
-        (opp, bac, Some((Milliseconds::new(576_000), vec![vec![opp, bac]]))),
+        (
+            opp,
+            bac,
+            Some((Milliseconds::new(576_000), vec![vec![opp, bac]])),
+        ),
         (
             opp,
             wai,
@@ -184,18 +188,38 @@ fn expected_paths_simple_stuttgart() -> Vec<(
             end,
             Some((Milliseconds::new(1_566_000), vec![vec![opp, bac, end]])),
         ),
-        (opp, dea, Some((Milliseconds::new(704_280), vec![vec![opp, bac, dea]]))),
+        (
+            opp,
+            dea,
+            Some((Milliseconds::new(704_280), vec![vec![opp, bac, dea]])),
+        ),
         (
             opp,
             stu,
             Some((Milliseconds::new(1_878_000), vec![vec![opp, bac, wai, stu]])),
         ),
         // bac
-        (bac, opp, Some((Milliseconds::new(576_000), vec![vec![bac, opp]]))),
+        (
+            bac,
+            opp,
+            Some((Milliseconds::new(576_000), vec![vec![bac, opp]])),
+        ),
         (bac, bac, Some((Milliseconds::new(0), vec![vec![]]))),
-        (bac, wai, Some((Milliseconds::new(690_000), vec![vec![bac, wai]]))),
-        (bac, end, Some((Milliseconds::new(990_000), vec![vec![bac, end]]))),
-        (bac, dea, Some((Milliseconds::new(128_280), vec![vec![bac, dea]]))),
+        (
+            bac,
+            wai,
+            Some((Milliseconds::new(690_000), vec![vec![bac, wai]])),
+        ),
+        (
+            bac,
+            end,
+            Some((Milliseconds::new(990_000), vec![vec![bac, end]])),
+        ),
+        (
+            bac,
+            dea,
+            Some((Milliseconds::new(128_280), vec![vec![bac, dea]])),
+        ),
         (
             bac,
             stu,
@@ -207,26 +231,54 @@ fn expected_paths_simple_stuttgart() -> Vec<(
             opp,
             Some((Milliseconds::new(1_266_000), vec![vec![wai, bac, opp]])),
         ),
-        (wai, bac, Some((Milliseconds::new(690_000), vec![vec![wai, bac]]))),
+        (
+            wai,
+            bac,
+            Some((Milliseconds::new(690_000), vec![vec![wai, bac]])),
+        ),
         (wai, wai, Some((Milliseconds::new(0), vec![vec![]]))),
-        (wai, end, Some((Milliseconds::new(576_000), vec![vec![wai, end]]))),
-        (wai, dea, Some((Milliseconds::new(818_280), vec![vec![wai, bac, dea]]))),
-        (wai, stu, Some((Milliseconds::new(612_000), vec![vec![wai, stu]]))),
+        (
+            wai,
+            end,
+            Some((Milliseconds::new(576_000), vec![vec![wai, end]])),
+        ),
+        (
+            wai,
+            dea,
+            Some((Milliseconds::new(818_280), vec![vec![wai, bac, dea]])),
+        ),
+        (
+            wai,
+            stu,
+            Some((Milliseconds::new(612_000), vec![vec![wai, stu]])),
+        ),
         // end
         (
             end,
             opp,
             Some((Milliseconds::new(1_566_000), vec![vec![end, bac, opp]])),
         ),
-        (end, bac, Some((Milliseconds::new(990_000), vec![vec![end, bac]]))),
-        (end, wai, Some((Milliseconds::new(576_000), vec![vec![end, wai]]))),
+        (
+            end,
+            bac,
+            Some((Milliseconds::new(990_000), vec![vec![end, bac]])),
+        ),
+        (
+            end,
+            wai,
+            Some((Milliseconds::new(576_000), vec![vec![end, wai]])),
+        ),
         (end, end, Some((Milliseconds::new(0), vec![vec![]]))),
         (
             end,
             dea,
             Some((Milliseconds::new(1_118_280), vec![vec![end, bac, dea]])),
         ),
-        (end, stu, Some((Milliseconds::new(945_000), vec![vec![end, stu]]))),
+        (
+            end,
+            stu,
+            Some((Milliseconds::new(945_000), vec![vec![end, stu]])),
+        ),
         // dea
         (dea, opp, None),
         (dea, bac, None),
@@ -245,8 +297,16 @@ fn expected_paths_simple_stuttgart() -> Vec<(
             bac,
             Some((Milliseconds::new(1_302_000), vec![vec![stu, wai, bac]])),
         ),
-        (stu, wai, Some((Milliseconds::new(612_000), vec![vec![stu, wai]]))),
-        (stu, end, Some((Milliseconds::new(945_000), vec![vec![stu, end]]))),
+        (
+            stu,
+            wai,
+            Some((Milliseconds::new(612_000), vec![vec![stu, wai]])),
+        ),
+        (
+            stu,
+            end,
+            Some((Milliseconds::new(945_000), vec![vec![stu, end]])),
+        ),
         (
             stu,
             dea,
@@ -342,9 +402,17 @@ fn expected_paths_small() -> Vec<(
         (e, g, None),
         (e, h, Some((Milliseconds::new(240), vec![vec![e, f, h]]))),
         // f
-        (f, a, Some((Milliseconds::new(480), vec![vec![f, h, d, b, a]]))),
+        (
+            f,
+            a,
+            Some((Milliseconds::new(480), vec![vec![f, h, d, b, a]])),
+        ),
         (f, b, Some((Milliseconds::new(360), vec![vec![f, h, d, b]]))),
-        (f, c, Some((Milliseconds::new(480), vec![vec![f, h, d, b, c]]))),
+        (
+            f,
+            c,
+            Some((Milliseconds::new(480), vec![vec![f, h, d, b, c]])),
+        ),
         (f, d, Some((Milliseconds::new(240), vec![vec![f, h, d]]))),
         (f, e, Some((Milliseconds::new(120), vec![vec![f, e]]))),
         (f, f, Some((Milliseconds::new(0), vec![vec![]]))),
@@ -362,7 +430,10 @@ fn expected_paths_small() -> Vec<(
         (
             g,
             b,
-            Some((Milliseconds::new(480), vec![vec![g, e, d, b], vec![g, f, h, d, b]])),
+            Some((
+                Milliseconds::new(480),
+                vec![vec![g, e, d, b], vec![g, f, h, d, b]],
+            )),
         ),
         (
             g,
@@ -375,7 +446,10 @@ fn expected_paths_small() -> Vec<(
         (
             g,
             d,
-            Some((Milliseconds::new(360), vec![vec![g, e, d], vec![g, f, h, d]])),
+            Some((
+                Milliseconds::new(360),
+                vec![vec![g, e, d], vec![g, f, h, d]],
+            )),
         ),
         (g, e, Some((Milliseconds::new(120), vec![vec![g, e]]))),
         (g, f, Some((Milliseconds::new(120), vec![vec![g, f]]))),
@@ -432,31 +506,71 @@ fn expected_paths_bait() -> Vec<(
         // ll
         (ll, ll, Some((Milliseconds::new(0), vec![vec![]]))),
         (ll, bb, Some((Milliseconds::new(600), vec![vec![ll, bb]]))),
-        (ll, rr, Some((Milliseconds::new(1080), vec![vec![ll, tl, tr, rr]]))),
-        (ll, tr, Some((Milliseconds::new(720), vec![vec![ll, tl, tr]]))),
+        (
+            ll,
+            rr,
+            Some((Milliseconds::new(1080), vec![vec![ll, tl, tr, rr]])),
+        ),
+        (
+            ll,
+            tr,
+            Some((Milliseconds::new(720), vec![vec![ll, tl, tr]])),
+        ),
         (ll, tl, Some((Milliseconds::new(360), vec![vec![ll, tl]]))),
         // bb
         (bb, ll, Some((Milliseconds::new(600), vec![vec![bb, ll]]))),
         (bb, bb, Some((Milliseconds::new(0), vec![vec![]]))),
         (bb, rr, Some((Milliseconds::new(600), vec![vec![bb, rr]]))),
-        (bb, tr, Some((Milliseconds::new(960), vec![vec![bb, rr, tr]]))),
-        (bb, tl, Some((Milliseconds::new(960), vec![vec![bb, ll, tl]]))),
+        (
+            bb,
+            tr,
+            Some((Milliseconds::new(960), vec![vec![bb, rr, tr]])),
+        ),
+        (
+            bb,
+            tl,
+            Some((Milliseconds::new(960), vec![vec![bb, ll, tl]])),
+        ),
         // rr
-        (rr, ll, Some((Milliseconds::new(1080), vec![vec![rr, tr, tl, ll]]))),
+        (
+            rr,
+            ll,
+            Some((Milliseconds::new(1080), vec![vec![rr, tr, tl, ll]])),
+        ),
         (rr, bb, Some((Milliseconds::new(600), vec![vec![rr, bb]]))),
         (rr, rr, Some((Milliseconds::new(0), vec![vec![]]))),
         (rr, tr, Some((Milliseconds::new(360), vec![vec![rr, tr]]))),
-        (rr, tl, Some((Milliseconds::new(720), vec![vec![rr, tr, tl]]))),
+        (
+            rr,
+            tl,
+            Some((Milliseconds::new(720), vec![vec![rr, tr, tl]])),
+        ),
         // tr
-        (tr, ll, Some((Milliseconds::new(720), vec![vec![tr, tl, ll]]))),
-        (tr, bb, Some((Milliseconds::new(960), vec![vec![tr, rr, bb]]))),
+        (
+            tr,
+            ll,
+            Some((Milliseconds::new(720), vec![vec![tr, tl, ll]])),
+        ),
+        (
+            tr,
+            bb,
+            Some((Milliseconds::new(960), vec![vec![tr, rr, bb]])),
+        ),
         (tr, rr, Some((Milliseconds::new(360), vec![vec![tr, rr]]))),
         (tr, tr, Some((Milliseconds::new(0), vec![vec![]]))),
         (tr, tl, Some((Milliseconds::new(360), vec![vec![tr, tl]]))),
         // tl
         (tl, ll, Some((Milliseconds::new(360), vec![vec![tl, ll]]))),
-        (tl, bb, Some((Milliseconds::new(960), vec![vec![tl, ll, bb]]))),
-        (tl, rr, Some((Milliseconds::new(720), vec![vec![tl, tr, rr]]))),
+        (
+            tl,
+            bb,
+            Some((Milliseconds::new(960), vec![vec![tl, ll, bb]])),
+        ),
+        (
+            tl,
+            rr,
+            Some((Milliseconds::new(720), vec![vec![tl, tr, rr]])),
+        ),
         (tl, tr, Some((Milliseconds::new(360), vec![vec![tl, tr]]))),
         (tl, tl, Some((Milliseconds::new(0), vec![vec![]]))),
     ]
