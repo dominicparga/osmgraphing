@@ -4,7 +4,7 @@ use crate::units::{
     geo::Coordinate, length::Meters, speed::KilometersPerHour, time::Milliseconds, Metric,
     MetricU32, MetricU8,
 };
-pub use indexing::{EdgeIdx, NodeIdx};
+pub use indexing::{EdgeIdx, MetricIdx, NodeIdx};
 use std::{fmt, fmt::Display};
 
 /// Stores graph-data as offset-graph in arrays and provides methods and shallow structs for accessing them.
@@ -88,7 +88,7 @@ pub struct Graph {
     lengths: Vec<Meters>,
     maxspeeds: Vec<KilometersPerHour>,
     lane_counts: Vec<MetricU8>,
-    metrics_u32: Vec<MetricU32>,
+    metrics_u32: Vec<Vec<MetricU32>>,
 }
 
 impl Default for Graph {
@@ -366,8 +366,8 @@ impl<'a> HalfEdge<'a> {
         self.metrics.lane_count(self.idx)
     }
 
-    pub fn metric_u32(&self) -> Option<MetricU32> {
-        self.metrics.metric_u32(self.idx)
+    pub fn metric_u32(&self, metric_idx: MetricIdx) -> Option<MetricU32> {
+        self.metrics.metric_u32(metric_idx, self.idx)
     }
 }
 
@@ -527,7 +527,7 @@ pub struct MetricContainer<'a> {
     lengths: &'a Vec<Meters>,
     maxspeeds: &'a Vec<KilometersPerHour>,
     lane_counts: &'a Vec<MetricU8>,
-    metrics_u32: &'a Vec<MetricU32>,
+    metrics_u32: &'a Vec<Vec<MetricU32>>,
 }
 
 impl<'a> MetricContainer<'a> {
@@ -552,8 +552,9 @@ impl<'a> MetricContainer<'a> {
         Some(*(self.lane_counts.get(edge_idx)?))
     }
 
-    pub fn metric_u32(&self, edge_idx: EdgeIdx) -> Option<MetricU32> {
+    pub fn metric_u32(&self, metric_idx: MetricIdx, edge_idx: EdgeIdx) -> Option<MetricU32> {
+        let metric_idx = metric_idx.to_usize();
         let edge_idx = edge_idx.to_usize();
-        Some(*(self.metrics_u32.get(edge_idx)?))
+        Some(*(self.metrics_u32.get(metric_idx)?.get(edge_idx)?))
     }
 }
