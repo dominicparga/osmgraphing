@@ -62,9 +62,8 @@ jobs:
       run: cargo bench --bench routing -- --warm-up-time 10 --measurement-time 120
     - name: Prepare upload
       run: |
-        mkdir 'artifacts' && cd 'artifacts'
-        __ARTIFACTS="$(git rev-parse --verify HEAD)"
-        mkdir "${__ARTIFACTS}"
+        __ARTIFACTS="artifacts/$(git rev-parse --verify HEAD)"
+        mkdir -p "${__ARTIFACTS}"
         mv target/criterion/ "${__ARTIFACTS}/"
     - name: Upload results
       uses: actions/upload-artifact@v1
