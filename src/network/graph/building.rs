@@ -24,18 +24,58 @@ impl ProtoNode {
 
 #[derive(Debug)]
 pub struct ProtoEdge {
-    src_id: i64,
-    dst_id: i64,
+    core: MiniProtoEdge,
     length: Option<Meters>,
     maxspeed: KilometersPerHour,
     lane_count: MetricU8,
 }
 
+impl ProtoEdge {
+    fn src_id(&self) -> i64 {
+        self.core.src_id()
+    }
+
+    fn dst_id(&self) -> i64 {
+        self.core.dst_id()
+    }
+
+    fn idx_mut(&mut self) -> &mut usize {
+        self.core.idx_mut()
+    }
+
+    fn length(&self) -> Option<Meters> {
+        self.length
+    }
+
+    fn maxspeed(&self) -> KilometersPerHour {
+        self.maxspeed
+    }
+
+    fn lane_count(&self) -> MetricU8 {
+        self.lane_count
+    }
+}
+
 /// handy for remembering indices after sorting backwards
+#[derive(Debug)]
 struct MiniProtoEdge {
     src_id: i64,
     dst_id: i64,
     idx: usize,
+}
+
+impl MiniProtoEdge {
+    fn src_id(&self) -> i64 {
+        self.src_id
+    }
+
+    fn dst_id(&self) -> i64 {
+        self.dst_id
+    }
+
+    fn idx_mut(&mut self) -> &mut usize {
+        &mut (self.idx)
+    }
 }
 
 //------------------------------------------------------------------------------------------------//
@@ -89,8 +129,11 @@ impl GraphBuilder {
     ) -> &mut Self {
         // add edge
         self.proto_edges.push(ProtoEdge {
-            src_id,
-            dst_id,
+            core: MiniProtoEdge {
+                src_id,
+                dst_id,
+                idx: 0, // set later in finalize(...)
+            },
             length: match length {
                 Some(meters) => Some(Meters::from(meters)),
                 None => None,
@@ -187,22 +230,120 @@ impl GraphBuilder {
         // already dropped via iterator: drop(self.proto_nodes);
         graph.node_ids.shrink_to_fit();
         graph.node_coords.shrink_to_fit();
-        info!("FINISHED");
         assert_eq!(
             graph.node_ids.len() == graph.node_coords.len(),
             node_idx == graph.node_ids.len(),
             "The (maximum index - 1) should not be more than the number of nodes in the graph."
         );
+        info!("FINISHED");
 
         //----------------------------------------------------------------------------------------//
         // sort forward-edges by ascending src-id, then by ascending dst-id -> offset-array
 
         info!("START Sort proto-forward-edges by their src/dst-IDs.");
         self.proto_edges.sort_by(|e0, e1| {
-            e0.src_id
-                .cmp(&e1.src_id)
-                .then_with(|| e0.dst_id.cmp(&e1.dst_id))
+            e0.src_id()
+                .cmp(&e1.src_id())
+                .then_with(|| e0.dst_id().cmp(&e1.dst_id()))
         });
+        info!("FINISHED");
+
+        //----------------------------------------------------------------------------------------//
+        // build metrics
+
+        info!("START Create/store/filter metrics.");
+        let mut progress_bar = progressing::MappingBar::new(0..=self.proto_edges.len());
+        info!("{}", progress_bar);
+        // init metric-collections in graph (TODO config)
+        graph.lengths = Some(Vec::with_capacity(self.proto_edges.len()));
+        graph.maxspeeds = Some(Vec::with_capacity(self.proto_edges.len()));
+        graph.lane_counts = Some(Vec::with_capacity(self.proto_edges.len()));
+        graph.metrics_u32 = Some(Vec::new());
+        // start looping
+        let mut edge_idx = 0;
+        for proto_edge in self.proto_edges.iter_mut() {
+            // find edge-data to compare it with expected data later (when setting offset)
+            let src_id = proto_edge.src_id();
+            let dst_id = proto_edge.dst_id();
+            // Add edge-idx here to remember it for indirect mapping bwd->fwd.
+            // Update it at the end of the loop.
+            *(proto_edge.idx_mut()) = edge_idx;
+
+            // do not swap src and dst since this is a forward-edge
+            let edge_src_idx = match graph.nodes().idx_from(src_id) {
+                Ok(idx) => idx,
+                Err(_) => {
+                    return Err(format!(
+                        "The given src-id `{:?}` doesn't exist as node",
+                        src_id
+                    ))
+                }
+            };
+            let edge_dst_idx = match graph.nodes().idx_from(dst_id) {
+                Ok(idx) => idx,
+                Err(_) => {
+                    return Err(format!(
+                        "The given dst-id `{:?}` doesn't exist as node",
+                        dst_id
+                    ))
+                }
+            };
+
+            // metrics
+            // calculate distance if not provided
+            let length = max(
+                Meters::new(1),
+                match proto_edge.length() {
+                    Some(meters) => meters,
+                    None => {
+                        let src_coord = graph.nodes().coord(edge_src_idx);
+                        let dst_coord = graph.nodes().coord(edge_dst_idx);
+                        geo::haversine_distance_m(&src_coord, &dst_coord)
+                    }
+                },
+            );
+
+            // add metrics to graph
+            if let Some(lengths) = &mut graph.lengths {
+                lengths.push(length);
+            }
+            if let Some(maxspeeds) = &mut graph.maxspeeds {
+                maxspeeds.push(proto_edge.maxspeed());
+            }
+            if let Some(lane_counts) = &mut graph.lane_counts {
+                lane_counts.push(proto_edge.lane_count());
+            }
+
+            // print progress
+            progress_bar.set(edge_idx);
+            if progress_bar.progress() % (1 + (progress_bar.end() / 10)) == 0 {
+                info!("{}", progress_bar);
+            }
+
+            // update edge-idx
+            edge_idx += 1;
+        }
+        // last node needs an upper bound as well for `leaving_edges(...)`
+        info!("{}", progress_bar.set(edge_idx));
+        // reduce and optimize memory-usage
+        if let Some(lengths) = &mut graph.lengths {
+            lengths.shrink_to_fit();
+        }
+        if let Some(maxspeeds) = &mut graph.maxspeeds {
+            maxspeeds.shrink_to_fit();
+        }
+        if let Some(lane_counts) = &mut graph.lane_counts {
+            lane_counts.shrink_to_fit();
+        }
+        if let Some(metrics_u32) = &mut graph.metrics_u32 {
+            for metrics in metrics_u32.iter_mut() {
+                metrics.shrink_to_fit();
+            }
+            metrics_u32.shrink_to_fit();
+        }
+        // Drop edges
+        let mut new_proto_edges: Vec<MiniProtoEdge> =
+            self.proto_edges.into_iter().map(|e| e.core).collect();
         info!("FINISHED");
 
         //----------------------------------------------------------------------------------------//
@@ -210,7 +351,7 @@ impl GraphBuilder {
 
         // logging
         info!("START Create the forward-offset-array and the forward-mapping.");
-        let mut progress_bar = progressing::MappingBar::new(0..=self.proto_edges.len());
+        let mut progress_bar = progressing::MappingBar::new(0..=new_proto_edges.len());
         info!("{}", progress_bar);
         // start looping
         let mut src_idx = NodeIdx::zero();
@@ -219,19 +360,14 @@ impl GraphBuilder {
         // high-level-idea
         // count offset for each proto_edge (sorted) and apply offset as far as src doesn't change
         let mut edge_idx = 0;
-        let mut new_proto_edges = Vec::with_capacity(self.proto_edges.len());
-        for proto_edge in self.proto_edges.into_iter() {
+        for proto_edge in new_proto_edges.iter_mut() {
             // find edge-data to compare it with expected data later (when setting offset)
-            let src_id = proto_edge.src_id;
-            let dst_id = proto_edge.dst_id;
+            let src_id = proto_edge.src_id();
+            let dst_id = proto_edge.dst_id();
 
             // Add edge-idx here to remember it for indirect mapping bwd->fwd.
             // Update it at the end of the loop.
-            new_proto_edges.push(MiniProtoEdge {
-                src_id,
-                dst_id,
-                idx: edge_idx,
-            });
+            proto_edge.idx = edge_idx;
 
             // do not swap src and dst since this is a forward-edge
             let edge_src_idx = match graph.nodes().idx_from(src_id) {
@@ -267,23 +403,6 @@ impl GraphBuilder {
             // mapping fwd to fwd is just the identity
             graph.fwd_to_fwd_map.push(EdgeIdx::new(edge_idx));
 
-            // metrics
-            // calculate distance if not provided
-            let length = max(
-                Meters::new(1),
-                match proto_edge.length {
-                    Some(meters) => meters,
-                    None => {
-                        let src_coord = graph.nodes().coord(edge_src_idx);
-                        let dst_coord = graph.nodes().coord(edge_dst_idx);
-                        geo::haversine_distance_m(&src_coord, &dst_coord)
-                    }
-                },
-            );
-            graph.lengths.push(length);
-            graph.maxspeeds.push(proto_edge.maxspeed.into());
-            graph.lane_counts.push(proto_edge.lane_count);
-
             // print progress
             progress_bar.set(edge_idx);
             if progress_bar.progress() % (1 + (progress_bar.end() / 10)) == 0 {
@@ -302,10 +421,6 @@ impl GraphBuilder {
         graph.fwd_offsets.shrink_to_fit();
         graph.fwd_to_fwd_map.shrink_to_fit();
         graph.bwd_dsts.shrink_to_fit();
-        graph.lengths.shrink_to_fit();
-        graph.maxspeeds.shrink_to_fit();
-        graph.lane_counts.shrink_to_fit();
-        graph.metrics_u32.shrink_to_fit();
         info!("FINISHED");
 
         //----------------------------------------------------------------------------------------//
