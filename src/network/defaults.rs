@@ -175,7 +175,7 @@ impl StreetType {
         }
     }
 
-    fn _is_for_bicycles(&self, is_suitable: bool) -> bool {
+    pub fn is_for_bicycles(&self, is_suitable: bool) -> bool {
         match self {
             StreetType::Motorway => false,
             StreetType::MotorwayLink => false,
@@ -199,7 +199,7 @@ impl StreetType {
         }
     }
 
-    fn _is_for_pedestrians(&self, is_suitable: bool) -> bool {
+    pub fn is_for_pedestrians(&self, is_suitable: bool) -> bool {
         match self {
             StreetType::Motorway => false,
             StreetType::MotorwayLink => false,

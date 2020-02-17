@@ -1,6 +1,12 @@
 use super::{EdgeIdx, Graph, NodeIdx};
-use crate::units::{geo, geo::Coordinate, length::Meters, speed::KilometersPerHour, MetricU8};
-use log::{error, info, trace};
+use crate::{
+    configs::{graph, MetricType},
+    units::{
+        geo, geo::Coordinate, length::Meters, speed::KilometersPerHour, time::Milliseconds,
+        MetricU32, MetricU8,
+    },
+};
+use log::info;
 use progressing;
 use progressing::Bar;
 use std::{cmp::max, collections::BTreeMap};
@@ -26,8 +32,10 @@ impl ProtoNode {
 pub struct ProtoEdge {
     core: MiniProtoEdge,
     length: Option<Meters>,
-    maxspeed: KilometersPerHour,
-    lane_count: MetricU8,
+    maxspeed: Option<KilometersPerHour>,
+    duration: Option<Milliseconds>,
+    lane_count: Option<MetricU8>,
+    metric_u32: Option<MetricU32>,
 }
 
 impl ProtoEdge {
@@ -47,12 +55,24 @@ impl ProtoEdge {
         self.length
     }
 
-    fn maxspeed(&self) -> KilometersPerHour {
+    fn maxspeed(&self) -> Option<KilometersPerHour> {
         self.maxspeed
     }
 
-    fn lane_count(&self) -> MetricU8 {
+    fn duration(&self) -> Option<Milliseconds> {
+        if let Some(duration) = self.duration {
+            Some(duration)
+        } else {
+            Some(self.length()? / self.maxspeed()?)
+        }
+    }
+
+    fn lane_count(&self) -> Option<MetricU8> {
         self.lane_count
+    }
+
+    fn metric_u32(&self) -> Option<MetricU32> {
+        self.metric_u32
     }
 }
 
@@ -119,13 +139,16 @@ impl GraphBuilder {
         }
     }
 
+    /// Duration will be calculated from length and maxspeed if not provided.
     pub fn push_edge(
         &mut self,
         src_id: i64,
         dst_id: i64,
         length: Option<Meters>,
-        maxspeed: KilometersPerHour,
-        lane_count: MetricU8,
+        maxspeed: Option<KilometersPerHour>,
+        duration: Option<Milliseconds>,
+        lane_count: Option<MetricU8>,
+        metric_u32: Option<MetricU32>,
     ) -> &mut Self {
         // add edge
         self.proto_edges.push(ProtoEdge {
@@ -139,7 +162,9 @@ impl GraphBuilder {
                 None => None,
             },
             maxspeed,
+            duration,
             lane_count,
+            metric_u32,
         });
 
         // add or update src-node
@@ -173,7 +198,7 @@ impl GraphBuilder {
         self
     }
 
-    pub fn finalize(mut self) -> Result<Graph, String> {
+    pub fn finalize(mut self, cfg: &graph::Config) -> Result<Graph, String> {
         //----------------------------------------------------------------------------------------//
         // init graph
 
@@ -197,10 +222,6 @@ impl GraphBuilder {
         for (_id, proto_node) in self.proto_nodes.into_iter() {
             // add nodes only if they belong to an edge
             if !proto_node.is_in_edge() {
-                trace!(
-                    "Proto-node (id: {}) has no coordinates, but belongs to an edge",
-                    proto_node.id
-                );
                 progress_bar.add((0, 1));
                 continue;
             }
@@ -213,11 +234,10 @@ impl GraphBuilder {
                 progress_bar.add((1, 1));
             } else {
                 // should not happen if file is okay
-                error!(
-                    "Proto-node (id: {}) has no coordinates, but belongs to an edge",
+                return Err(format!(
+                    "Proto-node (id: {}) has no coordinates, but belongs to an edge.",
                     proto_node.id
-                );
-                progress_bar.add((0, 1));
+                ));
             }
 
             // print progress
@@ -250,15 +270,33 @@ impl GraphBuilder {
 
         //----------------------------------------------------------------------------------------//
         // build metrics
+        // If metrics are built before indices and offsets are built, the need of memory while
+        // building is reduced.
 
         info!("START Create/store/filter metrics.");
         let mut progress_bar = progressing::MappingBar::new(0..=self.proto_edges.len());
         info!("{}", progress_bar);
         // init metric-collections in graph (TODO config)
-        graph.lengths = Some(Vec::with_capacity(self.proto_edges.len()));
-        graph.maxspeeds = Some(Vec::with_capacity(self.proto_edges.len()));
-        graph.lane_counts = Some(Vec::with_capacity(self.proto_edges.len()));
-        graph.metrics_u32 = Some(Vec::new());
+        for metric_type in cfg.edges().metric_types().iter() {
+            match metric_type {
+                MetricType::Length { provided: _ } => {
+                    graph.lengths = Some(Vec::with_capacity(self.proto_edges.len()))
+                }
+                MetricType::Duration { provided: _ } => {
+                    graph.durations = Some(Vec::with_capacity(self.proto_edges.len()))
+                }
+                MetricType::Maxspeed { provided: _ } => {
+                    graph.maxspeeds = Some(Vec::with_capacity(self.proto_edges.len()))
+                }
+                MetricType::LaneCount => {
+                    graph.lane_counts = Some(Vec::with_capacity(self.proto_edges.len()))
+                }
+                MetricType::Custom => {
+                    graph.metrics_u32 = Some(Vec::with_capacity(self.proto_edges.len()))
+                }
+                MetricType::Id | MetricType::Ignore => (),
+            }
+        }
         // start looping
         let mut edge_idx = 0;
         for proto_edge in self.proto_edges.iter_mut() {
@@ -289,29 +327,91 @@ impl GraphBuilder {
                 }
             };
 
-            // metrics
-            // calculate distance if not provided
-            let length = max(
-                Meters::new(1),
-                match proto_edge.length() {
-                    Some(meters) => meters,
-                    None => {
-                        let src_coord = graph.nodes().coord(edge_src_idx);
-                        let dst_coord = graph.nodes().coord(edge_dst_idx);
-                        geo::haversine_distance_m(&src_coord, &dst_coord)
-                    }
-                },
-            );
-
             // add metrics to graph
-            if let Some(lengths) = &mut graph.lengths {
-                lengths.push(length);
+            // For every metric holds: if graph expects metric, it should be provided explicetly or implicitly.
+            // For calculating metrics from other metrics, two loop-runs are necessary.
+            for metric_type in cfg.edges().metric_types().iter() {
+                match metric_type {
+                    &MetricType::Length { provided } => {
+                        // If length is not provided -> calculate it by coordinates and haversine.
+                        let length = if !provided {
+                            let src_coord = graph.nodes().coord(edge_src_idx);
+                            let dst_coord = graph.nodes().coord(edge_dst_idx);
+                            geo::haversine_distance_m(&src_coord, &dst_coord)
+                        } else {
+                            proto_edge.length().unwrap()
+                        };
+
+                        // Length should be at least 1 to prevent errors, e.g. when dividing.
+                        graph
+                            .lengths
+                            .as_mut()
+                            .unwrap()
+                            .push(max(Meters::new(1), length));
+                    }
+                    &MetricType::Duration { provided } => {
+                        // If not provided, but expected in graph
+                        // -> calc with meters and maxspeed below
+                        if !provided {
+                            continue;
+                        }
+
+                        graph
+                            .durations
+                            .as_mut()
+                            .unwrap()
+                            .push(proto_edge.duration().unwrap())
+                    }
+                    &MetricType::Maxspeed { provided } => {
+                        if !provided {
+                            continue;
+                        }
+                        graph
+                            .maxspeeds
+                            .as_mut()
+                            .unwrap()
+                            .push(proto_edge.maxspeed().unwrap())
+                    }
+                    MetricType::LaneCount => graph
+                        .lane_counts
+                        .as_mut()
+                        .unwrap()
+                        .push(proto_edge.lane_count().unwrap()),
+                    MetricType::Custom => graph
+                        .metrics_u32
+                        .as_mut()
+                        .unwrap()
+                        .push(proto_edge.metric_u32().unwrap()),
+                    MetricType::Id | MetricType::Ignore => (),
+                }
             }
-            if let Some(maxspeeds) = &mut graph.maxspeeds {
-                maxspeeds.push(proto_edge.maxspeed());
-            }
-            if let Some(lane_counts) = &mut graph.lane_counts {
-                lane_counts.push(proto_edge.lane_count());
+            // Calculate metrics after provided ones are given.
+            for metric_type in cfg.edges().metric_types().iter() {
+                match metric_type {
+                    &MetricType::Duration { provided } => {
+                        if provided {
+                            continue;
+                        }
+
+                        let length = *(graph.lengths.as_ref().unwrap().last().unwrap());
+                        let maxspeed = *(graph.maxspeeds.as_ref().unwrap().last().unwrap());
+
+                        graph.durations.as_mut().unwrap().push(length / maxspeed);
+                    }
+                    &MetricType::Maxspeed { provided } => {
+                        if provided {
+                            continue;
+                        }
+                        let length = *(graph.lengths.as_ref().unwrap().last().unwrap());
+                        let duration = *(graph.durations.as_ref().unwrap().last().unwrap());
+                        graph.maxspeeds.as_mut().unwrap().push(length / duration);
+                    }
+                    MetricType::Id
+                    | &MetricType::Length { provided: _ }
+                    | MetricType::LaneCount
+                    | MetricType::Custom
+                    | MetricType::Ignore => (),
+                }
             }
 
             // print progress
@@ -336,9 +436,10 @@ impl GraphBuilder {
             lane_counts.shrink_to_fit();
         }
         if let Some(metrics_u32) = &mut graph.metrics_u32 {
-            for metrics in metrics_u32.iter_mut() {
-                metrics.shrink_to_fit();
-            }
+            // TODO
+            // for metrics in metrics_u32.iter_mut() {
+            //     metrics.shrink_to_fit();
+            // }
             metrics_u32.shrink_to_fit();
         }
         // Drop edges
@@ -428,9 +529,9 @@ impl GraphBuilder {
 
         info!("START Sort proto-backward-edges by their dst/src-IDs.");
         new_proto_edges.sort_by(|e0, e1| {
-            e0.dst_id
-                .cmp(&e1.dst_id)
-                .then_with(|| e0.src_id.cmp(&e1.src_id))
+            e0.dst_id()
+                .cmp(&e1.dst_id())
+                .then_with(|| e0.src_id().cmp(&e1.src_id()))
         });
         info!("FINISHED");
 
@@ -491,7 +592,7 @@ impl GraphBuilder {
             "Last offset-value should be as big as the number of proto-edges."
         );
         graph.bwd_offsets.push(offset);
-        info!("{}", progress_bar.set(offset));
+        info!("{}", progress_bar.set(edge_idx));
         // reduce and optimize memory-usage
         graph.bwd_offsets.shrink_to_fit();
         graph.bwd_to_fwd_map.shrink_to_fit();

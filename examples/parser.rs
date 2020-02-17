@@ -1,9 +1,8 @@
-use std::ffi::OsString;
 use std::time::Instant;
 
 use log::{error, info};
 
-use osmgraphing::Parser;
+use osmgraphing::{configs::graph, Parser};
 
 //------------------------------------------------------------------------------------------------//
 
@@ -31,13 +30,15 @@ fn main() {
     init_logging(false);
     info!("Executing example: parser");
 
-    let path = match std::env::args_os().nth(1) {
-        Some(path) => path,
-        None => OsString::from("resources/maps/isle-of-man_2019-09-05.osm.pbf"),
-    };
+    let mut cfg = graph::Config::default();
+    cfg.paths_mut()
+        .set_map_file("resources/maps/isle-of-man_2019-09-05.osm.pbf");
+    if let Some(path) = std::env::args_os().nth(1) {
+        cfg.paths_mut().set_map_file(path);
+    }
 
     let now = Instant::now();
-    let graph = match Parser::parse_and_finalize(&path) {
+    let graph = match Parser::parse_and_finalize(&cfg) {
         Ok(graph) => graph,
         Err(msg) => {
             error!("{}", msg);

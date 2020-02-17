@@ -23,7 +23,7 @@ pub struct MetricU8 {
 
 impl Display for MetricU8 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        writeln!(f, "{}", self.value)
+        write!(f, "{}", self.value)
     }
 }
 
@@ -58,7 +58,7 @@ pub struct MetricU32 {
 
 impl Display for MetricU32 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        writeln!(f, "{}", self.value)
+        write!(f, "{}", self.value)
     }
 }
 
@@ -102,7 +102,7 @@ where
     M1: Metric,
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        writeln!(f, "({}, {})", self.m0, self.m1)
+        write!(f, "({}, {})", self.m0, self.m1)
     }
 }
 

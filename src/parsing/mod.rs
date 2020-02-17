@@ -1,7 +1,10 @@
 pub mod fmi;
 pub mod pbf;
 
-use crate::network::{Graph, GraphBuilder};
+use crate::{
+    configs::graph,
+    network::{Graph, GraphBuilder},
+};
 use log::info;
 use std::{fs::File, path::Path};
 
@@ -39,18 +42,19 @@ use std::{fs::File, path::Path};
 ///
 /// Other libraries processing openstreetmap-data can be found [in the osm-wiki](https://wiki.openstreetmap.org/wiki/Frameworks#Data_Processing_or_Parsing_Libraries).
 pub struct Parser;
+
 impl Parser {
-    pub fn parse<P: AsRef<Path> + ?Sized>(path: &P) -> Result<GraphBuilder, String> {
-        match Type::from_path(path)? {
-            Type::PBF => pbf::Parser::parse(path),
-            Type::FMI => fmi::Parser::parse(path),
+    pub fn parse(cfg: &graph::Config) -> Result<GraphBuilder, String> {
+        match Type::from_path(cfg.paths().map_file())? {
+            Type::PBF => pbf::Parser::new().parse(cfg),
+            Type::FMI => fmi::Parser::new().parse(cfg),
         }
     }
 
-    pub fn parse_and_finalize<P: AsRef<Path> + ?Sized>(path: &P) -> Result<Graph, String> {
-        match Type::from_path(path)? {
-            Type::PBF => pbf::Parser::parse_and_finalize(path),
-            Type::FMI => fmi::Parser::parse_and_finalize(path),
+    pub fn parse_and_finalize(cfg: &graph::Config) -> Result<Graph, String> {
+        match Type::from_path(cfg.paths().map_file())? {
+            Type::PBF => pbf::Parser::new().parse_and_finalize(cfg),
+            Type::FMI => fmi::Parser::new().parse_and_finalize(cfg),
         }
     }
 }
@@ -64,30 +68,48 @@ trait Parsing {
         }
     }
 
-    fn parse_ways(file: File, graph_builder: &mut GraphBuilder);
+    fn preprocess(&mut self, _file: File) -> Result<(), String> {
+        Ok(())
+    }
 
-    fn parse_nodes(file: File, graph_builder: &mut GraphBuilder);
-
-    fn parse<P: AsRef<Path> + ?Sized>(path: &P) -> Result<GraphBuilder, String> {
+    fn parse(&mut self, cfg: &graph::Config) -> Result<GraphBuilder, String> {
         let mut graph_builder = GraphBuilder::new();
+        let path = cfg.paths().map_file();
 
         info!("START Process given file");
         let file = Self::open_file(path)?;
-        Self::parse_ways(file, &mut graph_builder);
+        self.preprocess(file)?;
         let file = Self::open_file(path)?;
-        Self::parse_nodes(file, &mut graph_builder);
+        self.parse_ways(file, &mut graph_builder, cfg)?;
+        let file = Self::open_file(path)?;
+        self.parse_nodes(file, &mut graph_builder, cfg)?;
         info!("FINISHED");
 
         Ok(graph_builder)
     }
 
-    fn parse_and_finalize<P: AsRef<Path> + ?Sized>(path: &P) -> Result<Graph, String> {
-        info!("START Parse given path {}", path.as_ref().display());
+    fn parse_ways(
+        &self,
+        file: File,
+        graph_builder: &mut GraphBuilder,
+        cfg: &graph::Config,
+    ) -> Result<(), String>;
+
+    fn parse_nodes(
+        &self,
+        file: File,
+        graph_builder: &mut GraphBuilder,
+        cfg: &graph::Config,
+    ) -> Result<(), String>;
+
+    fn parse_and_finalize(&mut self, cfg: &graph::Config) -> Result<Graph, String> {
+        let path = Path::new(cfg.paths().map_file());
+        info!("START Parse given path {}", path.display());
 
         // TODO parse "cycleway" and others
         // see https://wiki.openstreetmap.org/wiki/Key:highway
 
-        let result = Self::parse(path)?.finalize();
+        let result = self.parse(cfg)?.finalize(cfg);
         info!("FINISHED");
         result
     }

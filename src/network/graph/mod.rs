@@ -85,10 +85,11 @@ pub struct Graph {
     bwd_offsets: Vec<usize>,
     bwd_to_fwd_map: Vec<EdgeIdx>,
     // edge-metrics (sorted according to fwd_dsts)
-    lengths: Vec<Meters>,
-    maxspeeds: Vec<KilometersPerHour>,
-    lane_counts: Vec<MetricU8>,
-    metrics_u32: Vec<Vec<MetricU32>>,
+    lengths: Option<Vec<Meters>>,
+    maxspeeds: Option<Vec<KilometersPerHour>>,
+    durations: Option<Vec<Milliseconds>>,
+    lane_counts: Option<Vec<MetricU8>>,
+    metrics_u32: Option<Vec<MetricU32>>, // TODO Vec<Vec<MetricU32>>
 }
 
 impl Default for Graph {
@@ -106,10 +107,11 @@ impl Default for Graph {
             bwd_offsets: Vec::new(),
             bwd_to_fwd_map: Vec::new(),
             // edge-metrics
-            lengths: Vec::with_capacity(0),
-            maxspeeds: Vec::with_capacity(0),
-            lane_counts: Vec::with_capacity(0),
-            metrics_u32: Vec::with_capacity(0),
+            lengths: None,
+            maxspeeds: None,
+            durations: None,
+            lane_counts: None,
+            metrics_u32: None,
         }
     }
 }
@@ -148,10 +150,26 @@ impl Graph {
 
     pub fn metrics<'a>(&'a self) -> MetricContainer<'a> {
         MetricContainer {
-            lengths: &self.lengths,
-            maxspeeds: &self.maxspeeds,
-            lane_counts: &self.lane_counts,
-            metrics_u32: &self.metrics_u32,
+            lengths: match &(self.lengths) {
+                Some(lengths) => Some(lengths),
+                None => None,
+            },
+            maxspeeds: match &(self.maxspeeds) {
+                Some(maxspeeds) => Some(maxspeeds),
+                None => None,
+            },
+            durations: match &(self.durations) {
+                Some(durations) => Some(durations),
+                None => None,
+            },
+            lane_counts: match &(self.lane_counts) {
+                Some(lane_counts) => Some(lane_counts),
+                None => None,
+            },
+            metrics_u32: match &(self.metrics_u32) {
+                Some(metrics_u32) => Some(metrics_u32),
+                None => None,
+            },
         }
     }
 }
@@ -339,26 +357,14 @@ impl<'a> HalfEdge<'a> {
     }
 
     pub fn length(&self) -> Option<Meters> {
-        debug_assert!(
-            self.metrics.length(self.idx)? > Meters::zero(),
-            "Edge-length should be > 0"
-        );
         self.metrics.length(self.idx)
     }
 
     pub fn maxspeed(&self) -> Option<KilometersPerHour> {
-        debug_assert!(
-            self.metrics.maxspeed(self.idx)? > KilometersPerHour::zero(),
-            "Edge-maxspeed should be > 0"
-        );
         self.metrics.maxspeed(self.idx)
     }
 
     pub fn duration(&self) -> Option<Milliseconds> {
-        debug_assert!(
-            self.metrics.duration(self.idx)? > Milliseconds::zero(),
-            "Edge-milliseconds should be > 0"
-        );
         self.metrics.duration(self.idx)
     }
 
@@ -366,8 +372,9 @@ impl<'a> HalfEdge<'a> {
         self.metrics.lane_count(self.idx)
     }
 
-    pub fn metric_u32(&self, metric_idx: MetricIdx) -> Option<MetricU32> {
-        self.metrics.metric_u32(metric_idx, self.idx)
+    // pub fn metric_u32(&self, metric_idx: MetricIdx) -> Option<MetricU32> {
+    pub fn metric_u32(&self) -> Option<MetricU32> {
+        self.metrics.metric_u32(self.idx)
     }
 }
 
@@ -524,37 +531,55 @@ impl<'a> EdgeContainer<'a> {
 /// Shallow means that it does only contain references to the graph's data-arrays.
 #[derive(Debug)]
 pub struct MetricContainer<'a> {
-    lengths: &'a Vec<Meters>,
-    maxspeeds: &'a Vec<KilometersPerHour>,
-    lane_counts: &'a Vec<MetricU8>,
-    metrics_u32: &'a Vec<Vec<MetricU32>>,
+    lengths: Option<&'a Vec<Meters>>,
+    maxspeeds: Option<&'a Vec<KilometersPerHour>>,
+    durations: Option<&'a Vec<Milliseconds>>,
+    lane_counts: Option<&'a Vec<MetricU8>>,
+    metrics_u32: Option<&'a Vec<MetricU32>>,
 }
 
 impl<'a> MetricContainer<'a> {
     pub fn length(&self, edge_idx: EdgeIdx) -> Option<Meters> {
         let edge_idx = edge_idx.to_usize();
-        let length = *(self.lengths.get(edge_idx)?);
+        let length = *(self.lengths?.get(edge_idx)?);
+        debug_assert!(length > Meters::zero(), "Edge-length should be > 0");
         Some(length)
     }
 
     pub fn maxspeed(&self, edge_idx: EdgeIdx) -> Option<KilometersPerHour> {
         let edge_idx = edge_idx.to_usize();
-        let maxspeed = *(self.maxspeeds.get(edge_idx)?);
+        let maxspeed = *(self.maxspeeds?.get(edge_idx)?);
+        debug_assert!(
+            maxspeed > KilometersPerHour::zero(),
+            "Edge-maxspeed should be > 0"
+        );
         Some(maxspeed)
     }
 
     pub fn duration(&self, edge_idx: EdgeIdx) -> Option<Milliseconds> {
-        Some(self.length(edge_idx)? / self.maxspeed(edge_idx)?)
+        // If duration is stored, return it.
+        // Otherwise, try to calculate it.
+        let duration = if let Some(durations) = self.durations {
+            *(durations.get(edge_idx.to_usize())?)
+        } else {
+            self.length(edge_idx)? / self.maxspeed(edge_idx)?
+        };
+        debug_assert!(
+            duration > Milliseconds::zero(),
+            "Edge-milliseconds should be > 0"
+        );
+        Some(duration)
     }
 
     pub fn lane_count(&self, edge_idx: EdgeIdx) -> Option<MetricU8> {
         let edge_idx = edge_idx.to_usize();
-        Some(*(self.lane_counts.get(edge_idx)?))
+        Some(*(self.lane_counts?.get(edge_idx)?))
     }
 
-    pub fn metric_u32(&self, metric_idx: MetricIdx, edge_idx: EdgeIdx) -> Option<MetricU32> {
-        let metric_idx = metric_idx.to_usize();
+    // pub fn metric_u32(&self, metric_idx: MetricIdx, edge_idx: EdgeIdx) -> Option<MetricU32> {
+    pub fn metric_u32(&self, edge_idx: EdgeIdx) -> Option<MetricU32> {
+        // let metric_idx = metric_idx.to_usize();
         let edge_idx = edge_idx.to_usize();
-        Some(*(self.metrics_u32.get(metric_idx)?.get(edge_idx)?))
+        Some(*(self.metrics_u32?.get(edge_idx)?))
     }
 }

@@ -1,8 +1,7 @@
 use log::{error, info};
-use osmgraphing::{network::NodeIdx, routing, Parser};
+use osmgraphing::{configs::graph, network::NodeIdx, routing, Parser};
 use rand::distributions::{Distribution, Uniform};
 use rand::SeedableRng;
-use std::ffi::OsString;
 use std::time::Instant;
 
 //------------------------------------------------------------------------------------------------//
@@ -52,13 +51,13 @@ fn main() {
     //--------------------------------------------------------------------------------------------//
     // parsing
 
-    let path = match std::env::args_os().nth(1) {
-        Some(path) => path,
-        None => OsString::from("resources/maps/simple_stuttgart.fmi"),
-    };
+    let mut cfg = graph::Config::default();
+    if let Some(path) = std::env::args_os().nth(1) {
+        cfg.paths_mut().set_map_file(path);
+    }
 
     let now = Instant::now();
-    let graph = match Parser::parse_and_finalize(&path) {
+    let graph = match Parser::parse_and_finalize(&cfg) {
         Ok(graph) => graph,
         Err(msg) => {
             error!("{}", msg);

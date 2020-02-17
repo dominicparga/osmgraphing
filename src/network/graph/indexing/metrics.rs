@@ -14,11 +14,11 @@ pub struct MetricIdx {
 }
 
 impl MetricIdx {
-    pub fn new(metric_idx: usize) -> MetricIdx {
+    fn _new(metric_idx: usize) -> MetricIdx {
         MetricIdx { value: metric_idx }
     }
 
-    pub fn to_usize(&self) -> usize {
+    fn _to_usize(&self) -> usize {
         self.value
     }
 }

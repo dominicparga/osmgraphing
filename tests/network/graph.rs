@@ -4,21 +4,31 @@ mod construction {
     use super::parse;
 
     mod pbf {
+        use osmgraphing::configs::graph;
+
         #[test]
         #[ignore]
         fn isle_of_man() {
-            let _graph = super::parse("resources/maps/isle-of-man_2019-09-05.osm.pbf");
+            let mut cfg = graph::Config::default();
+            cfg.paths_mut()
+                .set_map_file("resources/maps/isle-of-man_2019-09-05.osm.pbf");
+            let _graph = super::parse(&cfg);
 
             // TODO check graph structure
         }
     }
 
     mod fmi {
+        use osmgraphing::configs::graph;
+
         //------------------------------------------------------------------------------------------------//
 
         #[test]
         fn simple_stuttgart() {
-            let graph = super::parse("resources/maps/simple_stuttgart.fmi");
+            let mut cfg = graph::Config::default();
+            cfg.paths_mut()
+                .set_map_file("resources/maps/simple_stuttgart.fmi");
+            let graph = super::parse(&cfg);
 
             //--------------------------------------------------------------------------------------------//
             // setup correct data
@@ -188,7 +198,9 @@ mod construction {
 
         #[test]
         fn small() {
-            let graph = super::parse("resources/maps/small.fmi");
+            let mut cfg = graph::Config::default();
+            cfg.paths_mut().set_map_file("resources/maps/small.fmi");
+            let graph = super::parse(&cfg);
 
             //--------------------------------------------------------------------------------------------//
             // setup correct data
@@ -345,7 +357,10 @@ mod construction {
 
         #[test]
         fn bait() {
-            let graph = super::parse("resources/maps/bidirectional_bait.fmi");
+            let mut cfg = graph::Config::default();
+            cfg.paths_mut()
+                .set_map_file("resources/maps/bidirectional_bait.fmi");
+            let graph = super::parse(&cfg);
 
             //--------------------------------------------------------------------------------------------//
             // setup correct data
