@@ -1,8 +1,10 @@
-use std::time::Instant;
-
 use log::{error, info};
-
-use osmgraphing::{configs::graph, Parser};
+use osmgraphing::{
+    configs::{edges, graph, paths, MetricType},
+    network::NodeIdx,
+    Parser,
+};
+use std::{path::PathBuf, time::Instant};
 
 //------------------------------------------------------------------------------------------------//
 
@@ -30,12 +32,30 @@ fn main() {
     init_logging(false);
     info!("Executing example: parser");
 
-    let mut cfg = graph::Config::default();
-    cfg.paths_mut()
-        .set_map_file("resources/maps/isle-of-man_2019-09-05.osm.pbf");
-    if let Some(path) = std::env::args_os().nth(1) {
-        cfg.paths_mut().set_map_file(path);
-    }
+    let cfg = graph::Config {
+        is_graph_suitable: false,
+        paths: paths::Config {
+            map_file: match std::env::args_os().nth(1) {
+                Some(path) => PathBuf::from(path),
+                None => PathBuf::from("resources/maps/isle-of-man_2019-09-05.osm.pbf"),
+            },
+        },
+        edges: edges::Config {
+            metric_ids: vec![
+                String::from("src-id"),
+                String::from("dst-id"),
+                String::from("length"),
+                String::from("maxspeed"),
+            ],
+            metric_types: vec![
+                MetricType::Id,
+                MetricType::Id,
+                MetricType::Length { provided: false },
+                MetricType::Maxspeed { provided: true },
+            ],
+        },
+        ..Default::default()
+    };
 
     let now = Instant::now();
     let graph = match Parser::parse_and_finalize(&cfg) {

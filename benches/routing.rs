@@ -1,10 +1,11 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use log::error;
 use osmgraphing::{
+    configs::{edges, graph, paths, MetricType, VehicleType},
     network::{Graph, NodeIdx},
     routing, Parser,
 };
-use std::ffi::OsString;
+use std::path::PathBuf;
 
 fn init_logging(quietly: bool) {
     let mut builder = env_logger::Builder::new();
@@ -29,8 +30,28 @@ fn criterion_benchmark(c: &mut Criterion) {
     init_logging(true);
 
     // parsing
-    let path = OsString::from("resources/maps/isle-of-man_2019-09-05.osm.pbf");
-    let graph = match Parser::parse_and_finalize(&path) {
+    let cfg = graph::Config {
+        is_graph_suitable: false,
+        vehicle_type: VehicleType::Car,
+        paths: paths::Config {
+            map_file: PathBuf::from("resources/maps/isle-of-man_2019-09-05.osm.pbf"),
+        },
+        edges: edges::Config {
+            metric_ids: vec![
+                String::from("src-id"),
+                String::from("dst-id"),
+                String::from("length"),
+                String::from("maxspeed"),
+            ],
+            metric_types: vec![
+                MetricType::Id,
+                MetricType::Id,
+                MetricType::Length { provided: false },
+                MetricType::Maxspeed { provided: true },
+            ],
+        },
+    };
+    let graph = match Parser::parse_and_finalize(&cfg) {
         Ok(graph) => graph,
         Err(msg) => {
             error!("{}", msg);
@@ -46,8 +67,8 @@ fn criterion_benchmark(c: &mut Criterion) {
             "",
             " with short routes (~3 km)",
             vec![(
-                nodes.idx_from(283500532).unwrap(),
-                nodes.idx_from(283501263).unwrap(),
+                nodes.idx_from(283500532).expect("A"),
+                nodes.idx_from(283501263).expect("B"),
             )],
         ),
         // medium route (~30 km)
@@ -55,8 +76,8 @@ fn criterion_benchmark(c: &mut Criterion) {
             "",
             " with medium routes (~30 km)",
             vec![(
-                nodes.idx_from(283483998).unwrap(),
-                nodes.idx_from(1746745421).unwrap(),
+                nodes.idx_from(283483998).expect("C"),
+                nodes.idx_from(1746745421).expect("D"),
             )],
         ),
         // long route (~56 km)
@@ -64,8 +85,8 @@ fn criterion_benchmark(c: &mut Criterion) {
             "",
             " with long routes (~56 km)",
             vec![(
-                nodes.idx_from(1151603193).unwrap(),
-                nodes.idx_from(456478793).unwrap(),
+                nodes.idx_from(1151603193).expect("E"),
+                nodes.idx_from(456478793).expect("F"),
             )],
         ),
     ];

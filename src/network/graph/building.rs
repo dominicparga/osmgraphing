@@ -277,7 +277,7 @@ impl GraphBuilder {
         let mut progress_bar = progressing::MappingBar::new(0..=self.proto_edges.len());
         info!("{}", progress_bar);
         // init metric-collections in graph (TODO config)
-        for metric_type in cfg.edges().metric_types().iter() {
+        for metric_type in cfg.edges.metric_types.iter() {
             match metric_type {
                 MetricType::Length { provided: _ } => {
                     graph.lengths = Some(Vec::with_capacity(self.proto_edges.len()))
@@ -330,7 +330,7 @@ impl GraphBuilder {
             // add metrics to graph
             // For every metric holds: if graph expects metric, it should be provided explicetly or implicitly.
             // For calculating metrics from other metrics, two loop-runs are necessary.
-            for metric_type in cfg.edges().metric_types().iter() {
+            for metric_type in cfg.edges.metric_types.iter() {
                 match metric_type {
                     &MetricType::Length { provided } => {
                         // If length is not provided -> calculate it by coordinates and haversine.
@@ -386,7 +386,7 @@ impl GraphBuilder {
                 }
             }
             // Calculate metrics after provided ones are given.
-            for metric_type in cfg.edges().metric_types().iter() {
+            for metric_type in cfg.edges.metric_types.iter() {
                 match metric_type {
                     &MetricType::Duration { provided } => {
                         if provided {

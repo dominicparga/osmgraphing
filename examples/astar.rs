@@ -1,8 +1,12 @@
 use log::{error, info};
-use osmgraphing::{configs::graph, network::NodeIdx, routing, Parser};
+use osmgraphing::{
+    configs::{graph, paths},
+    network::NodeIdx,
+    routing, Parser,
+};
 use rand::distributions::{Distribution, Uniform};
 use rand::SeedableRng;
-use std::time::Instant;
+use std::{path::PathBuf, time::Instant};
 
 //------------------------------------------------------------------------------------------------//
 // points in Germany
@@ -51,10 +55,18 @@ fn main() {
     //--------------------------------------------------------------------------------------------//
     // parsing
 
-    let mut cfg = graph::Config::default();
-    if let Some(path) = std::env::args_os().nth(1) {
-        cfg.paths_mut().set_map_file(path);
-    }
+    let cfg = {
+        if let Some(path) = std::env::args_os().nth(1) {
+            graph::Config {
+                paths: paths::Config {
+                    map_file: PathBuf::from(path),
+                },
+                ..Default::default()
+            }
+        } else {
+            graph::Config::default()
+        }
+    };
 
     let now = Instant::now();
     let graph = match Parser::parse_and_finalize(&cfg) {

@@ -5,13 +5,13 @@ mod construction {
 
     mod pbf {
         use osmgraphing::configs::graph;
+        use std::path::PathBuf;
 
         #[test]
         #[ignore]
         fn isle_of_man() {
             let mut cfg = graph::Config::default();
-            cfg.paths_mut()
-                .set_map_file("resources/maps/isle-of-man_2019-09-05.osm.pbf");
+            cfg.paths.map_file = PathBuf::from("resources/maps/isle-of-man_2019-09-05.osm.pbf");
             let _graph = super::parse(&cfg);
 
             // TODO check graph structure
@@ -20,14 +20,14 @@ mod construction {
 
     mod fmi {
         use osmgraphing::configs::graph;
+        use std::path::PathBuf;
 
         //------------------------------------------------------------------------------------------------//
 
         #[test]
         fn simple_stuttgart() {
             let mut cfg = graph::Config::default();
-            cfg.paths_mut()
-                .set_map_file("resources/maps/simple_stuttgart.fmi");
+            cfg.paths.map_file = PathBuf::from("resources/maps/simple_stuttgart.fmi");
             let graph = super::parse(&cfg);
 
             //--------------------------------------------------------------------------------------------//
@@ -199,7 +199,7 @@ mod construction {
         #[test]
         fn small() {
             let mut cfg = graph::Config::default();
-            cfg.paths_mut().set_map_file("resources/maps/small.fmi");
+            cfg.paths.map_file = PathBuf::from("resources/maps/small.fmi");
             let graph = super::parse(&cfg);
 
             //--------------------------------------------------------------------------------------------//
@@ -358,8 +358,7 @@ mod construction {
         #[test]
         fn bait() {
             let mut cfg = graph::Config::default();
-            cfg.paths_mut()
-                .set_map_file("resources/maps/bidirectional_bait.fmi");
+            cfg.paths.map_file = PathBuf::from("resources/maps/bidirectional_bait.fmi");
             let graph = super::parse(&cfg);
 
             //--------------------------------------------------------------------------------------------//

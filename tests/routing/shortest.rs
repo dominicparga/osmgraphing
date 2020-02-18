@@ -7,16 +7,23 @@ mod astar {
             assert_correct, expected_paths_bait, expected_paths_simple_stuttgart,
             expected_paths_small,
         };
-        use osmgraphing::{configs::graph, routing};
+        use osmgraphing::{
+            configs::{graph, paths},
+            routing,
+        };
+        use std::path::PathBuf;
 
         #[test]
         fn simple_stuttgart() {
             let mut astar = routing::factory::astar::unidirectional::shortest();
             let expected_paths = expected_paths_simple_stuttgart();
 
-            let mut cfg = graph::Config::default();
-            cfg.paths_mut()
-                .set_map_file("resources/maps/simple_stuttgart.fmi");
+            let cfg = graph::Config {
+                paths: paths::Config {
+                    map_file: PathBuf::from("resources/maps/simple_stuttgart.fmi"),
+                },
+                ..Default::default()
+            };
 
             assert_correct(&mut astar, expected_paths, &cfg);
         }
@@ -26,8 +33,12 @@ mod astar {
             let mut astar = routing::factory::astar::unidirectional::shortest();
             let expected_paths = expected_paths_small();
 
-            let mut cfg = graph::Config::default();
-            cfg.paths_mut().set_map_file("resources/maps/small.fmi");
+            let cfg = graph::Config {
+                paths: paths::Config {
+                    map_file: PathBuf::from("resources/maps/small.fmi"),
+                },
+                ..Default::default()
+            };
 
             assert_correct(&mut astar, expected_paths, &cfg);
         }
@@ -37,9 +48,12 @@ mod astar {
             let mut astar = routing::factory::astar::unidirectional::shortest();
             let expected_paths = expected_paths_bait();
 
-            let mut cfg = graph::Config::default();
-            cfg.paths_mut()
-                .set_map_file("resources/maps/bidirectional_bait.fmi");
+            let cfg = graph::Config {
+                paths: paths::Config {
+                    map_file: PathBuf::from("resources/maps/bidirectional_bait.fmi"),
+                },
+                ..Default::default()
+            };
 
             assert_correct(&mut astar, expected_paths, &cfg);
         }
@@ -50,16 +64,23 @@ mod astar {
             assert_correct, expected_paths_bait, expected_paths_simple_stuttgart,
             expected_paths_small,
         };
-        use osmgraphing::{configs::graph, routing};
+        use osmgraphing::{
+            configs::{graph, paths},
+            routing,
+        };
+        use std::path::PathBuf;
 
         #[test]
         fn simple_stuttgart() {
             let mut astar = routing::factory::astar::bidirectional::shortest();
             let expected_paths = expected_paths_simple_stuttgart();
 
-            let mut cfg = graph::Config::default();
-            cfg.paths_mut()
-                .set_map_file("resources/maps/simple_stuttgart.fmi");
+            let cfg = graph::Config {
+                paths: paths::Config {
+                    map_file: PathBuf::from("resources/maps/simple_stuttgart.fmi"),
+                },
+                ..Default::default()
+            };
 
             assert_correct(&mut astar, expected_paths, &cfg);
         }
@@ -69,8 +90,12 @@ mod astar {
             let mut astar = routing::factory::astar::bidirectional::shortest();
             let expected_paths = expected_paths_small();
 
-            let mut cfg = graph::Config::default();
-            cfg.paths_mut().set_map_file("resources/maps/small.fmi");
+            let cfg = graph::Config {
+                paths: paths::Config {
+                    map_file: PathBuf::from("resources/maps/small.fmi"),
+                },
+                ..Default::default()
+            };
 
             assert_correct(&mut astar, expected_paths, &cfg);
         }
@@ -80,9 +105,12 @@ mod astar {
             let mut astar = routing::factory::astar::bidirectional::shortest();
             let expected_paths = expected_paths_bait();
 
-            let mut cfg = graph::Config::default();
-            cfg.paths_mut()
-                .set_map_file("resources/maps/bidirectional_bait.fmi");
+            let cfg = graph::Config {
+                paths: paths::Config {
+                    map_file: PathBuf::from("resources/maps/bidirectional_bait.fmi"),
+                },
+                ..Default::default()
+            };
 
             assert_correct(&mut astar, expected_paths, &cfg);
         }
@@ -97,16 +125,23 @@ mod dijkstra {
             assert_correct, expected_paths_bait, expected_paths_simple_stuttgart,
             expected_paths_small,
         };
-        use osmgraphing::{configs::graph, routing};
+        use osmgraphing::{
+            configs::{graph, paths},
+            routing,
+        };
+        use std::path::PathBuf;
 
         #[test]
         fn simple_stuttgart() {
             let mut dijkstra = routing::factory::dijkstra::unidirectional::shortest();
             let expected_paths = expected_paths_simple_stuttgart();
 
-            let mut cfg = graph::Config::default();
-            cfg.paths_mut()
-                .set_map_file("resources/maps/simple_stuttgart.fmi");
+            let cfg = graph::Config {
+                paths: paths::Config {
+                    map_file: PathBuf::from("resources/maps/simple_stuttgart.fmi"),
+                },
+                ..Default::default()
+            };
 
             assert_correct(&mut dijkstra, expected_paths, &cfg);
         }
@@ -116,8 +151,12 @@ mod dijkstra {
             let mut dijkstra = routing::factory::dijkstra::unidirectional::shortest();
             let expected_paths = expected_paths_small();
 
-            let mut cfg = graph::Config::default();
-            cfg.paths_mut().set_map_file("resources/maps/small.fmi");
+            let cfg = graph::Config {
+                paths: paths::Config {
+                    map_file: PathBuf::from("resources/maps/small.fmi"),
+                },
+                ..Default::default()
+            };
 
             assert_correct(&mut dijkstra, expected_paths, &cfg);
         }
@@ -127,9 +166,12 @@ mod dijkstra {
             let mut dijkstra = routing::factory::dijkstra::unidirectional::shortest();
             let expected_paths = expected_paths_bait();
 
-            let mut cfg = graph::Config::default();
-            cfg.paths_mut()
-                .set_map_file("resources/maps/bidirectional_bait.fmi");
+            let cfg = graph::Config {
+                paths: paths::Config {
+                    map_file: PathBuf::from("resources/maps/bidirectional_bait.fmi"),
+                },
+                ..Default::default()
+            };
 
             assert_correct(&mut dijkstra, expected_paths, &cfg);
         }
@@ -140,16 +182,23 @@ mod dijkstra {
             assert_correct, expected_paths_bait, expected_paths_simple_stuttgart,
             expected_paths_small,
         };
-        use osmgraphing::{configs::graph, routing};
+        use osmgraphing::{
+            configs::{graph, paths},
+            routing,
+        };
+        use std::path::PathBuf;
 
         #[test]
         fn simple_stuttgart() {
             let mut dijkstra = routing::factory::dijkstra::bidirectional::shortest();
             let expected_paths = expected_paths_simple_stuttgart();
 
-            let mut cfg = graph::Config::default();
-            cfg.paths_mut()
-                .set_map_file("resources/maps/simple_stuttgart.fmi");
+            let cfg = graph::Config {
+                paths: paths::Config {
+                    map_file: PathBuf::from("resources/maps/simple_stuttgart.fmi"),
+                },
+                ..Default::default()
+            };
 
             assert_correct(&mut dijkstra, expected_paths, &cfg);
         }
@@ -159,8 +208,12 @@ mod dijkstra {
             let mut dijkstra = routing::factory::dijkstra::bidirectional::shortest();
             let expected_paths = expected_paths_small();
 
-            let mut cfg = graph::Config::default();
-            cfg.paths_mut().set_map_file("resources/maps/small.fmi");
+            let cfg = graph::Config {
+                paths: paths::Config {
+                    map_file: PathBuf::from("resources/maps/small.fmi"),
+                },
+                ..Default::default()
+            };
 
             assert_correct(&mut dijkstra, expected_paths, &cfg);
         }
@@ -170,9 +223,12 @@ mod dijkstra {
             let mut dijkstra = routing::factory::dijkstra::bidirectional::shortest();
             let expected_paths = expected_paths_bait();
 
-            let mut cfg = graph::Config::default();
-            cfg.paths_mut()
-                .set_map_file("resources/maps/bidirectional_bait.fmi");
+            let cfg = graph::Config {
+                paths: paths::Config {
+                    map_file: PathBuf::from("resources/maps/bidirectional_bait.fmi"),
+                },
+                ..Default::default()
+            };
 
             assert_correct(&mut dijkstra, expected_paths, &cfg);
         }

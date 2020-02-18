@@ -43,19 +43,19 @@ impl super::Parsing for Parser {
                 Some(highway_tag) => highway_tag,
                 None => continue,
             };
-            match cfg.vehicle_type() {
+            match cfg.vehicle_type {
                 VehicleType::Car => {
-                    if !highway_tag.is_for_vehicles(cfg.is_graph_suitable()) {
+                    if !highway_tag.is_for_vehicles(cfg.is_graph_suitable) {
                         continue;
                     }
                 }
                 VehicleType::Bicycle => {
-                    if !highway_tag.is_for_bicycles(cfg.is_graph_suitable()) {
+                    if !highway_tag.is_for_bicycles(cfg.is_graph_suitable) {
                         continue;
                     }
                 }
                 VehicleType::Pedestrian => {
-                    if !highway_tag.is_for_pedestrians(cfg.is_graph_suitable()) {
+                    if !highway_tag.is_for_pedestrians(cfg.is_graph_suitable) {
                         continue;
                     }
                 }
@@ -63,7 +63,7 @@ impl super::Parsing for Parser {
 
             // collect metrics as expected by user-config
             let mut proto_edge = intern::ProtoEdge::new_empty();
-            for metric_type in cfg.edges().metric_types().iter() {
+            for metric_type in cfg.edges.metric_types.iter() {
                 match metric_type {
                     MetricType::Id => (), // taken later
                     &MetricType::Length { provided } => {

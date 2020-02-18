@@ -78,8 +78,8 @@ pub mod graph {
     ///     # car|bicycle|pedestrian
     ///     type: car
     ///     # Possible values: true|false
-    ///     # Value `false` leads to parse and use edges, which are not suitable for this vehicle-type.
-    ///     is-graph-suitable: true
+    ///     # Value `false` leads to more edges, because edges are added, which are okay but not suitable for this vehicle-type.
+    ///     is-graph-suitable: false
     ///   edges:
     ///     # The order here matters if the map-file has a metric-order, like `fmi`-files.
     ///     # Each metric below will be stored in the graph.
@@ -118,10 +118,10 @@ pub mod graph {
     ///     alpha: 331
     /// ```
     pub struct Config {
-        vehicle_type: VehicleType,
-        edges: edges::Config,
-        paths: paths::Config,
-        is_graph_suitable: bool,
+        pub vehicle_type: VehicleType,
+        pub edges: edges::Config,
+        pub paths: paths::Config,
+        pub is_graph_suitable: bool,
     }
 
     impl Default for Config {
@@ -130,52 +130,20 @@ pub mod graph {
                 paths: Default::default(),
                 vehicle_type: VehicleType::Car,
                 edges: Default::default(),
-                is_graph_suitable: true,
+                is_graph_suitable: false,
             }
         }
     }
 
-    impl Config {
-        pub fn paths_mut(&mut self) -> &mut paths::Config {
-            &mut self.paths
-        }
-
-        pub fn paths(&self) -> &paths::Config {
-            &(self.paths)
-        }
-
-        pub fn set_vehicle_type(&mut self, vehicle_type: VehicleType) {
-            self.vehicle_type = vehicle_type
-        }
-
-        pub fn vehicle_type(&self) -> &VehicleType {
-            &(self.vehicle_type)
-        }
-
-        pub fn edges_mut(&mut self) -> &mut edges::Config {
-            &mut self.edges
-        }
-
-        pub fn edges(&self) -> &edges::Config {
-            &(self.edges)
-        }
-
-        pub fn set_graph_suitable(&mut self, is_graph_suitable: bool) {
-            self.is_graph_suitable = is_graph_suitable
-        }
-
-        pub fn is_graph_suitable(&self) -> bool {
-            self.is_graph_suitable
-        }
-    }
+    impl Config {}
 }
 
 pub mod edges {
     use super::MetricType;
 
     pub struct Config {
-        metric_ids: Vec<String>,
-        metric_types: Vec<MetricType>,
+        pub metric_ids: Vec<String>,
+        pub metric_types: Vec<MetricType>,
     }
 
     impl Default for Config {
@@ -200,33 +168,7 @@ pub mod edges {
     }
 
     impl Config {
-        // pub fn vehicle_type(&self) -> &VehicleType {
-        //     &self.vehicle_type
-        // }
-        //
-        // pub fn metric_type<S>(&self, id: S) -> Option<&MetricType>
-        // where
-        //     S: Into<String>,
-        // {
-        //     self.metrics.get(&(id.into()))
-        // }
-        //
-        // pub fn insert<S>(&mut self, id: S, metric: MetricType) -> Option<MetricType>
-        // where
-        //     S: Into<String>,
-        // {
-        //     self.metrics.insert(id.into(), metric)
-        // }
-
-        pub fn contains(&self, metric_type: MetricType) -> bool {
-            self.metric_types.contains(&metric_type)
-        }
-
-        pub fn metric_types(&self) -> &Vec<MetricType> {
-            &(self.metric_types)
-        }
-
-        pub fn get(&mut self, idx: usize) -> Option<(&String, &MetricType)> {
+        pub fn get(&self, idx: usize) -> Option<(&String, &MetricType)> {
             Some((self.metric_ids.get(idx)?, self.metric_types.get(idx)?))
         }
 
@@ -245,7 +187,7 @@ pub mod paths {
     use std::path::PathBuf;
 
     pub struct Config {
-        map_file: PathBuf,
+        pub map_file: PathBuf,
     }
 
     impl Default for Config {
@@ -256,18 +198,7 @@ pub mod paths {
         }
     }
 
-    impl Config {
-        pub fn set_map_file<P>(&mut self, new_map_file: P)
-        where
-            P: Into<PathBuf>,
-        {
-            self.map_file = new_map_file.into();
-        }
-
-        pub fn map_file(&self) -> &PathBuf {
-            &(self.map_file)
-        }
-    }
+    impl Config {}
 }
 
 pub mod routing {

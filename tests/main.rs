@@ -10,7 +10,7 @@ fn parse(cfg: &graph::Config) -> Graph {
         Err(msg) => {
             panic!(
                 "Could not parse {}. ERROR: {}",
-                cfg.paths().map_file().display(),
+                cfg.paths.map_file.display(),
                 msg
             );
         }

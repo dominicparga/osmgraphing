@@ -100,7 +100,7 @@ impl super::Parsing for Parser {
             line_number += 1;
 
             // create edge and add it
-            let proto_edge = intern::ProtoEdge::from_str(&line, cfg.edges())?;
+            let proto_edge = intern::ProtoEdge::from_str(&line, &cfg.edges)?;
             graph_builder.push_edge(
                 proto_edge
                     .src_id
@@ -250,8 +250,8 @@ mod intern {
             // Loop over metric-types and parse params accordingly.
             // If a metric will be calculated, don't inc param-idx.
             let mut param_idx = 0;
-            for idx in 0..cfg.metric_types().len() {
-                let metric_type = cfg.metric_types()[idx];
+            for idx in 0..cfg.metric_types.len() {
+                let metric_type = cfg.metric_types[idx];
                 let param = params.get(param_idx).ok_or(
                     "The fmi-map-file is expected to have more edge-params than actually has.",
                 )?;

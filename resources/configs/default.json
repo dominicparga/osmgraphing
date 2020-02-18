@@ -1,0 +1,55 @@
+{
+    "graph": {
+        "vehicles": {
+            "type": "car",
+            "is-graph-suitable": true
+        },
+        "edges": {
+            "metrics": [
+                {
+                    "id": "src-id",
+                    "type": "id"
+                },
+                {
+                    "id": "dst-id",
+                    "type": "id"
+                },
+                {
+                    "id": "length",
+                    "type": "length",
+                    "provided": false
+                },
+                {
+                    "id": "maxspeed",
+                    "type": "maxspeed",
+                    "provided": true
+                },
+                {
+                    "id": "duration",
+                    "type": "duration",
+                    "provided": false
+                },
+                {
+                    "id": "lane-count",
+                    "type": "lane-count"
+                }
+            ]
+        }
+    },
+    "routing": {
+        "metrics": [
+            "length",
+            "duration"
+        ],
+        "preferences": [
+            {
+                "id": "length",
+                "alpha": 169
+            },
+            {
+                "id": "duration",
+                "alpha": 331
+            }
+        ]
+    }
+}
