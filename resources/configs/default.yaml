@@ -1,7 +1,7 @@
 graph:
   vehicles:
     type: car
-    is-graph-suitable: true
+    is-graph-suitable: false
   edges:
     metrics:
     - id: src-id
