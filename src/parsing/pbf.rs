@@ -80,7 +80,7 @@ impl super::Parsing for Parser {
                     &MetricType::Maxspeed { provided } => {
                         if provided {
                             proto_edge.maxspeed =
-                                Some(KilometersPerHour::new(highway_tag.parse_maxspeed(&way)));
+                                Some(KilometersPerHour::from(highway_tag.parse_maxspeed(&way)));
                         } else {
                             return Err(format!(
                                 "The {} of an edge in a pbf-file has to be provided, \
@@ -166,7 +166,7 @@ impl super::Parsing for Parser {
             if graph_builder.is_node_in_edge(node.id.0) {
                 graph_builder.push_node(
                     node.id.0,
-                    Coordinate::new(node.decimicro_lat, node.decimicro_lon),
+                    Coordinate::from((node.decimicro_lat, node.decimicro_lon)),
                 );
             }
         }

@@ -1,7 +1,6 @@
 use log::{error, info};
 use osmgraphing::{
     configs::{edges, graph, paths, MetricType},
-    network::NodeIdx,
     Parser,
 };
 use std::{path::PathBuf, time::Instant};

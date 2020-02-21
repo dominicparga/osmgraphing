@@ -27,29 +27,27 @@ impl Display for Milliseconds {
 
 impl Metric for Milliseconds {
     fn zero() -> Milliseconds {
-        Milliseconds { value: 0 }
+        0.into()
     }
 
     fn neg_inf() -> Milliseconds {
-        Milliseconds {
-            value: std::u32::MIN,
-        }
+        std::u32::MIN.into()
     }
 
     fn inf() -> Milliseconds {
-        Milliseconds {
-            value: std::u32::MAX,
-        }
+        std::u32::MAX.into()
     }
 }
 
 impl Milliseconds {
-    pub fn new(value: u32) -> Milliseconds {
-        Milliseconds { value }
-    }
-
     pub fn value(&self) -> u32 {
         self.value
+    }
+}
+
+impl From<u32> for Milliseconds {
+    fn from(value: u32) -> Milliseconds {
+        Milliseconds { value }
     }
 }
 
@@ -132,6 +130,6 @@ impl Mul<KilometersPerHour> for Milliseconds {
     fn mul(self, rhs: KilometersPerHour) -> Meters {
         let time = self.value;
         let speed = rhs.value() as u32;
-        Meters::new(speed * time / 3_600)
+        Meters::from(speed * time / 3_600)
     }
 }

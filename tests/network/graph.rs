@@ -509,7 +509,7 @@ mod construction {
                     name: String::from(name),
                     id,
                     idx,
-                    coord: geo::Coordinate::from_f64(lat, lon),
+                    coord: geo::Coordinate::from((lat, lon)),
                 }
             }
 
@@ -570,9 +570,9 @@ mod construction {
                     is_fwd: true,
                     src_idx: src.idx.into(),
                     dst_idx: dst.idx.into(),
-                    length: Meters::new(length),
-                    maxspeed: KilometersPerHour::new(maxspeed),
-                    duration: Milliseconds::new(duration),
+                    length: Meters::from(length),
+                    maxspeed: KilometersPerHour::from(maxspeed),
+                    duration: Milliseconds::from(duration),
                 }
             }
 
@@ -591,9 +591,9 @@ mod construction {
                     is_fwd: false,
                     src_idx: src.idx.into(),
                     dst_idx: dst.idx.into(),
-                    length: Meters::new(length),
-                    maxspeed: KilometersPerHour::new(maxspeed),
-                    duration: Milliseconds::new(duration),
+                    length: length.into(),
+                    maxspeed: maxspeed.into(),
+                    duration: duration.into(),
                 }
             }
 

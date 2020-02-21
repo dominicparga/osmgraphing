@@ -209,7 +209,7 @@ mod intern {
 
             Ok(ProtoNode {
                 id,
-                coord: geo::Coordinate::from_f64(lat, lon),
+                coord: geo::Coordinate::from((lat, lon)),
             })
         }
     }
@@ -289,7 +289,7 @@ mod intern {
                                 param,
                                 param_idx
                             ))?;
-                            proto_edge.meters = Some(Meters::new(meters));
+                            proto_edge.meters = Some(Meters::from(meters));
 
                             // param used
                             param_idx += 1;
@@ -303,7 +303,7 @@ mod intern {
                                 param,
                                 param_idx
                             ))?;
-                            proto_edge.maxspeed = Some(KilometersPerHour::new(maxspeed));
+                            proto_edge.maxspeed = Some(KilometersPerHour::from(maxspeed));
 
                             // param used
                             param_idx += 1;
@@ -317,7 +317,7 @@ mod intern {
                                 param,
                                 param_idx
                             ))?;
-                            proto_edge.duration = Some(Milliseconds::new(duration));
+                            proto_edge.duration = Some(Milliseconds::from(duration));
 
                             // param used
                             param_idx += 1;

@@ -15,25 +15,8 @@ impl Default for Coordinate {
 }
 
 impl Coordinate {
-    pub fn new(decimicro_lat: i32, decimicro_lon: i32) -> Coordinate {
-        Coordinate {
-            decimicro_lat,
-            decimicro_lon,
-        }
-    }
-
-    pub fn from_f64(lat: f64, lon: f64) -> Coordinate {
-        Coordinate {
-            decimicro_lat: (lat * 1e7) as i32,
-            decimicro_lon: (lon * 1e7) as i32,
-        }
-    }
-
     pub fn zero() -> Coordinate {
-        Coordinate {
-            decimicro_lat: 0,
-            decimicro_lon: 0,
-        }
+        (0, 0).into()
     }
 
     pub fn lat(&self) -> f64 {
@@ -50,6 +33,24 @@ impl Coordinate {
 
     pub fn decimicro_lon(&self) -> i32 {
         self.decimicro_lon
+    }
+}
+
+impl From<(i32, i32)> for Coordinate {
+    fn from((decimicro_lat, decimicro_lon): (i32, i32)) -> Coordinate {
+        Coordinate {
+            decimicro_lat,
+            decimicro_lon,
+        }
+    }
+}
+
+impl From<(f64, f64)> for Coordinate {
+    fn from((lat, lon): (f64, f64)) -> Coordinate {
+        Coordinate {
+            decimicro_lat: (lat * 1e7) as i32,
+            decimicro_lon: (lon * 1e7) as i32,
+        }
     }
 }
 
@@ -109,5 +110,5 @@ pub fn haversine_distance(from: &Coordinate, to: &Coordinate) -> f64 {
 
 /// Note that the result could have rounding errors due to up-scaling (* 1000.0) and cutting afterwards (f64 -> u32)
 pub fn haversine_distance_m(from: &Coordinate, to: &Coordinate) -> Meters {
-    Meters::new((1_000.0 * haversine_distance(from, to)) as u32)
+    Meters::from((1_000.0 * haversine_distance(from, to)) as u32)
 }

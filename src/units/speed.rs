@@ -26,29 +26,27 @@ impl Display for KilometersPerHour {
 
 impl Metric for KilometersPerHour {
     fn zero() -> KilometersPerHour {
-        KilometersPerHour { value: 0 }
+        0.into()
     }
 
     fn neg_inf() -> KilometersPerHour {
-        KilometersPerHour {
-            value: std::u16::MIN,
-        }
+        std::u16::MIN.into()
     }
 
     fn inf() -> KilometersPerHour {
-        KilometersPerHour {
-            value: std::u16::MAX,
-        }
+        std::u16::MAX.into()
     }
 }
 
 impl KilometersPerHour {
-    pub fn new(value: u16) -> KilometersPerHour {
-        KilometersPerHour { value }
-    }
-
     pub fn value(&self) -> u16 {
         self.value
+    }
+}
+
+impl From<u16> for KilometersPerHour {
+    fn from(value: u16) -> KilometersPerHour {
+        KilometersPerHour { value }
     }
 }
 
@@ -59,9 +57,7 @@ impl Add<KilometersPerHour> for KilometersPerHour {
     type Output = KilometersPerHour;
 
     fn add(self, other: KilometersPerHour) -> KilometersPerHour {
-        KilometersPerHour {
-            value: self.value + other.value,
-        }
+        (self.value + other.value).into()
     }
 }
 
@@ -75,9 +71,7 @@ impl Mul<u16> for KilometersPerHour {
     type Output = KilometersPerHour;
 
     fn mul(self, scale: u16) -> KilometersPerHour {
-        KilometersPerHour {
-            value: scale * self.value,
-        }
+        (scale * self.value).into()
     }
 }
 
@@ -94,7 +88,7 @@ impl Mul<Milliseconds> for KilometersPerHour {
     fn mul(self, rhs: Milliseconds) -> Meters {
         let speed = self.value as u32;
         let time = rhs.value();
-        Meters::new(speed * time / 3_600)
+        Meters::from(speed * time / 3_600)
     }
 }
 
@@ -102,9 +96,7 @@ impl Div<u16> for KilometersPerHour {
     type Output = KilometersPerHour;
 
     fn div(self, rhs: u16) -> KilometersPerHour {
-        KilometersPerHour {
-            value: self.value / rhs,
-        }
+        (self.value / rhs).into()
     }
 }
 
@@ -119,9 +111,8 @@ impl Mul<f64> for KilometersPerHour {
 
     fn mul(self, scale: f64) -> KilometersPerHour {
         let new_value = scale * (self.value as f64) * scale;
-        KilometersPerHour {
-            value: new_value as u16,
-        }
+        let new_value = new_value as u16;
+        new_value.into()
     }
 }
 
