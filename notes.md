@@ -17,6 +17,12 @@ Maybe, it is concept for later documentation, or just keep-up-the-good-work (`ku
 [osm/wiki/jmapviewer]: https://wiki.openstreetmap.org/wiki/JMapViewer
 
 
+## Next goals
+
+- store `Vec<Vec<u32>>` in `Graph` instead of several metrics
+- if user asks for metric in Meters, just give it (using `try_from`)
+
+
 ## Other
 
 - Write down alternative implementation-approaches

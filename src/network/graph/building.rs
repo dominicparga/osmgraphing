@@ -347,7 +347,7 @@ impl GraphBuilder {
                             .lengths
                             .as_mut()
                             .unwrap()
-                            .push(max(Meters::new(1), length));
+                            .push(max(Meters::from(1), length));
                     }
                     &MetricType::Duration { provided } => {
                         // If not provided, but expected in graph

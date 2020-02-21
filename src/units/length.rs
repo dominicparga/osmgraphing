@@ -26,29 +26,27 @@ impl Display for Meters {
 
 impl Metric for Meters {
     fn zero() -> Meters {
-        Meters { value: 0 }
+        0.into()
     }
 
     fn neg_inf() -> Meters {
-        Meters {
-            value: std::u32::MIN,
-        }
+        std::u32::MIN.into()
     }
 
     fn inf() -> Meters {
-        Meters {
-            value: std::u32::MAX,
-        }
+        std::u32::MAX.into()
     }
 }
 
 impl Meters {
-    pub fn new(value: u32) -> Meters {
-        Meters { value }
-    }
-
     pub fn value(&self) -> u32 {
         self.value
+    }
+}
+
+impl From<u32> for Meters {
+    fn from(value: u32) -> Meters {
+        Meters { value }
     }
 }
 
@@ -126,7 +124,7 @@ impl Div<Milliseconds> for Meters {
     type Output = KilometersPerHour;
 
     fn div(self, rhs: Milliseconds) -> KilometersPerHour {
-        KilometersPerHour::new((3600 * self.value / rhs.value()) as u16)
+        KilometersPerHour::from((3600 * self.value / rhs.value()) as u16)
     }
 }
 
@@ -135,6 +133,6 @@ impl Div<KilometersPerHour> for Meters {
     type Output = Milliseconds;
 
     fn div(self, rhs: KilometersPerHour) -> Milliseconds {
-        Milliseconds::new(3600 * self.value / (rhs.value() as u32))
+        Milliseconds::from(3600 * self.value / (rhs.value() as u32))
     }
 }
