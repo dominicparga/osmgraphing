@@ -17,6 +17,14 @@ Maybe, it is concept for later documentation, or just keep-up-the-good-work (`ku
 [osm/wiki/jmapviewer]: https://wiki.openstreetmap.org/wiki/JMapViewer
 
 
+## Next goals
+
+- store `Vec<Vec<u32>>` in `Graph` instead of several metrics
+- if user asks for metric in Meters, just give it (using `try_from`)
+- helper-methods, like scalar-product
+- implement tests comparing upcoming ch-dijkstra with normal dijkstra on isle-of-man
+
+
 ## Other
 
 - Write down alternative implementation-approaches
