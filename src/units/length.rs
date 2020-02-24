@@ -1,12 +1,12 @@
 //------------------------------------------------------------------------------------------------//
 // other modules
 
-use super::speed::KilometersPerHour;
-use super::time::Milliseconds;
-use super::Metric;
-use std::fmt;
-use std::fmt::Display;
-use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign};
+use super::{speed::KilometersPerHour, time::Milliseconds, Metric, MetricU32};
+use std::{
+    fmt,
+    fmt::Display,
+    ops::{Add, AddAssign, Deref, Div, DivAssign, Mul, MulAssign},
+};
 
 //------------------------------------------------------------------------------------------------//
 // own modules
@@ -26,7 +26,7 @@ impl Display for Meters {
 
 impl Metric for Meters {
     fn zero() -> Meters {
-        0.into()
+        0u32.into()
     }
 
     fn neg_inf() -> Meters {
@@ -44,9 +44,45 @@ impl Meters {
     }
 }
 
+impl From<u8> for Meters {
+    fn from(value: u8) -> Meters {
+        Meters {
+            value: value as u32,
+        }
+    }
+}
+
+impl From<u16> for Meters {
+    fn from(value: u16) -> Meters {
+        Meters {
+            value: value as u32,
+        }
+    }
+}
+
 impl From<u32> for Meters {
     fn from(value: u32) -> Meters {
         Meters { value }
+    }
+}
+
+impl From<MetricU32> for Meters {
+    fn from(metric: MetricU32) -> Meters {
+        metric.value.into()
+    }
+}
+
+impl Into<MetricU32> for Meters {
+    fn into(self) -> MetricU32 {
+        self.value.into()
+    }
+}
+
+impl Deref for Meters {
+    type Target = u32;
+
+    fn deref(&self) -> &u32 {
+        &self.value
     }
 }
 
@@ -124,7 +160,7 @@ impl Div<Milliseconds> for Meters {
     type Output = KilometersPerHour;
 
     fn div(self, rhs: Milliseconds) -> KilometersPerHour {
-        KilometersPerHour::from((3600 * self.value / rhs.value()) as u16)
+        KilometersPerHour::from(3600 * self.value / (*rhs))
     }
 }
 
@@ -133,6 +169,6 @@ impl Div<KilometersPerHour> for Meters {
     type Output = Milliseconds;
 
     fn div(self, rhs: KilometersPerHour) -> Milliseconds {
-        Milliseconds::from(3600 * self.value / (rhs.value() as u32))
+        Milliseconds::from(3600 * self.value / (*rhs))
     }
 }

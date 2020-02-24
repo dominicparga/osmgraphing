@@ -1,23 +1,14 @@
-use super::parse;
-use osmgraphing::{
-    configs::{graph, paths},
-    Parser,
-};
+use super::{create_config, parse, TestType};
+use osmgraphing::Parser;
 use std::path::PathBuf;
 
 // TODO take results from actions of commit f28d88a
 mod fmi {
-    use osmgraphing::configs::{graph, paths};
-    use std::path::PathBuf;
+    use super::super::{create_config, TestType};
 
     #[test]
     fn simple_stuttgart() {
-        let cfg = graph::Config {
-            paths: paths::Config {
-                map_file: PathBuf::from("resources/maps/simple_stuttgart.fmi"),
-            },
-            ..Default::default()
-        };
+        let cfg = create_config(TestType::SimpleStuttgart);
         let graph = super::parse(&cfg);
 
         let nodes = graph.nodes();
@@ -42,12 +33,7 @@ mod fmi {
 
     #[test]
     fn small() {
-        let cfg = graph::Config {
-            paths: paths::Config {
-                map_file: PathBuf::from("resources/maps/small.fmi"),
-            },
-            ..Default::default()
-        };
+        let cfg = create_config(TestType::Small);
         let graph = super::parse(&cfg);
 
         let nodes = graph.nodes();
@@ -72,12 +58,7 @@ mod fmi {
 
     #[test]
     fn bait() {
-        let cfg = graph::Config {
-            paths: paths::Config {
-                map_file: PathBuf::from("resources/maps/bidirectional_bait.fmi"),
-            },
-            ..Default::default()
-        };
+        let cfg = create_config(TestType::BidirectionalBait);
         let graph = super::parse(&cfg);
 
         let nodes = graph.nodes();
@@ -102,32 +83,11 @@ mod fmi {
 }
 
 mod pbf {
-    use osmgraphing::configs::{edges, graph, paths, MetricType};
-    use std::path::PathBuf;
+    use super::super::{create_config, TestType};
 
     #[test]
     fn isle_of_man() {
-        let cfg = graph::Config {
-            is_graph_suitable: false,
-            paths: paths::Config {
-                map_file: PathBuf::from("resources/maps/isle-of-man_2019-09-05.osm.pbf"),
-            },
-            edges: edges::Config {
-                metric_ids: vec![
-                    String::from("src-id"),
-                    String::from("dst-id"),
-                    String::from("length"),
-                    String::from("maxspeed"),
-                ],
-                metric_types: vec![
-                    MetricType::Id,
-                    MetricType::Id,
-                    MetricType::Length { provided: false },
-                    MetricType::Maxspeed { provided: true },
-                ],
-            },
-            ..Default::default()
-        };
+        let cfg = create_config(TestType::IsleOfMan);
         let graph = super::parse(&cfg);
 
         let nodes = graph.nodes();
@@ -153,12 +113,8 @@ mod pbf {
 
 #[test]
 fn wrong_extension() {
-    let cfg = graph::Config {
-        paths: paths::Config {
-            map_file: PathBuf::from("foo.asdf"),
-        },
-        ..Default::default()
-    };
+    let mut cfg = create_config(TestType::Small);
+    cfg.paths.map_file = PathBuf::from("foo.asdf");
     assert!(
         Parser::parse(&cfg).is_err(),
         "File-extension 'asdf' should not be supported."

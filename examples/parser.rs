@@ -1,6 +1,6 @@
 use log::{error, info};
 use osmgraphing::{
-    configs::{edges, graph, paths, MetricType},
+    configs::{edges, graph, paths, MetricType, VehicleType},
     Parser,
 };
 use std::{path::PathBuf, time::Instant};
@@ -33,6 +33,7 @@ fn main() {
 
     let cfg = graph::Config {
         is_graph_suitable: false,
+        vehicle_type: VehicleType::Car,
         paths: paths::Config {
             map_file: match std::env::args_os().nth(1) {
                 Some(path) => PathBuf::from(path),
@@ -40,20 +41,18 @@ fn main() {
             },
         },
         edges: edges::Config {
-            metric_ids: vec![
-                String::from("src-id"),
-                String::from("dst-id"),
-                String::from("length"),
-                String::from("maxspeed"),
-            ],
             metric_types: vec![
-                MetricType::Id,
-                MetricType::Id,
+                MetricType::Id {
+                    id: "src-id".to_owned(),
+                },
+                MetricType::Id {
+                    id: "dst-id".to_owned(),
+                },
                 MetricType::Length { provided: false },
                 MetricType::Maxspeed { provided: true },
+                MetricType::Duration { provided: false },
             ],
         },
-        ..Default::default()
     };
 
     let now = Instant::now();

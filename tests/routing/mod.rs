@@ -1,3 +1,4 @@
+use super::{create_config, TestType};
 use osmgraphing::{configs::graph, network::Graph, network::NodeIdx, routing, units::Metric};
 use std::{fmt, fmt::Display};
 

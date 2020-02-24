@@ -4,11 +4,12 @@
 //------------------------------------------------------------------------------------------------//
 // other modules
 
-use super::{length::Meters, speed::KilometersPerHour, Metric};
+use super::{length::Meters, speed::KilometersPerHour, Metric, MetricU32};
 use crate::network::NodeIdx;
 use std::{
     fmt,
     fmt::Display,
+    ops::Deref,
     ops::{Add, AddAssign, Index, IndexMut, Mul, MulAssign},
 };
 
@@ -27,7 +28,7 @@ impl Display for Milliseconds {
 
 impl Metric for Milliseconds {
     fn zero() -> Milliseconds {
-        0.into()
+        0u32.into()
     }
 
     fn neg_inf() -> Milliseconds {
@@ -39,15 +40,45 @@ impl Metric for Milliseconds {
     }
 }
 
-impl Milliseconds {
-    pub fn value(&self) -> u32 {
-        self.value
+impl From<u8> for Milliseconds {
+    fn from(value: u8) -> Milliseconds {
+        Milliseconds {
+            value: value as u32,
+        }
+    }
+}
+
+impl From<u16> for Milliseconds {
+    fn from(value: u16) -> Milliseconds {
+        Milliseconds {
+            value: value as u32,
+        }
     }
 }
 
 impl From<u32> for Milliseconds {
     fn from(value: u32) -> Milliseconds {
         Milliseconds { value }
+    }
+}
+
+impl From<MetricU32> for Milliseconds {
+    fn from(metric: MetricU32) -> Milliseconds {
+        metric.value.into()
+    }
+}
+
+impl Into<MetricU32> for Milliseconds {
+    fn into(self) -> MetricU32 {
+        self.value.into()
+    }
+}
+
+impl Deref for Milliseconds {
+    type Target = u32;
+
+    fn deref(&self) -> &u32 {
+        &self.value
     }
 }
 
@@ -129,7 +160,7 @@ impl Mul<KilometersPerHour> for Milliseconds {
 
     fn mul(self, rhs: KilometersPerHour) -> Meters {
         let time = self.value;
-        let speed = rhs.value() as u32;
+        let speed = *rhs;
         Meters::from(speed * time / 3_600)
     }
 }

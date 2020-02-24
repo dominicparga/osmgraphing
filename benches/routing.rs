@@ -37,17 +37,16 @@ fn criterion_benchmark(c: &mut Criterion) {
             map_file: PathBuf::from("resources/maps/isle-of-man_2019-09-05.osm.pbf"),
         },
         edges: edges::Config {
-            metric_ids: vec![
-                String::from("src-id"),
-                String::from("dst-id"),
-                String::from("length"),
-                String::from("maxspeed"),
-            ],
             metric_types: vec![
-                MetricType::Id,
-                MetricType::Id,
+                MetricType::Id {
+                    id: "src-id".to_owned(),
+                },
+                MetricType::Id {
+                    id: "dst-id".to_owned(),
+                },
                 MetricType::Length { provided: false },
                 MetricType::Maxspeed { provided: true },
+                MetricType::Duration { provided: false },
             ],
         },
     };

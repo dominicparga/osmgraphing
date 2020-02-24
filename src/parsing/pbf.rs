@@ -4,8 +4,8 @@ mod pbf {
 
 use crate::{
     configs::{graph, MetricType, VehicleType},
-    network::{GraphBuilder, StreetType},
-    units::{geo::Coordinate, speed::KilometersPerHour, MetricU8},
+    network::{GraphBuilder, ProtoEdge, StreetType},
+    units::{geo::Coordinate, MetricU32},
 };
 use log::info;
 use std::fs::File;
@@ -61,15 +61,14 @@ impl super::Parsing for Parser {
                 }
             }
 
-            // collect metrics as expected by user-config
-            let mut proto_edge = intern::ProtoEdge::new_empty();
+            // Collect metrics as expected by user-config
+            // ATTENTION: A way contains multiple edges, thus be careful when adding new metrics.
+            let mut edge_metrics = vec![];
             for metric_type in cfg.edges.metric_types.iter() {
                 match metric_type {
-                    MetricType::Id => (), // taken later
+                    MetricType::Id { id: _ } => (), // taken later
                     &MetricType::Length { provided } => {
-                        if !provided {
-                            proto_edge.meters = None;
-                        } else {
+                        if provided {
                             return Err(format!(
                                 "The {} of an edge in a pbf-file has to be calculated, \
                                  but is expected to be provided.",
@@ -79,8 +78,8 @@ impl super::Parsing for Parser {
                     }
                     &MetricType::Maxspeed { provided } => {
                         if provided {
-                            proto_edge.maxspeed =
-                                Some(KilometersPerHour::from(highway_tag.parse_maxspeed(&way)));
+                            let maxspeed = MetricU32::from(highway_tag.parse_maxspeed(&way));
+                            edge_metrics.push((metric_type.id().to_owned(), maxspeed));
                         } else {
                             return Err(format!(
                                 "The {} of an edge in a pbf-file has to be provided, \
@@ -90,9 +89,7 @@ impl super::Parsing for Parser {
                         }
                     }
                     &MetricType::Duration { provided } => {
-                        if !provided {
-                            proto_edge.duration = None;
-                        } else {
+                        if provided {
                             return Err(format!(
                                 "The {} of an edge in a pbf-file has to be calculated, \
                                  but is expected to be provided.",
@@ -101,13 +98,18 @@ impl super::Parsing for Parser {
                         }
                     }
                     MetricType::LaneCount => {
-                        proto_edge.lane_count =
-                            Some(MetricU8::new(highway_tag.parse_lane_count(&way)));
+                        let lane_count = MetricU32::from(highway_tag.parse_lane_count(&way));
+                        edge_metrics.push((metric_type.id().to_owned(), lane_count));
                     }
-                    MetricType::Custom => {
-                        return Err(format!("A pbf-file has no metric {}.", MetricType::Custom));
+                    &MetricType::Custom { id: _ } => {
+                        return Err(format!(
+                            "A pbf-file has no metric {}.",
+                            MetricType::Custom {
+                                id: metric_type.id().to_owned()
+                            }
+                        ));
                     }
-                    MetricType::Ignore => (),
+                    MetricType::Ignore { id: _ } => (),
                 }
             }
             let (is_oneway, is_reverse) = highway_tag.parse_oneway(&way);
@@ -131,15 +133,13 @@ impl super::Parsing for Parser {
                 way.nodes.len()
             ))?;
             for dst_id in nodes_iter {
-                graph_builder.push_edge(
-                    src_id.0,
-                    dst_id.0,
-                    proto_edge.meters,
-                    proto_edge.maxspeed,
-                    proto_edge.duration,
-                    proto_edge.lane_count,
-                    proto_edge.metric_u32,
-                );
+                // create proto-edge, add metrics and add proto-edge to graph
+                let mut proto_edge = ProtoEdge::new(src_id.0, dst_id.0);
+                for (metric_id, metric_value) in edge_metrics.iter() {
+                    proto_edge.add_metric(&metric_id, *metric_value);
+                }
+                graph_builder.push_edge(proto_edge);
+                // update src for next edge (in the current way)
                 src_id = dst_id;
             }
         }
@@ -172,31 +172,5 @@ impl super::Parsing for Parser {
         }
         info!("FINISHED");
         Ok(())
-    }
-}
-
-mod intern {
-    use crate::units::{
-        length::Meters, speed::KilometersPerHour, time::Milliseconds, MetricU32, MetricU8,
-    };
-
-    pub struct ProtoEdge {
-        pub meters: Option<Meters>,
-        pub maxspeed: Option<KilometersPerHour>,
-        pub duration: Option<Milliseconds>,
-        pub lane_count: Option<MetricU8>,
-        pub metric_u32: Option<MetricU32>,
-    }
-
-    impl ProtoEdge {
-        pub fn new_empty() -> ProtoEdge {
-            ProtoEdge {
-                meters: None,
-                maxspeed: None,
-                duration: None,
-                lane_count: None,
-                metric_u32: None,
-            }
-        }
     }
 }

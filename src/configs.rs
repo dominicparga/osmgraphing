@@ -1,5 +1,21 @@
 use std::{fmt, fmt::Display};
 
+pub mod constants {
+    pub mod ids {
+        pub const ID: &'static str = "id";
+        pub const SRC: &'static str = "src";
+        pub const DST: &'static str = "dst";
+        pub const LENGTH: &'static str = "length";
+        pub const MAXSPEED: &'static str = "maxspeed";
+        pub const DURATION: &'static str = "duration";
+        pub const LANE_COUNT: &'static str = "lane-count";
+        pub const CUSTOM: &'static str = "custom";
+        pub const IGNORE: &'static str = "ignore";
+        pub const UNKNOWN: &'static str = "?";
+    }
+}
+
+#[derive(Debug)]
 pub enum VehicleType {
     Car,
     Bicycle,
@@ -7,15 +23,29 @@ pub enum VehicleType {
 }
 
 /// Types of metrics to consider when parsing a map.
-#[derive(Clone, Copy, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum MetricType {
-    Id,
+    Id { id: String },
     Length { provided: bool },
     Maxspeed { provided: bool },
     Duration { provided: bool },
     LaneCount,
-    Custom,
-    Ignore,
+    Custom { id: String },
+    Ignore { id: String },
+}
+
+impl MetricType {
+    pub fn id(&self) -> &str {
+        match self {
+            MetricType::Id { id } => &id,
+            MetricType::Length { provided: _ } => constants::ids::LENGTH,
+            MetricType::Maxspeed { provided: _ } => constants::ids::MAXSPEED,
+            MetricType::Duration { provided: _ } => constants::ids::DURATION,
+            MetricType::LaneCount => constants::ids::LANE_COUNT,
+            MetricType::Custom { id } => &id,
+            MetricType::Ignore { id } => &id,
+        }
+    }
 }
 
 impl Display for MetricType {
@@ -24,13 +54,16 @@ impl Display for MetricType {
             f,
             "{}",
             match self {
-                MetricType::Id => String::from("id"),
-                MetricType::Length { provided } => format!("length (provided: {})", provided),
-                MetricType::Maxspeed { provided } => format!("maxspeed (provided: {})", provided),
-                MetricType::Duration { provided } => format!("duration (provided: {})", provided),
-                MetricType::LaneCount => String::from("lane-count"),
-                MetricType::Custom => String::from("custom"),
-                MetricType::Ignore => String::from("ignored"),
+                MetricType::Id { id } => format!("{}({})", constants::ids::ID, id),
+                MetricType::Length { provided } =>
+                    format!("{} (provided: {})", constants::ids::LENGTH, provided),
+                MetricType::Maxspeed { provided } =>
+                    format!("{} (provided: {})", constants::ids::MAXSPEED, provided),
+                MetricType::Duration { provided } =>
+                    format!("{} (provided: {})", constants::ids::DURATION, provided),
+                MetricType::LaneCount => format!("{}", constants::ids::LANE_COUNT),
+                MetricType::Custom { id } => format!("{}({})", constants::ids::CUSTOM, id),
+                MetricType::Ignore { id } => format!("{}({})", constants::ids::IGNORE, id),
             }
         )
     }
@@ -55,22 +88,45 @@ pub mod graph {
     /// You can change the configuration with an input-file (`*.yaml`).
     /// With this `yaml`-config, the parser can be adjusted to parse (edge-)metrics in the order as provided by the config-file.
     /// This can help especially with map-files in `fmi`-format, since the metrics are read sequentially.
+    /// But since `pbf`-files does not provide a column-based metric-list, but intrinsically by parsing `osm`-data, you can distinguish between default-metrics and custom-metrics via the key `type`.
     ///
-    /// Further, the metrics, which are used in the routing, can be specified with their previously defined `id`.
+    /// Default-types are
+    /// - `id`, which is not a metric per se and stored differently, but needed for `csv`-like `fmi`-format
+    /// - `length` in meters
+    /// - `maxspeed` in km/h
+    /// - `duration` in milliseconds
+    /// - `lane-count`
+    ///
+    /// Internally, a default-metric uses its type as id and thus can be calculated by other default-types as well (like the duration from length and maxspeed).
+    /// In case you are using a custom metric, you must specify an id.
+    ///
+    /// Keep in mind, that metrics (except for id) are stored as `u32` for better maintainability and efficiency.
+    /// Note that you can convert `floats` into `u32` by moving the comma.
+    ///
+    ///
+    /// ### Specifying routing
+    ///
+    /// Further, the metrics, which are used in the routing, can be listed in the routing-section with their previously defined id (or default-id via `type`).
     /// Comparisons are made using pareto-optimality, so there is no comparison between metrics.
     /// In case you'll use personlized-routing, default-preferences can be set with weights.
     /// The example below shows a routing-case, where the metric `length` is weighted with `169 / (169 + 331) = 33.8 %` while the metric `duration` is weighted with `331 / (169 + 331) = 66.2 %`.
     ///
+    ///
+    /// ### Supported structure
+    ///
     /// The following `yaml`-structure is supported.
-    /// The used values below are the defaults.
+    /// The used values below are not the defaults.
+    /// For the defaults, see `resources/configs/default.yaml`.
     ///
     /// Please note, that just a few metric-types can be used multiple times, namely:
+    /// - type: `id`
+    /// - type: `custom`
     /// - type: `ignore`
     ///
     ///
     /// Every metric will be stored in the graph, if mentioned in this `yaml`-file.
     /// If a metric is mentioned, but `provided` is false, it will be calculated (e.g. edge-length from node-coordinates and haversine).
-    /// Please note, that metrics being calculated (like duration from length and maxspeed) need the respective metrics to be calculated.
+    /// Please note, that metrics being calculated (like the duration from length and maxspeed) need the respective metrics to be calculated.
     ///
     /// ```yaml
     /// graph:
@@ -88,33 +144,33 @@ pub mod graph {
     ///     #
     ///     # Default metrics are length and maxspeed.
     ///     metrics:
-    ///     - id: <String>
-    ///       type: length
+    ///     # not a metric per se but needed here due to `csv`-like `fmi`-format
+    ///     - id: src-id
+    ///       type: id
+    ///     - type: length
     ///       # Possible values: true|false
     ///       # Value `false` leads to calculate the value via coordinates and haversine.
     ///       provided: false
-    ///     - id: <String>
-    ///       type: maxspeed
+    ///     - type: maxspeed
     ///       # Possible values: true|false
+    ///       # Value `false` leads to calculate the value via length and duration.
     ///       provided: true
-    ///     - id: <String>
-    ///       type: duration
+    ///     - type: duration
     ///       # Possible values: true|false
     ///       # Value `false` leads to calculate the value via length and maxspeed.
     ///       provided: false
+    ///     - type: lane-count
     ///     - id: <String>
-    ///       type: lane-count
-    ///     - id: <String>
-    ///       type: u32
+    ///       type: custom
     ///     - id: <String>
     ///       type: ignore
     ///
-    /// routing: # example with two metrics and weights
-    ///   metrics: [<id>, <id>]
+    /// routing: # example with two metrics and default-weights
+    ///   metrics: [length, duration]
     ///   preferences:
-    ///   - id: <String>
+    ///   - id: length
     ///     alpha: 169
-    ///   - id: <String>
+    ///   - id: duration
     ///     alpha: 331
     /// ```
     pub struct Config {
@@ -123,62 +179,26 @@ pub mod graph {
         pub paths: paths::Config,
         pub is_graph_suitable: bool,
     }
-
-    impl Default for Config {
-        fn default() -> Config {
-            Config {
-                paths: Default::default(),
-                vehicle_type: VehicleType::Car,
-                edges: Default::default(),
-                is_graph_suitable: false,
-            }
-        }
-    }
-
-    impl Config {}
 }
 
 pub mod edges {
     use super::MetricType;
 
     pub struct Config {
-        pub metric_ids: Vec<String>,
         pub metric_types: Vec<MetricType>,
     }
 
-    impl Default for Config {
-        fn default() -> Config {
-            Config {
-                metric_ids: vec![
-                    String::from("src-id"),
-                    String::from("dst-id"),
-                    String::from("length"),
-                    String::from("?"),
-                    String::from("maxspeed"),
-                ],
-                metric_types: vec![
-                    MetricType::Id,
-                    MetricType::Id,
-                    MetricType::Length { provided: true },
-                    MetricType::Ignore,
-                    MetricType::Maxspeed { provided: true },
-                ],
-            }
-        }
-    }
-
     impl Config {
-        pub fn get(&self, idx: usize) -> Option<(&String, &MetricType)> {
-            Some((self.metric_ids.get(idx)?, self.metric_types.get(idx)?))
+        pub fn get(&self, idx: usize) -> Option<&MetricType> {
+            Some(self.metric_types.get(idx)?)
         }
 
-        pub fn push(&mut self, id: String, metric_type: MetricType) {
-            self.metric_ids.push(id);
+        pub fn push(&mut self, metric_type: MetricType) {
             self.metric_types.push(metric_type);
         }
 
-        pub fn remove(&mut self, idx: usize) -> (String, MetricType) {
-            (self.metric_ids.remove(idx), self.metric_types.remove(idx))
+        pub fn remove(&mut self, idx: usize) -> MetricType {
+            self.metric_types.remove(idx)
         }
     }
 }
@@ -189,16 +209,6 @@ pub mod paths {
     pub struct Config {
         pub map_file: PathBuf,
     }
-
-    impl Default for Config {
-        fn default() -> Config {
-            Config {
-                map_file: PathBuf::from("resources/maps/simple_stuttgart.fmi"),
-            }
-        }
-    }
-
-    impl Config {}
 }
 
 pub mod routing {

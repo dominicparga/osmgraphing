@@ -1,117 +1,67 @@
-use super::{assert_correct, TestNode};
+use super::{assert_correct, create_config, TestNode, TestType};
 use osmgraphing::{network::NodeIdx, units::length::Meters};
 
 mod astar {
     mod unidirectional {
-        use super::super::{
-            assert_correct, expected_paths_bait, expected_paths_simple_stuttgart,
-            expected_paths_small,
-        };
-        use osmgraphing::{
-            configs::{graph, paths},
-            routing,
-        };
-        use std::path::PathBuf;
+        use super::super::{assert_correct, create_config, expected_paths, TestType};
+        use osmgraphing::routing;
 
         #[test]
         fn simple_stuttgart() {
             let mut astar = routing::factory::astar::unidirectional::shortest();
-            let expected_paths = expected_paths_simple_stuttgart();
+            let expected_paths = expected_paths(TestType::SimpleStuttgart);
 
-            let cfg = graph::Config {
-                paths: paths::Config {
-                    map_file: PathBuf::from("resources/maps/simple_stuttgart.fmi"),
-                },
-                ..Default::default()
-            };
-
+            let cfg = create_config(TestType::SimpleStuttgart);
             assert_correct(&mut astar, expected_paths, &cfg);
         }
 
         #[test]
         fn small() {
             let mut astar = routing::factory::astar::unidirectional::shortest();
-            let expected_paths = expected_paths_small();
+            let expected_paths = expected_paths(TestType::Small);
 
-            let cfg = graph::Config {
-                paths: paths::Config {
-                    map_file: PathBuf::from("resources/maps/small.fmi"),
-                },
-                ..Default::default()
-            };
-
+            let cfg = create_config(TestType::Small);
             assert_correct(&mut astar, expected_paths, &cfg);
         }
 
         #[test]
         fn bait() {
             let mut astar = routing::factory::astar::unidirectional::shortest();
-            let expected_paths = expected_paths_bait();
+            let expected_paths = expected_paths(TestType::BidirectionalBait);
 
-            let cfg = graph::Config {
-                paths: paths::Config {
-                    map_file: PathBuf::from("resources/maps/bidirectional_bait.fmi"),
-                },
-                ..Default::default()
-            };
-
+            let cfg = create_config(TestType::BidirectionalBait);
             assert_correct(&mut astar, expected_paths, &cfg);
         }
     }
 
     mod bidirectional {
-        use super::super::{
-            assert_correct, expected_paths_bait, expected_paths_simple_stuttgart,
-            expected_paths_small,
-        };
-        use osmgraphing::{
-            configs::{graph, paths},
-            routing,
-        };
-        use std::path::PathBuf;
+        use super::super::{assert_correct, create_config, expected_paths, TestType};
+        use osmgraphing::routing;
 
         #[test]
         fn simple_stuttgart() {
             let mut astar = routing::factory::astar::bidirectional::shortest();
-            let expected_paths = expected_paths_simple_stuttgart();
+            let expected_paths = expected_paths(TestType::SimpleStuttgart);
 
-            let cfg = graph::Config {
-                paths: paths::Config {
-                    map_file: PathBuf::from("resources/maps/simple_stuttgart.fmi"),
-                },
-                ..Default::default()
-            };
-
+            let cfg = create_config(TestType::SimpleStuttgart);
             assert_correct(&mut astar, expected_paths, &cfg);
         }
 
         #[test]
         fn small() {
             let mut astar = routing::factory::astar::bidirectional::shortest();
-            let expected_paths = expected_paths_small();
+            let expected_paths = expected_paths(TestType::Small);
 
-            let cfg = graph::Config {
-                paths: paths::Config {
-                    map_file: PathBuf::from("resources/maps/small.fmi"),
-                },
-                ..Default::default()
-            };
-
+            let cfg = create_config(TestType::Small);
             assert_correct(&mut astar, expected_paths, &cfg);
         }
 
         #[test]
         fn bait() {
             let mut astar = routing::factory::astar::bidirectional::shortest();
-            let expected_paths = expected_paths_bait();
+            let expected_paths = expected_paths(TestType::BidirectionalBait);
 
-            let cfg = graph::Config {
-                paths: paths::Config {
-                    map_file: PathBuf::from("resources/maps/bidirectional_bait.fmi"),
-                },
-                ..Default::default()
-            };
-
+            let cfg = create_config(TestType::BidirectionalBait);
             assert_correct(&mut astar, expected_paths, &cfg);
         }
     }
@@ -121,121 +71,84 @@ mod astar {
 
 mod dijkstra {
     pub mod unidirectional {
-        use super::super::{
-            assert_correct, expected_paths_bait, expected_paths_simple_stuttgart,
-            expected_paths_small,
-        };
-        use osmgraphing::{
-            configs::{graph, paths},
-            routing,
-        };
-        use std::path::PathBuf;
+        use super::super::{assert_correct, create_config, expected_paths, TestType};
+        use osmgraphing::routing;
 
         #[test]
         fn simple_stuttgart() {
             let mut dijkstra = routing::factory::dijkstra::unidirectional::shortest();
-            let expected_paths = expected_paths_simple_stuttgart();
+            let expected_paths = expected_paths(TestType::SimpleStuttgart);
 
-            let cfg = graph::Config {
-                paths: paths::Config {
-                    map_file: PathBuf::from("resources/maps/simple_stuttgart.fmi"),
-                },
-                ..Default::default()
-            };
-
+            let cfg = create_config(TestType::SimpleStuttgart);
             assert_correct(&mut dijkstra, expected_paths, &cfg);
         }
 
         #[test]
         fn small() {
             let mut dijkstra = routing::factory::dijkstra::unidirectional::shortest();
-            let expected_paths = expected_paths_small();
+            let expected_paths = expected_paths(TestType::Small);
 
-            let cfg = graph::Config {
-                paths: paths::Config {
-                    map_file: PathBuf::from("resources/maps/small.fmi"),
-                },
-                ..Default::default()
-            };
-
+            let cfg = create_config(TestType::Small);
             assert_correct(&mut dijkstra, expected_paths, &cfg);
         }
 
         #[test]
         fn bait() {
             let mut dijkstra = routing::factory::dijkstra::unidirectional::shortest();
-            let expected_paths = expected_paths_bait();
+            let expected_paths = expected_paths(TestType::BidirectionalBait);
 
-            let cfg = graph::Config {
-                paths: paths::Config {
-                    map_file: PathBuf::from("resources/maps/bidirectional_bait.fmi"),
-                },
-                ..Default::default()
-            };
-
+            let cfg = create_config(TestType::BidirectionalBait);
             assert_correct(&mut dijkstra, expected_paths, &cfg);
         }
     }
 
     pub mod bidirectional {
-        use super::super::{
-            assert_correct, expected_paths_bait, expected_paths_simple_stuttgart,
-            expected_paths_small,
-        };
-        use osmgraphing::{
-            configs::{graph, paths},
-            routing,
-        };
-        use std::path::PathBuf;
+        use super::super::{assert_correct, create_config, expected_paths, TestType};
+        use osmgraphing::routing;
 
         #[test]
         fn simple_stuttgart() {
             let mut dijkstra = routing::factory::dijkstra::bidirectional::shortest();
-            let expected_paths = expected_paths_simple_stuttgart();
+            let expected_paths = expected_paths(TestType::SimpleStuttgart);
 
-            let cfg = graph::Config {
-                paths: paths::Config {
-                    map_file: PathBuf::from("resources/maps/simple_stuttgart.fmi"),
-                },
-                ..Default::default()
-            };
-
+            let cfg = create_config(TestType::SimpleStuttgart);
             assert_correct(&mut dijkstra, expected_paths, &cfg);
         }
 
         #[test]
         fn small() {
             let mut dijkstra = routing::factory::dijkstra::bidirectional::shortest();
-            let expected_paths = expected_paths_small();
+            let expected_paths = expected_paths(TestType::Small);
 
-            let cfg = graph::Config {
-                paths: paths::Config {
-                    map_file: PathBuf::from("resources/maps/small.fmi"),
-                },
-                ..Default::default()
-            };
-
+            let cfg = create_config(TestType::Small);
             assert_correct(&mut dijkstra, expected_paths, &cfg);
         }
 
         #[test]
         fn bait() {
             let mut dijkstra = routing::factory::dijkstra::bidirectional::shortest();
-            let expected_paths = expected_paths_bait();
+            let expected_paths = expected_paths(TestType::BidirectionalBait);
 
-            let cfg = graph::Config {
-                paths: paths::Config {
-                    map_file: PathBuf::from("resources/maps/bidirectional_bait.fmi"),
-                },
-                ..Default::default()
-            };
-
+            let cfg = create_config(TestType::BidirectionalBait);
             assert_correct(&mut dijkstra, expected_paths, &cfg);
         }
     }
 }
 
 //------------------------------------------------------------------------------------------------//
+
+fn expected_paths(
+    test_type: TestType,
+) -> Vec<(TestNode, TestNode, Option<(Meters, Vec<Vec<TestNode>>)>)> {
+    match test_type {
+        TestType::BidirectionalBait => expected_paths_bait(),
+        TestType::IsleOfMan => {
+            unimplemented!("Testing routing on isle-of-man is not supported yet.")
+        }
+        TestType::SimpleStuttgart => expected_paths_simple_stuttgart(),
+        TestType::Small => expected_paths_small(),
+    }
+}
 
 fn expected_paths_simple_stuttgart(
 ) -> Vec<(TestNode, TestNode, Option<(Meters, Vec<Vec<TestNode>>)>)> {
@@ -267,95 +180,147 @@ fn expected_paths_simple_stuttgart(
 
     vec![
         // opp
-        (opp, opp, Some((Meters::from(0), vec![vec![]]))),
-        (opp, bac, Some((Meters::from(8_000), vec![vec![opp, bac]]))),
+        (opp, opp, Some((Meters::from(0u32), vec![vec![]]))),
+        (
+            opp,
+            bac,
+            Some((Meters::from(8_000u32), vec![vec![opp, bac]])),
+        ),
         (
             opp,
             wai,
-            Some((Meters::from(31_000), vec![vec![opp, bac, wai]])),
+            Some((Meters::from(31_000u32), vec![vec![opp, bac, wai]])),
         ),
         (
             opp,
             end,
-            Some((Meters::from(30_000), vec![vec![opp, bac, end]])),
+            Some((Meters::from(30_000u32), vec![vec![opp, bac, end]])),
         ),
         (
             opp,
             dea,
-            Some((Meters::from(9_069), vec![vec![opp, bac, dea]])),
+            Some((Meters::from(9_069u32), vec![vec![opp, bac, dea]])),
         ),
         (
             opp,
             stu,
-            Some((Meters::from(48_000), vec![vec![opp, bac, wai, stu]])),
+            Some((Meters::from(48_000u32), vec![vec![opp, bac, wai, stu]])),
         ),
         // bac
-        (bac, opp, Some((Meters::from(8_000), vec![vec![bac, opp]]))),
-        (bac, bac, Some((Meters::from(0), vec![vec![]]))),
-        (bac, wai, Some((Meters::from(23_000), vec![vec![bac, wai]]))),
-        (bac, end, Some((Meters::from(22_000), vec![vec![bac, end]]))),
-        (bac, dea, Some((Meters::from(1_069), vec![vec![bac, dea]]))),
+        (
+            bac,
+            opp,
+            Some((Meters::from(8_000u32), vec![vec![bac, opp]])),
+        ),
+        (bac, bac, Some((Meters::from(0u32), vec![vec![]]))),
+        (
+            bac,
+            wai,
+            Some((Meters::from(23_000u32), vec![vec![bac, wai]])),
+        ),
+        (
+            bac,
+            end,
+            Some((Meters::from(22_000u32), vec![vec![bac, end]])),
+        ),
+        (
+            bac,
+            dea,
+            Some((Meters::from(1_069u32), vec![vec![bac, dea]])),
+        ),
         (
             bac,
             stu,
-            Some((Meters::from(40_000), vec![vec![bac, wai, stu]])),
+            Some((Meters::from(40_000u32), vec![vec![bac, wai, stu]])),
         ),
         // wai
         (
             wai,
             opp,
-            Some((Meters::from(31_000), vec![vec![wai, bac, opp]])),
+            Some((Meters::from(31_000u32), vec![vec![wai, bac, opp]])),
         ),
-        (wai, bac, Some((Meters::from(23_000), vec![vec![wai, bac]]))),
-        (wai, wai, Some((Meters::from(0), vec![vec![]]))),
-        (wai, end, Some((Meters::from(8_000), vec![vec![wai, end]]))),
+        (
+            wai,
+            bac,
+            Some((Meters::from(23_000u32), vec![vec![wai, bac]])),
+        ),
+        (wai, wai, Some((Meters::from(0u32), vec![vec![]]))),
+        (
+            wai,
+            end,
+            Some((Meters::from(8_000u32), vec![vec![wai, end]])),
+        ),
         (
             wai,
             dea,
-            Some((Meters::from(24_069), vec![vec![wai, bac, dea]])),
+            Some((Meters::from(24_069u32), vec![vec![wai, bac, dea]])),
         ),
-        (wai, stu, Some((Meters::from(17_000), vec![vec![wai, stu]]))),
+        (
+            wai,
+            stu,
+            Some((Meters::from(17_000u32), vec![vec![wai, stu]])),
+        ),
         // end
         (
             end,
             opp,
-            Some((Meters::from(30_000), vec![vec![end, bac, opp]])),
+            Some((Meters::from(30_000u32), vec![vec![end, bac, opp]])),
         ),
-        (end, bac, Some((Meters::from(22_000), vec![vec![end, bac]]))),
-        (end, wai, Some((Meters::from(8_000), vec![vec![end, wai]]))),
-        (end, end, Some((Meters::from(0), vec![vec![]]))),
+        (
+            end,
+            bac,
+            Some((Meters::from(22_000u32), vec![vec![end, bac]])),
+        ),
+        (
+            end,
+            wai,
+            Some((Meters::from(8_000u32), vec![vec![end, wai]])),
+        ),
+        (end, end, Some((Meters::from(0u32), vec![vec![]]))),
         (
             end,
             dea,
-            Some((Meters::from(23_069), vec![vec![end, bac, dea]])),
+            Some((Meters::from(23_069u32), vec![vec![end, bac, dea]])),
         ),
-        (end, stu, Some((Meters::from(21_000), vec![vec![end, stu]]))),
+        (
+            end,
+            stu,
+            Some((Meters::from(21_000u32), vec![vec![end, stu]])),
+        ),
         // dea
         (dea, opp, None),
         (dea, bac, None),
         (dea, wai, None),
         (dea, end, None),
-        (dea, dea, Some((Meters::from(0), vec![vec![]]))),
+        (dea, dea, Some((Meters::from(0u32), vec![vec![]]))),
         (dea, stu, None),
         // stu
         (
             stu,
             opp,
-            Some((Meters::from(48_000), vec![vec![stu, wai, bac, opp]])),
+            Some((Meters::from(48_000u32), vec![vec![stu, wai, bac, opp]])),
         ),
         (
             stu,
             bac,
-            Some((Meters::from(40_000), vec![vec![stu, wai, bac]])),
+            Some((Meters::from(40_000u32), vec![vec![stu, wai, bac]])),
         ),
-        (stu, wai, Some((Meters::from(17_000), vec![vec![stu, wai]]))),
-        (stu, end, Some((Meters::from(21_000), vec![vec![stu, end]]))),
+        (
+            stu,
+            wai,
+            Some((Meters::from(17_000u32), vec![vec![stu, wai]])),
+        ),
+        (
+            stu,
+            end,
+            Some((Meters::from(21_000u32), vec![vec![stu, end]])),
+        ),
         (
             stu,
             dea,
-            Some((Meters::from(41_069), vec![vec![stu, wai, bac, dea]])),
+            Some((Meters::from(41_069u32), vec![vec![stu, wai, bac, dea]])),
         ),
-        (stu, stu, Some((Meters::from(0), vec![vec![]]))),
+        (stu, stu, Some((Meters::from(0u32), vec![vec![]]))),
     ]
 }
 
@@ -396,7 +361,7 @@ fn expected_paths_small() -> Vec<(TestNode, TestNode, Option<(Meters, Vec<Vec<Te
 
     vec![
         // a
-        (a, a, Some((Meters::from(0), vec![vec![]]))),
+        (a, a, Some((Meters::from(0u32), vec![vec![]]))),
         (a, b, None),
         (a, c, None),
         (a, d, None),
@@ -405,76 +370,79 @@ fn expected_paths_small() -> Vec<(TestNode, TestNode, Option<(Meters, Vec<Vec<Te
         (a, g, None),
         (a, h, None),
         // b
-        (b, a, Some((Meters::from(1), vec![vec![b, a]]))),
-        (b, b, Some((Meters::from(0), vec![vec![]]))),
-        (b, c, Some((Meters::from(1), vec![vec![b, c]]))),
+        (b, a, Some((Meters::from(1u32), vec![vec![b, a]]))),
+        (b, b, Some((Meters::from(0u32), vec![vec![]]))),
+        (b, c, Some((Meters::from(1u32), vec![vec![b, c]]))),
         (b, d, None),
         (b, e, None),
         (b, f, None),
         (b, g, None),
         (b, h, None),
         // c
-        (c, a, Some((Meters::from(1), vec![vec![c, a]]))),
-        (c, b, Some((Meters::from(1), vec![vec![c, b]]))),
-        (c, c, Some((Meters::from(0), vec![vec![]]))),
+        (c, a, Some((Meters::from(1u32), vec![vec![c, a]]))),
+        (c, b, Some((Meters::from(1u32), vec![vec![c, b]]))),
+        (c, c, Some((Meters::from(0u32), vec![vec![]]))),
         (c, d, None),
         (c, e, None),
         (c, f, None),
         (c, g, None),
         (c, h, None),
         // d
-        (d, a, Some((Meters::from(2), vec![vec![d, b, a]]))),
-        (d, b, Some((Meters::from(1), vec![vec![d, b]]))),
-        (d, c, Some((Meters::from(2), vec![vec![d, b, c]]))),
-        (d, d, Some((Meters::from(0), vec![vec![]]))),
-        (d, e, Some((Meters::from(2), vec![vec![d, e]]))),
-        (d, f, Some((Meters::from(2), vec![vec![d, h, f]]))),
+        (d, a, Some((Meters::from(2u32), vec![vec![d, b, a]]))),
+        (d, b, Some((Meters::from(1u32), vec![vec![d, b]]))),
+        (d, c, Some((Meters::from(2u32), vec![vec![d, b, c]]))),
+        (d, d, Some((Meters::from(0u32), vec![vec![]]))),
+        (d, e, Some((Meters::from(2u32), vec![vec![d, e]]))),
+        (d, f, Some((Meters::from(2u32), vec![vec![d, h, f]]))),
         (d, g, None),
-        (d, h, Some((Meters::from(1), vec![vec![d, h]]))),
+        (d, h, Some((Meters::from(1u32), vec![vec![d, h]]))),
         // e
-        (e, a, Some((Meters::from(4), vec![vec![e, d, b, a]]))),
-        (e, b, Some((Meters::from(3), vec![vec![e, d, b]]))),
-        (e, c, Some((Meters::from(4), vec![vec![e, d, b, c]]))),
-        (e, d, Some((Meters::from(2), vec![vec![e, d]]))),
-        (e, e, Some((Meters::from(0), vec![vec![]]))),
-        (e, f, Some((Meters::from(1), vec![vec![e, f]]))),
+        (e, a, Some((Meters::from(4u32), vec![vec![e, d, b, a]]))),
+        (e, b, Some((Meters::from(3u32), vec![vec![e, d, b]]))),
+        (e, c, Some((Meters::from(4u32), vec![vec![e, d, b, c]]))),
+        (e, d, Some((Meters::from(2u32), vec![vec![e, d]]))),
+        (e, e, Some((Meters::from(0u32), vec![vec![]]))),
+        (e, f, Some((Meters::from(1u32), vec![vec![e, f]]))),
         (e, g, None),
-        (e, h, Some((Meters::from(2), vec![vec![e, f, h]]))),
+        (e, h, Some((Meters::from(2u32), vec![vec![e, f, h]]))),
         // f
-        (f, a, Some((Meters::from(4), vec![vec![f, h, d, b, a]]))),
-        (f, b, Some((Meters::from(3), vec![vec![f, h, d, b]]))),
-        (f, c, Some((Meters::from(4), vec![vec![f, h, d, b, c]]))),
-        (f, d, Some((Meters::from(2), vec![vec![f, h, d]]))),
-        (f, e, Some((Meters::from(1), vec![vec![f, e]]))),
-        (f, f, Some((Meters::from(0), vec![vec![]]))),
+        (f, a, Some((Meters::from(4u32), vec![vec![f, h, d, b, a]]))),
+        (f, b, Some((Meters::from(3u32), vec![vec![f, h, d, b]]))),
+        (f, c, Some((Meters::from(4u32), vec![vec![f, h, d, b, c]]))),
+        (f, d, Some((Meters::from(2u32), vec![vec![f, h, d]]))),
+        (f, e, Some((Meters::from(1u32), vec![vec![f, e]]))),
+        (f, f, Some((Meters::from(0u32), vec![vec![]]))),
         (f, g, None),
-        (f, h, Some((Meters::from(1), vec![vec![f, h]]))),
+        (f, h, Some((Meters::from(1u32), vec![vec![f, h]]))),
         // g
-        (g, a, Some((Meters::from(5), vec![vec![g, e, d, b, a]]))),
+        (g, a, Some((Meters::from(5u32), vec![vec![g, e, d, b, a]]))),
         (
             g,
             b,
-            Some((Meters::from(4), vec![vec![g, e, d, b], vec![g, f, h, d, b]])),
+            Some((
+                Meters::from(4u32),
+                vec![vec![g, e, d, b], vec![g, f, h, d, b]],
+            )),
         ),
-        (g, c, Some((Meters::from(5), vec![vec![g, e, d, b, c]]))),
+        (g, c, Some((Meters::from(5u32), vec![vec![g, e, d, b, c]]))),
         (
             g,
             d,
-            Some((Meters::from(3), vec![vec![g, e, d], vec![g, f, d]])),
+            Some((Meters::from(3u32), vec![vec![g, e, d], vec![g, f, d]])),
         ),
-        (g, e, Some((Meters::from(1), vec![vec![g, e]]))),
-        (g, f, Some((Meters::from(1), vec![vec![g, f]]))),
-        (g, g, Some((Meters::from(0), vec![vec![]]))),
-        (g, h, Some((Meters::from(2), vec![vec![g, f, h]]))),
+        (g, e, Some((Meters::from(1u32), vec![vec![g, e]]))),
+        (g, f, Some((Meters::from(1u32), vec![vec![g, f]]))),
+        (g, g, Some((Meters::from(0u32), vec![vec![]]))),
+        (g, h, Some((Meters::from(2u32), vec![vec![g, f, h]]))),
         // h
-        (h, a, Some((Meters::from(3), vec![vec![h, d, b, a]]))),
-        (h, b, Some((Meters::from(2), vec![vec![h, d, b]]))),
-        (h, c, Some((Meters::from(3), vec![vec![h, d, b, c]]))),
-        (h, d, Some((Meters::from(1), vec![vec![h, d]]))),
-        (h, e, Some((Meters::from(2), vec![vec![h, f, e]]))),
-        (h, f, Some((Meters::from(1), vec![vec![h, f]]))),
+        (h, a, Some((Meters::from(3u32), vec![vec![h, d, b, a]]))),
+        (h, b, Some((Meters::from(2u32), vec![vec![h, d, b]]))),
+        (h, c, Some((Meters::from(3u32), vec![vec![h, d, b, c]]))),
+        (h, d, Some((Meters::from(1u32), vec![vec![h, d]]))),
+        (h, e, Some((Meters::from(2u32), vec![vec![h, f, e]]))),
+        (h, f, Some((Meters::from(1u32), vec![vec![h, f]]))),
         (h, g, None),
-        (h, h, Some((Meters::from(0), vec![vec![]]))),
+        (h, h, Some((Meters::from(0u32), vec![vec![]]))),
     ]
 }
 
@@ -511,34 +479,42 @@ fn expected_paths_bait() -> Vec<(TestNode, TestNode, Option<(Meters, Vec<Vec<Tes
 
     vec![
         // ll
-        (ll, ll, Some((Meters::from(0), vec![vec![]]))),
-        (ll, bb, Some((Meters::from(5), vec![vec![ll, bb]]))),
-        (ll, rr, Some((Meters::from(9), vec![vec![ll, tl, tr, rr]]))),
-        (ll, tr, Some((Meters::from(6), vec![vec![ll, tl, tr]]))),
-        (ll, tl, Some((Meters::from(3), vec![vec![ll, tl]]))),
+        (ll, ll, Some((Meters::from(0u32), vec![vec![]]))),
+        (ll, bb, Some((Meters::from(5u32), vec![vec![ll, bb]]))),
+        (
+            ll,
+            rr,
+            Some((Meters::from(9u32), vec![vec![ll, tl, tr, rr]])),
+        ),
+        (ll, tr, Some((Meters::from(6u32), vec![vec![ll, tl, tr]]))),
+        (ll, tl, Some((Meters::from(3u32), vec![vec![ll, tl]]))),
         // bb
-        (bb, ll, Some((Meters::from(5), vec![vec![bb, ll]]))),
-        (bb, bb, Some((Meters::from(0), vec![vec![]]))),
-        (bb, rr, Some((Meters::from(5), vec![vec![bb, rr]]))),
-        (bb, tr, Some((Meters::from(8), vec![vec![bb, rr, tr]]))),
-        (bb, tl, Some((Meters::from(8), vec![vec![bb, ll, tl]]))),
+        (bb, ll, Some((Meters::from(5u32), vec![vec![bb, ll]]))),
+        (bb, bb, Some((Meters::from(0u32), vec![vec![]]))),
+        (bb, rr, Some((Meters::from(5u32), vec![vec![bb, rr]]))),
+        (bb, tr, Some((Meters::from(8u32), vec![vec![bb, rr, tr]]))),
+        (bb, tl, Some((Meters::from(8u32), vec![vec![bb, ll, tl]]))),
         // rr
-        (rr, ll, Some((Meters::from(9), vec![vec![rr, tr, tl, ll]]))),
-        (rr, bb, Some((Meters::from(5), vec![vec![rr, bb]]))),
-        (rr, rr, Some((Meters::from(0), vec![vec![]]))),
-        (rr, tr, Some((Meters::from(3), vec![vec![rr, tr]]))),
-        (rr, tl, Some((Meters::from(6), vec![vec![rr, tr, tl]]))),
+        (
+            rr,
+            ll,
+            Some((Meters::from(9u32), vec![vec![rr, tr, tl, ll]])),
+        ),
+        (rr, bb, Some((Meters::from(5u32), vec![vec![rr, bb]]))),
+        (rr, rr, Some((Meters::from(0u32), vec![vec![]]))),
+        (rr, tr, Some((Meters::from(3u32), vec![vec![rr, tr]]))),
+        (rr, tl, Some((Meters::from(6u32), vec![vec![rr, tr, tl]]))),
         // tr
-        (tr, ll, Some((Meters::from(6), vec![vec![tr, tl, ll]]))),
-        (tr, bb, Some((Meters::from(8), vec![vec![tr, rr, bb]]))),
-        (tr, rr, Some((Meters::from(3), vec![vec![tr, rr]]))),
-        (tr, tr, Some((Meters::from(0), vec![vec![]]))),
-        (tr, tl, Some((Meters::from(3), vec![vec![tr, tl]]))),
+        (tr, ll, Some((Meters::from(6u32), vec![vec![tr, tl, ll]]))),
+        (tr, bb, Some((Meters::from(8u32), vec![vec![tr, rr, bb]]))),
+        (tr, rr, Some((Meters::from(3u32), vec![vec![tr, rr]]))),
+        (tr, tr, Some((Meters::from(0u32), vec![vec![]]))),
+        (tr, tl, Some((Meters::from(3u32), vec![vec![tr, tl]]))),
         // tl
-        (tl, ll, Some((Meters::from(3), vec![vec![tl, ll]]))),
-        (tl, bb, Some((Meters::from(8), vec![vec![tl, ll, bb]]))),
-        (tl, rr, Some((Meters::from(6), vec![vec![tl, tr, rr]]))),
-        (tl, tr, Some((Meters::from(3), vec![vec![tl, tr]]))),
-        (tl, tl, Some((Meters::from(0), vec![vec![]]))),
+        (tl, ll, Some((Meters::from(3u32), vec![vec![tl, ll]]))),
+        (tl, bb, Some((Meters::from(8u32), vec![vec![tl, ll, bb]]))),
+        (tl, rr, Some((Meters::from(6u32), vec![vec![tl, tr, rr]]))),
+        (tl, tr, Some((Meters::from(3u32), vec![vec![tl, tr]]))),
+        (tl, tl, Some((Meters::from(0u32), vec![vec![]]))),
     ]
 }

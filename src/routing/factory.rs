@@ -18,7 +18,7 @@ pub mod astar {
             let cost_fn = |edge: &HalfEdge| edge.duration().unwrap();
             let estimate_fn = |from: &Node, to: &Node| {
                 let meters = geo::haversine_distance_m(&from.coord(), &to.coord());
-                let maxspeed = KilometersPerHour::from(network::defaults::MAX_SPEED_KMH as u16);
+                let maxspeed = KilometersPerHour::from(network::defaults::speed::MAX_KMH);
                 meters / maxspeed
             };
             Box::new(GenericAstar::new(cost_fn, estimate_fn))
@@ -44,7 +44,7 @@ pub mod astar {
             let cost_fn = |edge: &HalfEdge| edge.duration().unwrap();
             let estimate_fn = |from: &Node, to: &Node| {
                 let meters = geo::haversine_distance_m(&from.coord(), &to.coord());
-                let maxspeed = KilometersPerHour::from(network::defaults::MAX_SPEED_KMH as u16);
+                let maxspeed = KilometersPerHour::from(network::defaults::speed::MAX_KMH);
                 meters / maxspeed
             };
             Box::new(GenericAstar::new(cost_fn, estimate_fn))

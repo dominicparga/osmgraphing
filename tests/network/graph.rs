@@ -1,34 +1,28 @@
-use super::parse;
+use super::{create_config, parse, TestType};
 
 mod construction {
-    use super::parse;
-
     mod pbf {
-        use osmgraphing::configs::graph;
-        use std::path::PathBuf;
+        use super::super::{create_config, parse, TestType};
 
         #[test]
         #[ignore]
         fn isle_of_man() {
-            let mut cfg = graph::Config::default();
-            cfg.paths.map_file = PathBuf::from("resources/maps/isle-of-man_2019-09-05.osm.pbf");
-            let _graph = super::parse(&cfg);
+            let cfg = create_config(TestType::IsleOfMan);
+            let _graph = parse(&cfg);
 
             // TODO check graph structure
         }
     }
 
     mod fmi {
-        use osmgraphing::configs::graph;
-        use std::path::PathBuf;
+        use super::super::{create_config, parse, TestType};
 
         //------------------------------------------------------------------------------------------------//
 
         #[test]
         fn simple_stuttgart() {
-            let mut cfg = graph::Config::default();
-            cfg.paths.map_file = PathBuf::from("resources/maps/simple_stuttgart.fmi");
-            let graph = super::parse(&cfg);
+            let cfg = create_config(TestType::SimpleStuttgart);
+            let graph = parse(&cfg);
 
             //--------------------------------------------------------------------------------------------//
             // setup correct data
@@ -198,9 +192,8 @@ mod construction {
 
         #[test]
         fn small() {
-            let mut cfg = graph::Config::default();
-            cfg.paths.map_file = PathBuf::from("resources/maps/small.fmi");
-            let graph = super::parse(&cfg);
+            let cfg = create_config(TestType::Small);
+            let graph = parse(&cfg);
 
             //--------------------------------------------------------------------------------------------//
             // setup correct data
@@ -357,9 +350,8 @@ mod construction {
 
         #[test]
         fn bait() {
-            let mut cfg = graph::Config::default();
-            cfg.paths.map_file = PathBuf::from("resources/maps/bidirectional_bait.fmi");
-            let graph = super::parse(&cfg);
+            let cfg = create_config(TestType::BidirectionalBait);
+            let graph = parse(&cfg);
 
             //--------------------------------------------------------------------------------------------//
             // setup correct data

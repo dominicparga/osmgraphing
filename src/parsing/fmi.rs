@@ -1,4 +1,4 @@
-use crate::{configs::graph, network::GraphBuilder};
+use crate::{configs::graph, network::GraphBuilder, network::ProtoEdge};
 use log::info;
 use std::{fs::File, io::BufRead, ops::Range};
 
@@ -100,20 +100,8 @@ impl super::Parsing for Parser {
             line_number += 1;
 
             // create edge and add it
-            let proto_edge = intern::ProtoEdge::from_str(&line, &cfg.edges)?;
-            graph_builder.push_edge(
-                proto_edge
-                    .src_id
-                    .expect("Src-id should already have been tested."),
-                proto_edge
-                    .dst_id
-                    .expect("Dst-id should already have been tested."),
-                proto_edge.meters,
-                proto_edge.maxspeed,
-                proto_edge.duration,
-                proto_edge.lane_count,
-                proto_edge.metric_u32,
-            );
+            let proto_edge = ProtoEdge::from_str(&line, &cfg.edges)?;
+            graph_builder.push_edge(proto_edge);
         }
         info!("FINISHED");
 
@@ -153,9 +141,8 @@ impl super::Parsing for Parser {
 mod intern {
     use crate::{
         configs::{edges, MetricType},
-        units::{
-            geo, length::Meters, speed::KilometersPerHour, time::Milliseconds, MetricU32, MetricU8,
-        },
+        network::ProtoEdge,
+        units::{geo, MetricU32},
     };
     pub use std::{io::BufReader as Reader, str};
 
@@ -216,72 +203,99 @@ mod intern {
 
     //--------------------------------------------------------------------------------------------//
 
-    pub struct ProtoEdge {
-        pub src_id: Option<i64>,
-        pub dst_id: Option<i64>,
-        pub meters: Option<Meters>,
-        pub maxspeed: Option<KilometersPerHour>,
-        pub duration: Option<Milliseconds>,
-        pub lane_count: Option<MetricU8>,
-        pub metric_u32: Option<MetricU32>,
-    }
-
     impl ProtoEdge {
-        fn new_empty() -> ProtoEdge {
-            ProtoEdge {
-                src_id: None,
-                dst_id: None,
-                meters: None,
-                maxspeed: None,
-                duration: None,
-                lane_count: None,
-                metric_u32: None,
-            }
-        }
-
         /// Parse a line of metrics into an edge.
         ///
         /// - When NodeIds are parsed, the first one is interpreted as src-id and the second one as dst-id.
         pub fn from_str(line: &str, cfg: &edges::Config) -> Result<ProtoEdge, String> {
+            // Loop over metric-types and parse params accordingly.
+            // If a metric will be calculated, it is not provided and hence not in params,
+            // so don't inc param-idx.
+            let mut param_idx;
             let params: Vec<&str> = line.split_whitespace().collect();
 
-            let mut proto_edge = ProtoEdge::new_empty();
-
-            // Loop over metric-types and parse params accordingly.
-            // If a metric will be calculated, don't inc param-idx.
-            let mut param_idx = 0;
-            for idx in 0..cfg.metric_types.len() {
-                let metric_type = cfg.metric_types[idx];
-                let param = params.get(param_idx).ok_or(
-                    "The fmi-map-file is expected to have more edge-params than actually has.",
-                )?;
-
+            // get src-id and dst-id to create proto-edge afterwards
+            let mut src_id = None;
+            let mut dst_id = None;
+            param_idx = 0;
+            for metric_type in cfg.metric_types.iter() {
                 match metric_type {
-                    MetricType::Id => {
-                        if proto_edge.src_id.is_none() {
-                            proto_edge.src_id = Some(param.parse::<i64>().ok().ok_or(format!(
+                    &MetricType::Id { id: _ } => {
+                        let param = params.get(param_idx).ok_or(
+                            "The fmi-map-file is expected to have more edge-params \
+                             than actually has.",
+                        )?;
+
+                        if src_id.is_none() {
+                            src_id =
+                                Some(param.parse::<i64>().ok().ok_or(format!(
                                 "Parsing {} (for edge-src) '{:?}' from fmi-file, which is not i64.",
-                                MetricType::Id,
+                                MetricType::Id { id: metric_type.id().to_owned() },
                                 param
                             ))?);
-                        } else if proto_edge.dst_id.is_none() {
-                            proto_edge.dst_id = Some(param.parse::<i64>().ok().ok_or(format!(
+                        } else if dst_id.is_none() {
+                            dst_id =
+                                Some(param.parse::<i64>().ok().ok_or(format!(
                                 "Parsing {} (for edge-dst) '{:?}' from fmi-file, which is not i64.",
-                                MetricType::Id,
+                                MetricType::Id { id: metric_type.id().to_owned() },
                                 param
                             ))?);
                         } else {
                             return Err(format!(
                                 "Both src-id and dst-id are already set, \
                                  but another {} should be parsed.",
-                                MetricType::Id
+                                MetricType::Id {
+                                    id: metric_type.id().to_owned()
+                                }
                             ));
                         }
 
-                        // param used
+                        // param occurs in params
                         param_idx += 1;
                     }
-                    MetricType::Length { provided } => {
+                    MetricType::Length { provided }
+                    | MetricType::Maxspeed { provided }
+                    | MetricType::Duration { provided } => {
+                        if *provided {
+                            // param occurs in params
+                            param_idx += 1;
+                        }
+                    }
+                    _ => {
+                        // param occurs in params
+                        param_idx += 1;
+                    }
+                }
+            }
+
+            // create proto-edge
+            let mut proto_edge = {
+                let src_id = {
+                    if let Some(src_id) = src_id {
+                        src_id
+                    } else {
+                        return Err(format!("No src-id specified when parsing line '{}'", line));
+                    }
+                };
+                let dst_id = {
+                    if let Some(dst_id) = dst_id {
+                        dst_id
+                    } else {
+                        return Err(format!("No dst-id specified when parsing line '{}'", line));
+                    }
+                };
+                ProtoEdge::new(src_id, dst_id)
+            };
+
+            // get metrics for proto-edge
+            param_idx = 0;
+            for metric_type in cfg.metric_types.iter() {
+                let param = params.get(param_idx).ok_or(
+                    "The fmi-map-file is expected to have more edge-params than actually has.",
+                )?;
+
+                match metric_type {
+                    &MetricType::Length { provided } => {
                         if provided {
                             let meters = param.parse::<u32>().ok().ok_or(format!(
                                 "Parsing {} '{}' of edge-param #{} didn't work.",
@@ -289,13 +303,13 @@ mod intern {
                                 param,
                                 param_idx
                             ))?;
-                            proto_edge.meters = Some(Meters::from(meters));
+                            proto_edge.add_metric(metric_type.id(), MetricU32::from(meters));
 
-                            // param used
+                            // param occurs in params
                             param_idx += 1;
                         }
                     }
-                    MetricType::Maxspeed { provided } => {
+                    &MetricType::Maxspeed { provided } => {
                         if provided {
                             let maxspeed = param.parse::<u16>().ok().ok_or(format!(
                                 "Parsing {} '{}' of edge-param #{} didn't work.",
@@ -303,13 +317,13 @@ mod intern {
                                 param,
                                 param_idx
                             ))?;
-                            proto_edge.maxspeed = Some(KilometersPerHour::from(maxspeed));
+                            proto_edge.add_metric(metric_type.id(), MetricU32::from(maxspeed));
 
-                            // param used
+                            // param occurs in params
                             param_idx += 1;
                         }
                     }
-                    MetricType::Duration { provided } => {
+                    &MetricType::Duration { provided } => {
                         if provided {
                             let duration = param.parse::<u32>().ok().ok_or(format!(
                                 "Parsing {} '{}' of edge-param #{} didn't work.",
@@ -317,9 +331,9 @@ mod intern {
                                 param,
                                 param_idx
                             ))?;
-                            proto_edge.duration = Some(Milliseconds::from(duration));
+                            proto_edge.add_metric(metric_type.id(), MetricU32::from(duration));
 
-                            // param used
+                            // param occurs in params
                             param_idx += 1;
                         }
                     }
@@ -330,25 +344,27 @@ mod intern {
                             param,
                             param_idx
                         ))?;
-                        proto_edge.lane_count = Some(MetricU8::new(lane_count));
+                        proto_edge.add_metric(metric_type.id(), MetricU32::from(lane_count));
 
-                        // param used
+                        // param occurs in params
                         param_idx += 1;
                     }
-                    MetricType::Custom => {
-                        let metric_u32 = param.parse::<u32>().ok().ok_or(format!(
+                    &MetricType::Custom { id: _ } => {
+                        let value = param.parse::<u32>().ok().ok_or(format!(
                             "Parsing {} '{}' of edge-param #{} didn't work.",
-                            MetricType::Custom,
+                            MetricType::Custom {
+                                id: metric_type.id().to_owned()
+                            },
                             param,
                             param_idx
                         ))?;
-                        proto_edge.metric_u32 = Some(MetricU32::new(metric_u32));
+                        proto_edge.add_metric(metric_type.id(), MetricU32::from(value));
 
-                        // param used
+                        // param occurs in params
                         param_idx += 1;
                     }
-                    MetricType::Ignore => {
-                        // param used
+                    MetricType::Id { id: _ } | MetricType::Ignore { id: _ } => {
+                        // param occurs in params
                         param_idx += 1;
                     }
                 }

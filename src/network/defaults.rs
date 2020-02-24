@@ -6,8 +6,10 @@ mod pbf {
 
 //------------------------------------------------------------------------------------------------//
 
-pub const MAX_SPEED_KMH: u8 = 130;
-pub const MIN_SPEED_KMH: u8 = 5;
+pub mod speed {
+    pub const MAX_KMH: u16 = 130;
+    pub const MIN_KMH: u8 = 5;
+}
 
 /// TODO
 ///
@@ -258,7 +260,7 @@ impl StreetType {
 
         // parse given maxspeed and return
         match snippet.parse::<u16>() {
-            Ok(maxspeed) => cmp::max(MIN_SPEED_KMH.into(), maxspeed),
+            Ok(maxspeed) => cmp::max(speed::MIN_KMH.into(), maxspeed),
             Err(_) => match snippet.trim().to_ascii_lowercase().as_ref() {
                 // motorway
                 "de:motorway"
