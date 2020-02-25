@@ -1,4 +1,4 @@
-use crate::{configs::graph, network::GraphBuilder, network::UnfinishedEdge};
+use crate::{configs::graph, network::GraphBuilder, network::ProtoEdge};
 use log::info;
 use std::{fs::File, io::BufRead, ops::Range};
 
@@ -100,8 +100,8 @@ impl super::Parsing for Parser {
             line_number += 1;
 
             // create edge and add it
-            let unfinished_edge = UnfinishedEdge::from_str(&line, &cfg.edges)?;
-            graph_builder.push_edge(unfinished_edge.finalize()?)?;
+            let proto_edge = ProtoEdge::from_str(&line, &cfg.edges)?;
+            graph_builder.push_edge(proto_edge);
         }
         info!("FINISHED");
 
@@ -141,7 +141,7 @@ impl super::Parsing for Parser {
 mod intern {
     use crate::{
         configs::{graph::edges::Config, MetricType},
-        network::UnfinishedEdge,
+        network::ProtoEdge,
         units::{geo, MetricU32},
     };
     pub use std::{io::BufReader as Reader, str};
@@ -203,12 +203,14 @@ mod intern {
 
     //--------------------------------------------------------------------------------------------//
 
-    impl UnfinishedEdge {
+    impl ProtoEdge {
         /// Parse a line of metrics into an edge.
         ///
         /// - When NodeIds are parsed, the first one is interpreted as src-id and the second one as dst-id.
-        pub fn from_str(line: &str, cfg: &Config) -> Result<UnfinishedEdge, String> {
-            let mut unfinished_edge = UnfinishedEdge::new(None, None, cfg.metric_count());
+        pub fn from_str(line: &str, cfg: &Config) -> Result<ProtoEdge, String> {
+            let mut metric_values = vec![None; 0];
+            let mut src_id = None;
+            let mut dst_id = None;
 
             // Loop over metric-types and parse params accordingly.
             // If a metric will be calculated, it is not provided and hence not in params,
@@ -226,19 +228,17 @@ mod intern {
 
                 match metric_type {
                     &MetricType::Id { id: _ } => {
-                        if unfinished_edge.src_id.is_none() {
-                            unfinished_edge.src_id =
+                        if src_id.is_none() {
+                            src_id =
                                 Some(param.parse::<i64>().ok().ok_or(format!(
                                 "Parsing {} (for edge-src) '{:?}' from fmi-file, which is not i64.",
                                 MetricType::Id { id: metric_type.id().to_owned() },
                                 param
                             ))?);
-                        } else if unfinished_edge.dst_id.is_none() {
-                            unfinished_edge.dst_id =
-                                Some(param.parse::<i64>().ok().ok_or(format!(
+                        } else if dst_id.is_none() {
+                            dst_id = Some(param.parse::<i64>().ok().ok_or(format!(
                                 "Parsing {} (for edge-dst) '{:?}' from fmi-file, which is not i64.",
-                                metric_type,
-                                param
+                                metric_type, param
                             ))?);
                         } else {
                             return Err(format!(
@@ -257,11 +257,12 @@ mod intern {
                                 "Parsing {} '{}' of edge-param #{} didn't work.",
                                 metric_type, param, param_idx
                             ))?;
-                            let metric_idx = cfg.metric_idx(metric_type).unwrap();
-                            unfinished_edge.set_metric(metric_idx, MetricU32::from(meters));
+                            metric_values.push(Some(meters.into()));
 
                             // param occurs in params
                             param_idx += 1;
+                        } else {
+                            metric_values.push(None);
                         }
                     }
                     &MetricType::Maxspeed { provided } => {
@@ -270,11 +271,12 @@ mod intern {
                                 "Parsing {} '{}' of edge-param #{} didn't work.",
                                 metric_type, param, param_idx
                             ))?;
-                            let metric_idx = cfg.metric_idx(metric_type).unwrap();
-                            unfinished_edge.set_metric(metric_idx, MetricU32::from(maxspeed));
+                            metric_values.push(Some(maxspeed.into()));
 
                             // param occurs in params
                             param_idx += 1;
+                        } else {
+                            metric_values.push(None);
                         }
                     }
                     &MetricType::Duration { provided } => {
@@ -283,11 +285,12 @@ mod intern {
                                 "Parsing {} '{}' of edge-param #{} didn't work.",
                                 metric_type, param, param_idx
                             ))?;
-                            let metric_idx = cfg.metric_idx(metric_type).unwrap();
-                            unfinished_edge.set_metric(metric_idx, MetricU32::from(duration));
+                            metric_values.push(Some(duration.into()));
 
                             // param occurs in params
                             param_idx += 1;
+                        } else {
+                            metric_values.push(None);
                         }
                     }
                     MetricType::LaneCount | MetricType::Custom { id: _ } => {
@@ -295,8 +298,7 @@ mod intern {
                             "Parsing {} '{}' of edge-param #{} didn't work.",
                             metric_type, param, param_idx
                         ))?;
-                        let metric_idx = cfg.metric_idx(metric_type).unwrap();
-                        unfinished_edge.set_metric(metric_idx, MetricU32::from(value));
+                        metric_values.push(Some(value.into()));
 
                         // param occurs in params
                         param_idx += 1;
@@ -308,7 +310,11 @@ mod intern {
                 }
             }
 
-            Ok(unfinished_edge)
+            Ok(ProtoEdge {
+                src_id: src_id.ok_or("Proto-edge should have a src-id, but doesn't.".to_owned())?,
+                dst_id: dst_id.ok_or("Proto-edge should have a dst-id, but doesn't.".to_owned())?,
+                metrics: metric_values,
+            })
         }
     }
 }

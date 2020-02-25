@@ -4,7 +4,7 @@ mod pbf {
 
 use crate::{
     configs::{graph, MetricType},
-    network::{GraphBuilder, StreetType, UnfinishedEdge},
+    network::{GraphBuilder, ProtoEdge, StreetType},
     units::{geo::Coordinate, MetricU32},
 };
 use log::info;
@@ -49,7 +49,7 @@ impl super::Parsing for Parser {
 
             // Collect metrics as expected by user-config
             // ATTENTION: A way contains multiple edges, thus be careful when adding new metrics.
-            let mut unfinished_edge = UnfinishedEdge::new(None, None, cfg.edges.metric_count());
+            let mut metric_values = vec![None; 0];
             for metric_type in cfg.edges.metric_types.iter() {
                 match metric_type {
                     &MetricType::Length { provided } => {
@@ -59,13 +59,14 @@ impl super::Parsing for Parser {
                                  but is expected to be provided.",
                                 metric_type
                             ));
+                        } else {
+                            metric_values.push(None);
                         }
                     }
                     &MetricType::Maxspeed { provided } => {
                         if provided {
-                            let metric_idx = cfg.edges.metric_idx(metric_type).unwrap();
                             let maxspeed = MetricU32::from(highway_tag.parse_maxspeed(&way));
-                            unfinished_edge.set_metric(metric_idx, maxspeed);
+                            metric_values.push(Some(maxspeed));
                         } else {
                             return Err(format!(
                                 "The {} of an edge in a pbf-file has to be provided, \
@@ -81,12 +82,13 @@ impl super::Parsing for Parser {
                                  but is expected to be provided.",
                                 metric_type
                             ));
+                        } else {
+                            metric_values.push(None);
                         }
                     }
                     MetricType::LaneCount => {
-                        let metric_idx = cfg.edges.metric_idx(metric_type).unwrap();
                         let lane_count = MetricU32::from(highway_tag.parse_lane_count(&way));
-                        unfinished_edge.set_metric(metric_idx, lane_count);
+                        metric_values.push(Some(lane_count));
                     }
                     &MetricType::Custom { id: _ } => {
                         return Err(format!("A pbf-file has no metric {}.", metric_type));
@@ -110,22 +112,24 @@ impl super::Parsing for Parser {
             let mut nodes_iter = way.nodes.iter().chain(way.nodes[iter_range].iter().rev());
 
             // add edges, one per node-pair in way.nodes
-            unfinished_edge.src_id = Some(
-                nodes_iter
-                    .next()
-                    .ok_or(format!(
-                        "Way.nodes.len()={} but should be >1.",
-                        way.nodes.len()
-                    ))?
-                    .0,
-            );
+            let mut src_id = nodes_iter
+                .next()
+                .ok_or(format!(
+                    "Way.nodes.len()={} but should be >1.",
+                    way.nodes.len()
+                ))?
+                .0;
             for dst_id in nodes_iter.map(|id| id.0) {
+                // create proto-edge
+                let proto_edge = ProtoEdge {
+                    src_id,
+                    dst_id,
+                    metrics: metric_values.clone(),
+                };
                 // add proto-edge to graph
-                unfinished_edge.dst_id = Some(dst_id);
-                graph_builder.push_edge(unfinished_edge.clone().finalize()?)?;
+                graph_builder.push_edge(proto_edge);
                 // update src for next edge (in the current way)
-                unfinished_edge.src_id = unfinished_edge.dst_id;
-                unfinished_edge.dst_id = None;
+                src_id = dst_id;
             }
         }
         info!("FINISHED");

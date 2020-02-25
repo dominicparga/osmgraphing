@@ -1,6 +1,6 @@
 mod graph;
 pub use graph::{
-    building::{GraphBuilder, ProtoNode, UnfinishedEdge},
+    building::{GraphBuilder, ProtoEdge, ProtoNode},
     EdgeIdx, Graph, HalfEdge, MetricIdx, Node, NodeIdx,
 };
 pub mod defaults;

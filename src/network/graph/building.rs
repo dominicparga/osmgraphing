@@ -31,12 +31,21 @@ impl ProtoNode {
 
 #[derive(Debug)]
 pub struct ProtoEdge {
-    src_id: i64,
-    dst_id: i64,
-    metrics: Vec<Option<MetricU32>>,
+    pub src_id: i64,
+    pub dst_id: i64,
+    pub metrics: Vec<Option<MetricU32>>,
 }
 
 impl ProtoEdge {
+    pub fn _new(src_id: i64, dst_id: i64, metric_count: usize) -> ProtoEdge {
+        let proto_edge = ProtoEdge {
+            src_id,
+            dst_id,
+            metrics: vec![None; metric_count],
+        };
+        proto_edge
+    }
+
     fn metric(&self, idx: MetricIdx) -> Result<Option<MetricU32>, String> {
         let idx = idx.to_usize();
         if let Some(value) = self.metrics.get(idx) {
@@ -49,57 +58,9 @@ impl ProtoEdge {
             ))
         }
     }
-}
 
-#[derive(Clone, Debug)]
-pub struct UnfinishedEdge {
-    pub src_id: Option<i64>,
-    pub dst_id: Option<i64>,
-    metrics: Vec<Option<MetricU32>>,
-}
-
-impl UnfinishedEdge {
-    pub fn new(src_id: Option<i64>, dst_id: Option<i64>, metric_count: usize) -> UnfinishedEdge {
-        let unfinished_edge = UnfinishedEdge {
-            src_id,
-            dst_id,
-            metrics: vec![None; metric_count],
-        };
-        unfinished_edge
-    }
-
-    fn _metric(&self, idx: MetricIdx) -> Result<Option<MetricU32>, String> {
-        let idx = idx.to_usize();
-        if let Some(value) = self.metrics.get(idx) {
-            Ok(*value)
-        } else {
-            Err(format!(
-                "An unfinished-edge is expected to have len={}, but len={}.",
-                idx + 1,
-                self.metrics.len()
-            ))
-        }
-    }
-
-    pub fn set_metric(&mut self, metric_idx: MetricIdx, value: MetricU32) {
+    pub fn _set_metric(&mut self, metric_idx: MetricIdx, value: MetricU32) {
         self.metrics[metric_idx.to_usize()] = Some(value);
-    }
-
-    pub fn finalize(self) -> Result<ProtoEdge, String> {
-        // for value in self.metrics.iter() {
-        //     if value.is_none() {
-        //         return Err("Proto-edge should be finished but a metric is none.".to_owned());
-        //     }
-        // }
-        Ok(ProtoEdge {
-            src_id: self
-                .src_id
-                .ok_or("A proto-edge is expected to have a src-id, but doesn't.".to_owned())?,
-            dst_id: self
-                .dst_id
-                .ok_or("A proto-edge is expected to have a dst-id, but doesn't.".to_owned())?,
-            metrics: self.metrics,
-        })
     }
 }
 
@@ -357,8 +318,7 @@ impl GraphBuilder {
         }
     }
 
-    /// Duration will be calculated from length and maxspeed if not provided.
-    pub fn push_edge(&mut self, proto_edge: ProtoEdge) -> Result<&mut Self, String> {
+    pub fn push_edge(&mut self, proto_edge: ProtoEdge) -> &mut Self {
         // add or update src-node
         let src_id = proto_edge.src_id;
         if let Some(proto_node) = self.proto_nodes.get_mut(&src_id) {
@@ -392,7 +352,7 @@ impl GraphBuilder {
         // add edge
         self.proto_edges.push(proto_edge);
 
-        Ok(self)
+        self
     }
 
     pub fn finalize(mut self, cfg: Config) -> Result<Graph, String> {
