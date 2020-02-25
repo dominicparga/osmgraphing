@@ -275,7 +275,6 @@ impl GraphBuilder {
 
         info!("START Create/store/filter metrics.");
         let mut progress_bar = progressing::MappingBar::new(0..=self.proto_edges.len());
-        info!("{}", progress_bar);
         // init metric-collections in graph (TODO config)
         for metric_type in cfg.edges.metric_types.iter() {
             match metric_type {
@@ -453,7 +452,6 @@ impl GraphBuilder {
         // logging
         info!("START Create the forward-offset-array and the forward-mapping.");
         let mut progress_bar = progressing::MappingBar::new(0..=new_proto_edges.len());
-        info!("{}", progress_bar);
         // start looping
         let mut src_idx = NodeIdx::zero();
         let mut offset = 0;
@@ -541,7 +539,6 @@ impl GraphBuilder {
         // logging
         info!("START Create the backward-offset-array.");
         let mut progress_bar = progressing::MappingBar::new(0..=new_proto_edges.len());
-        info!("{}", progress_bar);
         // start looping
         let mut src_idx = NodeIdx::zero();
         let mut offset = 0;
