@@ -142,7 +142,7 @@ mod intern {
     use crate::{
         configs::{graph::edges::Config, MetricType},
         network::ProtoEdge,
-        units::{geo, MetricU32},
+        units::geo,
     };
     pub use std::{io::BufReader as Reader, str};
 

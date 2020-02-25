@@ -431,7 +431,6 @@ impl GraphBuilder {
 
         info!("START Create/store/filter metrics.");
         let mut progress_bar = progressing::MappingBar::new(0..=self.proto_edges.len());
-        info!("{}", progress_bar);
         // init metric-collections in graph
         graph.init_metrics(self.proto_edges.len());
         // start looping
