@@ -3,21 +3,22 @@ mod parsing;
 mod routing;
 
 use osmgraphing::{
-    configs::{edges, graph, paths, MetricType, VehicleType},
+    configs::{
+        graph,
+        graph::{edges, vehicles},
+        Config, MetricType, VehicleType,
+    },
     network::Graph,
     Parser,
 };
 use std::path::PathBuf;
 
-fn parse(cfg: &graph::Config) -> Graph {
+fn parse(cfg: graph::Config) -> Graph {
+    let map_file = cfg.map_file.clone();
     match Parser::parse_and_finalize(cfg) {
         Ok(graph) => graph,
         Err(msg) => {
-            panic!(
-                "Could not parse {}. ERROR: {}",
-                cfg.paths.map_file.display(),
-                msg
-            );
+            panic!("Could not parse {}. ERROR: {}", map_file.display(), msg);
         }
     }
 }
@@ -29,13 +30,13 @@ enum TestType {
     Small,
 }
 
-fn create_config(test_type: TestType) -> graph::Config {
+fn create_config(test_type: TestType) -> Config {
     match test_type {
-        TestType::BidirectionalBait => graph::Config {
-            is_graph_suitable: false,
-            vehicle_type: VehicleType::Car,
-            paths: paths::Config {
-                map_file: PathBuf::from("resources/maps/bidirectional_bait.fmi"),
+        TestType::BidirectionalBait => Config::new(graph::Config {
+            map_file: PathBuf::from("resources/maps/bidirectional_bait.fmi"),
+            vehicles: vehicles::Config {
+                is_driver_picky: false,
+                vehicle_type: VehicleType::Car,
             },
             edges: edges::Config {
                 metric_types: vec![
@@ -51,12 +52,12 @@ fn create_config(test_type: TestType) -> graph::Config {
                     MetricType::Duration { provided: false },
                 ],
             },
-        },
-        TestType::IsleOfMan => graph::Config {
-            is_graph_suitable: false,
-            vehicle_type: VehicleType::Car,
-            paths: paths::Config {
-                map_file: PathBuf::from("resources/maps/isle-of-man_2019-09-05.osm.pbf"),
+        }),
+        TestType::IsleOfMan => Config::new(graph::Config {
+            map_file: PathBuf::from("resources/maps/isle-of-man_2019-09-05.osm.pbf"),
+            vehicles: vehicles::Config {
+                is_driver_picky: false,
+                vehicle_type: VehicleType::Car,
             },
             edges: edges::Config {
                 metric_types: vec![
@@ -71,12 +72,12 @@ fn create_config(test_type: TestType) -> graph::Config {
                     MetricType::Duration { provided: false },
                 ],
             },
-        },
-        TestType::SimpleStuttgart => graph::Config {
-            is_graph_suitable: false,
-            vehicle_type: VehicleType::Car,
-            paths: paths::Config {
-                map_file: PathBuf::from("resources/maps/simple_stuttgart.fmi"),
+        }),
+        TestType::SimpleStuttgart => Config::new(graph::Config {
+            map_file: PathBuf::from("resources/maps/simple_stuttgart.fmi"),
+            vehicles: vehicles::Config {
+                is_driver_picky: false,
+                vehicle_type: VehicleType::Car,
             },
             edges: edges::Config {
                 metric_types: vec![
@@ -92,12 +93,12 @@ fn create_config(test_type: TestType) -> graph::Config {
                     MetricType::Duration { provided: false },
                 ],
             },
-        },
-        TestType::Small => graph::Config {
-            is_graph_suitable: false,
-            vehicle_type: VehicleType::Car,
-            paths: paths::Config {
-                map_file: PathBuf::from("resources/maps/small.fmi"),
+        }),
+        TestType::Small => Config::new(graph::Config {
+            map_file: PathBuf::from("resources/maps/small.fmi"),
+            vehicles: vehicles::Config {
+                is_driver_picky: false,
+                vehicle_type: VehicleType::Car,
             },
             edges: edges::Config {
                 metric_types: vec![
@@ -113,6 +114,6 @@ fn create_config(test_type: TestType) -> graph::Config {
                     MetricType::Duration { provided: false },
                 ],
             },
-        },
+        }),
     }
 }

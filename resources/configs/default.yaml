@@ -1,24 +1,21 @@
 graph:
+  map-file: "resources/maps/small.fmi"
   vehicles:
     type: car
-    is-graph-suitable: false
+    is-nice-to-use: false
   edges:
     metrics:
-    - id: src-id
-      type: id
-    - id: dst-id
-      type: id
-    - id: length
-      type: length
+    - type: ignore
+      id: src-id
+    - type: ignore
+      id: dst-id
+    - type: length
       provided: false
-    - id: maxspeed
-      type: maxspeed
+    - type: maxspeed
       provided: true
-    - id: duration
-      type: duration
+    - type: duration
       provided: false
-    - id: lane-count
-      type: lane-count
+    - type: lane-count
 
 routing: # example with two metrics and weights
   metrics: [length, duration]

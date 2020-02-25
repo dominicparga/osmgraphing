@@ -45,14 +45,14 @@ pub struct Parser;
 
 impl Parser {
     pub fn parse(cfg: &graph::Config) -> Result<GraphBuilder, String> {
-        match Type::from_path(&cfg.paths.map_file)? {
+        match Type::from_path(&cfg.map_file)? {
             Type::PBF => pbf::Parser::new().parse(cfg),
             Type::FMI => fmi::Parser::new().parse(cfg),
         }
     }
 
-    pub fn parse_and_finalize(cfg: &graph::Config) -> Result<Graph, String> {
-        match Type::from_path(&cfg.paths.map_file)? {
+    pub fn parse_and_finalize(cfg: graph::Config) -> Result<Graph, String> {
+        match Type::from_path(&cfg.map_file)? {
             Type::PBF => pbf::Parser::new().parse_and_finalize(cfg),
             Type::FMI => fmi::Parser::new().parse_and_finalize(cfg),
         }
@@ -74,7 +74,7 @@ trait Parsing {
 
     fn parse(&mut self, cfg: &graph::Config) -> Result<GraphBuilder, String> {
         let mut graph_builder = GraphBuilder::new();
-        let path = &cfg.paths.map_file;
+        let path = &cfg.map_file;
 
         info!("START Process given file");
         let file = Self::open_file(path)?;
@@ -102,14 +102,14 @@ trait Parsing {
         cfg: &graph::Config,
     ) -> Result<(), String>;
 
-    fn parse_and_finalize(&mut self, cfg: &graph::Config) -> Result<Graph, String> {
-        let path = Path::new(&cfg.paths.map_file);
+    fn parse_and_finalize(&mut self, cfg: graph::Config) -> Result<Graph, String> {
+        let path = Path::new(&cfg.map_file);
         info!("START Parse given path {}", path.display());
 
         // TODO parse "cycleway" and others
         // see https://wiki.openstreetmap.org/wiki/Key:highway
 
-        let result = self.parse(cfg)?.finalize(cfg);
+        let result = self.parse(&cfg)?.finalize(cfg);
         info!("FINISHED");
         result
     }

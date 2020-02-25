@@ -14,7 +14,7 @@ mod astar {
             let expected_paths = expected_paths(TestType::SimpleStuttgart);
 
             let cfg = create_config(TestType::SimpleStuttgart);
-            assert_correct(&mut astar, expected_paths, &cfg);
+            assert_correct(&mut astar, expected_paths, cfg.graph);
         }
 
         #[test]
@@ -23,7 +23,7 @@ mod astar {
             let expected_paths = expected_paths(TestType::Small);
 
             let cfg = create_config(TestType::Small);
-            assert_correct(&mut astar, expected_paths, &cfg);
+            assert_correct(&mut astar, expected_paths, cfg.graph);
         }
 
         #[test]
@@ -32,7 +32,7 @@ mod astar {
             let expected_paths = expected_paths(TestType::BidirectionalBait);
 
             let cfg = create_config(TestType::BidirectionalBait);
-            assert_correct(&mut astar, expected_paths, &cfg);
+            assert_correct(&mut astar, expected_paths, cfg.graph);
         }
     }
 
@@ -46,7 +46,7 @@ mod astar {
             let expected_paths = expected_paths(TestType::SimpleStuttgart);
 
             let cfg = create_config(TestType::SimpleStuttgart);
-            assert_correct(&mut astar, expected_paths, &cfg);
+            assert_correct(&mut astar, expected_paths, cfg.graph);
         }
 
         #[test]
@@ -55,7 +55,7 @@ mod astar {
             let expected_paths = expected_paths(TestType::Small);
 
             let cfg = create_config(TestType::Small);
-            assert_correct(&mut astar, expected_paths, &cfg);
+            assert_correct(&mut astar, expected_paths, cfg.graph);
         }
 
         #[test]
@@ -64,7 +64,7 @@ mod astar {
             let expected_paths = expected_paths(TestType::BidirectionalBait);
 
             let cfg = create_config(TestType::BidirectionalBait);
-            assert_correct(&mut astar, expected_paths, &cfg);
+            assert_correct(&mut astar, expected_paths, cfg.graph);
         }
     }
 }
@@ -82,7 +82,7 @@ mod dijkstra {
             let expected_paths = expected_paths(TestType::SimpleStuttgart);
 
             let cfg = create_config(TestType::SimpleStuttgart);
-            assert_correct(&mut dijkstra, expected_paths, &cfg);
+            assert_correct(&mut dijkstra, expected_paths, cfg.graph);
         }
 
         #[test]
@@ -91,7 +91,7 @@ mod dijkstra {
             let expected_paths = expected_paths(TestType::Small);
 
             let cfg = create_config(TestType::Small);
-            assert_correct(&mut dijkstra, expected_paths, &cfg);
+            assert_correct(&mut dijkstra, expected_paths, cfg.graph);
         }
 
         #[test]
@@ -100,7 +100,7 @@ mod dijkstra {
             let expected_paths = expected_paths(TestType::BidirectionalBait);
 
             let cfg = create_config(TestType::BidirectionalBait);
-            assert_correct(&mut dijkstra, expected_paths, &cfg);
+            assert_correct(&mut dijkstra, expected_paths, cfg.graph);
         }
     }
 
@@ -114,7 +114,7 @@ mod dijkstra {
             let expected_paths = expected_paths(TestType::SimpleStuttgart);
 
             let cfg = create_config(TestType::SimpleStuttgart);
-            assert_correct(&mut dijkstra, expected_paths, &cfg);
+            assert_correct(&mut dijkstra, expected_paths, cfg.graph);
         }
 
         #[test]
@@ -123,7 +123,7 @@ mod dijkstra {
             let expected_paths = expected_paths(TestType::Small);
 
             let cfg = create_config(TestType::Small);
-            assert_correct(&mut dijkstra, expected_paths, &cfg);
+            assert_correct(&mut dijkstra, expected_paths, cfg.graph);
         }
 
         #[test]
@@ -132,7 +132,7 @@ mod dijkstra {
             let expected_paths = expected_paths(TestType::BidirectionalBait);
 
             let cfg = create_config(TestType::BidirectionalBait);
-            assert_correct(&mut dijkstra, expected_paths, &cfg);
+            assert_correct(&mut dijkstra, expected_paths, cfg.graph);
         }
     }
 }

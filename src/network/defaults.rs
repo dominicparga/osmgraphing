@@ -3,6 +3,7 @@ use std::{cmp, fmt, fmt::Display, str};
 mod pbf {
     pub use osmpbfreader::Way;
 }
+use crate::configs::VehicleType;
 
 //------------------------------------------------------------------------------------------------//
 
@@ -153,7 +154,15 @@ impl StreetType {
         }
     }
 
-    pub fn is_for_vehicles(&self, is_suitable: bool) -> bool {
+    pub fn is_for(&self, vehicle_type: &VehicleType, is_driver_picky: bool) -> bool {
+        match vehicle_type {
+            VehicleType::Car => self.is_for_vehicles(is_driver_picky),
+            VehicleType::Bicycle => self.is_for_bicycles(is_driver_picky),
+            VehicleType::Pedestrian => self.is_for_pedestrians(is_driver_picky),
+        }
+    }
+
+    fn is_for_vehicles(&self, is_driver_picky: bool) -> bool {
         match self {
             StreetType::Motorway => true,
             StreetType::MotorwayLink => true,
@@ -168,40 +177,40 @@ impl StreetType {
             StreetType::Unclassified => true,
             StreetType::Residential => true,
             StreetType::LivingStreet => true,
-            StreetType::Service => !is_suitable,
-            StreetType::Track => !is_suitable,
-            StreetType::Road => !is_suitable,
+            StreetType::Service => !is_driver_picky,
+            StreetType::Track => !is_driver_picky,
+            StreetType::Road => !is_driver_picky,
             StreetType::Cycleway => false,
             StreetType::Pedestrian => false,
             StreetType::Path => false,
         }
     }
 
-    pub fn is_for_bicycles(&self, is_suitable: bool) -> bool {
+    fn is_for_bicycles(&self, is_driver_picky: bool) -> bool {
         match self {
             StreetType::Motorway => false,
             StreetType::MotorwayLink => false,
             StreetType::Trunk => false,
             StreetType::TrunkLink => false,
-            StreetType::Primary => !is_suitable,
-            StreetType::PrimaryLink => !is_suitable,
-            StreetType::Secondary => !is_suitable,
-            StreetType::SecondaryLink => !is_suitable,
+            StreetType::Primary => !is_driver_picky,
+            StreetType::PrimaryLink => !is_driver_picky,
+            StreetType::Secondary => !is_driver_picky,
+            StreetType::SecondaryLink => !is_driver_picky,
             StreetType::Tertiary => true,
             StreetType::TertiaryLink => true,
             StreetType::Unclassified => true,
             StreetType::Residential => true,
             StreetType::LivingStreet => true,
             StreetType::Service => true,
-            StreetType::Track => !is_suitable,
-            StreetType::Road => !is_suitable,
+            StreetType::Track => !is_driver_picky,
+            StreetType::Road => !is_driver_picky,
             StreetType::Cycleway => true,
-            StreetType::Pedestrian => !is_suitable,
-            StreetType::Path => !is_suitable,
+            StreetType::Pedestrian => !is_driver_picky,
+            StreetType::Path => !is_driver_picky,
         }
     }
 
-    pub fn is_for_pedestrians(&self, is_suitable: bool) -> bool {
+    fn is_for_pedestrians(&self, is_driver_picky: bool) -> bool {
         match self {
             StreetType::Motorway => false,
             StreetType::MotorwayLink => false,
@@ -218,7 +227,7 @@ impl StreetType {
             StreetType::LivingStreet => true,
             StreetType::Service => true,
             StreetType::Track => true,
-            StreetType::Road => !is_suitable,
+            StreetType::Road => !is_driver_picky,
             StreetType::Cycleway => false,
             StreetType::Pedestrian => true,
             StreetType::Path => true,

@@ -3,8 +3,8 @@ mod pbf {
 }
 
 use crate::{
-    configs::{graph, MetricType, VehicleType},
-    network::{GraphBuilder, ProtoEdge, StreetType},
+    configs::{graph, MetricType},
+    network::{GraphBuilder, StreetType, UnfinishedEdge},
     units::{geo::Coordinate, MetricU32},
 };
 use log::info;
@@ -43,48 +43,34 @@ impl super::Parsing for Parser {
                 Some(highway_tag) => highway_tag,
                 None => continue,
             };
-            match cfg.vehicle_type {
-                VehicleType::Car => {
-                    if !highway_tag.is_for_vehicles(cfg.is_graph_suitable) {
-                        continue;
-                    }
-                }
-                VehicleType::Bicycle => {
-                    if !highway_tag.is_for_bicycles(cfg.is_graph_suitable) {
-                        continue;
-                    }
-                }
-                VehicleType::Pedestrian => {
-                    if !highway_tag.is_for_pedestrians(cfg.is_graph_suitable) {
-                        continue;
-                    }
-                }
+            if !highway_tag.is_for(&cfg.vehicles.vehicle_type, cfg.vehicles.is_driver_picky) {
+                continue;
             }
 
             // Collect metrics as expected by user-config
             // ATTENTION: A way contains multiple edges, thus be careful when adding new metrics.
-            let mut edge_metrics = vec![];
+            let mut unfinished_edge = UnfinishedEdge::new(None, None, cfg.edges.metric_count());
             for metric_type in cfg.edges.metric_types.iter() {
                 match metric_type {
-                    MetricType::Id { id: _ } => (), // taken later
                     &MetricType::Length { provided } => {
                         if provided {
                             return Err(format!(
                                 "The {} of an edge in a pbf-file has to be calculated, \
                                  but is expected to be provided.",
-                                MetricType::Length { provided }
+                                metric_type
                             ));
                         }
                     }
                     &MetricType::Maxspeed { provided } => {
                         if provided {
+                            let metric_idx = cfg.edges.metric_idx(metric_type).unwrap();
                             let maxspeed = MetricU32::from(highway_tag.parse_maxspeed(&way));
-                            edge_metrics.push((metric_type.id().to_owned(), maxspeed));
+                            unfinished_edge.set_metric(metric_idx, maxspeed);
                         } else {
                             return Err(format!(
                                 "The {} of an edge in a pbf-file has to be provided, \
                                  but is expected to be calculated.",
-                                MetricType::Maxspeed { provided }
+                                metric_type
                             ));
                         }
                     }
@@ -93,23 +79,19 @@ impl super::Parsing for Parser {
                             return Err(format!(
                                 "The {} of an edge in a pbf-file has to be calculated, \
                                  but is expected to be provided.",
-                                MetricType::Duration { provided }
+                                metric_type
                             ));
                         }
                     }
                     MetricType::LaneCount => {
+                        let metric_idx = cfg.edges.metric_idx(metric_type).unwrap();
                         let lane_count = MetricU32::from(highway_tag.parse_lane_count(&way));
-                        edge_metrics.push((metric_type.id().to_owned(), lane_count));
+                        unfinished_edge.set_metric(metric_idx, lane_count);
                     }
                     &MetricType::Custom { id: _ } => {
-                        return Err(format!(
-                            "A pbf-file has no metric {}.",
-                            MetricType::Custom {
-                                id: metric_type.id().to_owned()
-                            }
-                        ));
+                        return Err(format!("A pbf-file has no metric {}.", metric_type));
                     }
-                    MetricType::Ignore { id: _ } => (),
+                    MetricType::Id { id: _ } | MetricType::Ignore { id: _ } => (),
                 }
             }
             let (is_oneway, is_reverse) = highway_tag.parse_oneway(&way);
@@ -128,19 +110,22 @@ impl super::Parsing for Parser {
             let mut nodes_iter = way.nodes.iter().chain(way.nodes[iter_range].iter().rev());
 
             // add edges, one per node-pair in way.nodes
-            let mut src_id = nodes_iter.next().ok_or(format!(
-                "Way.nodes.len()={} but should be >1.",
-                way.nodes.len()
-            ))?;
-            for dst_id in nodes_iter {
-                // create proto-edge, add metrics and add proto-edge to graph
-                let mut proto_edge = ProtoEdge::new(src_id.0, dst_id.0);
-                for (metric_id, metric_value) in edge_metrics.iter() {
-                    proto_edge.add_metric(&metric_id, *metric_value);
-                }
-                graph_builder.push_edge(proto_edge);
+            unfinished_edge.src_id = Some(
+                nodes_iter
+                    .next()
+                    .ok_or(format!(
+                        "Way.nodes.len()={} but should be >1.",
+                        way.nodes.len()
+                    ))?
+                    .0,
+            );
+            for dst_id in nodes_iter.map(|id| id.0) {
+                // add proto-edge to graph
+                unfinished_edge.dst_id = Some(dst_id);
+                graph_builder.push_edge(unfinished_edge.clone().finalize()?)?;
                 // update src for next edge (in the current way)
-                src_id = dst_id;
+                unfinished_edge.src_id = unfinished_edge.dst_id;
+                unfinished_edge.dst_id = None;
             }
         }
         info!("FINISHED");

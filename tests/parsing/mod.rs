@@ -9,7 +9,7 @@ mod fmi {
     #[test]
     fn simple_stuttgart() {
         let cfg = create_config(TestType::SimpleStuttgart);
-        let graph = super::parse(&cfg);
+        let graph = super::parse(cfg.graph);
 
         let nodes = graph.nodes();
         let expected = 6;
@@ -34,7 +34,7 @@ mod fmi {
     #[test]
     fn small() {
         let cfg = create_config(TestType::Small);
-        let graph = super::parse(&cfg);
+        let graph = super::parse(cfg.graph);
 
         let nodes = graph.nodes();
         let expected = 8;
@@ -59,7 +59,7 @@ mod fmi {
     #[test]
     fn bait() {
         let cfg = create_config(TestType::BidirectionalBait);
-        let graph = super::parse(&cfg);
+        let graph = super::parse(cfg.graph);
 
         let nodes = graph.nodes();
         let expected = 5;
@@ -88,7 +88,7 @@ mod pbf {
     #[test]
     fn isle_of_man() {
         let cfg = create_config(TestType::IsleOfMan);
-        let graph = super::parse(&cfg);
+        let graph = super::parse(cfg.graph);
 
         let nodes = graph.nodes();
         let expected = 51_310;
@@ -114,9 +114,9 @@ mod pbf {
 #[test]
 fn wrong_extension() {
     let mut cfg = create_config(TestType::Small);
-    cfg.paths.map_file = PathBuf::from("foo.asdf");
+    cfg.graph.map_file = PathBuf::from("foo.asdf");
     assert!(
-        Parser::parse(&cfg).is_err(),
+        Parser::parse(&cfg.graph).is_err(),
         "File-extension 'asdf' should not be supported."
     );
 }

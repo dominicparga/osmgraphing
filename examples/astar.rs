@@ -1,6 +1,10 @@
 use log::{error, info};
 use osmgraphing::{
-    configs::{edges, graph, paths, MetricType, VehicleType},
+    configs::{
+        graph,
+        graph::{edges, vehicles},
+        Config, MetricType, VehicleType,
+    },
     network::NodeIdx,
     routing, Parser,
 };
@@ -55,14 +59,14 @@ fn main() {
     //--------------------------------------------------------------------------------------------//
     // parsing
 
-    let cfg = graph::Config {
-        is_graph_suitable: false,
-        vehicle_type: VehicleType::Car,
-        paths: paths::Config {
-            map_file: match std::env::args_os().nth(1) {
-                Some(path) => PathBuf::from(path),
-                None => PathBuf::from("resources/maps/simple_stuttgart.fmi"),
-            },
+    let cfg = Config::new(graph::Config {
+        map_file: match std::env::args_os().nth(1) {
+            Some(path) => PathBuf::from(path),
+            None => PathBuf::from("resources/maps/simple_stuttgart.fmi"),
+        },
+        vehicles: vehicles::Config {
+            is_driver_picky: false,
+            vehicle_type: VehicleType::Car,
         },
         edges: edges::Config {
             metric_types: vec![
@@ -77,10 +81,10 @@ fn main() {
                 MetricType::Duration { provided: false },
             ],
         },
-    };
+    });
 
     let now = Instant::now();
-    let graph = match Parser::parse_and_finalize(&cfg) {
+    let graph = match Parser::parse_and_finalize(cfg.graph) {
         Ok(graph) => graph,
         Err(msg) => {
             error!("{}", msg);

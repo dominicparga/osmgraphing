@@ -1,7 +1,11 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use log::error;
 use osmgraphing::{
-    configs::{edges, graph, paths, MetricType, VehicleType},
+    configs::{
+        graph,
+        graph::{edges, vehicles},
+        Config, MetricType, VehicleType,
+    },
     network::{Graph, NodeIdx},
     routing, Parser,
 };
@@ -30,11 +34,11 @@ fn criterion_benchmark(c: &mut Criterion) {
     init_logging(true);
 
     // parsing
-    let cfg = graph::Config {
-        is_graph_suitable: false,
-        vehicle_type: VehicleType::Car,
-        paths: paths::Config {
-            map_file: PathBuf::from("resources/maps/isle-of-man_2019-09-05.osm.pbf"),
+    let cfg = Config::new(graph::Config {
+        map_file: PathBuf::from("resources/maps/isle-of-man_2019-09-05.osm.pbf"),
+        vehicles: vehicles::Config {
+            is_driver_picky: false,
+            vehicle_type: VehicleType::Car,
         },
         edges: edges::Config {
             metric_types: vec![
@@ -49,8 +53,8 @@ fn criterion_benchmark(c: &mut Criterion) {
                 MetricType::Duration { provided: false },
             ],
         },
-    };
-    let graph = match Parser::parse_and_finalize(&cfg) {
+    });
+    let graph = match Parser::parse_and_finalize(cfg.graph) {
         Ok(graph) => graph,
         Err(msg) => {
             error!("{}", msg);

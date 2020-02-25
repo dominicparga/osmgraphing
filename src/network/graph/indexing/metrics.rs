@@ -14,11 +14,11 @@ pub struct MetricIdx {
 }
 
 impl MetricIdx {
-    fn _new(metric_idx: usize) -> MetricIdx {
-        MetricIdx { value: metric_idx }
+    pub fn new(n: usize) -> MetricIdx {
+        MetricIdx { value: n }
     }
 
-    fn _to_usize(&self) -> usize {
+    pub fn to_usize(&self) -> usize {
         self.value
     }
 }
@@ -54,6 +54,22 @@ impl PartialEq for MetricIdx {
 
 //------------------------------------------------------------------------------------------------//
 // operations
+
+impl Add<MetricIdx> for MetricIdx {
+    type Output = Self;
+
+    fn add(self, other: MetricIdx) -> Self {
+        Self {
+            value: self.value + other.value,
+        }
+    }
+}
+
+impl AddAssign<MetricIdx> for MetricIdx {
+    fn add_assign(&mut self, other: MetricIdx) {
+        self.value += other.value;
+    }
+}
 
 impl Add<usize> for MetricIdx {
     type Output = Self;

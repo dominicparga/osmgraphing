@@ -8,7 +8,7 @@ mod construction {
         #[ignore]
         fn isle_of_man() {
             let cfg = create_config(TestType::IsleOfMan);
-            let _graph = parse(&cfg);
+            let _graph = parse(cfg.graph);
 
             // TODO check graph structure
         }
@@ -22,7 +22,7 @@ mod construction {
         #[test]
         fn simple_stuttgart() {
             let cfg = create_config(TestType::SimpleStuttgart);
-            let graph = parse(&cfg);
+            let graph = parse(cfg.graph);
 
             //--------------------------------------------------------------------------------------------//
             // setup correct data
@@ -193,7 +193,7 @@ mod construction {
         #[test]
         fn small() {
             let cfg = create_config(TestType::Small);
-            let graph = parse(&cfg);
+            let graph = parse(cfg.graph);
 
             //--------------------------------------------------------------------------------------------//
             // setup correct data
@@ -351,7 +351,7 @@ mod construction {
         #[test]
         fn bait() {
             let cfg = create_config(TestType::BidirectionalBait);
-            let graph = parse(&cfg);
+            let graph = parse(cfg.graph);
 
             //--------------------------------------------------------------------------------------------//
             // setup correct data

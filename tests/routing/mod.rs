@@ -8,7 +8,7 @@ mod shortest;
 fn assert_correct<M>(
     astar: &mut Box<dyn routing::astar::Astar<M>>,
     expected_paths: Vec<(TestNode, TestNode, Option<(M, Vec<Vec<TestNode>>)>)>,
-    cfg: &graph::Config,
+    cfg: graph::Config,
 ) where
     M: Metric + PartialEq + Display,
 {

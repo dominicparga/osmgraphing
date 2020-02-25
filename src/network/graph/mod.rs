@@ -1,17 +1,15 @@
 pub mod building;
-use building::ProtoEdge;
 mod indexing;
 pub use indexing::{EdgeIdx, MetricIdx, NodeIdx};
 
 use crate::{
-    configs,
-    configs::{graph, MetricType},
+    configs::{graph::Config, MetricType},
     units::{
-        geo, geo::Coordinate, length::Meters, speed::KilometersPerHour, time::Milliseconds, Metric,
+        geo::Coordinate, length::Meters, speed::KilometersPerHour, time::Milliseconds, Metric,
         MetricU32,
     },
 };
-use std::{cmp::max, fmt, fmt::Display};
+use std::{fmt, fmt::Display};
 
 /// Stores graph-data as offset-graph in arrays and provides methods and shallow structs for accessing them.
 ///
@@ -79,6 +77,7 @@ use std::{cmp::max, fmt, fmt::Display};
 /// Solution is keeping the respective fwd- and bwd-offset-arrays and when accessing them, map the resulting slices with the to-fwd-idx-array to the fwd-dst-array, which are stored intuitively according to the fwd-graph.
 #[derive(Debug)]
 pub struct Graph {
+    cfg: Config,
     // nodes
     node_ids: Vec<i64>,
     // node-metrics
@@ -91,232 +90,7 @@ pub struct Graph {
     bwd_offsets: Vec<usize>,
     bwd_to_fwd_map: Vec<EdgeIdx>,
     // edge-metrics (sorted according to fwd_dsts)
-    metric_ids: Vec<String>,
     metrics: Vec<Vec<MetricU32>>,
-}
-
-impl Default for Graph {
-    fn default() -> Graph {
-        Graph {
-            // nodes
-            node_ids: Vec::new(),
-            // node-metrics
-            node_coords: Vec::new(),
-            // edges
-            fwd_dsts: Vec::new(),
-            fwd_offsets: Vec::new(),
-            fwd_to_fwd_map: Vec::new(),
-            bwd_dsts: Vec::new(),
-            bwd_offsets: Vec::new(),
-            bwd_to_fwd_map: Vec::new(),
-            // edge-metrics
-            metric_ids: Vec::new(),
-            metrics: Vec::new(),
-        }
-    }
-}
-
-/// private stuff for graph-building
-impl Graph {
-    fn new() -> Graph {
-        Graph {
-            ..Default::default()
-        }
-    }
-
-    fn init_metrics(&mut self, cfg: &graph::Config, capacity: usize) {
-        for metric_type in cfg.edges.metric_types.iter() {
-            match metric_type {
-                MetricType::Length { provided: _ }
-                | MetricType::Duration { provided: _ }
-                | MetricType::Maxspeed { provided: _ }
-                | MetricType::LaneCount
-                | MetricType::Custom { id: _ } => {
-                    self.metric_ids.push(String::from(metric_type.id()));
-                    self.metrics.push(Vec::with_capacity(capacity));
-                }
-                MetricType::Id { id: _ } | MetricType::Ignore { id: _ } => (),
-            }
-        }
-    }
-
-    /// Optimizes capacity of used data-structures.
-    fn shrink_to_fit(&mut self) {
-        self.node_ids.shrink_to_fit();
-        self.node_coords.shrink_to_fit();
-        self.fwd_dsts.shrink_to_fit();
-        self.fwd_offsets.shrink_to_fit();
-        self.fwd_to_fwd_map.shrink_to_fit();
-        self.bwd_dsts.shrink_to_fit();
-        self.bwd_offsets.shrink_to_fit();
-        self.bwd_to_fwd_map.shrink_to_fit();
-        self.metric_ids.shrink_to_fit();
-        self.metrics.shrink_to_fit();
-    }
-
-    /// Uses the graph's nodes, so nodes must have been added before this method works properly.
-    /// The provided edge is used as forward-edge.
-    fn add_metrics(
-        &mut self,
-        proto_edge: &mut ProtoEdge,
-        cfg: &graph::Config,
-    ) -> Result<(), String> {
-        let (src_idx, dst_idx) = {
-            let nodes = self.nodes();
-            let src_idx = nodes.src_idx_from(*proto_edge.src_id())?;
-            let dst_idx = nodes.dst_idx_from(*proto_edge.dst_id())?;
-            (src_idx, dst_idx)
-        };
-
-        // Repeat the calculations n times.
-        // In worst case, no metric is provided and all have to be calculated sequentially.
-        let mut is_metric_processed = vec![false; cfg.edges.metric_types.len()];
-        for _ in 0..cfg.edges.metric_types.len() {
-            // add metrics to graph
-            // For every metric holds: if graph expects metric, it should be provided explicetly or implicitly.
-            // For calculating metrics from other metrics, multiple loop-runs are necessary.
-            for i in 0..cfg.edges.metric_types.len() {
-                // calc every metric only once
-                if is_metric_processed[i] {
-                    continue;
-                }
-
-                let metric_type = &cfg.edges.metric_types[i];
-
-                // get metric-vec (if metric has to be stored)
-                let metric_vec = {
-                    match metric_type {
-                        MetricType::Length { provided: _ }
-                        | MetricType::Duration { provided: _ }
-                        | MetricType::Maxspeed { provided: _ }
-                        | MetricType::LaneCount
-                        | MetricType::Custom { id: _ } => (),
-                        MetricType::Id { id: _ } | MetricType::Ignore { id: _ } => {
-                            is_metric_processed[i] = true;
-                            continue;
-                        }
-                    }
-                    // Should always return ok, since graph should be initialized properly
-                    // and special metric-types (e.g. ignored) are filtered above.
-                    let metric_vec_idx = self.metrics().metric_vec_idx(metric_type.id())?;
-                    &mut self.metrics[metric_vec_idx]
-                };
-
-                match metric_type {
-                    &MetricType::Length { provided } => {
-                        // If length is not provided -> calculate it by coordinates and haversine.
-                        let length = {
-                            if !provided {
-                                let src_coord = self.node_coords[src_idx.to_usize()];
-                                let dst_coord = self.node_coords[dst_idx.to_usize()];
-                                geo::haversine_distance_m(&src_coord, &dst_coord).into()
-                            } else {
-                                *(proto_edge.metric(metric_type.id()).ok_or(format!(
-                                    "Metric {} should be provided, but isn't.",
-                                    MetricType::Length { provided }
-                                ))?)
-                            }
-                        };
-
-                        // Length should be at least 1 to prevent errors, e.g. when dividing.
-                        let length = max(MetricU32::from(1u32), length).into();
-                        proto_edge.add_metric(metric_type.id(), length);
-                        metric_vec.push(length);
-                        is_metric_processed[i] = true;
-                    }
-                    &MetricType::Duration { provided } => {
-                        // If not provided, but expected in graph
-                        // -> calc with length and maxspeed below
-                        let duration = {
-                            if !provided {
-                                let length = proto_edge.metric(configs::constants::ids::LENGTH);
-                                let maxspeed = proto_edge.metric(configs::constants::ids::MAXSPEED);
-                                if let (Some(length), Some(maxspeed)) = (length, maxspeed) {
-                                    Meters::from(*length) / KilometersPerHour::from(*maxspeed)
-                                } else {
-                                    continue;
-                                }
-                            } else {
-                                Milliseconds::from(
-                                    *(proto_edge.metric(metric_type.id()).ok_or(format!(
-                                        "Metric {} should be provided, but isn't.",
-                                        MetricType::Duration { provided }
-                                    ))?),
-                                )
-                            }
-                        };
-
-                        let duration = duration.into();
-                        proto_edge.add_metric(metric_type.id(), duration);
-                        metric_vec.push(duration);
-                        is_metric_processed[i] = true;
-                    }
-                    &MetricType::Maxspeed { provided } => {
-                        // If not provided, but expected in graph
-                        // -> calc with length and duration below
-                        let maxspeed = {
-                            if !provided {
-                                let length = proto_edge.metric(configs::constants::ids::LENGTH);
-                                let duration = proto_edge.metric(configs::constants::ids::DURATION);
-                                if let (Some(length), Some(duration)) = (length, duration) {
-                                    Meters::from(*length) / Milliseconds::from(*duration)
-                                } else {
-                                    continue;
-                                }
-                            } else {
-                                KilometersPerHour::from(
-                                    *(proto_edge.metric(metric_type.id()).ok_or(format!(
-                                        "Metric {} should be provided, but isn't.",
-                                        MetricType::Maxspeed { provided }
-                                    ))?),
-                                )
-                            }
-                        };
-
-                        let maxspeed = maxspeed.into();
-                        proto_edge.add_metric(metric_type.id(), maxspeed);
-                        metric_vec.push(maxspeed);
-                        is_metric_processed[i] = true;
-                    }
-                    MetricType::LaneCount => {
-                        let lane_count = {
-                            *(proto_edge.metric(metric_type.id()).ok_or(format!(
-                                "Metric {} should be provided, but isn't.",
-                                MetricType::LaneCount
-                            ))?)
-                        };
-
-                        metric_vec.push(lane_count);
-                        is_metric_processed[i] = true;
-                    }
-                    MetricType::Custom { id: _ } => {
-                        let custom_metric = {
-                            *(proto_edge.metric(metric_type.id()).ok_or(format!(
-                                "Metric {} should be provided, but isn't.",
-                                MetricType::Custom {
-                                    id: metric_type.id().to_owned()
-                                }
-                            ))?)
-                        };
-
-                        metric_vec.push(custom_metric);
-                        is_metric_processed[i] = true;
-                    }
-                    MetricType::Id { id: _ } | MetricType::Ignore { id: _ } => (),
-                }
-            }
-
-            // if all metrics have been calculated -> done
-            if is_metric_processed.iter().fold(true, |a, b| (a && *b)) {
-                return Ok(());
-            }
-        }
-
-        // If expected metrics haven't been calculated yet, some metrics are missing!
-        Err(format!(
-            "Metrics couldn't be calculated since at least one metric is missing for calculations."
-        ))
-    }
 }
 
 /// public stuff for accessing the (static) graph
@@ -348,7 +122,7 @@ impl Graph {
 
     pub fn metrics<'a>(&'a self) -> MetricContainer<'a> {
         MetricContainer {
-            metric_ids: &(self.metric_ids),
+            cfg: &(self.cfg),
             metrics: &(self.metrics),
         }
     }
@@ -552,11 +326,8 @@ impl<'a> HalfEdge<'a> {
         self.metrics.lane_count(self.idx)
     }
 
-    pub fn metric<S>(&self, metric_id: S) -> Option<MetricU32>
-    where
-        S: Into<String>,
-    {
-        self.metrics.get(metric_id, self.idx)
+    pub fn metric(&self, metric_type: &MetricType) -> Option<MetricU32> {
+        self.metrics.get(metric_type, self.idx)
     }
 }
 
@@ -737,55 +508,48 @@ impl<'a> EdgeContainer<'a> {
 /// Shallow means that it does only contain references to the graph's data-arrays.
 #[derive(Debug)]
 pub struct MetricContainer<'a> {
-    metric_ids: &'a Vec<String>,
+    cfg: &'a Config,
     metrics: &'a Vec<Vec<MetricU32>>,
 }
 
 impl<'a> MetricContainer<'a> {
-    fn metric_vec_idx<S>(&self, metric_id: S) -> Result<usize, String>
-    where
-        S: Into<String>,
-    {
-        let metric_id = metric_id.into();
-
-        if let Some(metric_idx) = self.metric_ids.iter().position(|id| id == &metric_id) {
-            Ok(metric_idx)
-        } else {
-            Err(format!(
-                "Graph is expected to have a metric of given id {} but doesn't.",
-                metric_id
-            ))
-        }
+    fn metric_vec(&self, metric_type: &MetricType) -> Result<&Vec<MetricU32>, String> {
+        let metric_idx = self.cfg.edges.metric_idx(metric_type).ok_or(&format!(
+            "Config is expected to have a metric {} but doesn't.",
+            metric_type
+        ))?;
+        Ok(&self.metrics[metric_idx.to_usize()])
     }
 
-    fn metric_vec<S>(&self, metric_id: S) -> Result<&Vec<MetricU32>, String>
-    where
-        S: Into<String>,
-    {
-        let metric_idx = self.metric_vec_idx(metric_id)?;
-        Ok(&self.metrics[metric_idx])
-    }
-
-    pub fn get<S>(&self, metric_id: S, edge_idx: EdgeIdx) -> Option<MetricU32>
-    where
-        S: Into<String>,
-    {
-        let metric = self.metric_vec(metric_id).ok()?;
+    pub fn get(&self, metric_type: &MetricType, edge_idx: EdgeIdx) -> Option<MetricU32> {
+        let metric = self.metric_vec(metric_type).ok()?;
         let value = *(metric.get(edge_idx.to_usize())?);
         Some(value)
     }
 
     pub fn length(&self, edge_idx: EdgeIdx) -> Option<Meters> {
+        let doesnt_matter = true;
         let length = self
-            .get(crate::configs::constants::ids::LENGTH, edge_idx)?
+            .get(
+                &MetricType::Length {
+                    provided: doesnt_matter,
+                },
+                edge_idx,
+            )?
             .into();
         debug_assert!(length > Meters::zero(), "Edge-length should be > 0");
         Some(length)
     }
 
     pub fn maxspeed(&self, edge_idx: EdgeIdx) -> Option<KilometersPerHour> {
+        let doesnt_matter = true;
         let maxspeed = self
-            .get(crate::configs::constants::ids::MAXSPEED, edge_idx)?
+            .get(
+                &MetricType::Maxspeed {
+                    provided: doesnt_matter,
+                },
+                edge_idx,
+            )?
             .into();
         debug_assert!(
             maxspeed > KilometersPerHour::zero(),
@@ -795,8 +559,14 @@ impl<'a> MetricContainer<'a> {
     }
 
     pub fn duration(&self, edge_idx: EdgeIdx) -> Option<Milliseconds> {
+        let doesnt_matter = true;
         let duration = self
-            .get(crate::configs::constants::ids::DURATION, edge_idx)?
+            .get(
+                &MetricType::Duration {
+                    provided: doesnt_matter,
+                },
+                edge_idx,
+            )?
             .into();
         debug_assert!(
             duration > Milliseconds::zero(),
@@ -806,9 +576,7 @@ impl<'a> MetricContainer<'a> {
     }
 
     pub fn lane_count(&self, edge_idx: EdgeIdx) -> Option<MetricU32> {
-        let lane_count = self
-            .get(crate::configs::constants::ids::LANE_COUNT, edge_idx)?
-            .into();
+        let lane_count = self.get(&MetricType::LaneCount, edge_idx)?.into();
         debug_assert!(
             lane_count > MetricU32::zero(),
             "Edge-lane-count should be > 0"
