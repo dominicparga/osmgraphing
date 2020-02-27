@@ -17,6 +17,7 @@ jobs:
         cargo test --verbose
         cargo run --example astar
         cargo run --example parser
+        cargo fmt -- --check
     - name: Build docs
       run: cargo doc
   beta:
@@ -34,6 +35,7 @@ jobs:
         cargo test --verbose
         cargo run --example astar
         cargo run --example parser
+        cargo fmt -- --check
   nightly:
     runs-on: ubuntu-latest
     steps:
@@ -52,6 +54,7 @@ jobs:
         cargo test --verbose
         cargo run --example astar
         cargo run --example parser
+        cargo fmt -- --check
       continue-on-error: true
   benches:
     runs-on: ubuntu-latest
