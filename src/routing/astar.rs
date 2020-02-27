@@ -95,7 +95,7 @@ pub mod unidirectional {
                 estimation: M::zero(),
                 pred_idx: None,
             });
-            self.costs[src.idx().to_usize()] = M::zero();
+            self.costs[*src.idx()] = M::zero();
 
             //----------------------------------------------------------------------------------------//
             // search for shortest path
@@ -110,7 +110,7 @@ pub mod unidirectional {
 
                     let mut path = Path::with_capacity(src.idx(), dst.idx(), nodes.count());
                     *(path.cost_mut()) = current.cost;
-                    while let Some(pred_idx) = self.predecessors[cur_idx.to_usize()] {
+                    while let Some(pred_idx) = self.predecessors[*cur_idx] {
                         path.add_pred_succ(pred_idx, cur_idx);
                         cur_idx = pred_idx;
                     }
@@ -123,7 +123,7 @@ pub mod unidirectional {
                 // first occurrence has lowest cost
                 // -> check if current has already been visited
 
-                if current.cost > self.costs[current.idx.to_usize()] {
+                if current.cost > self.costs[*current.idx] {
                     continue;
                 }
 
@@ -137,9 +137,9 @@ pub mod unidirectional {
                 };
                 for leaving_edge in leaving_edges {
                     let new_cost = current.cost + (self.cost_fn)(&leaving_edge);
-                    if new_cost < self.costs[leaving_edge.dst_idx().to_usize()] {
-                        self.predecessors[leaving_edge.dst_idx().to_usize()] = Some(current.idx);
-                        self.costs[leaving_edge.dst_idx().to_usize()] = new_cost;
+                    if new_cost < self.costs[*leaving_edge.dst_idx()] {
+                        self.predecessors[*leaving_edge.dst_idx()] = Some(current.idx);
+                        self.costs[*leaving_edge.dst_idx()] = new_cost;
 
                         let leaving_edge_of_dst = nodes.create(leaving_edge.dst_idx());
                         let estimation = (self.estimate_fn)(&leaving_edge_of_dst, dst);
@@ -285,19 +285,18 @@ pub mod bidirectional {
 
         /// The given costnode is a meeting-costnode, if it is visited by both, the search starting in src and the search starting in dst.
         fn is_meeting_costnode(&self, costnode: &CostNode<M>) -> bool {
-            self.is_visited_by_src[costnode.idx.to_usize()]
-                && self.is_visited_by_dst[costnode.idx.to_usize()]
+            self.is_visited_by_src[*costnode.idx] && self.is_visited_by_dst[*costnode.idx]
         }
 
         fn visit(&mut self, costnode: &CostNode<M>) {
             match costnode.direction {
-                Direction::FWD => self.is_visited_by_src[costnode.idx.to_usize()] = true,
-                Direction::BWD => self.is_visited_by_dst[costnode.idx.to_usize()] = true,
+                Direction::FWD => self.is_visited_by_src[*costnode.idx] = true,
+                Direction::BWD => self.is_visited_by_dst[*costnode.idx] = true,
             }
         }
 
         fn total_cost(&self, costnode: &CostNode<M>) -> M {
-            self.fwd_costs[costnode.idx.to_usize()] + self.bwd_costs[costnode.idx.to_usize()]
+            self.fwd_costs[*costnode.idx] + self.bwd_costs[*costnode.idx]
         }
     }
 
@@ -337,9 +336,9 @@ pub mod bidirectional {
                 direction: Direction::BWD,
             });
             // update fwd-stats
-            self.fwd_costs[src.idx().to_usize()] = M::zero();
+            self.fwd_costs[*src.idx()] = M::zero();
             // update bwd-stats
-            self.bwd_costs[dst.idx().to_usize()] = M::zero();
+            self.bwd_costs[*dst.idx()] = M::zero();
 
             //------------------------------------------------------------------------------------//
             // search for shortest path
@@ -374,7 +373,7 @@ pub mod bidirectional {
 
                 // first occurrence has lowest cost
                 // -> check if current has already been expanded
-                if current.cost > xwd_costs[current.idx.to_usize()] {
+                if current.cost > xwd_costs[*current.idx] {
                     continue;
                 }
 
@@ -386,9 +385,9 @@ pub mod bidirectional {
                 };
                 for leaving_edge in leaving_edges {
                     let new_cost = current.cost + (self.cost_fn)(&leaving_edge);
-                    if new_cost < xwd_costs[leaving_edge.dst_idx().to_usize()] {
-                        xwd_predecessors[leaving_edge.dst_idx().to_usize()] = Some(current.idx);
-                        xwd_costs[leaving_edge.dst_idx().to_usize()] = new_cost;
+                    if new_cost < xwd_costs[*leaving_edge.dst_idx()] {
+                        xwd_predecessors[*leaving_edge.dst_idx()] = Some(current.idx);
+                        xwd_costs[*leaving_edge.dst_idx()] = new_cost;
 
                         // if path is found
                         // -> Run until queue is empty
@@ -418,14 +417,14 @@ pub mod bidirectional {
 
                 // iterate backwards over fwd-path
                 let mut cur_idx = meeting_node.idx;
-                while let Some(pred_idx) = self.predecessors[cur_idx.to_usize()] {
+                while let Some(pred_idx) = self.predecessors[*cur_idx] {
                     path.add_pred_succ(pred_idx, cur_idx);
                     cur_idx = pred_idx;
                 }
 
                 // iterate backwards over bwd-path
                 let mut cur_idx = meeting_node.idx;
-                while let Some(succ_idx) = self.successors[cur_idx.to_usize()] {
+                while let Some(succ_idx) = self.successors[*cur_idx] {
                     path.add_pred_succ(cur_idx, succ_idx);
                     cur_idx = succ_idx;
                 }

@@ -199,27 +199,27 @@ fn expected_paths_simple_stuttgart() -> Vec<(
 )> {
     // (idx, id)
     let opp = TestNode {
-        idx: NodeIdx::new(0),
+        idx: NodeIdx(0),
         id: 26_033_921,
     };
     let bac = TestNode {
-        idx: NodeIdx::new(1),
+        idx: NodeIdx(1),
         id: 26_160_028,
     };
     let wai = TestNode {
-        idx: NodeIdx::new(2),
+        idx: NodeIdx(2),
         id: 252_787_940,
     };
     let end = TestNode {
-        idx: NodeIdx::new(3),
+        idx: NodeIdx(3),
         id: 298_249_467,
     };
     let dea = TestNode {
-        idx: NodeIdx::new(4),
+        idx: NodeIdx(4),
         id: 1_621_605_361,
     };
     let stu = TestNode {
-        idx: NodeIdx::new(5),
+        idx: NodeIdx(5),
         id: 2_933_335_353,
     };
 
@@ -385,35 +385,35 @@ fn expected_paths_small() -> Vec<(
 )> {
     // (idx, id)
     let a = TestNode {
-        idx: NodeIdx::new(0),
+        idx: NodeIdx(0),
         id: 0,
     };
     let b = TestNode {
-        idx: NodeIdx::new(1),
+        idx: NodeIdx(1),
         id: 1,
     };
     let c = TestNode {
-        idx: NodeIdx::new(2),
+        idx: NodeIdx(2),
         id: 2,
     };
     let d = TestNode {
-        idx: NodeIdx::new(3),
+        idx: NodeIdx(3),
         id: 3,
     };
     let e = TestNode {
-        idx: NodeIdx::new(4),
+        idx: NodeIdx(4),
         id: 4,
     };
     let f = TestNode {
-        idx: NodeIdx::new(5),
+        idx: NodeIdx(5),
         id: 5,
     };
     let g = TestNode {
-        idx: NodeIdx::new(6),
+        idx: NodeIdx(6),
         id: 6,
     };
     let h = TestNode {
-        idx: NodeIdx::new(7),
+        idx: NodeIdx(7),
         id: 7,
     };
 
@@ -600,23 +600,23 @@ fn expected_paths_bait() -> Vec<(
     // tr top-right
     // tl top-left
     let ll = TestNode {
-        idx: NodeIdx::new(0),
+        idx: NodeIdx(0),
         id: 0,
     };
     let bb = TestNode {
-        idx: NodeIdx::new(1),
+        idx: NodeIdx(1),
         id: 1,
     };
     let rr = TestNode {
-        idx: NodeIdx::new(2),
+        idx: NodeIdx(2),
         id: 2,
     };
     let tr = TestNode {
-        idx: NodeIdx::new(3),
+        idx: NodeIdx(3),
         id: 3,
     };
     let tl = TestNode {
-        idx: NodeIdx::new(4),
+        idx: NodeIdx(4),
         id: 4,
     };
 

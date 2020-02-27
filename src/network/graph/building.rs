@@ -127,8 +127,8 @@ impl Graph {
                 // calculate metric dependent on category
                 match category {
                     MetricCategory::Length => {
-                        let src_coord = self.node_coords[src_idx.to_usize()];
-                        let dst_coord = self.node_coords[dst_idx.to_usize()];
+                        let src_coord = self.node_coords[*src_idx];
+                        let dst_coord = self.node_coords[*dst_idx];
                         proto_edge.metrics[*metric_idx] =
                             Some(geo::haversine_distance_m(&src_coord, &dst_coord).into());
                         // return Err(format!("{:?}", proto_edge.metrics[*metric_idx]));
@@ -373,21 +373,21 @@ impl GraphBuilder {
         // init metric-collections in graph
         graph.init_metrics(self.proto_edges.len());
         // start looping
-        let mut edge_idx = EdgeIdx::zero();
+        let mut edge_idx = EdgeIdx(0);
         for proto_edge in self.proto_edges.iter_mut() {
             graph.add_metrics(proto_edge)?;
 
             // print progress
-            progress_bar.set(edge_idx.to_usize());
+            progress_bar.set(*edge_idx);
             if progress_bar.progress() % (1 + (progress_bar.end() / 10)) == 0 {
                 info!("{}", progress_bar);
             }
 
             // update edge-idx
-            edge_idx += 1;
+            *edge_idx += 1;
         }
         // last node needs an upper bound as well for `leaving_edges(...)`
-        info!("{}", progress_bar.set(edge_idx.to_usize()));
+        info!("{}", progress_bar.set(*edge_idx));
         // reduce and optimize memory-usage
         graph.shrink_to_fit();
         // Drop edges
@@ -409,7 +409,7 @@ impl GraphBuilder {
         info!("START Create the forward-offset-array and the forward-mapping.");
         let mut progress_bar = progressing::MappingBar::new(0..=new_proto_edges.len());
         // start looping
-        let mut src_idx = NodeIdx::zero();
+        let mut src_idx = NodeIdx(0);
         let mut offset = 0;
         graph.fwd_offsets.push(offset);
         // high-level-idea
@@ -449,14 +449,14 @@ impl GraphBuilder {
             // Nodes of id y with no leaving edge must have the same offset as the node of id (y+1)
             // to remember it.
             while src_idx != edge_src_idx.into() {
-                src_idx += 1;
+                *src_idx += 1;
                 graph.fwd_offsets.push(offset);
             }
             offset += 1;
             graph.bwd_dsts.push(edge_src_idx);
             graph.fwd_dsts.push(edge_dst_idx);
             // mapping fwd to fwd is just the identity
-            graph.fwd_to_fwd_map.push(EdgeIdx::new(edge_idx));
+            graph.fwd_to_fwd_map.push(EdgeIdx(edge_idx));
 
             // print progress
             progress_bar.set(edge_idx);
@@ -493,7 +493,7 @@ impl GraphBuilder {
         info!("START Create the backward-offset-array.");
         let mut progress_bar = progressing::MappingBar::new(0..=new_proto_edges.len());
         // start looping
-        let mut src_idx = NodeIdx::zero();
+        let mut src_idx = NodeIdx(0);
         let mut offset = 0;
         graph.bwd_offsets.push(offset);
         // high-level-idea
@@ -519,7 +519,7 @@ impl GraphBuilder {
             // Nodes of id y with no leaving edge must have the same offset as the node of id (y+1)
             // to remember it.
             while src_idx != edge_src_idx {
-                src_idx += 1;
+                *src_idx += 1;
                 graph.bwd_offsets.push(offset);
             }
             offset += 1;
@@ -527,7 +527,7 @@ impl GraphBuilder {
             // but applied to forward-sorted-edges.
             // Now, that's used to generate the mapping from backward to forward,
             // which is needed for the offset-arrays.
-            graph.bwd_to_fwd_map.push(EdgeIdx::new(proto_edge.idx));
+            graph.bwd_to_fwd_map.push(EdgeIdx(proto_edge.idx));
 
             // print progress
             progress_bar.set(edge_idx);

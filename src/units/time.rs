@@ -89,15 +89,13 @@ impl Index<NodeIdx> for Vec<Milliseconds> {
     type Output = Milliseconds;
 
     fn index(&self, idx: NodeIdx) -> &Milliseconds {
-        let idx: usize = idx.to_usize();
-        &self[idx]
+        &self[*idx]
     }
 }
 
 impl IndexMut<NodeIdx> for Vec<Milliseconds> {
     fn index_mut(&mut self, idx: NodeIdx) -> &mut Milliseconds {
-        let idx: usize = idx.to_usize();
-        &mut self[idx]
+        &mut self[*idx]
     }
 }
 

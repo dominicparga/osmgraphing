@@ -92,16 +92,16 @@ where
     }
 
     pub fn add_pred_succ(&mut self, pred: NodeIdx, succ: NodeIdx) {
-        self.predecessors[succ.to_usize()] = Some(pred);
-        self.successors[pred.to_usize()] = Some(succ);
+        self.predecessors[*succ] = Some(pred);
+        self.successors[*pred] = Some(succ);
     }
 
     pub fn pred_node_idx(&self, idx: NodeIdx) -> Option<NodeIdx> {
-        *(self.predecessors.get(idx.to_usize())?)
+        *(self.predecessors.get(*idx)?)
     }
 
     pub fn succ_node_idx(&self, idx: NodeIdx) -> Option<NodeIdx> {
-        *(self.successors.get(idx.to_usize())?)
+        *(self.successors.get(*idx)?)
     }
 }
 

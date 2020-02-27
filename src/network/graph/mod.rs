@@ -158,7 +158,7 @@ impl Display for Graph {
                     // print last node
                     i = self.nodes().count() - 1;
                 }
-                let node = &self.nodes().create(NodeIdx::new(i));
+                let node = &self.nodes().create(NodeIdx(i));
                 writeln!(
                     f,
                     "Node: {{ idx: {}, id: {}, {} }}",
@@ -203,20 +203,20 @@ impl Display for Graph {
                         // print last edge
                         j = fwd_dsts.count() - 1;
                     }
-                    let edge_idx = EdgeIdx::new(j);
+                    let edge_idx = EdgeIdx(j);
                     let src_idx = bwd_dsts.dst_idx(edge_idx).unwrap();
                     let half_edge = fwd_dsts.half_edge(edge_idx).unwrap();
                     let metrics: Vec<u32> = (0..self.cfg.edges.metrics.count())
-                        .map(|i| *self.metrics[i][edge_idx.to_usize()])
+                        .map(|i| *self.metrics[i][*edge_idx])
                         .collect();
                     writeln!(
                         f,
                         "{}edge: {{ idx: {}, ({})-{:?}->({}) }}",
                         xwd_prefix,
                         j,
-                        self.node_ids[src_idx.to_usize()],
+                        self.node_ids[*src_idx],
                         metrics,
-                        self.node_ids[half_edge.dst_idx().to_usize()],
+                        self.node_ids[*half_edge.dst_idx()],
                     )?;
                 } else {
                     break;
@@ -314,7 +314,7 @@ pub struct HalfEdge<'a> {
 
 impl<'a> HalfEdge<'a> {
     pub fn dst_idx(&self) -> NodeIdx {
-        self.edge_dsts[self.idx.to_usize()]
+        self.edge_dsts[*self.idx]
     }
 
     pub fn length(&self, metric_idx: MetricIdx) -> Option<Meters> {
@@ -366,17 +366,17 @@ impl<'a> NodeContainer<'a> {
     }
 
     pub fn id(&self, idx: NodeIdx) -> i64 {
-        self.node_ids[idx.to_usize()]
+        self.node_ids[*idx]
     }
 
     pub fn coord(&self, idx: NodeIdx) -> Coordinate {
-        self.node_coords[idx.to_usize()]
+        self.node_coords[*idx]
     }
 
     pub fn idx_from(&self, id: i64) -> Result<NodeIdx, NodeIdx> {
         match self.node_ids.binary_search(&id) {
-            Ok(idx) => Ok(NodeIdx::new(idx)),
-            Err(idx) => Err(NodeIdx::new(idx)),
+            Ok(idx) => Ok(NodeIdx(idx)),
+            Err(idx) => Err(NodeIdx(idx)),
         }
     }
 
@@ -444,7 +444,7 @@ impl<'a> EdgeContainer<'a> {
     }
 
     pub fn dst_idx(&self, idx: EdgeIdx) -> Option<NodeIdx> {
-        Some(*(self.edge_dsts.get(idx.to_usize())?))
+        Some(*(self.edge_dsts.get(*idx)?))
     }
 
     /// Creates `HalfEdge`s containing all metric-data.
@@ -485,9 +485,9 @@ impl<'a> EdgeContainer<'a> {
     /// - if this node has no leaving edges
     fn offset_indices(&self, idx: NodeIdx) -> Option<Vec<EdgeIdx>> {
         // Use offset-array to get indices for the graph's edges belonging to the given node
-        let i0 = *(self.offsets.get(idx.to_usize())?);
+        let i0 = *(self.offsets.get(*idx)?);
         // (idx + 1) guaranteed by offset-array-length
-        let i1 = *(self.offsets.get(idx.to_usize() + 1)?);
+        let i1 = *(self.offsets.get(*idx + 1)?);
 
         // i0 < i1 <-> node has leaving edges
         if i0 < i1 {
@@ -520,7 +520,7 @@ impl<'a> Display for MetricContainer<'a> {
 impl<'a> MetricContainer<'a> {
     pub fn get(&self, metric_idx: MetricIdx, edge_idx: EdgeIdx) -> Option<MetricU32> {
         let metric_vec = &self.metrics[*metric_idx];
-        Some(metric_vec[edge_idx.to_usize()])
+        Some(metric_vec[*edge_idx])
     }
 
     pub fn length(&self, metric_idx: MetricIdx, edge_idx: EdgeIdx) -> Option<Meters> {
