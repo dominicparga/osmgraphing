@@ -85,6 +85,7 @@ fn main() {
     // });
     let cfg = Config::new(graph::Config {
         map_file: PathBuf::from("custom/resources/maps/germany_2019-09-07.osm.pbf"),
+        // map_file: PathBuf::from("resources/maps/isle-of-man_2019-09-05.osm.pbf"),
         vehicles: vehicles::Config {
             is_driver_picky: false,
             vehicle_type: VehicleType::Car,

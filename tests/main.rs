@@ -87,6 +87,7 @@ fn create_config(test_type: TestType) -> Config {
                         vec!["length".into(), "maxspeed".into()],
                     )
                         .into(),
+                    (MetricCategory::LaneCount, "lane-count".into(), true).into(),
                 ])
                 .unwrap(),
             },
@@ -121,13 +122,13 @@ fn create_config(test_type: TestType) -> Config {
 #[rustfmt::skip]#[test]fn bidirectional_bait___routing___fastest____dijkstra___bidirectional_() {routing::fastest::dijkstra::bidirectional::bidirectional_bait();}
 #[rustfmt::skip]#[test]fn bidirectional_bait___routing___fastest____dijkstra___unidirectional() {routing::fastest::dijkstra::unidirectional::bidirectional_bait();}
 #[rustfmt::skip]#[test]fn bidirectional_bait___parsing___fmi_________________________________() {parsing::fmi::bidirectional_bait();}
-#[rustfmt::skip]#[test]fn isle_of_man__________routing___shortest___astar______bidirectional_() {routing::shortest::astar::bidirectional::isle_of_man();}
-#[rustfmt::skip]#[test]fn isle_of_man__________routing___shortest___astar______unidirectional() {routing::shortest::astar::unidirectional::isle_of_man();}
-#[rustfmt::skip]#[test]fn isle_of_man__________routing___shortest___dijkstra___bidirectional_() {routing::shortest::dijkstra::bidirectional::isle_of_man();}
-#[rustfmt::skip]#[test]fn isle_of_man__________routing___shortest___dijkstra___unidirectional() {routing::shortest::dijkstra::unidirectional::isle_of_man();}
-#[rustfmt::skip]#[test]fn isle_of_man__________routing___fastest____astar______bidirectional_() {routing::fastest::astar::bidirectional::isle_of_man();}
-#[rustfmt::skip]#[test]fn isle_of_man__________routing___fastest____astar______unidirectional() {routing::fastest::astar::unidirectional::isle_of_man();}
-#[rustfmt::skip]#[test]fn isle_of_man__________routing___fastest____dijkstra___bidirectional_() {routing::fastest::dijkstra::bidirectional::isle_of_man();}
-#[rustfmt::skip]#[test]fn isle_of_man__________routing___fastest____dijkstra___unidirectional() {routing::fastest::dijkstra::unidirectional::isle_of_man();}
+#[rustfmt::skip]#[test]#[ignore]fn isle_of_man__________routing___shortest___astar______bidirectional_() {routing::shortest::astar::bidirectional::isle_of_man();}
+#[rustfmt::skip]#[test]#[ignore]fn isle_of_man__________routing___shortest___astar______unidirectional() {routing::shortest::astar::unidirectional::isle_of_man();}
+#[rustfmt::skip]#[test]#[ignore]fn isle_of_man__________routing___shortest___dijkstra___bidirectional_() {routing::shortest::dijkstra::bidirectional::isle_of_man();}
+#[rustfmt::skip]#[test]#[ignore]fn isle_of_man__________routing___shortest___dijkstra___unidirectional() {routing::shortest::dijkstra::unidirectional::isle_of_man();}
+#[rustfmt::skip]#[test]#[ignore]fn isle_of_man__________routing___fastest____astar______bidirectional_() {routing::fastest::astar::bidirectional::isle_of_man();}
+#[rustfmt::skip]#[test]#[ignore]fn isle_of_man__________routing___fastest____astar______unidirectional() {routing::fastest::astar::unidirectional::isle_of_man();}
+#[rustfmt::skip]#[test]#[ignore]fn isle_of_man__________routing___fastest____dijkstra___bidirectional_() {routing::fastest::dijkstra::bidirectional::isle_of_man();}
+#[rustfmt::skip]#[test]#[ignore]fn isle_of_man__________routing___fastest____dijkstra___unidirectional() {routing::fastest::dijkstra::unidirectional::isle_of_man();}
 #[rustfmt::skip]#[test]fn isle_of_man__________parsing___pbf_________________________________() {parsing::pbf::isle_of_man();}
 #[rustfmt::skip]#[test]fn general______________parsing___wrong_extension_____________________() {parsing::general::wrong_extension();}
