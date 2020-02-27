@@ -104,7 +104,7 @@ trait Parsing {
 
     fn parse_and_finalize(&mut self, cfg: graph::Config) -> Result<Graph, String> {
         let path = Path::new(&cfg.map_file);
-        info!("START Parse given path {}", path.display());
+        info!("START Parse from given path {}", path.display());
 
         // TODO parse "cycleway" and others
         // see https://wiki.openstreetmap.org/wiki/Key:highway

@@ -63,7 +63,7 @@ impl From<u32> for KilometersPerHour {
 
 impl From<MetricU32> for KilometersPerHour {
     fn from(metric: MetricU32) -> KilometersPerHour {
-        metric.value.into()
+        (*metric).into()
     }
 }
 

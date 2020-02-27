@@ -1,16 +1,16 @@
 use super::{EdgeIdx, Graph, NodeIdx};
 use crate::{
-    configs::{graph::Config, MetricType},
+    configs::{graph::Config, MetricCategory},
     network::MetricIdx,
     units::{
         geo, geo::Coordinate, length::Meters, speed::KilometersPerHour, time::Milliseconds,
         MetricU32,
     },
 };
-use log::info;
+use log::{debug, info};
 use progressing;
 use progressing::Bar;
-use std::{cmp::max, collections::BTreeMap};
+use std::collections::BTreeMap;
 
 //------------------------------------------------------------------------------------------------//
 
@@ -34,34 +34,6 @@ pub struct ProtoEdge {
     pub src_id: i64,
     pub dst_id: i64,
     pub metrics: Vec<Option<MetricU32>>,
-}
-
-impl ProtoEdge {
-    pub fn _new(src_id: i64, dst_id: i64, metric_count: usize) -> ProtoEdge {
-        let proto_edge = ProtoEdge {
-            src_id,
-            dst_id,
-            metrics: vec![None; metric_count],
-        };
-        proto_edge
-    }
-
-    fn metric(&self, idx: MetricIdx) -> Result<Option<MetricU32>, String> {
-        let idx = idx.to_usize();
-        if let Some(value) = self.metrics.get(idx) {
-            Ok(*value)
-        } else {
-            Err(format!(
-                "A proto-edge is expected to have len={}, but len={}.",
-                idx + 1,
-                self.metrics.len()
-            ))
-        }
-    }
-
-    pub fn _set_metric(&mut self, metric_idx: MetricIdx, value: MetricU32) {
-        self.metrics[metric_idx.to_usize()] = Some(value);
-    }
 }
 
 /// handy for remembering indices after sorting backwards
@@ -110,12 +82,14 @@ impl Graph {
     }
 
     fn init_metrics(&mut self, edges_count: usize) {
-        self.metrics = vec![Vec::with_capacity(edges_count); self.cfg.edges.metric_count()];
+        self.metrics = vec![Vec::with_capacity(edges_count); self.cfg.edges.metrics.count()];
     }
 
     /// Uses the graph's nodes, so nodes must have been added before this method works properly.
     /// The provided edge is used as forward-edge.
     fn add_metrics(&mut self, proto_edge: &mut ProtoEdge) -> Result<(), String> {
+        let cfg = &self.cfg.edges.metrics;
+
         let (src_idx, dst_idx) = {
             let nodes = self.nodes();
             let src_idx = nodes.src_idx_from(proto_edge.src_id)?;
@@ -123,160 +97,125 @@ impl Graph {
             (src_idx, dst_idx)
         };
 
+        // - finalize proto-edge -
         // Repeat the calculations n times.
         // In worst case, no metric is provided and all have to be calculated sequentially.
-        let mut is_metric_processed = vec![false; self.cfg.edges.metric_types.len()];
-        for _ in 0..self.cfg.edges.metric_types.len() {
-            // add metrics to graph
-            // For every metric holds: if graph expects metric, it should be provided explicetly or implicitly.
-            // For calculating metrics from other metrics, multiple loop-runs are necessary.
-            for (i, metric_type) in self.cfg.edges.metric_types.iter().enumerate() {
-                // calc every metric only once
-                if is_metric_processed[i] {
+        for _ in 0..cfg.count() {
+            for metric_idx in (0..cfg.count()).map(MetricIdx) {
+                // if value should be provided, it is already in the proto-edge from parsing
+                let is_provided = cfg.is_provided(metric_idx);
+                if is_provided {
                     continue;
                 }
 
-                let metric_idx = self.cfg.edges.metric_idx(&metric_type);
-                let mut new_value = None;
-                match metric_type {
-                    &MetricType::Length { provided } => {
-                        // If length is not provided
-                        // -> calculate it by coordinates and haversine.
-                        if !provided {
-                            let src_coord = self.node_coords[src_idx.to_usize()];
-                            let dst_coord = self.node_coords[dst_idx.to_usize()];
-                            new_value =
-                                Some(geo::haversine_distance_m(&src_coord, &dst_coord).into())
-                        } else if let Some(metric_idx) = metric_idx {
-                            new_value = proto_edge.metric(metric_idx)?
-                        }
+                let category = cfg.category(metric_idx);
 
-                        // Length should be at least 1 to prevent errors, e.g. when dividing.
-                        if let Some(value) = new_value {
-                            new_value = Some(max(MetricU32::from(1u32), value));
-                        }
+                // Jump if proto-edge has its value.
+                if let Some(value) = &mut proto_edge.metrics[*metric_idx] {
+                    // But jump only if value is correct.
+                    if category.must_be_positive() && value.is_zero() {
+                        debug!(
+                            "Proto-edge (id:{}->id:{}) has {}=0, hence is corrected to 1.",
+                            proto_edge.src_id, proto_edge.dst_id, category
+                        );
+                        *value += 1u32.into();
                     }
-                    &MetricType::Duration { provided } => {
-                        if let Some(metric_idx) = metric_idx {
-                            // If not provided, but expected in graph
-                            // -> calc with length and maxspeed below
-                            if !provided {
-                                let doesnt_matter = true;
-                                // get length
-                                let length = {
-                                    if let Some(length_idx) =
-                                        self.cfg.edges.metric_idx(&MetricType::Length {
-                                            provided: doesnt_matter,
-                                        })
-                                    {
-                                        proto_edge.metric(length_idx)?
-                                    } else {
-                                        None
-                                    }
-                                };
-                                // get maxspeed
-                                let maxspeed = {
-                                    if let Some(maxspeed_idx) =
-                                        self.cfg.edges.metric_idx(&MetricType::Maxspeed {
-                                            provided: doesnt_matter,
-                                        })
-                                    {
-                                        proto_edge.metric(maxspeed_idx)?
-                                    } else {
-                                        None
-                                    }
-                                };
-                                // calc duration
-                                if let (Some(length), Some(maxspeed)) = (length, maxspeed) {
-                                    let duration =
-                                        Meters::from(*length) / KilometersPerHour::from(*maxspeed);
-                                    new_value = Some(duration.into())
-                                } else {
-                                    continue;
+                    continue;
+                }
+                // now: proto-edge has no value and has to be updated
+
+                // calculate metric dependent on category
+                match category {
+                    MetricCategory::Length => {
+                        let src_coord = self.node_coords[src_idx.to_usize()];
+                        let dst_coord = self.node_coords[dst_idx.to_usize()];
+                        proto_edge.metrics[*metric_idx] =
+                            Some(geo::haversine_distance_m(&src_coord, &dst_coord).into());
+                        // return Err(format!("{:?}", proto_edge.metrics[*metric_idx]));
+                    }
+                    MetricCategory::Duration => {
+                        // get length and maxspeed to calculate duration
+                        let mut length = None;
+                        let mut maxspeed = None;
+                        // get calculation-rules
+                        for &(other_type, other_idx) in cfg.calc_rules(metric_idx) {
+                            // get values from edge dependent of calculation-rules
+                            match other_type {
+                                MetricCategory::Length => length = proto_edge.metrics[*other_idx],
+                                MetricCategory::Maxspeed => {
+                                    maxspeed = proto_edge.metrics[*other_idx];
                                 }
-                            } else {
-                                new_value = proto_edge.metric(metric_idx)?
+                                _ => {
+                                    return Err(format!(
+                                    "Wrong metric-category {} in calc-rule for metric-category {}",
+                                    other_type, category
+                                ))
+                                }
                             }
                         }
+                        // calc duration and update proto-edge
+                        if let (Some(length), Some(maxspeed)) = (length, maxspeed) {
+                            let duration =
+                                Meters::from(*length) / KilometersPerHour::from(*maxspeed);
+                            proto_edge.metrics[*metric_idx] = Some(duration.into())
+                        }
                     }
-                    &MetricType::Maxspeed { provided } => {
-                        if let Some(metric_idx) = metric_idx {
-                            // If not provided, but expected in graph
-                            // -> calc with length and duration below
-                            if !provided {
-                                let doesnt_matter = true;
-                                // get length
-                                let length = {
-                                    if let Some(length_idx) =
-                                        self.cfg.edges.metric_idx(&MetricType::Length {
-                                            provided: doesnt_matter,
-                                        })
-                                    {
-                                        proto_edge.metric(length_idx)?
-                                    } else {
-                                        None
-                                    }
-                                };
-                                // get duration
-                                let duration = {
-                                    if let Some(duration_idx) =
-                                        self.cfg.edges.metric_idx(&MetricType::Duration {
-                                            provided: doesnt_matter,
-                                        })
-                                    {
-                                        proto_edge.metric(duration_idx)?
-                                    } else {
-                                        None
-                                    }
-                                };
-                                // calc duration
-                                if let (Some(length), Some(duration)) = (length, duration) {
-                                    let maxspeed =
-                                        Meters::from(*length) / Milliseconds::from(*duration);
-                                    new_value = Some(maxspeed.into())
-                                } else {
-                                    continue;
+                    MetricCategory::Maxspeed => {
+                        // get length and duration to calculate maxspeed
+                        let mut length = None;
+                        let mut duration = None;
+                        // get calculation-rules
+                        for &(other_type, other_idx) in cfg.calc_rules(metric_idx) {
+                            // get values from edge dependent of calculation-rules
+                            match other_type {
+                                MetricCategory::Length => length = proto_edge.metrics[*other_idx],
+                                MetricCategory::Duration => {
+                                    duration = proto_edge.metrics[*other_idx];
                                 }
-                            } else {
-                                new_value = proto_edge.metric(metric_idx)?
+                                _ => {
+                                    return Err(format!(
+                                    "Wrong metric-category {} in calc-rule for metric-category {}",
+                                    other_type, category
+                                ))
+                                }
                             }
                         }
-                    }
-                    MetricType::LaneCount | MetricType::Custom { id: _ } => {
-                        if let Some(metric_idx) = metric_idx {
-                            new_value = proto_edge.metric(metric_idx)?
+                        // calc maxspeed and update proto-edge
+                        if let (Some(length), Some(duration)) = (length, duration) {
+                            let maxspeed = Meters::from(*length) / Milliseconds::from(*duration);
+                            proto_edge.metrics[*metric_idx] = Some(maxspeed.into())
                         }
                     }
-                    MetricType::Id { id: _ } | MetricType::Ignore { id: _ } => {
-                        is_metric_processed[i] = true;
-                        continue;
-                    }
-                };
-
-                // due to continue, new_value is expected to be some
-                let new_value = new_value.ok_or(format!(
-                    "New value of metric {} should be given here, but isn't.",
-                    metric_type
-                ))?;
-                let metric_idx = metric_idx.unwrap().to_usize();
-
-                // Update proto-edge to calculate other metrics as well.
-                // Then update graph's metrics and mark metric as processed.
-                proto_edge.metrics[metric_idx] = Some(new_value);
-                self.metrics[metric_idx].push(new_value);
-                is_metric_processed[i] = true;
-            }
-
-            // if all metrics have been calculated -> done
-            if is_metric_processed.iter().fold(true, |a, b| (a && *b)) {
-                return Ok(());
+                    MetricCategory::LaneCount
+                    | MetricCategory::Custom
+                    | MetricCategory::Id
+                    | MetricCategory::Ignore => (),
+                }
             }
         }
 
-        // If expected metrics haven't been calculated yet, some metrics are missing!
-        Err(format!(
-            "Metrics couldn't be calculated since at least one metric is missing for calculations."
-        ))
+        // add metrics to graph
+        for (i, value) in proto_edge.metrics.iter().enumerate() {
+            let metric_idx = MetricIdx(i);
+            // If expected metrics haven't been calculated yet, some metrics are missing!
+            if let Some(value) = value {
+                self.metrics[*metric_idx].push(*value);
+            } else {
+                if cfg.is_provided(metric_idx) {
+                    return Err(format!(
+                        "Metric {} should be provided, but is not.",
+                        cfg.category(metric_idx)
+                    ));
+                }
+                return Err(format!(
+                    "Metric {} couldn't be calculated \
+                     since not enough calculation rules were given.",
+                    cfg.category(metric_idx)
+                ));
+            }
+        }
+
+        Ok(())
     }
 }
 
@@ -434,12 +373,12 @@ impl GraphBuilder {
         // init metric-collections in graph
         graph.init_metrics(self.proto_edges.len());
         // start looping
-        let mut edge_idx = 0usize;
+        let mut edge_idx = EdgeIdx::zero();
         for proto_edge in self.proto_edges.iter_mut() {
             graph.add_metrics(proto_edge)?;
 
             // print progress
-            progress_bar.set(edge_idx);
+            progress_bar.set(edge_idx.to_usize());
             if progress_bar.progress() % (1 + (progress_bar.end() / 10)) == 0 {
                 info!("{}", progress_bar);
             }
@@ -448,7 +387,7 @@ impl GraphBuilder {
             edge_idx += 1;
         }
         // last node needs an upper bound as well for `leaving_edges(...)`
-        info!("{}", progress_bar.set(edge_idx));
+        info!("{}", progress_bar.set(edge_idx.to_usize()));
         // reduce and optimize memory-usage
         graph.shrink_to_fit();
         // Drop edges
@@ -606,10 +545,9 @@ impl GraphBuilder {
         info!("{}", progress_bar.set(edge_idx));
         // reduce and optimize memory-usage
         graph.shrink_to_fit();
-        info!("FINISHED");
+        info!("FINISHED"); // bwd-offset-array
 
-        info!("FINISHED");
-
+        info!("FINISHED"); // finalize
         Ok(graph)
     }
 }

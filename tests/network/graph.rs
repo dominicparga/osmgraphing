@@ -16,6 +16,7 @@ mod construction {
 
     mod fmi {
         use super::super::{create_config, parse, TestType};
+        use osmgraphing::network::MetricIdx;
 
         //------------------------------------------------------------------------------------------------//
 
@@ -634,19 +635,28 @@ mod construction {
                     prefix,
                     self.name
                 );
-                let length = edge.length().expect("Edge should have a length.");
+
+                let length_idx = MetricIdx(0);
+                let maxspeed_idx = MetricIdx(1);
+                let duration_idx = MetricIdx(2);
+
+                let length = edge.length(length_idx).expect("Edge should have a length.");
                 assert_eq!(
                     length, self.length,
                     "Wrong length={} for {}edge {}",
                     length, prefix, self.name
                 );
-                let maxspeed = edge.maxspeed().expect("Edge should have a maxspeed.");
+                let maxspeed = edge
+                    .maxspeed(maxspeed_idx)
+                    .expect("Edge should have a maxspeed.");
                 assert_eq!(
                     maxspeed, self.maxspeed,
                     "Wrong maxspeed={} for {}edge {}",
                     maxspeed, prefix, self.name
                 );
-                let duration = edge.duration().expect("Edge should have a duration.");
+                let duration = edge
+                    .duration(duration_idx)
+                    .expect("Edge should have a duration.");
                 assert_eq!(
                     duration, self.duration,
                     "Wrong duration={} for {}edge {}",

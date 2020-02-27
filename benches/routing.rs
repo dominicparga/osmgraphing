@@ -4,7 +4,7 @@ use osmgraphing::{
     configs::{
         graph,
         graph::{edges, vehicles},
-        Config, MetricType, VehicleType,
+        Config, MetricCategory, VehicleType,
     },
     network::{Graph, NodeIdx},
     routing, Parser,
@@ -42,15 +42,15 @@ fn criterion_benchmark(c: &mut Criterion) {
         },
         edges: edges::Config {
             metric_types: vec![
-                MetricType::Id {
+                MetricCategory::Id {
                     id: "src-id".to_owned(),
                 },
-                MetricType::Id {
+                MetricCategory::Id {
                     id: "dst-id".to_owned(),
                 },
-                MetricType::Length { provided: false },
-                MetricType::Maxspeed { provided: true },
-                MetricType::Duration { provided: false },
+                MetricCategory::Length { provided: false },
+                MetricCategory::Maxspeed { provided: true },
+                MetricCategory::Duration { provided: false },
             ],
         },
     });

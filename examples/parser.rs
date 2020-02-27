@@ -2,8 +2,8 @@ use log::{error, info};
 use osmgraphing::{
     configs::{
         graph,
-        graph::{edges, vehicles},
-        Config, MetricType, VehicleType,
+        graph::{edges, edges::metrics, vehicles},
+        Config, MetricCategory, VehicleType,
     },
     Parser,
 };
@@ -36,26 +36,26 @@ fn main() {
     info!("Executing example: parser");
 
     let cfg = Config::new(graph::Config {
-        map_file: match std::env::args_os().nth(1) {
-            Some(path) => PathBuf::from(path),
-            None => PathBuf::from("resources/maps/isle-of-man_2019-09-05.osm.pbf"),
-        },
+        map_file: PathBuf::from("resources/maps/isle-of-man_2019-09-05.osm.pbf"),
         vehicles: vehicles::Config {
             is_driver_picky: false,
             vehicle_type: VehicleType::Car,
         },
         edges: edges::Config {
-            metric_types: vec![
-                MetricType::Id {
-                    id: "src-id".to_owned(),
-                },
-                MetricType::Id {
-                    id: "dst-id".to_owned(),
-                },
-                MetricType::Length { provided: false },
-                MetricType::Maxspeed { provided: true },
-                MetricType::Duration { provided: false },
-            ],
+            metrics: metrics::Config::create(vec![
+                (MetricCategory::Id, "src-id".into(), true).into(),
+                (MetricCategory::Id, "dst-id".into(), true).into(),
+                (MetricCategory::Length, "length".into(), false).into(),
+                (MetricCategory::Maxspeed, "maxspeed".into(), true).into(),
+                (
+                    MetricCategory::Duration,
+                    "duration".into(),
+                    false,
+                    vec!["length".into(), "maxspeed".into()],
+                )
+                    .into(),
+            ])
+            .unwrap(),
         },
     });
 

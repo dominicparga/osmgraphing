@@ -1,4 +1,7 @@
-use crate::{configs::graph, network::GraphBuilder, network::ProtoEdge};
+use crate::{
+    configs::graph,
+    network::{GraphBuilder, ProtoEdge},
+};
 use log::info;
 use std::{fs::File, io::BufRead, ops::Range};
 
@@ -140,8 +143,8 @@ impl super::Parsing for Parser {
 
 mod intern {
     use crate::{
-        configs::{graph::edges::Config, MetricType},
-        network::ProtoEdge,
+        configs::{graph::edges::Config, MetricCategory},
+        network::{MetricIdx, ProtoEdge},
         units::geo,
     };
     pub use std::{io::BufReader as Reader, str};
@@ -208,32 +211,29 @@ mod intern {
         ///
         /// - When NodeIds are parsed, the first one is interpreted as src-id and the second one as dst-id.
         pub fn from_str(line: &str, cfg: &Config) -> Result<ProtoEdge, String> {
-            let mut metric_values = vec![None; 0];
+            let mut metric_values = Vec::with_capacity(cfg.metrics.count());
             let mut src_id = None;
             let mut dst_id = None;
 
             // Loop over metric-types and parse params accordingly.
-            // If a metric will be calculated, it is not provided and hence not in params,
-            // so don't inc param-idx.
-            let mut param_idx;
             let params: Vec<&str> = line.split_whitespace().collect();
 
-            // get src-id and dst-id to create unfinished-edge afterwards
-            param_idx = 0;
-            for metric_type in cfg.metric_types.iter() {
+            // metric-idx has to be counted separatedly.
+            for param_idx in 0..cfg.metrics.all_categories().len() {
+                let metric_type = cfg.metrics.all_categories()[param_idx];
+
                 let param = params.get(param_idx).ok_or(
                     "The fmi-map-file is expected to have more edge-params \
                      than actually has.",
                 )?;
 
                 match metric_type {
-                    &MetricType::Id { id: _ } => {
+                    MetricCategory::Id => {
+                        // get src-id and dst-id to create unfinished-edge afterwards
                         if src_id.is_none() {
-                            src_id =
-                                Some(param.parse::<i64>().ok().ok_or(format!(
+                            src_id = Some(param.parse::<i64>().ok().ok_or(format!(
                                 "Parsing {} (for edge-src) '{:?}' from fmi-file, which is not i64.",
-                                MetricType::Id { id: metric_type.id().to_owned() },
-                                param
+                                metric_type, param
                             ))?);
                         } else if dst_id.is_none() {
                             dst_id = Some(param.parse::<i64>().ok().ok_or(format!(
@@ -247,69 +247,36 @@ mod intern {
                                 metric_type
                             ));
                         }
-
-                        // param occurs in params
-                        param_idx += 1;
                     }
-                    &MetricType::Length { provided } => {
-                        if provided {
-                            let meters = param.parse::<u32>().ok().ok_or(format!(
+                    MetricCategory::Length
+                    | MetricCategory::Maxspeed
+                    | MetricCategory::Duration
+                    | MetricCategory::LaneCount
+                    | MetricCategory::Custom => {
+                        let metric_idx = MetricIdx(metric_values.len());
+                        let is_provided = cfg.metrics.is_provided(metric_idx);
+
+                        if is_provided {
+                            let value = param.parse::<u32>().ok().ok_or(format!(
                                 "Parsing {} '{}' of edge-param #{} didn't work.",
                                 metric_type, param, param_idx
                             ))?;
-                            metric_values.push(Some(meters.into()));
-
-                            // param occurs in params
-                            param_idx += 1;
+                            metric_values.push(Some(value.into()));
                         } else {
                             metric_values.push(None);
                         }
                     }
-                    &MetricType::Maxspeed { provided } => {
-                        if provided {
-                            let maxspeed = param.parse::<u16>().ok().ok_or(format!(
-                                "Parsing {} '{}' of edge-param #{} didn't work.",
-                                metric_type, param, param_idx
-                            ))?;
-                            metric_values.push(Some(maxspeed.into()));
-
-                            // param occurs in params
-                            param_idx += 1;
-                        } else {
-                            metric_values.push(None);
-                        }
-                    }
-                    &MetricType::Duration { provided } => {
-                        if provided {
-                            let duration = param.parse::<u32>().ok().ok_or(format!(
-                                "Parsing {} '{}' of edge-param #{} didn't work.",
-                                metric_type, param, param_idx
-                            ))?;
-                            metric_values.push(Some(duration.into()));
-
-                            // param occurs in params
-                            param_idx += 1;
-                        } else {
-                            metric_values.push(None);
-                        }
-                    }
-                    MetricType::LaneCount | MetricType::Custom { id: _ } => {
-                        let value = param.parse::<u32>().ok().ok_or(format!(
-                            "Parsing {} '{}' of edge-param #{} didn't work.",
-                            metric_type, param, param_idx
-                        ))?;
-                        metric_values.push(Some(value.into()));
-
-                        // param occurs in params
-                        param_idx += 1;
-                    }
-                    MetricType::Ignore { id: _ } => {
-                        // param occurs in params
-                        param_idx += 1;
-                    }
+                    MetricCategory::Ignore => (),
                 }
             }
 
+            debug_assert_eq!(
+                cfg.metrics.count(),
+                metric_values.len(),
+                "Metric-vec of proto-edge has {} elements, but should have {}.",
+                metric_values.len(),
+                cfg.metrics.count()
+            );
             Ok(ProtoEdge {
                 src_id: src_id.ok_or("Proto-edge should have a src-id, but doesn't.".to_owned())?,
                 dst_id: dst_id.ok_or("Proto-edge should have a dst-id, but doesn't.".to_owned())?,

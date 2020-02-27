@@ -5,8 +5,8 @@ mod routing;
 use osmgraphing::{
     configs::{
         graph,
-        graph::{edges, vehicles},
-        Config, MetricType, VehicleType,
+        graph::{edges, edges::metrics, vehicles},
+        Config, MetricCategory, VehicleType,
     },
     network::Graph,
     Parser,
@@ -31,88 +31,63 @@ enum TestType {
 }
 
 fn create_config(test_type: TestType) -> Config {
+    let map_file = match test_type {
+        TestType::BidirectionalBait => PathBuf::from("resources/maps/bidirectional_bait.fmi"),
+        TestType::IsleOfMan => PathBuf::from("resources/maps/isle-of-man_2019-09-05.osm.pbf"),
+        TestType::SimpleStuttgart => PathBuf::from("resources/maps/simple_stuttgart.fmi"),
+        TestType::Small => PathBuf::from("resources/maps/small.fmi"),
+    };
+
     match test_type {
-        TestType::BidirectionalBait => Config::new(graph::Config {
-            map_file: PathBuf::from("resources/maps/bidirectional_bait.fmi"),
-            vehicles: vehicles::Config {
-                is_driver_picky: false,
-                vehicle_type: VehicleType::Car,
-            },
-            edges: edges::Config {
-                metric_types: vec![
-                    MetricType::Id {
-                        id: "src-id".to_owned(),
-                    },
-                    MetricType::Id {
-                        id: "dst-id".to_owned(),
-                    },
-                    MetricType::Length { provided: true },
-                    MetricType::Ignore { id: "?".to_owned() },
-                    MetricType::Maxspeed { provided: true },
-                    MetricType::Duration { provided: false },
-                ],
-            },
-        }),
+        // fmi-file
+        TestType::BidirectionalBait | TestType::SimpleStuttgart | TestType::Small => {
+            Config::new(graph::Config {
+                map_file,
+                vehicles: vehicles::Config {
+                    is_driver_picky: false,
+                    vehicle_type: VehicleType::Car,
+                },
+                edges: edges::Config {
+                    metrics: metrics::Config::create(vec![
+                        (MetricCategory::Id, "src-id".into(), true).into(),
+                        (MetricCategory::Id, "dst-id".into(), true).into(),
+                        (MetricCategory::Length, "length".into(), true).into(),
+                        (MetricCategory::Ignore, "?".into(), false).into(),
+                        (MetricCategory::Maxspeed, "maxspeed".into(), true).into(),
+                        (
+                            MetricCategory::Duration,
+                            "duration".into(),
+                            false,
+                            vec!["length".into(), "maxspeed".into()],
+                        )
+                            .into(),
+                    ])
+                    .unwrap(),
+                },
+            })
+        }
+        // pbf-file
         TestType::IsleOfMan => Config::new(graph::Config {
-            map_file: PathBuf::from("resources/maps/isle-of-man_2019-09-05.osm.pbf"),
+            map_file,
             vehicles: vehicles::Config {
                 is_driver_picky: false,
                 vehicle_type: VehicleType::Car,
             },
             edges: edges::Config {
-                metric_types: vec![
-                    MetricType::Id {
-                        id: "src-id".to_owned(),
-                    },
-                    MetricType::Id {
-                        id: "dst-id".to_owned(),
-                    },
-                    MetricType::Length { provided: false },
-                    MetricType::Maxspeed { provided: true },
-                    MetricType::Duration { provided: false },
-                ],
-            },
-        }),
-        TestType::SimpleStuttgart => Config::new(graph::Config {
-            map_file: PathBuf::from("resources/maps/simple_stuttgart.fmi"),
-            vehicles: vehicles::Config {
-                is_driver_picky: false,
-                vehicle_type: VehicleType::Car,
-            },
-            edges: edges::Config {
-                metric_types: vec![
-                    MetricType::Id {
-                        id: "src-id".to_owned(),
-                    },
-                    MetricType::Id {
-                        id: "dst-id".to_owned(),
-                    },
-                    MetricType::Length { provided: true },
-                    MetricType::Ignore { id: "?".to_owned() },
-                    MetricType::Maxspeed { provided: true },
-                    MetricType::Duration { provided: false },
-                ],
-            },
-        }),
-        TestType::Small => Config::new(graph::Config {
-            map_file: PathBuf::from("resources/maps/small.fmi"),
-            vehicles: vehicles::Config {
-                is_driver_picky: false,
-                vehicle_type: VehicleType::Car,
-            },
-            edges: edges::Config {
-                metric_types: vec![
-                    MetricType::Id {
-                        id: "src-id".to_owned(),
-                    },
-                    MetricType::Id {
-                        id: "dst-id".to_owned(),
-                    },
-                    MetricType::Length { provided: true },
-                    MetricType::Ignore { id: "?".to_owned() },
-                    MetricType::Maxspeed { provided: true },
-                    MetricType::Duration { provided: false },
-                ],
+                metrics: metrics::Config::create(vec![
+                    (MetricCategory::Id, "src-id".into(), true).into(),
+                    (MetricCategory::Id, "dst-id".into(), true).into(),
+                    (MetricCategory::Length, "length".into(), false).into(),
+                    (MetricCategory::Maxspeed, "maxspeed".into(), true).into(),
+                    (
+                        MetricCategory::Duration,
+                        "duration".into(),
+                        false,
+                        vec!["length".into(), "maxspeed".into()],
+                    )
+                        .into(),
+                ])
+                .unwrap(),
             },
         }),
     }

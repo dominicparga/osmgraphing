@@ -3,7 +3,7 @@ mod indexing;
 pub use indexing::{EdgeIdx, MetricIdx, NodeIdx};
 
 use crate::{
-    configs::{graph::Config, MetricType},
+    configs::graph::Config,
     units::{
         geo::Coordinate, length::Meters, speed::KilometersPerHour, time::Milliseconds, Metric,
         MetricU32,
@@ -95,6 +95,10 @@ pub struct Graph {
 
 /// public stuff for accessing the (static) graph
 impl Graph {
+    pub fn cfg(&self) -> &Config {
+        &self.cfg
+    }
+
     pub fn nodes<'a>(&'a self) -> NodeContainer<'a> {
         NodeContainer {
             node_ids: &self.node_ids,
@@ -200,15 +204,18 @@ impl Display for Graph {
                         j = fwd_dsts.count() - 1;
                     }
                     let edge_idx = EdgeIdx::new(j);
-                    let half_edge = fwd_dsts.half_edge(edge_idx).unwrap();
                     let src_idx = bwd_dsts.dst_idx(edge_idx).unwrap();
+                    let half_edge = fwd_dsts.half_edge(edge_idx).unwrap();
+                    let metrics: Vec<u32> = (0..self.cfg.edges.metrics.count())
+                        .map(|i| *self.metrics[i][edge_idx.to_usize()])
+                        .collect();
                     writeln!(
                         f,
-                        "{}edge: {{ idx: {}, ({})-{}->({}) }}",
+                        "{}edge: {{ idx: {}, ({})-{:?}->({}) }}",
                         xwd_prefix,
                         j,
                         self.node_ids[src_idx.to_usize()],
-                        half_edge.length().unwrap(),
+                        metrics,
                         self.node_ids[half_edge.dst_idx().to_usize()],
                     )?;
                 } else {
@@ -310,24 +317,24 @@ impl<'a> HalfEdge<'a> {
         self.edge_dsts[self.idx.to_usize()]
     }
 
-    pub fn length(&self) -> Option<Meters> {
-        self.metrics.length(self.idx)
+    pub fn length(&self, metric_idx: MetricIdx) -> Option<Meters> {
+        self.metrics.length(metric_idx, self.idx)
     }
 
-    pub fn maxspeed(&self) -> Option<KilometersPerHour> {
-        self.metrics.maxspeed(self.idx)
+    pub fn maxspeed(&self, metric_idx: MetricIdx) -> Option<KilometersPerHour> {
+        self.metrics.maxspeed(metric_idx, self.idx)
     }
 
-    pub fn duration(&self) -> Option<Milliseconds> {
-        self.metrics.duration(self.idx)
+    pub fn duration(&self, metric_idx: MetricIdx) -> Option<Milliseconds> {
+        self.metrics.duration(metric_idx, self.idx)
     }
 
-    pub fn lane_count(&self) -> Option<MetricU32> {
-        self.metrics.lane_count(self.idx)
+    pub fn lane_count(&self, metric_idx: MetricIdx) -> Option<MetricU32> {
+        self.metrics.lane_count(metric_idx, self.idx)
     }
 
-    pub fn metric(&self, metric_type: &MetricType) -> Option<MetricU32> {
-        self.metrics.get(metric_type, self.idx)
+    pub fn metric(&self, metric_idx: MetricIdx) -> Option<MetricU32> {
+        self.metrics.get(metric_idx, self.idx)
     }
 }
 
@@ -341,15 +348,7 @@ impl<'a> PartialEq for HalfEdge<'a> {
 
 impl<'a> Display for HalfEdge<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "{{ (src)-{}->({}) }}",
-            match self.length() {
-                Some(meters) => format!("{}", meters),
-                None => format!(""),
-            },
-            self.dst_idx(),
-        )
+        write!(f, "{{ (src)-{}->({}) }}", self.metrics, self.dst_idx(),)
     }
 }
 
@@ -512,45 +511,26 @@ pub struct MetricContainer<'a> {
     metrics: &'a Vec<Vec<MetricU32>>,
 }
 
+impl<'a> Display for MetricContainer<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{:?}", self.metrics)
+    }
+}
+
 impl<'a> MetricContainer<'a> {
-    fn metric_vec(&self, metric_type: &MetricType) -> Result<&Vec<MetricU32>, String> {
-        let metric_idx = self.cfg.edges.metric_idx(metric_type).ok_or(&format!(
-            "Config is expected to have a metric {} but doesn't.",
-            metric_type
-        ))?;
-        Ok(&self.metrics[metric_idx.to_usize()])
+    pub fn get(&self, metric_idx: MetricIdx, edge_idx: EdgeIdx) -> Option<MetricU32> {
+        let metric_vec = &self.metrics[*metric_idx];
+        Some(metric_vec[edge_idx.to_usize()])
     }
 
-    pub fn get(&self, metric_type: &MetricType, edge_idx: EdgeIdx) -> Option<MetricU32> {
-        let metric = self.metric_vec(metric_type).ok()?;
-        let value = *(metric.get(edge_idx.to_usize())?);
-        Some(value)
-    }
-
-    pub fn length(&self, edge_idx: EdgeIdx) -> Option<Meters> {
-        let doesnt_matter = true;
-        let length = self
-            .get(
-                &MetricType::Length {
-                    provided: doesnt_matter,
-                },
-                edge_idx,
-            )?
-            .into();
+    pub fn length(&self, metric_idx: MetricIdx, edge_idx: EdgeIdx) -> Option<Meters> {
+        let length = Meters::from(self.get(metric_idx, edge_idx)?);
         debug_assert!(length > Meters::zero(), "Edge-length should be > 0");
         Some(length)
     }
 
-    pub fn maxspeed(&self, edge_idx: EdgeIdx) -> Option<KilometersPerHour> {
-        let doesnt_matter = true;
-        let maxspeed = self
-            .get(
-                &MetricType::Maxspeed {
-                    provided: doesnt_matter,
-                },
-                edge_idx,
-            )?
-            .into();
+    pub fn maxspeed(&self, metric_idx: MetricIdx, edge_idx: EdgeIdx) -> Option<KilometersPerHour> {
+        let maxspeed = KilometersPerHour::from(self.get(metric_idx, edge_idx)?);
         debug_assert!(
             maxspeed > KilometersPerHour::zero(),
             "Edge-maxspeed should be > 0"
@@ -558,16 +538,8 @@ impl<'a> MetricContainer<'a> {
         Some(maxspeed)
     }
 
-    pub fn duration(&self, edge_idx: EdgeIdx) -> Option<Milliseconds> {
-        let doesnt_matter = true;
-        let duration = self
-            .get(
-                &MetricType::Duration {
-                    provided: doesnt_matter,
-                },
-                edge_idx,
-            )?
-            .into();
+    pub fn duration(&self, metric_idx: MetricIdx, edge_idx: EdgeIdx) -> Option<Milliseconds> {
+        let duration = Milliseconds::from(self.get(metric_idx, edge_idx)?);
         debug_assert!(
             duration > Milliseconds::zero(),
             "Edge-duration should be > 0"
@@ -575,8 +547,8 @@ impl<'a> MetricContainer<'a> {
         Some(duration)
     }
 
-    pub fn lane_count(&self, edge_idx: EdgeIdx) -> Option<MetricU32> {
-        let lane_count = self.get(&MetricType::LaneCount, edge_idx)?.into();
+    pub fn lane_count(&self, metric_idx: MetricIdx, edge_idx: EdgeIdx) -> Option<MetricU32> {
+        let lane_count = self.get(metric_idx, edge_idx)?;
         debug_assert!(
             lane_count > MetricU32::zero(),
             "Edge-lane-count should be > 0"

@@ -64,7 +64,7 @@ impl From<u32> for Milliseconds {
 
 impl From<MetricU32> for Milliseconds {
     fn from(metric: MetricU32) -> Milliseconds {
-        metric.value.into()
+        (*metric).into()
     }
 }
 

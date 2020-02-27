@@ -1,12 +1,10 @@
 pub mod geo;
 pub mod length;
+mod primitives;
 pub mod speed;
 pub mod time;
-use std::{
-    fmt,
-    fmt::{Debug, Display},
-    ops::Deref,
-};
+pub use primitives::MetricU32;
+use std::fmt::{Debug, Display};
 
 pub trait Metric: Clone + Copy + Debug + Default + Display {
     fn zero() -> Self;
@@ -16,60 +14,7 @@ pub trait Metric: Clone + Copy + Debug + Default + Display {
     fn inf() -> Self;
 }
 
-#[derive(Clone, Copy, Debug, Default, Eq, Ord, PartialEq, PartialOrd)]
-pub struct MetricU32 {
-    value: u32,
-}
-
-impl Display for MetricU32 {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.value)
-    }
-}
-
-impl Metric for MetricU32 {
-    fn zero() -> MetricU32 {
-        0u32.into()
-    }
-
-    fn neg_inf() -> MetricU32 {
-        std::u32::MIN.into()
-    }
-
-    fn inf() -> MetricU32 {
-        std::u32::MAX.into()
-    }
-}
-
-impl From<u8> for MetricU32 {
-    fn from(value: u8) -> MetricU32 {
-        MetricU32 {
-            value: value as u32,
-        }
-    }
-}
-
-impl From<u16> for MetricU32 {
-    fn from(value: u16) -> MetricU32 {
-        MetricU32 {
-            value: value as u32,
-        }
-    }
-}
-
-impl From<u32> for MetricU32 {
-    fn from(value: u32) -> MetricU32 {
-        MetricU32 { value }
-    }
-}
-
-impl Deref for MetricU32 {
-    type Target = u32;
-
-    fn deref(&self) -> &u32 {
-        &self.value
-    }
-}
+//------------------------------------------------------------------------------------------------//
 
 mod unused {
     use super::Metric;

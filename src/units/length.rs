@@ -1,17 +1,9 @@
-//------------------------------------------------------------------------------------------------//
-// other modules
-
 use super::{speed::KilometersPerHour, time::Milliseconds, Metric, MetricU32};
 use std::{
     fmt,
     fmt::Display,
     ops::{Add, AddAssign, Deref, Div, DivAssign, Mul, MulAssign},
 };
-
-//------------------------------------------------------------------------------------------------//
-// own modules
-
-//------------------------------------------------------------------------------------------------//
 
 #[derive(Debug, Default, Clone, Copy, Ord, PartialOrd, Eq, PartialEq)]
 pub struct Meters {
@@ -35,12 +27,6 @@ impl Metric for Meters {
 
     fn inf() -> Meters {
         std::u32::MAX.into()
-    }
-}
-
-impl Meters {
-    pub fn value(&self) -> u32 {
-        self.value
     }
 }
 
@@ -68,7 +54,7 @@ impl From<u32> for Meters {
 
 impl From<MetricU32> for Meters {
     fn from(metric: MetricU32) -> Meters {
-        metric.value.into()
+        (*metric).into()
     }
 }
 

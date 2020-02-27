@@ -3,8 +3,8 @@ mod pbf {
 }
 
 use crate::{
-    configs::{graph, MetricType},
-    network::{GraphBuilder, ProtoEdge, StreetType},
+    configs::{graph, MetricCategory},
+    network::{GraphBuilder, MetricIdx, ProtoEdge, StreetType},
     units::{geo::Coordinate, MetricU32},
 };
 use log::info;
@@ -49,24 +49,26 @@ impl super::Parsing for Parser {
 
             // Collect metrics as expected by user-config
             // ATTENTION: A way contains multiple edges, thus be careful when adding new metrics.
-            let mut metric_values = vec![None; 0];
-            for metric_type in cfg.edges.metric_types.iter() {
+            let cfg = &cfg.edges.metrics;
+            let mut metric_values = vec![None; cfg.count()];
+            for metric_idx in (0..cfg.count()).map(MetricIdx) {
+                let metric_type = cfg.category(metric_idx);
+                let is_provided = cfg.is_provided(metric_idx);
+
                 match metric_type {
-                    &MetricType::Length { provided } => {
-                        if provided {
+                    MetricCategory::Length | MetricCategory::Duration | MetricCategory::Custom => {
+                        if is_provided {
                             return Err(format!(
                                 "The {} of an edge in a pbf-file has to be calculated, \
                                  but is expected to be provided.",
                                 metric_type
                             ));
-                        } else {
-                            metric_values.push(None);
                         }
                     }
-                    &MetricType::Maxspeed { provided } => {
-                        if provided {
+                    MetricCategory::Maxspeed => {
+                        if is_provided {
                             let maxspeed = MetricU32::from(highway_tag.parse_maxspeed(&way));
-                            metric_values.push(Some(maxspeed));
+                            metric_values[*metric_idx] = Some(maxspeed);
                         } else {
                             return Err(format!(
                                 "The {} of an edge in a pbf-file has to be provided, \
@@ -75,25 +77,19 @@ impl super::Parsing for Parser {
                             ));
                         }
                     }
-                    &MetricType::Duration { provided } => {
-                        if provided {
+                    MetricCategory::LaneCount => {
+                        if is_provided {
+                            let lane_count = MetricU32::from(highway_tag.parse_lane_count(&way));
+                            metric_values[*metric_idx] = Some(lane_count);
+                        } else {
                             return Err(format!(
-                                "The {} of an edge in a pbf-file has to be calculated, \
-                                 but is expected to be provided.",
+                                "The {} of an edge in a pbf-file has to be provided, \
+                                 but is expected to be calculated.",
                                 metric_type
                             ));
-                        } else {
-                            metric_values.push(None);
                         }
                     }
-                    MetricType::LaneCount => {
-                        let lane_count = MetricU32::from(highway_tag.parse_lane_count(&way));
-                        metric_values.push(Some(lane_count));
-                    }
-                    &MetricType::Custom { id: _ } => {
-                        return Err(format!("A pbf-file has no metric {}.", metric_type));
-                    }
-                    MetricType::Id { id: _ } | MetricType::Ignore { id: _ } => (),
+                    MetricCategory::Id | MetricCategory::Ignore => (),
                 }
             }
             let (is_oneway, is_reverse) = highway_tag.parse_oneway(&way);

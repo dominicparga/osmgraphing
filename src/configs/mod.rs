@@ -120,58 +120,64 @@ pub enum VehicleType {
     Pedestrian,
 }
 
-/// Types of metrics to consider when parsing a map.
-#[derive(Clone, Debug)]
-pub enum MetricType {
-    Length { provided: bool },
-    Maxspeed { provided: bool },
-    Duration { provided: bool },
-    LaneCount,
-    Custom { id: String },
-    Id { id: String },
-    Ignore { id: String },
+#[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
+pub struct MetricId(pub String);
+
+impl From<&str> for MetricId {
+    fn from(id: &str) -> MetricId {
+        MetricId(id.to_owned())
+    }
 }
 
-impl Display for MetricType {
+/// Types of metrics to consider when parsing a map.
+#[derive(Copy, Clone, Debug)]
+pub enum MetricCategory {
+    Length,
+    Maxspeed,
+    Duration,
+    LaneCount,
+    Custom,
+    Id,
+    Ignore,
+}
+
+impl Display for MetricCategory {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
             "{}",
             match self {
-                MetricType::Length { provided }
-                | MetricType::Maxspeed { provided }
-                | MetricType::Duration { provided } =>
-                    format!("{}(provided: {})", self.id(), provided),
-                MetricType::LaneCount => self.id(),
-                MetricType::Custom { id } => format!("custom({})", id),
-                MetricType::Id { id } => format!("id({})", id),
-                MetricType::Ignore { id } => format!("ignore({})", id),
+                MetricCategory::Length => "length",
+                MetricCategory::Maxspeed => "maxspeed",
+                MetricCategory::Duration => "duration",
+                MetricCategory::LaneCount => "lane-count",
+                MetricCategory::Custom => "custom",
+                MetricCategory::Id => "id",
+                MetricCategory::Ignore => "ignore",
             }
         )
     }
 }
 
-impl MetricType {
-    pub fn id(&self) -> String {
+impl MetricCategory {
+    pub fn must_be_positive(&self) -> bool {
         match self {
-            MetricType::Length { provided: _ } => "length".to_owned(),
-            MetricType::Maxspeed { provided: _ } => "maxspeed".to_owned(),
-            MetricType::Duration { provided: _ } => "duration".to_owned(),
-            MetricType::LaneCount => "lane-count".to_owned(),
-            MetricType::Custom { id } | MetricType::Id { id } | MetricType::Ignore { id } => {
-                id.to_owned()
-            }
+            MetricCategory::Length
+            | MetricCategory::Maxspeed
+            | MetricCategory::Duration
+            | MetricCategory::LaneCount => true,
+            MetricCategory::Custom | MetricCategory::Id | MetricCategory::Ignore => false,
         }
     }
 
-    fn is_ignored(&self) -> bool {
+    pub fn is_ignored(&self) -> bool {
         match self {
-            MetricType::Id { id: _ } | MetricType::Ignore { id: _ } => true,
-            MetricType::Length { provided: _ }
-            | MetricType::Maxspeed { provided: _ }
-            | MetricType::Duration { provided: _ }
-            | MetricType::LaneCount
-            | MetricType::Custom { id: _ } => false,
+            MetricCategory::Id | MetricCategory::Ignore => true,
+            MetricCategory::Length
+            | MetricCategory::Maxspeed
+            | MetricCategory::Duration
+            | MetricCategory::LaneCount
+            | MetricCategory::Custom => false,
         }
     }
 }

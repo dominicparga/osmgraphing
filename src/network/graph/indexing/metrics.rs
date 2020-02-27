@@ -7,7 +7,7 @@ use std::{
 
 /// An index for accessing different metrices if the amount of them is known at runtime, like unspecified u32-metrices from the user.
 ///
-/// If multiple data-types are needed, an enum `MetricType` could be implemented and added to MetricIdx.
+/// If multiple data-types are needed, an enum `MetricCategory` could be implemented and added to MetricIdx.
 #[derive(Copy, Clone, Debug, Hash)]
 pub struct MetricIdx {
     value: usize,

@@ -8,28 +8,37 @@ mod astar {
 
         #[test]
         fn simple_stuttgart() {
-            let mut astar = routing::factory::astar::unidirectional::shortest();
+            let cfg = create_config(TestType::SimpleStuttgart);
+
+            let mut astar = routing::factory::astar::unidirectional::shortest(
+                cfg.graph.edges.metrics.idx(&"length".into()),
+            );
             let expected_paths = expected_paths(TestType::SimpleStuttgart);
 
-            let cfg = create_config(TestType::SimpleStuttgart);
             assert_correct(&mut astar, expected_paths, cfg.graph);
         }
 
         #[test]
         fn small() {
-            let mut astar = routing::factory::astar::unidirectional::shortest();
+            let cfg = create_config(TestType::Small);
+
+            let mut astar = routing::factory::astar::unidirectional::shortest(
+                cfg.graph.edges.metrics.idx(&"length".into()),
+            );
             let expected_paths = expected_paths(TestType::Small);
 
-            let cfg = create_config(TestType::Small);
             assert_correct(&mut astar, expected_paths, cfg.graph);
         }
 
         #[test]
         fn bait() {
-            let mut astar = routing::factory::astar::unidirectional::shortest();
+            let cfg = create_config(TestType::BidirectionalBait);
+
+            let mut astar = routing::factory::astar::unidirectional::shortest(
+                cfg.graph.edges.metrics.idx(&"length".into()),
+            );
             let expected_paths = expected_paths(TestType::BidirectionalBait);
 
-            let cfg = create_config(TestType::BidirectionalBait);
             assert_correct(&mut astar, expected_paths, cfg.graph);
         }
     }
@@ -40,28 +49,37 @@ mod astar {
 
         #[test]
         fn simple_stuttgart() {
-            let mut astar = routing::factory::astar::bidirectional::shortest();
+            let cfg = create_config(TestType::SimpleStuttgart);
+
+            let mut astar = routing::factory::astar::bidirectional::shortest(
+                cfg.graph.edges.metrics.idx(&"length".into()),
+            );
             let expected_paths = expected_paths(TestType::SimpleStuttgart);
 
-            let cfg = create_config(TestType::SimpleStuttgart);
             assert_correct(&mut astar, expected_paths, cfg.graph);
         }
 
         #[test]
         fn small() {
-            let mut astar = routing::factory::astar::bidirectional::shortest();
+            let cfg = create_config(TestType::Small);
+
+            let mut astar = routing::factory::astar::bidirectional::shortest(
+                cfg.graph.edges.metrics.idx(&"length".into()),
+            );
             let expected_paths = expected_paths(TestType::Small);
 
-            let cfg = create_config(TestType::Small);
             assert_correct(&mut astar, expected_paths, cfg.graph);
         }
 
         #[test]
         fn bait() {
-            let mut astar = routing::factory::astar::bidirectional::shortest();
+            let cfg = create_config(TestType::BidirectionalBait);
+
+            let mut astar = routing::factory::astar::bidirectional::shortest(
+                cfg.graph.edges.metrics.idx(&"length".into()),
+            );
             let expected_paths = expected_paths(TestType::BidirectionalBait);
 
-            let cfg = create_config(TestType::BidirectionalBait);
             assert_correct(&mut astar, expected_paths, cfg.graph);
         }
     }
@@ -76,28 +94,37 @@ mod dijkstra {
 
         #[test]
         fn simple_stuttgart() {
-            let mut dijkstra = routing::factory::dijkstra::unidirectional::shortest();
+            let cfg = create_config(TestType::SimpleStuttgart);
+
+            let mut dijkstra = routing::factory::dijkstra::unidirectional::shortest(
+                cfg.graph.edges.metrics.idx(&"length".into()),
+            );
             let expected_paths = expected_paths(TestType::SimpleStuttgart);
 
-            let cfg = create_config(TestType::SimpleStuttgart);
             assert_correct(&mut dijkstra, expected_paths, cfg.graph);
         }
 
         #[test]
         fn small() {
-            let mut dijkstra = routing::factory::dijkstra::unidirectional::shortest();
+            let cfg = create_config(TestType::Small);
+
+            let mut dijkstra = routing::factory::dijkstra::unidirectional::shortest(
+                cfg.graph.edges.metrics.idx(&"length".into()),
+            );
             let expected_paths = expected_paths(TestType::Small);
 
-            let cfg = create_config(TestType::Small);
             assert_correct(&mut dijkstra, expected_paths, cfg.graph);
         }
 
         #[test]
         fn bait() {
-            let mut dijkstra = routing::factory::dijkstra::unidirectional::shortest();
+            let cfg = create_config(TestType::BidirectionalBait);
+
+            let mut dijkstra = routing::factory::dijkstra::unidirectional::shortest(
+                cfg.graph.edges.metrics.idx(&"length".into()),
+            );
             let expected_paths = expected_paths(TestType::BidirectionalBait);
 
-            let cfg = create_config(TestType::BidirectionalBait);
             assert_correct(&mut dijkstra, expected_paths, cfg.graph);
         }
     }
@@ -108,28 +135,37 @@ mod dijkstra {
 
         #[test]
         fn simple_stuttgart() {
-            let mut dijkstra = routing::factory::dijkstra::bidirectional::shortest();
+            let cfg = create_config(TestType::SimpleStuttgart);
+
+            let mut dijkstra = routing::factory::dijkstra::bidirectional::shortest(
+                cfg.graph.edges.metrics.idx(&"length".into()),
+            );
             let expected_paths = expected_paths(TestType::SimpleStuttgart);
 
-            let cfg = create_config(TestType::SimpleStuttgart);
             assert_correct(&mut dijkstra, expected_paths, cfg.graph);
         }
 
         #[test]
         fn small() {
-            let mut dijkstra = routing::factory::dijkstra::bidirectional::shortest();
+            let cfg = create_config(TestType::Small);
+
+            let mut dijkstra = routing::factory::dijkstra::bidirectional::shortest(
+                cfg.graph.edges.metrics.idx(&"length".into()),
+            );
             let expected_paths = expected_paths(TestType::Small);
 
-            let cfg = create_config(TestType::Small);
             assert_correct(&mut dijkstra, expected_paths, cfg.graph);
         }
 
         #[test]
         fn bait() {
-            let mut dijkstra = routing::factory::dijkstra::bidirectional::shortest();
+            let cfg = create_config(TestType::BidirectionalBait);
+
+            let mut dijkstra = routing::factory::dijkstra::bidirectional::shortest(
+                cfg.graph.edges.metrics.idx(&"length".into()),
+            );
             let expected_paths = expected_paths(TestType::BidirectionalBait);
 
-            let cfg = create_config(TestType::BidirectionalBait);
             assert_correct(&mut dijkstra, expected_paths, cfg.graph);
         }
     }

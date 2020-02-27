@@ -2,8 +2,8 @@ use log::{error, info};
 use osmgraphing::{
     configs::{
         graph,
-        graph::{edges, vehicles},
-        Config, MetricType, VehicleType,
+        graph::{edges, edges::metrics, vehicles},
+        Config, MetricCategory, VehicleType,
     },
     network::NodeIdx,
     routing, Parser,
@@ -60,26 +60,27 @@ fn main() {
     // parsing
 
     let cfg = Config::new(graph::Config {
-        map_file: match std::env::args_os().nth(1) {
-            Some(path) => PathBuf::from(path),
-            None => PathBuf::from("resources/maps/simple_stuttgart.fmi"),
-        },
+        map_file: PathBuf::from("resources/maps/simple_stuttgart.fmi"),
         vehicles: vehicles::Config {
             is_driver_picky: false,
             vehicle_type: VehicleType::Car,
         },
         edges: edges::Config {
-            metric_types: vec![
-                MetricType::Id {
-                    id: "src-id".to_owned(),
-                },
-                MetricType::Id {
-                    id: "dst-id".to_owned(),
-                },
-                MetricType::Length { provided: false },
-                MetricType::Maxspeed { provided: true },
-                MetricType::Duration { provided: false },
-            ],
+            metrics: metrics::Config::create(vec![
+                (MetricCategory::Id, "src-id".into(), true).into(),
+                (MetricCategory::Id, "dst-id".into(), true).into(),
+                (MetricCategory::Length, "length".into(), true).into(),
+                (MetricCategory::Ignore, "?".into(), false).into(),
+                (MetricCategory::Maxspeed, "maxspeed".into(), true).into(),
+                (
+                    MetricCategory::Duration,
+                    "duration".into(),
+                    false,
+                    vec!["length".into(), "maxspeed".into()],
+                )
+                    .into(),
+            ])
+            .unwrap(),
         },
     });
 
@@ -103,7 +104,9 @@ fn main() {
     // astar
 
     let nodes = graph.nodes();
-    let mut astar = routing::factory::astar::unidirectional::shortest();
+    let mut astar = routing::factory::astar::unidirectional::shortest(
+        graph.cfg().edges.metrics.idx(&"length".into()),
+    );
 
     // generate random route-pairs
     let route_count = 100;
