@@ -50,7 +50,7 @@ impl super::Parsing for Parser {
             // Collect metrics as expected by user-config
             // ATTENTION: A way contains multiple edges, thus be careful when adding new metrics.
             let cfg = &cfg.edges.metrics;
-            let mut metric_values = vec![None; cfg.count()];
+            let mut metrics = vec![None; cfg.count()];
             for metric_idx in (0..cfg.count()).map(MetricIdx) {
                 let metric_type = cfg.category(metric_idx);
                 let is_provided = cfg.is_provided(metric_idx);
@@ -68,7 +68,7 @@ impl super::Parsing for Parser {
                     MetricCategory::Maxspeed => {
                         if is_provided {
                             let maxspeed = MetricU32::from(highway_tag.parse_maxspeed(&way));
-                            metric_values[*metric_idx] = Some(maxspeed);
+                            metrics[*metric_idx] = Some(maxspeed);
                         } else {
                             return Err(format!(
                                 "The {} of an edge in a pbf-file has to be provided, \
@@ -80,7 +80,7 @@ impl super::Parsing for Parser {
                     MetricCategory::LaneCount => {
                         if is_provided {
                             let lane_count = MetricU32::from(highway_tag.parse_lane_count(&way));
-                            metric_values[*metric_idx] = Some(lane_count);
+                            metrics[*metric_idx] = Some(lane_count);
                         } else {
                             return Err(format!(
                                 "The {} of an edge in a pbf-file has to be provided, \
@@ -120,7 +120,7 @@ impl super::Parsing for Parser {
                 let proto_edge = ProtoEdge {
                     src_id,
                     dst_id,
-                    metrics: metric_values.clone(),
+                    metrics: metrics.clone(),
                 };
                 // add proto-edge to graph
                 graph_builder.push_edge(proto_edge);
