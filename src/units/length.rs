@@ -2,53 +2,47 @@ use super::{speed::KilometersPerHour, time::Milliseconds, Metric, MetricU32};
 use std::{
     fmt,
     fmt::Display,
-    ops::{Add, AddAssign, Deref, Div, DivAssign, Mul, MulAssign},
+    ops::{Add, AddAssign, Deref, DerefMut, Div, DivAssign, Mul, MulAssign},
 };
 
 #[derive(Debug, Default, Clone, Copy, Ord, PartialOrd, Eq, PartialEq)]
-pub struct Meters {
-    value: u32,
-}
+pub struct Meters(pub u32);
 
 impl Display for Meters {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{} m", self.value)
+        write!(f, "{} m", self.0)
     }
 }
 
 impl Metric for Meters {
     fn zero() -> Meters {
-        0u32.into()
+        Meters(0)
     }
 
     fn neg_inf() -> Meters {
-        std::u32::MIN.into()
+        Meters(std::u32::MIN)
     }
 
     fn inf() -> Meters {
-        std::u32::MAX.into()
+        Meters(std::u32::MAX)
     }
 }
 
 impl From<u8> for Meters {
     fn from(value: u8) -> Meters {
-        Meters {
-            value: value as u32,
-        }
+        Meters(value as u32)
     }
 }
 
 impl From<u16> for Meters {
     fn from(value: u16) -> Meters {
-        Meters {
-            value: value as u32,
-        }
+        Meters(value as u32)
     }
 }
 
 impl From<u32> for Meters {
     fn from(value: u32) -> Meters {
-        Meters { value }
+        Meters(value)
     }
 }
 
@@ -60,7 +54,7 @@ impl From<MetricU32> for Meters {
 
 impl Into<MetricU32> for Meters {
     fn into(self) -> MetricU32 {
-        self.value.into()
+        self.0.into()
     }
 }
 
@@ -68,7 +62,13 @@ impl Deref for Meters {
     type Target = u32;
 
     fn deref(&self) -> &u32 {
-        &self.value
+        &self.0
+    }
+}
+
+impl DerefMut for Meters {
+    fn deref_mut(&mut self) -> &mut u32 {
+        &mut self.0
     }
 }
 
@@ -79,15 +79,13 @@ impl Add<Meters> for Meters {
     type Output = Meters;
 
     fn add(self, other: Meters) -> Meters {
-        Meters {
-            value: self.value + other.value,
-        }
+        Meters(self.0 + other.0)
     }
 }
 
 impl AddAssign<Meters> for Meters {
     fn add_assign(&mut self, other: Meters) {
-        self.value += other.value;
+        self.0 += other.0;
     }
 }
 
@@ -95,15 +93,13 @@ impl Mul<u32> for Meters {
     type Output = Meters;
 
     fn mul(self, scale: u32) -> Meters {
-        Meters {
-            value: scale * self.value,
-        }
+        Meters(self.0 * scale)
     }
 }
 
 impl MulAssign<u32> for Meters {
     fn mul_assign(&mut self, scale: u32) {
-        self.value *= scale;
+        self.0 *= scale;
     }
 }
 
@@ -111,17 +107,15 @@ impl Mul<f64> for Meters {
     type Output = Meters;
 
     fn mul(self, scale: f64) -> Meters {
-        let new_value = scale * (self.value as f64) * scale;
-        Meters {
-            value: new_value as u32,
-        }
+        let new_value = scale * (self.0 as f64) * scale;
+        Meters(new_value as u32)
     }
 }
 
 impl MulAssign<f64> for Meters {
     fn mul_assign(&mut self, scale: f64) {
-        let new_value = scale * (self.value as f64);
-        self.value = new_value as u32;
+        let new_value = scale * (self.0 as f64);
+        self.0 = new_value as u32;
     }
 }
 
@@ -129,15 +123,13 @@ impl Div<u32> for Meters {
     type Output = Meters;
 
     fn div(self, rhs: u32) -> Meters {
-        Meters {
-            value: self.value / rhs,
-        }
+        Meters(self.0 / rhs)
     }
 }
 
 impl DivAssign<u32> for Meters {
     fn div_assign(&mut self, rhs: u32) {
-        self.value /= rhs;
+        self.0 /= rhs;
     }
 }
 
@@ -146,7 +138,7 @@ impl Div<Milliseconds> for Meters {
     type Output = KilometersPerHour;
 
     fn div(self, rhs: Milliseconds) -> KilometersPerHour {
-        KilometersPerHour::from(3600 * self.value / (*rhs))
+        KilometersPerHour::from(3600 * self.0 / (*rhs))
     }
 }
 
@@ -155,6 +147,6 @@ impl Div<KilometersPerHour> for Meters {
     type Output = Milliseconds;
 
     fn div(self, rhs: KilometersPerHour) -> Milliseconds {
-        Milliseconds::from(3600 * self.value / (*rhs))
+        Milliseconds::from(3600 * self.0 / (*rhs))
     }
 }

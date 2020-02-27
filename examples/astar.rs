@@ -59,8 +59,32 @@ fn main() {
     //--------------------------------------------------------------------------------------------//
     // parsing
 
+    // let cfg = Config::new(graph::Config {
+    //     map_file: PathBuf::from("resources/maps/simple_stuttgart.fmi"),
+    //     vehicles: vehicles::Config {
+    //         is_driver_picky: false,
+    //         vehicle_type: VehicleType::Car,
+    //     },
+    //     edges: edges::Config {
+    //         metrics: metrics::Config::create(vec![
+    //             (MetricCategory::Id, "src-id".into(), true).into(),
+    //             (MetricCategory::Id, "dst-id".into(), true).into(),
+    //             (MetricCategory::Length, "length".into(), true).into(),
+    //             (MetricCategory::Ignore, "?".into(), false).into(),
+    //             (MetricCategory::Maxspeed, "maxspeed".into(), true).into(),
+    //             (
+    //                 MetricCategory::Duration,
+    //                 "duration".into(),
+    //                 false,
+    //                 vec!["length".into(), "maxspeed".into()],
+    //             )
+    //                 .into(),
+    //         ])
+    //         .unwrap(),
+    //     },
+    // });
     let cfg = Config::new(graph::Config {
-        map_file: PathBuf::from("resources/maps/simple_stuttgart.fmi"),
+        map_file: PathBuf::from("custom/resources/maps/germany_2019-09-07.osm.pbf"),
         vehicles: vehicles::Config {
             is_driver_picky: false,
             vehicle_type: VehicleType::Car,
@@ -69,7 +93,7 @@ fn main() {
             metrics: metrics::Config::create(vec![
                 (MetricCategory::Id, "src-id".into(), true).into(),
                 (MetricCategory::Id, "dst-id".into(), true).into(),
-                (MetricCategory::Length, "length".into(), true).into(),
+                (MetricCategory::Length, "length".into(), false).into(),
                 (MetricCategory::Ignore, "?".into(), false).into(),
                 (MetricCategory::Maxspeed, "maxspeed".into(), true).into(),
                 (
