@@ -1,13 +1,12 @@
 use super::{assert_correct, create_config, TestNode, TestType};
 use osmgraphing::{network::NodeIdx, units::length::Meters};
 
-mod astar {
-    mod unidirectional {
+pub mod astar {
+    pub mod unidirectional {
         use super::super::{assert_correct, create_config, expected_paths, TestType};
         use osmgraphing::routing;
 
-        #[test]
-        fn simple_stuttgart() {
+        pub fn simple_stuttgart() {
             let cfg = create_config(TestType::SimpleStuttgart);
 
             let mut astar = routing::factory::astar::unidirectional::shortest(
@@ -18,8 +17,7 @@ mod astar {
             assert_correct(&mut astar, expected_paths, cfg.graph);
         }
 
-        #[test]
-        fn small() {
+        pub fn small() {
             let cfg = create_config(TestType::Small);
 
             let mut astar = routing::factory::astar::unidirectional::shortest(
@@ -30,25 +28,34 @@ mod astar {
             assert_correct(&mut astar, expected_paths, cfg.graph);
         }
 
-        #[test]
-        fn bait() {
+        pub fn bidirectional_bait() {
             let cfg = create_config(TestType::BidirectionalBait);
 
             let mut astar = routing::factory::astar::unidirectional::shortest(
                 cfg.graph.edges.metrics.idx(&"length".into()),
             );
             let expected_paths = expected_paths(TestType::BidirectionalBait);
+
+            assert_correct(&mut astar, expected_paths, cfg.graph);
+        }
+
+        pub fn isle_of_man() {
+            let cfg = create_config(TestType::IsleOfMan);
+
+            let mut astar = routing::factory::astar::unidirectional::shortest(
+                cfg.graph.edges.metrics.idx(&"length".into()),
+            );
+            let expected_paths = expected_paths(TestType::IsleOfMan);
 
             assert_correct(&mut astar, expected_paths, cfg.graph);
         }
     }
 
-    mod bidirectional {
+    pub mod bidirectional {
         use super::super::{assert_correct, create_config, expected_paths, TestType};
         use osmgraphing::routing;
 
-        #[test]
-        fn simple_stuttgart() {
+        pub fn simple_stuttgart() {
             let cfg = create_config(TestType::SimpleStuttgart);
 
             let mut astar = routing::factory::astar::bidirectional::shortest(
@@ -59,8 +66,7 @@ mod astar {
             assert_correct(&mut astar, expected_paths, cfg.graph);
         }
 
-        #[test]
-        fn small() {
+        pub fn small() {
             let cfg = create_config(TestType::Small);
 
             let mut astar = routing::factory::astar::bidirectional::shortest(
@@ -71,14 +77,24 @@ mod astar {
             assert_correct(&mut astar, expected_paths, cfg.graph);
         }
 
-        #[test]
-        fn bait() {
+        pub fn bidirectional_bait() {
             let cfg = create_config(TestType::BidirectionalBait);
 
             let mut astar = routing::factory::astar::bidirectional::shortest(
                 cfg.graph.edges.metrics.idx(&"length".into()),
             );
             let expected_paths = expected_paths(TestType::BidirectionalBait);
+
+            assert_correct(&mut astar, expected_paths, cfg.graph);
+        }
+
+        pub fn isle_of_man() {
+            let cfg = create_config(TestType::IsleOfMan);
+
+            let mut astar = routing::factory::astar::bidirectional::shortest(
+                cfg.graph.edges.metrics.idx(&"length".into()),
+            );
+            let expected_paths = expected_paths(TestType::IsleOfMan);
 
             assert_correct(&mut astar, expected_paths, cfg.graph);
         }
@@ -87,13 +103,12 @@ mod astar {
 
 //------------------------------------------------------------------------------------------------//
 
-mod dijkstra {
+pub mod dijkstra {
     pub mod unidirectional {
         use super::super::{assert_correct, create_config, expected_paths, TestType};
         use osmgraphing::routing;
 
-        #[test]
-        fn simple_stuttgart() {
+        pub fn simple_stuttgart() {
             let cfg = create_config(TestType::SimpleStuttgart);
 
             let mut dijkstra = routing::factory::dijkstra::unidirectional::shortest(
@@ -104,8 +119,7 @@ mod dijkstra {
             assert_correct(&mut dijkstra, expected_paths, cfg.graph);
         }
 
-        #[test]
-        fn small() {
+        pub fn small() {
             let cfg = create_config(TestType::Small);
 
             let mut dijkstra = routing::factory::dijkstra::unidirectional::shortest(
@@ -116,9 +130,19 @@ mod dijkstra {
             assert_correct(&mut dijkstra, expected_paths, cfg.graph);
         }
 
-        #[test]
-        fn bait() {
+        pub fn bidirectional_bait() {
             let cfg = create_config(TestType::BidirectionalBait);
+
+            let mut dijkstra = routing::factory::dijkstra::unidirectional::shortest(
+                cfg.graph.edges.metrics.idx(&"length".into()),
+            );
+            let expected_paths = expected_paths(TestType::BidirectionalBait);
+
+            assert_correct(&mut dijkstra, expected_paths, cfg.graph);
+        }
+
+        pub fn isle_of_man() {
+            let cfg = create_config(TestType::IsleOfMan);
 
             let mut dijkstra = routing::factory::dijkstra::unidirectional::shortest(
                 cfg.graph.edges.metrics.idx(&"length".into()),
@@ -133,8 +157,7 @@ mod dijkstra {
         use super::super::{assert_correct, create_config, expected_paths, TestType};
         use osmgraphing::routing;
 
-        #[test]
-        fn simple_stuttgart() {
+        pub fn simple_stuttgart() {
             let cfg = create_config(TestType::SimpleStuttgart);
 
             let mut dijkstra = routing::factory::dijkstra::bidirectional::shortest(
@@ -145,8 +168,7 @@ mod dijkstra {
             assert_correct(&mut dijkstra, expected_paths, cfg.graph);
         }
 
-        #[test]
-        fn small() {
+        pub fn small() {
             let cfg = create_config(TestType::Small);
 
             let mut dijkstra = routing::factory::dijkstra::bidirectional::shortest(
@@ -157,9 +179,19 @@ mod dijkstra {
             assert_correct(&mut dijkstra, expected_paths, cfg.graph);
         }
 
-        #[test]
-        fn bait() {
+        pub fn bidirectional_bait() {
             let cfg = create_config(TestType::BidirectionalBait);
+
+            let mut dijkstra = routing::factory::dijkstra::bidirectional::shortest(
+                cfg.graph.edges.metrics.idx(&"length".into()),
+            );
+            let expected_paths = expected_paths(TestType::BidirectionalBait);
+
+            assert_correct(&mut dijkstra, expected_paths, cfg.graph);
+        }
+
+        pub fn isle_of_man() {
+            let cfg = create_config(TestType::IsleOfMan);
 
             let mut dijkstra = routing::factory::dijkstra::bidirectional::shortest(
                 cfg.graph.edges.metrics.idx(&"length".into()),
@@ -178,9 +210,7 @@ fn expected_paths(
 ) -> Vec<(TestNode, TestNode, Option<(Meters, Vec<Vec<TestNode>>)>)> {
     match test_type {
         TestType::BidirectionalBait => expected_paths_bait(),
-        TestType::IsleOfMan => {
-            unimplemented!("Testing routing on isle-of-man is not supported yet.")
-        }
+        TestType::IsleOfMan => expected_paths_isle_of_man(),
         TestType::SimpleStuttgart => expected_paths_simple_stuttgart(),
         TestType::Small => expected_paths_small(),
     }
@@ -553,4 +583,8 @@ fn expected_paths_bait() -> Vec<(TestNode, TestNode, Option<(Meters, Vec<Vec<Tes
         (tl, tr, Some((Meters::from(3u32), vec![vec![tl, tr]]))),
         (tl, tl, Some((Meters::from(0u32), vec![vec![]]))),
     ]
+}
+
+fn expected_paths_isle_of_man() -> Vec<(TestNode, TestNode, Option<(Meters, Vec<Vec<TestNode>>)>)> {
+    unimplemented!("Testing routing on isle-of-man is not supported yet.")
 }

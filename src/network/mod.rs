@@ -1,7 +1,8 @@
 mod graph;
 pub use graph::{
     building::{GraphBuilder, ProtoEdge, ProtoNode},
-    EdgeIdx, Graph, HalfEdge, MetricIdx, Node, NodeIdx,
+    EdgeContainer, EdgeIdx, Graph, HalfEdge, MetricContainer, MetricIdx, Node, NodeContainer,
+    NodeIdx,
 };
 pub mod defaults;
 pub use defaults::StreetType;
