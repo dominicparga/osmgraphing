@@ -1,4 +1,5 @@
-mod network;
+#![allow(non_snake_case)]
+
 mod parsing;
 mod routing;
 
@@ -91,4 +92,153 @@ fn create_config(test_type: TestType) -> Config {
             },
         }),
     }
+}
+
+#[test]
+fn small________________routing___shortest___astar______bidirectional_() {
+    routing::shortest::astar::bidirectional::small();
+}
+#[test]
+fn small________________routing___shortest___astar______unidirectional() {
+    routing::shortest::astar::unidirectional::small();
+}
+#[test]
+fn small________________routing___shortest___dijkstra___bidirectional_() {
+    routing::shortest::dijkstra::bidirectional::small();
+}
+#[test]
+fn small________________routing___shortest___dijkstra___unidirectional() {
+    routing::shortest::dijkstra::unidirectional::small();
+}
+#[test]
+fn small________________routing___fastest____astar______bidirectional_() {
+    routing::fastest::astar::bidirectional::small();
+}
+#[test]
+fn small________________routing___fastest____astar______unidirectional() {
+    routing::fastest::astar::unidirectional::small();
+}
+#[test]
+fn small________________routing___fastest____dijkstra___bidirectional_() {
+    routing::fastest::dijkstra::bidirectional::small();
+}
+#[test]
+fn small________________routing___fastest____dijkstra___unidirectional() {
+    routing::fastest::dijkstra::unidirectional::small();
+}
+#[test]
+fn small________________parsing___fmi_________________________________() {
+    parsing::fmi::small();
+}
+#[test]
+fn simple_stuttgart_____routing___shortest___astar______bidirectional_() {
+    routing::shortest::astar::bidirectional::simple_stuttgart();
+}
+#[test]
+fn simple_stuttgart_____routing___shortest___astar______unidirectional() {
+    routing::shortest::astar::unidirectional::simple_stuttgart();
+}
+#[test]
+fn simple_stuttgart_____routing___shortest___dijkstra___bidirectional_() {
+    routing::shortest::dijkstra::bidirectional::simple_stuttgart();
+}
+#[test]
+fn simple_stuttgart_____routing___shortest___dijkstra___unidirectional() {
+    routing::shortest::dijkstra::unidirectional::simple_stuttgart();
+}
+#[test]
+fn simple_stuttgart_____routing___fastest____astar______bidirectional_() {
+    routing::fastest::astar::bidirectional::simple_stuttgart();
+}
+#[test]
+fn simple_stuttgart_____routing___fastest____astar______unidirectional() {
+    routing::fastest::astar::unidirectional::simple_stuttgart();
+}
+#[test]
+fn simple_stuttgart_____routing___fastest____dijkstra___bidirectional_() {
+    routing::fastest::dijkstra::bidirectional::simple_stuttgart();
+}
+#[test]
+fn simple_stuttgart_____routing___fastest____dijkstra___unidirectional() {
+    routing::fastest::dijkstra::unidirectional::simple_stuttgart();
+}
+#[test]
+fn simple_stuttgart_____parsing___fmi_________________________________() {
+    parsing::fmi::simple_stuttgart();
+}
+#[test]
+fn bidirectional_bait___routing___shortest___astar______bidirectional_() {
+    routing::shortest::astar::bidirectional::bidirectional_bait();
+}
+#[test]
+fn bidirectional_bait___routing___shortest___astar______unidirectional() {
+    routing::shortest::astar::unidirectional::bidirectional_bait();
+}
+#[test]
+fn bidirectional_bait___routing___shortest___dijkstra___bidirectional_() {
+    routing::shortest::dijkstra::bidirectional::bidirectional_bait();
+}
+#[test]
+fn bidirectional_bait___routing___shortest___dijkstra___unidirectional() {
+    routing::shortest::dijkstra::unidirectional::bidirectional_bait();
+}
+#[test]
+fn bidirectional_bait___routing___fastest____astar______bidirectional_() {
+    routing::fastest::astar::bidirectional::bidirectional_bait();
+}
+#[test]
+fn bidirectional_bait___routing___fastest____astar______unidirectional() {
+    routing::fastest::astar::unidirectional::bidirectional_bait();
+}
+#[test]
+fn bidirectional_bait___routing___fastest____dijkstra___bidirectional_() {
+    routing::fastest::dijkstra::bidirectional::bidirectional_bait();
+}
+#[test]
+fn bidirectional_bait___routing___fastest____dijkstra___unidirectional() {
+    routing::fastest::dijkstra::unidirectional::bidirectional_bait();
+}
+#[test]
+fn bidirectional_bait___parsing___fmi_________________________________() {
+    parsing::fmi::bidirectional_bait();
+}
+#[test]
+fn isle_of_man__________routing___shortest___astar______bidirectional_() {
+    routing::shortest::astar::bidirectional::isle_of_man();
+}
+#[test]
+fn isle_of_man__________routing___shortest___astar______unidirectional() {
+    routing::shortest::astar::unidirectional::isle_of_man();
+}
+#[test]
+fn isle_of_man__________routing___shortest___dijkstra___bidirectional_() {
+    routing::shortest::dijkstra::bidirectional::isle_of_man();
+}
+#[test]
+fn isle_of_man__________routing___shortest___dijkstra___unidirectional() {
+    routing::shortest::dijkstra::unidirectional::isle_of_man();
+}
+#[test]
+fn isle_of_man__________routing___fastest____astar______bidirectional_() {
+    routing::fastest::astar::bidirectional::isle_of_man();
+}
+#[test]
+fn isle_of_man__________routing___fastest____astar______unidirectional() {
+    routing::fastest::astar::unidirectional::isle_of_man();
+}
+#[test]
+fn isle_of_man__________routing___fastest____dijkstra___bidirectional_() {
+    routing::fastest::dijkstra::bidirectional::isle_of_man();
+}
+#[test]
+fn isle_of_man__________routing___fastest____dijkstra___unidirectional() {
+    routing::fastest::dijkstra::unidirectional::isle_of_man();
+}
+#[test]
+fn isle_of_man__________parsing___pbf_________________________________() {
+    parsing::pbf::isle_of_man();
+}
+#[test]
+fn general______________parsing___wrong_extension_____________________() {
+    parsing::general::wrong_extension();
 }

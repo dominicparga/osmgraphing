@@ -47,6 +47,25 @@ impl super::Parsing for Parser {
                 continue;
             }
 
+            // get nodes of way to create proto-edges later
+            let (is_oneway, is_reverse) = highway_tag.parse_oneway(&way);
+            if is_reverse {
+                way.nodes.reverse();
+            }
+            let iter_range = if is_oneway {
+                0..0
+            } else {
+                // if not oneway
+                // -> add node-IDs reversed to generate edges forwards and backwards
+                0..way.nodes.len() - 1
+            };
+            let nodes: Vec<i64> = way
+                .nodes
+                .iter()
+                .chain(way.nodes[iter_range].iter().rev())
+                .map(|id| id.0)
+                .collect();
+
             // Collect metrics as expected by user-config
             // ATTENTION: A way contains multiple edges, thus be careful when adding new metrics.
             let cfg = &cfg.edges.metrics;
@@ -92,40 +111,15 @@ impl super::Parsing for Parser {
                     MetricCategory::Id | MetricCategory::Ignore => (),
                 }
             }
-            let (is_oneway, is_reverse) = highway_tag.parse_oneway(&way);
 
-            // create (proto-)edges
-            if is_reverse {
-                way.nodes.reverse();
-            }
-            let iter_range = if is_oneway {
-                0..0
-            } else {
-                // if not oneway
-                // -> add node-IDs reversed to generate edges forwards and backwards
-                0..way.nodes.len() - 1
-            };
-            let mut nodes_iter = way.nodes.iter().chain(way.nodes[iter_range].iter().rev());
-
-            // add edges, one per node-pair in way.nodes
-            let mut src_id = nodes_iter
-                .next()
-                .ok_or(format!(
-                    "Way.nodes.len()={} but should be >1.",
-                    way.nodes.len()
-                ))?
-                .0;
-            for dst_id in nodes_iter.map(|id| id.0) {
-                // create proto-edge
-                let proto_edge = ProtoEdge {
-                    src_id,
-                    dst_id,
-                    metrics: metrics.clone(),
-                };
+            // for n nodes in a way, you can create (n-1) edges
+            for (node_idx, values) in vec![metrics; nodes.len() - 1].into_iter().enumerate() {
                 // add proto-edge to graph
-                graph_builder.push_edge(proto_edge);
-                // update src for next edge (in the current way)
-                src_id = dst_id;
+                graph_builder.push_edge(ProtoEdge {
+                    src_id: nodes[node_idx],
+                    dst_id: nodes[node_idx + 1],
+                    metrics: values,
+                });
             }
         }
         info!("FINISHED");
