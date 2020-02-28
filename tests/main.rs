@@ -1,5 +1,6 @@
 #![allow(non_snake_case)]
 
+mod configs;
 mod parsing;
 mod routing;
 
@@ -95,6 +96,7 @@ fn create_config(test_type: TestType) -> Config {
     }
 }
 
+#[rustfmt::skip]#[test]#[ignore]fn fmi_yaml_____________configs___deserialization_____________________() { configs::fmi::deserialize().unwrap(); }
 #[rustfmt::skip]#[test]fn small________________routing___shortest___astar______bidirectional_() {routing::shortest::astar::bidirectional::small();}
 #[rustfmt::skip]#[test]fn small________________routing___shortest___astar______unidirectional() {routing::shortest::astar::unidirectional::small();}
 #[rustfmt::skip]#[test]fn small________________routing___shortest___dijkstra___bidirectional_() {routing::shortest::dijkstra::bidirectional::small();}

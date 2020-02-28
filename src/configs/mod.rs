@@ -1,4 +1,4 @@
-use std::{fmt, fmt::Display};
+use std::{fmt, fmt::Display, path::Path};
 pub mod graph;
 
 /// Storing (default) settings for parsing the graph.
@@ -99,6 +99,10 @@ pub struct Config {
 impl Config {
     pub fn new(graph: graph::Config) -> Config {
         Config { graph }
+    }
+
+    pub fn from_yaml<P: AsRef<Path> + ?Sized>(_path: &P) -> Result<Config, String> {
+        unimplemented!("TODO implement Config::from_yaml")
     }
 }
 
