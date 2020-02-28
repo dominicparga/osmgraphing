@@ -12,11 +12,6 @@ Maybe, it is concept for later documentation, or just keep-up-the-good-work (`ku
 - [JMapViewer (Java)][osm/wiki/jmapviewer]
 
 
-[kde/marble]: http://api.kde.org/4.x-api/kdeedu-apidocs/marble/html/namespaceMarble.html
-[leafletjs]: https://leafletjs.com/
-[osm/wiki/jmapviewer]: https://wiki.openstreetmap.org/wiki/JMapViewer
-
-
 ## Next goals
 
 - store `Vec<Vec<u32>>` in `Graph` instead of several metrics
@@ -36,3 +31,8 @@ Maybe, it is concept for later documentation, or just keep-up-the-good-work (`ku
 - Write down alternative implementation-approaches
   - Implement shortcut-edges more memory-efficient storing list of costs per src-dst-pair instead of per edge.
   - Routing from src-node to dst-node where dst-node has at least the city-level of the src-node.
+
+
+[kde/marble]: http://api.kde.org/4.x-api/kdeedu-apidocs/marble/html/namespaceMarble.html
+[leafletjs]: https://leafletjs.com/
+[osm/wiki/jmapviewer]: https://wiki.openstreetmap.org/wiki/JMapViewer
