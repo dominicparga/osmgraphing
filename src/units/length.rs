@@ -1,4 +1,4 @@
-use super::{speed::KilometersPerHour, time::Milliseconds, Metric, MetricU32};
+use super::{speed::KilometersPerHour, time::Milliseconds, Metric};
 use std::{
     fmt,
     fmt::Display,
@@ -25,36 +25,6 @@ impl Metric for Meters {
 
     fn inf() -> Meters {
         Meters(std::u32::MAX)
-    }
-}
-
-impl From<u8> for Meters {
-    fn from(value: u8) -> Meters {
-        Meters(value as u32)
-    }
-}
-
-impl From<u16> for Meters {
-    fn from(value: u16) -> Meters {
-        Meters(value as u32)
-    }
-}
-
-impl From<u32> for Meters {
-    fn from(value: u32) -> Meters {
-        Meters(value)
-    }
-}
-
-impl From<MetricU32> for Meters {
-    fn from(metric: MetricU32) -> Meters {
-        (*metric).into()
-    }
-}
-
-impl Into<MetricU32> for Meters {
-    fn into(self) -> MetricU32 {
-        self.0.into()
     }
 }
 
@@ -138,7 +108,7 @@ impl Div<Milliseconds> for Meters {
     type Output = KilometersPerHour;
 
     fn div(self, rhs: Milliseconds) -> KilometersPerHour {
-        KilometersPerHour::from(3600 * self.0 / (*rhs))
+        KilometersPerHour(3600 * self.0 / (*rhs))
     }
 }
 
@@ -147,6 +117,6 @@ impl Div<KilometersPerHour> for Meters {
     type Output = Milliseconds;
 
     fn div(self, rhs: KilometersPerHour) -> Milliseconds {
-        Milliseconds::from(3600 * self.0 / (*rhs))
+        Milliseconds(3600 * self.0 / (*rhs))
     }
 }

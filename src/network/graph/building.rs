@@ -2,10 +2,7 @@ use super::{EdgeIdx, Graph, NodeIdx};
 use crate::{
     configs::{graph::Config, MetricCategory},
     network::MetricIdx,
-    units::{
-        geo, geo::Coordinate, length::Meters, speed::KilometersPerHour, time::Milliseconds,
-        MetricU32,
-    },
+    units::{geo, geo::Coordinate, length::Meters, speed::KilometersPerHour, time::Milliseconds},
 };
 use log::{debug, info};
 use progressing;
@@ -33,7 +30,7 @@ impl ProtoNode {
 pub struct ProtoEdge {
     pub src_id: i64,
     pub dst_id: i64,
-    pub metrics: Vec<Option<MetricU32>>,
+    pub metrics: Vec<Option<u32>>,
 }
 
 /// handy for remembering indices after sorting backwards
@@ -113,16 +110,16 @@ impl Graph {
                 // Jump if proto-edge has its value.
                 if let Some(value) = &mut proto_edge.metrics[*metric_idx] {
                     // But jump only if value is correct.
-                    if category.must_be_positive() && value.is_zero() {
+                    if category.must_be_positive() && value == &0 {
                         debug!(
                             "Proto-edge (id:{}->id:{}) has {}=0, hence is corrected to 1.",
                             proto_edge.src_id, proto_edge.dst_id, category
                         );
-                        *value += 1u32.into();
+                        *value += 1;
                     }
                     continue;
                 }
-                // now: proto-edge has no value and has to be updated
+                // now: proto-edge has no value for this metric and has to be updated
 
                 // calculate metric dependent on category
                 match category {
@@ -130,8 +127,7 @@ impl Graph {
                         let src_coord = self.node_coords[*src_idx];
                         let dst_coord = self.node_coords[*dst_idx];
                         proto_edge.metrics[*metric_idx] =
-                            Some(geo::haversine_distance_m(&src_coord, &dst_coord).into());
-                        // return Err(format!("{:?}", proto_edge.metrics[*metric_idx]));
+                            Some(*geo::haversine_distance_m(&src_coord, &dst_coord));
                     }
                     MetricCategory::Duration => {
                         // get length and maxspeed to calculate duration
@@ -155,9 +151,8 @@ impl Graph {
                         }
                         // calc duration and update proto-edge
                         if let (Some(length), Some(maxspeed)) = (length, maxspeed) {
-                            let duration =
-                                Meters::from(*length) / KilometersPerHour::from(*maxspeed);
-                            proto_edge.metrics[*metric_idx] = Some(duration.into())
+                            let duration = Meters(length) / KilometersPerHour(maxspeed);
+                            proto_edge.metrics[*metric_idx] = Some(*duration)
                         }
                     }
                     MetricCategory::Maxspeed => {
@@ -182,14 +177,20 @@ impl Graph {
                         }
                         // calc maxspeed and update proto-edge
                         if let (Some(length), Some(duration)) = (length, duration) {
-                            let maxspeed = Meters::from(*length) / Milliseconds::from(*duration);
-                            proto_edge.metrics[*metric_idx] = Some(maxspeed.into())
+                            let maxspeed = Meters(length) / Milliseconds(duration);
+                            proto_edge.metrics[*metric_idx] = Some(*maxspeed)
                         }
                     }
                     MetricCategory::LaneCount
                     | MetricCategory::Custom
                     | MetricCategory::Id
-                    | MetricCategory::Ignore => (),
+                    | MetricCategory::Ignore => {
+                        // Should be set to false here, but being here needs the metric to be none.
+                        // This would be bad anyways, because these metrics should be provided, not
+                        // calculated.
+                        // -> breaking loop for performance is okay
+                        // are_all_metrics_some = false;
+                    }
                 }
             }
         }
@@ -198,8 +199,8 @@ impl Graph {
         for (i, value) in proto_edge.metrics.iter().enumerate() {
             let metric_idx = MetricIdx(i);
             // If expected metrics haven't been calculated yet, some metrics are missing!
-            if let Some(value) = value {
-                self.metrics[*metric_idx].push(*value);
+            if let &Some(value) = value {
+                self.metrics[*metric_idx].push(value);
             } else {
                 if cfg.is_provided(metric_idx) {
                     return Err(format!(

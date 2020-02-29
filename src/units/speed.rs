@@ -4,7 +4,7 @@
 //------------------------------------------------------------------------------------------------//
 // other modules
 
-use super::{length::Meters, time::Milliseconds, Metric, MetricU32};
+use super::{length::Meters, time::Milliseconds, Metric};
 use std::{
     fmt,
     fmt::Display,
@@ -33,36 +33,6 @@ impl Metric for KilometersPerHour {
 
     fn inf() -> KilometersPerHour {
         KilometersPerHour(std::u32::MAX)
-    }
-}
-
-impl From<u8> for KilometersPerHour {
-    fn from(value: u8) -> KilometersPerHour {
-        KilometersPerHour(value as u32)
-    }
-}
-
-impl From<u16> for KilometersPerHour {
-    fn from(value: u16) -> KilometersPerHour {
-        KilometersPerHour(value as u32)
-    }
-}
-
-impl From<u32> for KilometersPerHour {
-    fn from(value: u32) -> KilometersPerHour {
-        KilometersPerHour(value)
-    }
-}
-
-impl From<MetricU32> for KilometersPerHour {
-    fn from(metric: MetricU32) -> KilometersPerHour {
-        (*metric).into()
-    }
-}
-
-impl Into<MetricU32> for KilometersPerHour {
-    fn into(self) -> MetricU32 {
-        self.0.into()
     }
 }
 
@@ -118,7 +88,7 @@ impl Mul<Milliseconds> for KilometersPerHour {
     fn mul(self, rhs: Milliseconds) -> Meters {
         let speed = self.0 as u32;
         let time = *rhs;
-        Meters::from(speed * time / 3_600)
+        Meters(speed * time / 3_600)
     }
 }
 

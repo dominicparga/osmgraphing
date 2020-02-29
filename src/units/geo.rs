@@ -110,5 +110,5 @@ pub fn haversine_distance(from: &Coordinate, to: &Coordinate) -> f64 {
 
 /// Note that the result could have rounding errors due to up-scaling (* 1000.0) and cutting afterwards (f64 -> u32)
 pub fn haversine_distance_m(from: &Coordinate, to: &Coordinate) -> Meters {
-    Meters::from((1_000.0 * haversine_distance(from, to)) as u32)
+    Meters((1_000.0 * haversine_distance(from, to)) as u32)
 }

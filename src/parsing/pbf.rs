@@ -5,7 +5,7 @@ mod pbf {
 use crate::{
     configs::{graph, MetricCategory},
     network::{GraphBuilder, MetricIdx, ProtoEdge, StreetType},
-    units::{geo::Coordinate, MetricU32},
+    units::geo::Coordinate,
 };
 use log::info;
 use std::fs::File;
@@ -86,8 +86,8 @@ impl super::Parsing for Parser {
                     }
                     MetricCategory::Maxspeed => {
                         if is_provided {
-                            let maxspeed = MetricU32::from(highway_tag.parse_maxspeed(&way));
-                            metrics[*metric_idx] = Some(maxspeed);
+                            let maxspeed = highway_tag.parse_maxspeed(&way);
+                            metrics[*metric_idx] = Some(maxspeed as u32);
                         } else {
                             return Err(format!(
                                 "The {} of an edge in a pbf-file has to be provided, \
@@ -98,8 +98,8 @@ impl super::Parsing for Parser {
                     }
                     MetricCategory::LaneCount => {
                         if is_provided {
-                            let lane_count = MetricU32::from(highway_tag.parse_lane_count(&way));
-                            metrics[*metric_idx] = Some(lane_count);
+                            let lane_count = highway_tag.parse_lane_count(&way);
+                            metrics[*metric_idx] = Some(lane_count as u32);
                         } else {
                             return Err(format!(
                                 "The {} of an edge in a pbf-file has to be provided, \

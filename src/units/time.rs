@@ -4,7 +4,7 @@
 //------------------------------------------------------------------------------------------------//
 // other modules
 
-use super::{length::Meters, speed::KilometersPerHour, Metric, MetricU32};
+use super::{length::Meters, speed::KilometersPerHour, Metric};
 use std::{
     fmt,
     fmt::Display,
@@ -24,45 +24,15 @@ impl Display for Milliseconds {
 
 impl Metric for Milliseconds {
     fn zero() -> Milliseconds {
-        0u32.into()
+        Milliseconds(0)
     }
 
     fn neg_inf() -> Milliseconds {
-        std::u32::MIN.into()
+        Milliseconds(std::u32::MIN)
     }
 
     fn inf() -> Milliseconds {
-        std::u32::MAX.into()
-    }
-}
-
-impl From<u8> for Milliseconds {
-    fn from(value: u8) -> Milliseconds {
-        Milliseconds(value as u32)
-    }
-}
-
-impl From<u16> for Milliseconds {
-    fn from(value: u16) -> Milliseconds {
-        Milliseconds(value as u32)
-    }
-}
-
-impl From<u32> for Milliseconds {
-    fn from(value: u32) -> Milliseconds {
-        Milliseconds(value)
-    }
-}
-
-impl From<MetricU32> for Milliseconds {
-    fn from(metric: MetricU32) -> Milliseconds {
-        Milliseconds(*metric)
-    }
-}
-
-impl Into<MetricU32> for Milliseconds {
-    fn into(self) -> MetricU32 {
-        MetricU32(self.0)
+        Milliseconds(std::u32::MAX)
     }
 }
 
@@ -134,6 +104,6 @@ impl Mul<KilometersPerHour> for Milliseconds {
     fn mul(self, rhs: KilometersPerHour) -> Meters {
         let time = self.0;
         let speed = *rhs;
-        Meters::from(speed * time / 3_600)
+        Meters(speed * time / 3_600)
     }
 }

@@ -127,7 +127,7 @@ impl Config {
     }
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Copy, Clone, Debug, Deserialize)]
 pub enum VehicleCategory {
     Car,
     Bicycle,

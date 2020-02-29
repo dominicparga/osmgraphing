@@ -99,9 +99,9 @@ impl TestEdge {
             is_fwd: true,
             src_idx: src.idx.into(),
             dst_idx: dst.idx.into(),
-            length: Meters::from(length),
-            maxspeed: KilometersPerHour::from(maxspeed),
-            duration: Milliseconds::from(duration),
+            length: Meters(length),
+            maxspeed: KilometersPerHour(maxspeed as u32),
+            duration: Milliseconds(duration),
         }
     }
 
@@ -120,9 +120,9 @@ impl TestEdge {
             is_fwd: false,
             src_idx: src.idx.into(),
             dst_idx: dst.idx.into(),
-            length: length.into(),
-            maxspeed: maxspeed.into(),
-            duration: duration.into(),
+            length: Meters(length),
+            maxspeed: KilometersPerHour(maxspeed as u32),
+            duration: Milliseconds(duration),
         }
     }
 

@@ -1,9 +1,7 @@
 pub mod geo;
 pub mod length;
-mod primitives;
 pub mod speed;
 pub mod time;
-pub use primitives::MetricU32;
 use std::fmt::{Debug, Display};
 
 pub trait Metric: Clone + Copy + Debug + Default + Display {
@@ -12,6 +10,20 @@ pub trait Metric: Clone + Copy + Debug + Default + Display {
     fn neg_inf() -> Self;
 
     fn inf() -> Self;
+}
+
+impl Metric for u32 {
+    fn zero() -> u32 {
+        0
+    }
+
+    fn neg_inf() -> u32 {
+        std::u32::MIN
+    }
+
+    fn inf() -> u32 {
+        std::u32::MAX
+    }
 }
 
 //------------------------------------------------------------------------------------------------//
