@@ -1,15 +1,10 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use log::error;
 use osmgraphing::{
-    configs::{
-        graph,
-        graph::{edges, edges::metrics, vehicles},
-        Config, MetricCategory, VehicleType,
-    },
+    configs::Config,
     network::{Graph, MetricIdx, NodeIdx},
     routing, Parser,
 };
-use std::path::PathBuf;
 
 fn init_logging(quietly: bool) {
     let mut builder = env_logger::Builder::new();
@@ -34,33 +29,12 @@ fn criterion_benchmark(c: &mut Criterion) {
     init_logging(true);
 
     // parsing
-    let cfg = Config::new(graph::Config {
-        map_file: PathBuf::from("resources/maps/isle-of-man_2019-09-05.osm.pbf"),
-        vehicles: vehicles::Config {
-            is_driver_picky: false,
-            vehicle_type: VehicleType::Car,
-        },
-        edges: edges::Config {
-            metrics: metrics::Config::create(vec![
-                (MetricCategory::Id, "src-id".into(), true).into(),
-                (MetricCategory::Id, "dst-id".into(), true).into(),
-                (MetricCategory::Length, "length".into(), false).into(),
-                (MetricCategory::Maxspeed, "maxspeed".into(), true).into(),
-                (
-                    MetricCategory::Duration,
-                    "duration".into(),
-                    false,
-                    vec!["length".into(), "maxspeed".into()],
-                )
-                    .into(),
-            ])
-            .unwrap(),
-        },
-    });
+    let cfg = Config::from_map_file("resources/maps/isle-of-man_2019-09-05.osm.pbf").unwrap();
     // indices for routing
-    let length_idx = MetricIdx(0);
-    let _maxspeed_idx = MetricIdx(1);
-    let duration_idx = MetricIdx(2);
+
+    let length_idx = cfg.graph.edges.metrics.idx(&"Length".into());
+    let _maxspeed_idx = cfg.graph.edges.metrics.idx(&"Maxspeed".into());
+    let duration_idx = cfg.graph.edges.metrics.idx(&"Duration".into());
     // create graph
     let graph = match Parser::parse_and_finalize(cfg.graph) {
         Ok(graph) => graph,

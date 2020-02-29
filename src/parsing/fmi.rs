@@ -210,6 +210,10 @@ mod intern {
         /// Parse a line of metrics into an edge.
         ///
         /// - When NodeIds are parsed, the first one is interpreted as src-id and the second one as dst-id.
+        /// - If a metric is given as float, it tries to parse it into `u32` of accuracy in millis.
+        ///   Example: given metric of `3.1415 km` becomes `3141 m`.
+        ///   The maximum possible value would be around `10^7 m`
+        ///   (`2^32 km` ~ `10^10 km`, which is divided by `1_000` for accuracy in `m`).
         pub fn from_str(line: &str, cfg: &Config) -> Result<ProtoEdge, String> {
             let mut metric_values = Vec::with_capacity(cfg.metrics.count());
             let mut src_id = None;
@@ -222,7 +226,7 @@ mod intern {
             for param_idx in 0..cfg.metrics.all_categories().len() {
                 let metric_type = cfg.metrics.all_categories()[param_idx];
 
-                let param = params.get(param_idx).ok_or(
+                let param = *params.get(param_idx).ok_or(
                     "The fmi-map-file is expected to have more edge-params \
                      than actually has.",
                 )?;
@@ -257,10 +261,23 @@ mod intern {
                         let is_provided = cfg.metrics.is_provided(metric_idx);
 
                         if is_provided {
-                            let value = param.parse::<u32>().ok().ok_or(format!(
-                                "Parsing {} '{}' of edge-param #{} didn't work.",
-                                metric_type, param, param_idx
-                            ))?;
+                            // Try parsing as u32.
+                            // If value is float, parsing keeps accuracy of millis.
+                            // Example: given as 3.1415 km becomes 3141 m
+                            // Maximum possible value would be around 10^7 m
+                            // (2^32 km ~ 10^10 km, which is divided by 1_000 for accuracy in m)
+                            let value = {
+                                if let Ok(value_u32) = param.parse::<u32>() {
+                                    value_u32
+                                } else if let Ok(value_f64) = param.parse::<f64>() {
+                                    (value_f64 * 1e3) as u32
+                                } else {
+                                    return Err(format!(
+                                        "Parsing {} '{}' of edge-param #{} didn't work.",
+                                        metric_type, param, param_idx
+                                    ));
+                                }
+                            };
                             metric_values.push(Some(value.into()));
                         } else {
                             metric_values.push(None);

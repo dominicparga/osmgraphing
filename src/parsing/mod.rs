@@ -3,6 +3,8 @@ pub mod pbf;
 
 use crate::{
     configs::graph,
+    helpers,
+    helpers::MapFileExt,
     network::{Graph, GraphBuilder},
 };
 use log::info;
@@ -45,43 +47,35 @@ pub struct Parser;
 
 impl Parser {
     pub fn parse(cfg: &graph::Config) -> Result<GraphBuilder, String> {
-        match Type::from_path(&cfg.map_file)? {
-            Type::PBF => pbf::Parser::new().parse(cfg),
-            Type::FMI => fmi::Parser::new().parse(cfg),
+        match MapFileExt::from_path(cfg.map_file())? {
+            MapFileExt::PBF => pbf::Parser::new().parse(cfg),
+            MapFileExt::FMI => fmi::Parser::new().parse(cfg),
         }
     }
 
     pub fn parse_and_finalize(cfg: graph::Config) -> Result<Graph, String> {
-        match Type::from_path(&cfg.map_file)? {
-            Type::PBF => pbf::Parser::new().parse_and_finalize(cfg),
-            Type::FMI => fmi::Parser::new().parse_and_finalize(cfg),
+        match MapFileExt::from_path(cfg.map_file())? {
+            MapFileExt::PBF => pbf::Parser::new().parse_and_finalize(cfg),
+            MapFileExt::FMI => fmi::Parser::new().parse_and_finalize(cfg),
         }
     }
 }
 
 trait Parsing {
-    fn open_file<P: AsRef<Path> + ?Sized>(path: &P) -> Result<File, String> {
-        let path = path.as_ref();
-        match File::open(path) {
-            Ok(file) => Ok(file),
-            Err(_) => Err(format!("No such file {}", path.display())),
-        }
-    }
-
     fn preprocess(&mut self, _file: File) -> Result<(), String> {
         Ok(())
     }
 
     fn parse(&mut self, cfg: &graph::Config) -> Result<GraphBuilder, String> {
         let mut graph_builder = GraphBuilder::new();
-        let path = &cfg.map_file;
+        let path = cfg.map_file();
 
         info!("START Process given file");
-        let file = Self::open_file(path)?;
+        let file = helpers::open_file(path)?;
         self.preprocess(file)?;
-        let file = Self::open_file(path)?;
+        let file = helpers::open_file(path)?;
         self.parse_ways(file, &mut graph_builder, cfg)?;
-        let file = Self::open_file(path)?;
+        let file = helpers::open_file(path)?;
         self.parse_nodes(file, &mut graph_builder, cfg)?;
         info!("FINISHED");
 
@@ -103,7 +97,7 @@ trait Parsing {
     ) -> Result<(), String>;
 
     fn parse_and_finalize(&mut self, cfg: graph::Config) -> Result<Graph, String> {
-        let path = Path::new(&cfg.map_file);
+        let path = Path::new(cfg.map_file());
         info!("START Parse from given path {}", path.display());
 
         // TODO parse "cycleway" and others
@@ -112,42 +106,5 @@ trait Parsing {
         let result = self.parse(&cfg)?.finalize(cfg);
         info!("FINISHED");
         result
-    }
-}
-
-//------------------------------------------------------------------------------------------------//
-
-enum Type {
-    PBF,
-    FMI,
-}
-impl Type {
-    fn from_path<P: AsRef<Path> + ?Sized>(path: &P) -> Result<Self, String> {
-        let supported_exts = &["pbf", "fmi"];
-        let path = path.as_ref();
-
-        // if file has extension
-        if let Some(os_str) = path.extension() {
-            // if filename is valid unicode
-            if let Some(extension) = os_str.to_str() {
-                // check if parser supports extension
-                match extension.to_ascii_lowercase().as_ref() {
-                    "pbf" => Ok(Type::PBF),
-                    "fmi" => Ok(Type::FMI),
-                    // parser doesn't support this extension
-                    unsupported_ext => Err(format!(
-                        "Unsupported extension `{}` was given. Supported extensions are {:?}",
-                        unsupported_ext, supported_exts
-                    )),
-                }
-            } else {
-                Err(String::from("Filename is invalid Unicode."))
-            }
-        } else {
-            Err(format!(
-                "The file {:?} has no extension. Supported extensions are {:?}",
-                &path, supported_exts
-            ))
-        }
     }
 }

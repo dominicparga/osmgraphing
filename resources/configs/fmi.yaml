@@ -1,0 +1,16 @@
+graph:
+  vehicles:
+    category: 'Car'
+    are-drivers-picky: false
+  edges:
+    metrics:
+    - category: 'Id'
+      id: 'src-id'
+    - category: 'Id'
+      id: 'dst-id'
+    - category: 'Length'
+    - category: 'Ignore'
+    - category: 'Maxspeed'
+    - category: 'Duration'
+      is-provided: false
+      calc-rules: ['Length', 'Maxspeed']
