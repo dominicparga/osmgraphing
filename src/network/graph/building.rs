@@ -98,6 +98,8 @@ impl Graph {
         // Repeat the calculations n times.
         // In worst case, no metric is provided and all have to be calculated sequentially.
         for _ in 0..cfg.count() {
+            // just a quick, coarse way of breaking earlier
+            let mut are_all_metrics_some = true;
             for metric_idx in (0..cfg.count()).map(MetricIdx) {
                 // if value should be provided, it is already in the proto-edge from parsing
                 let is_provided = cfg.is_provided(metric_idx);
@@ -110,7 +112,7 @@ impl Graph {
                 // Jump if proto-edge has its value.
                 if let Some(value) = &mut proto_edge.metrics[*metric_idx] {
                     // But jump only if value is correct.
-                    if category.must_be_positive() && value == &0 {
+                    if value == &0 && category.must_be_positive() {
                         debug!(
                             "Proto-edge (id:{}->id:{}) has {}=0, hence is corrected to 1.",
                             proto_edge.src_id, proto_edge.dst_id, category
@@ -153,6 +155,8 @@ impl Graph {
                         if let (Some(length), Some(maxspeed)) = (length, maxspeed) {
                             let duration = Meters(length) / KilometersPerHour(maxspeed);
                             proto_edge.metrics[*metric_idx] = Some(*duration)
+                        } else {
+                            are_all_metrics_some = false;
                         }
                     }
                     MetricCategory::Maxspeed => {
@@ -179,6 +183,8 @@ impl Graph {
                         if let (Some(length), Some(duration)) = (length, duration) {
                             let maxspeed = Meters(length) / Milliseconds(duration);
                             proto_edge.metrics[*metric_idx] = Some(*maxspeed)
+                        } else {
+                            are_all_metrics_some = false;
                         }
                     }
                     MetricCategory::LaneCount
@@ -192,6 +198,10 @@ impl Graph {
                         // are_all_metrics_some = false;
                     }
                 }
+            }
+
+            if are_all_metrics_some {
+                break;
             }
         }
 
