@@ -3,12 +3,11 @@ pub mod pbf;
 
 use crate::{
     configs::graph,
-    helpers,
     helpers::MapFileExt,
     network::{Graph, GraphBuilder},
 };
 use log::info;
-use std::{fs::File, path::Path};
+use std::path::Path;
 
 //------------------------------------------------------------------------------------------------//
 
@@ -62,21 +61,17 @@ impl Parser {
 }
 
 trait Parsing {
-    fn preprocess(&mut self, _file: File) -> Result<(), String> {
+    fn preprocess(&mut self, _cfg: &graph::Config) -> Result<(), String> {
         Ok(())
     }
 
     fn parse(&mut self, cfg: &graph::Config) -> Result<GraphBuilder, String> {
         let mut graph_builder = GraphBuilder::new();
-        let path = cfg.map_file();
 
         info!("START Process given file");
-        let file = helpers::open_file(path)?;
-        self.preprocess(file)?;
-        let file = helpers::open_file(path)?;
-        self.parse_ways(file, &mut graph_builder, cfg)?;
-        let file = helpers::open_file(path)?;
-        self.parse_nodes(file, &mut graph_builder, cfg)?;
+        self.preprocess(cfg)?;
+        self.parse_ways(cfg, &mut graph_builder)?;
+        self.parse_nodes(cfg, &mut graph_builder)?;
         info!("FINISHED");
 
         Ok(graph_builder)
@@ -84,16 +79,14 @@ trait Parsing {
 
     fn parse_ways(
         &self,
-        file: File,
-        graph_builder: &mut GraphBuilder,
         cfg: &graph::Config,
+        graph_builder: &mut GraphBuilder,
     ) -> Result<(), String>;
 
     fn parse_nodes(
         &self,
-        file: File,
-        graph_builder: &mut GraphBuilder,
         cfg: &graph::Config,
+        graph_builder: &mut GraphBuilder,
     ) -> Result<(), String>;
 
     fn parse_and_finalize(&mut self, cfg: graph::Config) -> Result<Graph, String> {

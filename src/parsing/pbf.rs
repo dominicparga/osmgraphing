@@ -4,11 +4,11 @@ mod pbf {
 
 use crate::{
     configs::{graph, MetricCategory},
+    helpers,
     network::{GraphBuilder, MetricIdx, ProtoEdge, StreetType},
     units::geo::Coordinate,
 };
 use log::info;
-use std::fs::File;
 
 pub struct Parser;
 
@@ -21,13 +21,13 @@ impl Parser {
 impl super::Parsing for Parser {
     fn parse_ways(
         &self,
-        file: File,
-        graph_builder: &mut GraphBuilder,
         cfg: &graph::Config,
+        graph_builder: &mut GraphBuilder,
     ) -> Result<(), String> {
         info!("START Create edges from input-file.");
+        let file = helpers::open_file(cfg.map_file())?;
         for mut way in pbf::Reader::new(file)
-            .par_iter()
+            .iter()
             .filter_map(Result::ok)
             .filter_map(|obj| match obj {
                 pbf::OsmObj::Way(way) => Some(way),
@@ -128,13 +128,13 @@ impl super::Parsing for Parser {
 
     fn parse_nodes(
         &self,
-        file: File,
+        cfg: &graph::Config,
         graph_builder: &mut GraphBuilder,
-        _cfg: &graph::Config,
     ) -> Result<(), String> {
         info!("START Create nodes from input-file.");
+        let file = helpers::open_file(cfg.map_file())?;
         for node in pbf::Reader::new(file)
-            .par_iter()
+            .iter()
             .filter_map(Result::ok)
             .filter_map(|obj| match obj {
                 pbf::OsmObj::Node(node) => Some(node),

@@ -57,6 +57,12 @@ Maybe, it is concept for later documentation, or just keep-up-the-good-work (`ku
       alpha: 331
   ```
 
+- Update Changelog: Cleanup parser and make pbf-parser single-threaded, since new bottleneck is memory-usage.
+  The runtime for parsing ways single-threaded and multi-threaded was
+  identical (3:30 minutes for multi-threaded, 3:20 minutes for
+  single-threaded).
+  The times are much faster, if the RAM has remaining capacity and doesn't have to use the swap-partition.
+
 
 ## Other
 

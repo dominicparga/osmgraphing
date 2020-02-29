@@ -1,9 +1,10 @@
 use crate::{
     configs::graph,
+    helpers,
     network::{GraphBuilder, ProtoEdge},
 };
 use log::info;
-use std::{fs::File, io::BufRead, ops::Range};
+use std::{io::BufRead, ops::Range};
 
 pub struct Parser {
     node_lines: Range<usize>,
@@ -25,13 +26,14 @@ impl Parser {
 
 impl super::Parsing for Parser {
     /// Remembers range of edge-lines and node-lines
-    fn preprocess(&mut self, file: File) -> Result<(), String> {
-        info!("START Start preprocessing for fmi-parser.");
+    fn preprocess(&mut self, cfg: &graph::Config) -> Result<(), String> {
+        info!("START Start preprocessing fmi-parser.");
         // only functional-lines are counted
         let mut line_number = 0;
         let mut is_taking_counts = false;
         // counts are only metric-count, node-count, edge-count (in this order)
         let mut counts = vec![];
+        let file = helpers::open_file(cfg.map_file())?;
         for line in intern::Reader::new(file)
             .lines()
             .map(Result::unwrap)
@@ -84,12 +86,12 @@ impl super::Parsing for Parser {
 
     fn parse_ways(
         &self,
-        file: File,
-        graph_builder: &mut GraphBuilder,
         cfg: &graph::Config,
+        graph_builder: &mut GraphBuilder,
     ) -> Result<(), String> {
         info!("START Create edges from input-file.");
         let mut line_number = 0;
+        let file = helpers::open_file(cfg.map_file())?;
         for line in intern::Reader::new(file)
             .lines()
             .map(Result::unwrap)
@@ -113,12 +115,12 @@ impl super::Parsing for Parser {
 
     fn parse_nodes(
         &self,
-        file: File,
+        cfg: &graph::Config,
         graph_builder: &mut GraphBuilder,
-        _cfg: &graph::Config,
     ) -> Result<(), String> {
         info!("START Create nodes from input-file.");
         let mut line_number = 0;
+        let file = helpers::open_file(cfg.map_file())?;
         for line in intern::Reader::new(file)
             .lines()
             .map(Result::unwrap)
