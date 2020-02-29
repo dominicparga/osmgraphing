@@ -37,7 +37,7 @@ Tools creating `fmi`-files are [pbfextractor][github/lesstat/pbfextractor] and [
 In general, the requirements depend on the size of the parsed map and your machine.
 Following numbers base on an __8-core-CPU__ and the `pbf`-map `Germany` running on `archlinux`.
 
-- Parsing `Germany` needs around __13 GB of RAM__.
+- Parsing `Germany` needs around __14 GB of RAM__.
 - Preprocessing `Germany` (including parsing) needs under __8 minutes__.
   This highly depends on the number of cores.
 - A __routing query__ on `Germany` of length `670 km` takes around __6 seconds__ with `bidirectional A*`.
