@@ -10,7 +10,7 @@ pub mod astar {
             let cfg = create_config(TestType::SimpleStuttgart);
 
             let mut astar = routing::factory::astar::unidirectional::shortest(
-                cfg.graph.edges.metrics.idx(&"length".into()),
+                cfg.graph.edges.metrics.idx(&"Length".into()),
             );
             let expected_paths = expected_paths(TestType::SimpleStuttgart);
 
@@ -21,7 +21,7 @@ pub mod astar {
             let cfg = create_config(TestType::Small);
 
             let mut astar = routing::factory::astar::unidirectional::shortest(
-                cfg.graph.edges.metrics.idx(&"length".into()),
+                cfg.graph.edges.metrics.idx(&"Length".into()),
             );
             let expected_paths = expected_paths(TestType::Small);
 
@@ -32,7 +32,7 @@ pub mod astar {
             let cfg = create_config(TestType::BidirectionalBait);
 
             let mut astar = routing::factory::astar::unidirectional::shortest(
-                cfg.graph.edges.metrics.idx(&"length".into()),
+                cfg.graph.edges.metrics.idx(&"Length".into()),
             );
             let expected_paths = expected_paths(TestType::BidirectionalBait);
 
@@ -43,7 +43,7 @@ pub mod astar {
             let cfg = create_config(TestType::IsleOfMan);
 
             let mut astar = routing::factory::astar::unidirectional::shortest(
-                cfg.graph.edges.metrics.idx(&"length".into()),
+                cfg.graph.edges.metrics.idx(&"Length".into()),
             );
             let expected_paths = expected_paths(TestType::IsleOfMan);
 
@@ -59,7 +59,7 @@ pub mod astar {
             let cfg = create_config(TestType::SimpleStuttgart);
 
             let mut astar = routing::factory::astar::bidirectional::shortest(
-                cfg.graph.edges.metrics.idx(&"length".into()),
+                cfg.graph.edges.metrics.idx(&"Length".into()),
             );
             let expected_paths = expected_paths(TestType::SimpleStuttgart);
 
@@ -70,7 +70,7 @@ pub mod astar {
             let cfg = create_config(TestType::Small);
 
             let mut astar = routing::factory::astar::bidirectional::shortest(
-                cfg.graph.edges.metrics.idx(&"length".into()),
+                cfg.graph.edges.metrics.idx(&"Length".into()),
             );
             let expected_paths = expected_paths(TestType::Small);
 
@@ -81,7 +81,7 @@ pub mod astar {
             let cfg = create_config(TestType::BidirectionalBait);
 
             let mut astar = routing::factory::astar::bidirectional::shortest(
-                cfg.graph.edges.metrics.idx(&"length".into()),
+                cfg.graph.edges.metrics.idx(&"Length".into()),
             );
             let expected_paths = expected_paths(TestType::BidirectionalBait);
 
@@ -92,7 +92,7 @@ pub mod astar {
             let cfg = create_config(TestType::IsleOfMan);
 
             let mut astar = routing::factory::astar::bidirectional::shortest(
-                cfg.graph.edges.metrics.idx(&"length".into()),
+                cfg.graph.edges.metrics.idx(&"Length".into()),
             );
             let expected_paths = expected_paths(TestType::IsleOfMan);
 
@@ -112,7 +112,7 @@ pub mod dijkstra {
             let cfg = create_config(TestType::SimpleStuttgart);
 
             let mut dijkstra = routing::factory::dijkstra::unidirectional::shortest(
-                cfg.graph.edges.metrics.idx(&"length".into()),
+                cfg.graph.edges.metrics.idx(&"Length".into()),
             );
             let expected_paths = expected_paths(TestType::SimpleStuttgart);
 
@@ -123,7 +123,7 @@ pub mod dijkstra {
             let cfg = create_config(TestType::Small);
 
             let mut dijkstra = routing::factory::dijkstra::unidirectional::shortest(
-                cfg.graph.edges.metrics.idx(&"length".into()),
+                cfg.graph.edges.metrics.idx(&"Length".into()),
             );
             let expected_paths = expected_paths(TestType::Small);
 
@@ -134,7 +134,7 @@ pub mod dijkstra {
             let cfg = create_config(TestType::BidirectionalBait);
 
             let mut dijkstra = routing::factory::dijkstra::unidirectional::shortest(
-                cfg.graph.edges.metrics.idx(&"length".into()),
+                cfg.graph.edges.metrics.idx(&"Length".into()),
             );
             let expected_paths = expected_paths(TestType::BidirectionalBait);
 
@@ -145,7 +145,7 @@ pub mod dijkstra {
             let cfg = create_config(TestType::IsleOfMan);
 
             let mut dijkstra = routing::factory::dijkstra::unidirectional::shortest(
-                cfg.graph.edges.metrics.idx(&"length".into()),
+                cfg.graph.edges.metrics.idx(&"Length".into()),
             );
             let expected_paths = expected_paths(TestType::BidirectionalBait);
 
@@ -161,7 +161,7 @@ pub mod dijkstra {
             let cfg = create_config(TestType::SimpleStuttgart);
 
             let mut dijkstra = routing::factory::dijkstra::bidirectional::shortest(
-                cfg.graph.edges.metrics.idx(&"length".into()),
+                cfg.graph.edges.metrics.idx(&"Length".into()),
             );
             let expected_paths = expected_paths(TestType::SimpleStuttgart);
 
@@ -172,7 +172,7 @@ pub mod dijkstra {
             let cfg = create_config(TestType::Small);
 
             let mut dijkstra = routing::factory::dijkstra::bidirectional::shortest(
-                cfg.graph.edges.metrics.idx(&"length".into()),
+                cfg.graph.edges.metrics.idx(&"Length".into()),
             );
             let expected_paths = expected_paths(TestType::Small);
 
@@ -183,7 +183,7 @@ pub mod dijkstra {
             let cfg = create_config(TestType::BidirectionalBait);
 
             let mut dijkstra = routing::factory::dijkstra::bidirectional::shortest(
-                cfg.graph.edges.metrics.idx(&"length".into()),
+                cfg.graph.edges.metrics.idx(&"Length".into()),
             );
             let expected_paths = expected_paths(TestType::BidirectionalBait);
 
@@ -194,7 +194,7 @@ pub mod dijkstra {
             let cfg = create_config(TestType::IsleOfMan);
 
             let mut dijkstra = routing::factory::dijkstra::bidirectional::shortest(
-                cfg.graph.edges.metrics.idx(&"length".into()),
+                cfg.graph.edges.metrics.idx(&"Length".into()),
             );
             let expected_paths = expected_paths(TestType::BidirectionalBait);
 

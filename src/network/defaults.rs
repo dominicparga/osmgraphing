@@ -3,7 +3,7 @@ use std::{cmp, fmt, fmt::Display, str};
 mod pbf {
     pub use osmpbfreader::Way;
 }
-use crate::configs::VehicleType;
+use crate::configs::VehicleCategory;
 
 //------------------------------------------------------------------------------------------------//
 
@@ -154,11 +154,11 @@ impl StreetType {
         }
     }
 
-    pub fn is_for(&self, vehicle_type: &VehicleType, is_driver_picky: bool) -> bool {
+    pub fn is_for(&self, vehicle_type: &VehicleCategory, is_driver_picky: bool) -> bool {
         match vehicle_type {
-            VehicleType::Car => self.is_for_vehicles(is_driver_picky),
-            VehicleType::Bicycle => self.is_for_bicycles(is_driver_picky),
-            VehicleType::Pedestrian => self.is_for_pedestrians(is_driver_picky),
+            VehicleCategory::Car => self.is_for_vehicles(is_driver_picky),
+            VehicleCategory::Bicycle => self.is_for_bicycles(is_driver_picky),
+            VehicleCategory::Pedestrian => self.is_for_pedestrians(is_driver_picky),
         }
     }
 
