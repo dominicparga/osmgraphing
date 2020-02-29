@@ -14,6 +14,7 @@ Maybe, it is concept for later documentation, or just keep-up-the-good-work (`ku
 
 ## Next goals
 
+- Use log::debug by flag
 - store `Vec<Vec<u32>>` in `Graph` instead of several metrics
   - __*done*__ with same runtime for routing `:)`, but doubled runtime for parsing `:(`
 - if user asks for metric in Meters, just give it

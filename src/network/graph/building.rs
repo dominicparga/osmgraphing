@@ -7,7 +7,7 @@ use crate::{
 use log::{debug, info};
 use progressing;
 use progressing::Bar;
-use std::collections::BTreeMap;
+use std::{collections::BTreeMap, mem};
 
 //------------------------------------------------------------------------------------------------//
 
@@ -76,10 +76,6 @@ impl Graph {
         self.bwd_offsets.shrink_to_fit();
         self.bwd_to_fwd_map.shrink_to_fit();
         self.metrics.shrink_to_fit();
-    }
-
-    fn init_metrics(&mut self, edges_count: usize) {
-        self.metrics = vec![Vec::with_capacity(edges_count); self.cfg.edges.metrics.count()];
     }
 
     /// Uses the graph's nodes, so nodes must have been added before this method works properly.
@@ -367,7 +363,10 @@ impl GraphBuilder {
         // sort forward-edges by ascending src-id, then by ascending dst-id -> offset-array
 
         info!("START Sort proto-forward-edges by their src/dst-IDs.");
-        self.proto_edges.sort_by(|e0, e1| {
+        // memory-peak is here when sorting
+
+        // sort reversed to make splice efficient
+        self.proto_edges.sort_by(|e1, e0| {
             e0.src_id
                 .cmp(&e1.src_id)
                 .then_with(|| e0.dst_id.cmp(&e1.dst_id))
@@ -381,36 +380,76 @@ impl GraphBuilder {
 
         info!("START Create/store/filter metrics.");
         let mut progress_bar = progressing::MappingBar::new(0..=self.proto_edges.len());
-        // init metric-collections in graph
-        graph.init_metrics(self.proto_edges.len());
-        // start looping
-        let mut edge_idx = EdgeIdx(0);
-        for proto_edge in self.proto_edges.iter_mut() {
-            graph.add_metrics(proto_edge)?;
+        let mut edge_idx: usize = 0;
 
-            // print progress
-            progress_bar.set(*edge_idx);
-            if progress_bar.progress() % (1 + (progress_bar.end() / 10)) == 0 {
-                info!("{}", progress_bar);
+        // Work off proto-edges in chunks to keep memory-usage lower.
+        // For example:
+        // To keep additional memory-needs below 1 MB, the the maximum amount of four u32-values per
+        // worked-off chunk has to be limited to 250_000.
+        // Because ids are more expensive than metrics, (2x i64 = 4x u32), the number is much lower.
+        let bytes_per_edge =
+            2 * mem::size_of::<i64>() + graph.cfg().edges.metrics.count() * mem::size_of::<u32>();
+        let max_byte = 200 * 1_000_000;
+        let max_chunk_size = max_byte / bytes_per_edge;
+        log::debug!("max-chunk-size:                {}", max_chunk_size);
+        // init metrics
+        graph.metrics = vec![vec![]; graph.cfg().edges.metrics.count()];
+        let mut new_proto_edges = vec![];
+        log::debug!(
+            "initial graph-metric-capacity: {}",
+            graph.metrics[0].capacity()
+        );
+
+        while self.proto_edges.len() > 0 {
+            // Get chunk from proto-edges.
+            // Reverse chunk because proto-egdes is sorted reversed to make splice efficient.
+            let chunk: Vec<_> = if self.proto_edges.len() > max_chunk_size {
+                // ATTENTION! Splicing means that the given range is replaced,
+                // hence max_chunk_size has to be, kind of, inverted.
+                self.proto_edges
+                    .splice((self.proto_edges.len() - max_chunk_size).., vec![])
+            } else {
+                self.proto_edges.splice(.., vec![])
             }
+            .rev()
+            .collect();
 
-            // update edge-idx
-            *edge_idx += 1;
+            // allocate new memory-needs
+            self.proto_edges.shrink_to_fit();
+            graph
+                .metrics
+                .iter_mut()
+                .for_each(|m| m.reserve_exact(chunk.len()));
+            new_proto_edges.reserve_exact(chunk.len());
+            log::debug!("chunk-len:             {}", chunk.len());
+            log::debug!("graph-metric-capacity: {}", graph.metrics[0].capacity());
+
+            for mut proto_edge in chunk.into_iter() {
+                // add to graph and remember ids
+                graph.add_metrics(&mut proto_edge)?;
+                new_proto_edges.push(MiniProtoEdge {
+                    src_id: proto_edge.src_id,
+                    dst_id: proto_edge.dst_id,
+                    idx: 0, // used later for offset-arrays
+                });
+
+                // print progress
+                progress_bar.set(edge_idx);
+                if progress_bar.progress() % (1 + (progress_bar.end() / 10)) == 0 {
+                    info!("{}", progress_bar);
+                }
+
+                // update edge-idx
+                edge_idx += 1;
+            }
         }
-        // last node needs an upper bound as well for `leaving_edges(...)`
-        info!("{}", progress_bar.set(*edge_idx));
+        info!("{}", progress_bar.set(edge_idx));
+        // Drop edges
+        drop(self.proto_edges);
         // reduce and optimize memory-usage
         graph.shrink_to_fit();
-        // Drop edges
-        let mut new_proto_edges: Vec<MiniProtoEdge> = self
-            .proto_edges
-            .into_iter()
-            .map(|e| MiniProtoEdge {
-                src_id: e.src_id,
-                dst_id: e.dst_id,
-                idx: 0,
-            })
-            .collect();
+        new_proto_edges.shrink_to_fit();
+        // last node needs an upper bound as well for `leaving_edges(...)`
         info!("FINISHED");
 
         //----------------------------------------------------------------------------------------//
