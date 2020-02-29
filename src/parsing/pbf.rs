@@ -43,7 +43,7 @@ impl super::Parsing for Parser {
                 Some(highway_tag) => highway_tag,
                 None => continue,
             };
-            if !highway_tag.is_for(&cfg.vehicles.vehicle_type, cfg.vehicles.is_driver_picky) {
+            if !highway_tag.is_for(&cfg.vehicles.category, cfg.vehicles.are_drivers_picky) {
                 continue;
             }
 

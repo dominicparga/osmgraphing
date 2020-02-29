@@ -1,13 +1,5 @@
 use log::{error, info};
-use osmgraphing::{
-    configs::{
-        graph,
-        graph::{edges, edges::metrics, vehicles},
-        Config, MetricCategory, VehicleType,
-    },
-    network::NodeIdx,
-    routing, Parser,
-};
+use osmgraphing::{configs::Config, network::NodeIdx, routing, Parser};
 use rand::distributions::{Distribution, Uniform};
 use rand::SeedableRng;
 use std::{path::PathBuf, time::Instant};
@@ -56,60 +48,24 @@ fn main() {
     init_logging(false);
     info!("Executing example: A*");
 
-    //--------------------------------------------------------------------------------------------//
-    // parsing
+    // get config by provided map-file
+    let cfg = {
+        let map_file = match std::env::args_os().nth(1) {
+            Some(path) => PathBuf::from(path),
+            None => PathBuf::from("resources/maps/simple_stuttgart.fmi"),
+        };
+        match Config::from_map_file(&map_file) {
+            Ok(cfg) => cfg,
+            Err(msg) => {
+                error!("{}", msg);
+                return;
+            }
+        }
+    };
 
-    // let cfg = Config::new(graph::Config {
-    //     map_file: PathBuf::from("resources/maps/simple_stuttgart.fmi"),
-    //     vehicles: vehicles::Config {
-    //         is_driver_picky: false,
-    //         vehicle_type: VehicleType::Car,
-    //     },
-    //     edges: edges::Config {
-    //         metrics: metrics::Config::create(vec![
-    //             (MetricCategory::Id, "src-id".into(), true).into(),
-    //             (MetricCategory::Id, "dst-id".into(), true).into(),
-    //             (MetricCategory::Length, "length".into(), true).into(),
-    //             (MetricCategory::Ignore, "?".into(), false).into(),
-    //             (MetricCategory::Maxspeed, "maxspeed".into(), true).into(),
-    //             (
-    //                 MetricCategory::Duration,
-    //                 "duration".into(),
-    //                 false,
-    //                 vec!["length".into(), "maxspeed".into()],
-    //             )
-    //                 .into(),
-    //         ])
-    //         .unwrap(),
-    //     },
-    // });
-    let cfg = Config::new(graph::Config {
-        map_file: PathBuf::from("custom/resources/maps/germany_2019-09-07.osm.pbf"),
-        // map_file: PathBuf::from("resources/maps/isle-of-man_2019-09-05.osm.pbf"),
-        vehicles: vehicles::Config {
-            is_driver_picky: false,
-            vehicle_type: VehicleType::Car,
-        },
-        edges: edges::Config {
-            metrics: metrics::Config::create(vec![
-                (MetricCategory::Id, "src-id".into(), true).into(),
-                (MetricCategory::Id, "dst-id".into(), true).into(),
-                (MetricCategory::Length, "length".into(), false).into(),
-                (MetricCategory::Ignore, "?".into(), false).into(),
-                (MetricCategory::Maxspeed, "maxspeed".into(), true).into(),
-                (
-                    MetricCategory::Duration,
-                    "duration".into(),
-                    false,
-                    vec!["length".into(), "maxspeed".into()],
-                )
-                    .into(),
-            ])
-            .unwrap(),
-        },
-    });
-
+    // measure parsing-time
     let now = Instant::now();
+    // parse and create graph
     let graph = match Parser::parse_and_finalize(cfg.graph) {
         Ok(graph) => graph,
         Err(msg) => {
@@ -130,7 +86,7 @@ fn main() {
 
     let nodes = graph.nodes();
     let mut astar = routing::factory::astar::unidirectional::shortest(
-        graph.cfg().edges.metrics.idx(&"length".into()),
+        graph.cfg().edges.metrics.idx(&"Length".into()),
     );
 
     // generate random route-pairs

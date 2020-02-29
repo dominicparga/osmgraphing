@@ -24,6 +24,38 @@ Maybe, it is concept for later documentation, or just keep-up-the-good-work (`ku
 - flag: keep metric or not
 - parse config-string into config
 - parse config-yaml into config
+- update config-documentation
+
+  ```yaml
+  # old version
+
+  graph:
+    map-file: "resources/maps/small.fmi"
+    vehicles:
+      type: Car
+      is-nice-to-use: false
+    edges:
+      metrics:
+      - type: ignore
+        id: src-id
+      - type: ignore
+        id: dst-id
+      - type: length
+        provided: false
+      - type: maxspeed
+        provided: true
+      - type: duration
+        provided: false
+      - type: lane-count
+
+  routing: # example with two metrics and weights
+    metrics: [length, duration]
+    preferences:
+    - id: length
+      alpha: 169
+    - id: duration
+      alpha: 331
+  ```
 
 
 ## Other

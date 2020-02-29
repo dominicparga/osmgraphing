@@ -1,4 +1,11 @@
-use std::{fmt, fmt::Display, path::Path};
+use crate::{helpers, helpers::MapFileExt};
+use serde::Deserialize;
+use std::{
+    fmt,
+    fmt::Display,
+    path::{Path, PathBuf},
+};
+
 pub mod graph;
 
 /// Storing (default) settings for parsing the graph.
@@ -91,14 +98,28 @@ pub mod graph;
 ///   - id: duration
 ///     alpha: 331
 /// ```
-#[derive(Debug)]
+#[derive(Debug, Deserialize)]
 pub struct Config {
     pub graph: graph::Config,
 }
 
 impl Config {
-    pub fn new(graph: graph::Config) -> Config {
-        Config { graph }
+    pub fn from_path<P: AsRef<Path> + ?Sized>(path: &P) -> Result<Config, String> {
+        let file = helpers::open_file(path)?;
+        // let cfg: Result<Config, serde_yaml::Error> = serde_yaml::from_reader(file);
+        match serde_yaml::from_reader(file) {
+            Ok(cfg) => Ok(cfg),
+            Err(e) => Err(format!("{}", e)),
+        }
+    }
+
+    pub fn from_map_file<P: AsRef<Path> + ?Sized>(path: &P) -> Result<Config, String> {
+        let mut cfg = match MapFileExt::from_path(path)? {
+            MapFileExt::PBF => Config::from_path("resources/configs/pbf.yaml"),
+            MapFileExt::FMI => Config::from_path("resources/configs/fmi.yaml"),
+        }?;
+        cfg.graph.map_file = Some(PathBuf::from(path.as_ref()));
+        Ok(cfg)
     }
 
     pub fn from_yaml<P: AsRef<Path> + ?Sized>(_path: &P) -> Result<Config, String> {
@@ -106,15 +127,22 @@ impl Config {
     }
 }
 
-#[derive(Debug)]
-pub enum VehicleType {
+#[derive(Debug, Deserialize)]
+pub enum VehicleCategory {
     Car,
     Bicycle,
     Pedestrian,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Ord, PartialOrd)]
+#[serde(from = "String")]
 pub struct MetricId(pub String);
+
+impl From<String> for MetricId {
+    fn from(id: String) -> MetricId {
+        MetricId(id)
+    }
+}
 
 impl From<&str> for MetricId {
     fn from(id: &str) -> MetricId {
@@ -122,8 +150,14 @@ impl From<&str> for MetricId {
     }
 }
 
+impl Display for MetricId {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
 /// Types of metrics to consider when parsing a map.
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Deserialize, Eq, PartialEq)]
 pub enum MetricCategory {
     Length,
     Maxspeed,
@@ -136,19 +170,7 @@ pub enum MetricCategory {
 
 impl Display for MetricCategory {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "{}",
-            match self {
-                MetricCategory::Length => "length",
-                MetricCategory::Maxspeed => "maxspeed",
-                MetricCategory::Duration => "duration",
-                MetricCategory::LaneCount => "lane-count",
-                MetricCategory::Custom => "custom",
-                MetricCategory::Id => "id",
-                MetricCategory::Ignore => "ignore",
-            }
-        )
+        fmt::Debug::fmt(self, f)
     }
 }
 
@@ -171,6 +193,18 @@ impl MetricCategory {
             | MetricCategory::Duration
             | MetricCategory::LaneCount
             | MetricCategory::Custom => false,
+        }
+    }
+
+    fn expected_calc_rules(&self) -> Vec<MetricCategory> {
+        match self {
+            MetricCategory::Maxspeed => vec![MetricCategory::Length, MetricCategory::Duration],
+            MetricCategory::Duration => vec![MetricCategory::Length, MetricCategory::Maxspeed],
+            MetricCategory::Length
+            | MetricCategory::LaneCount
+            | MetricCategory::Custom
+            | MetricCategory::Id
+            | MetricCategory::Ignore => vec![],
         }
     }
 }
