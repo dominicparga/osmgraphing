@@ -8,6 +8,38 @@ pub fn open_file<P: AsRef<Path> + ?Sized>(path: &P) -> Result<File, String> {
     }
 }
 
+pub fn is_file_ext_supported<P: AsRef<Path> + ?Sized>(
+    path: &P,
+    supported_exts: &[&str],
+) -> Result<(), String> {
+    let path = path.as_ref();
+
+    // if file has extension
+    if let Some(os_str) = path.extension() {
+        // if filename is valid unicode
+        if let Some(extension) = os_str.to_str() {
+            // check if extension is supported
+            for supported_ext in supported_exts {
+                if supported_ext == &extension.to_ascii_lowercase() {
+                    return Ok(());
+                }
+            }
+            // extension is not supported
+            Err(format!(
+                "Unsupported extension `{}` was given. Supported extensions are {:?}",
+                extension, supported_exts
+            ))
+        } else {
+            Err(String::from("Filename is invalid Unicode."))
+        }
+    } else {
+        Err(format!(
+            "The file {:?} has no extension. Supported extensions are {:?}",
+            &path, supported_exts
+        ))
+    }
+}
+
 pub enum MapFileExt {
     PBF,
     FMI,

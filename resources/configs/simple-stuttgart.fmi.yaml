@@ -1,5 +1,5 @@
 graph:
-  map-file: resources/maps/simple-stuttgart.fmi
+  map-file: 'resources/maps/simple-stuttgart.fmi'
   vehicles:
     category: 'Car'
     are-drivers-picky: false

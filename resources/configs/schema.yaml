@@ -1,6 +1,6 @@
 graph:
   # relative to user, not to script
-  map-file: "relative-path-to-map-file"
+  map-file: 'relative-path-to-map-file'
 
   vehicles:
     category: 'Car'
