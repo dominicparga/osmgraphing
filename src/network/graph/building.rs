@@ -79,7 +79,9 @@ impl Graph {
     }
 
     /// Uses the graph's nodes, so nodes must have been added before this method works properly.
-    /// The provided edge is used as forward-edge.
+    /// The provided edge is interpreted as forward-edge.
+    /// Metric-dependencies between each other are considered by looping enough times
+    /// over the calculation-loop.
     fn add_metrics(&mut self, proto_edge: &mut ProtoEdge) -> Result<(), String> {
         let cfg = &self.cfg.edges.metrics;
 

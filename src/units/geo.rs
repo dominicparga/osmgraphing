@@ -8,12 +8,6 @@ pub struct Coordinate {
     decimicro_lon: i32,
 }
 
-impl Default for Coordinate {
-    fn default() -> Coordinate {
-        Coordinate::zero()
-    }
-}
-
 impl Coordinate {
     pub fn zero() -> Coordinate {
         (0, 0).into()

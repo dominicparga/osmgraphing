@@ -37,12 +37,43 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 ### Added <a name="unreleased/added"></a>
 
 - Implement `zero()` for `geo::Coordinate`.
-- Implement __multi-dimensional metrics__, being comparable according to __pareto-optimality__.
+- Implement trait `Metric` for `u32`.
+- Add __format-check__ to github-action.
+- Support __mulitple metrics__, where the number is only known during runtime.
+- __Parse graph__ with config instead of map-file, which can be provided as `yaml`-file.
+  - Let __metrics__ have __ids__.
+  - Let __routing-algorithms__ access graph-metrics with metric-idx.
+  - Add __default-configs__ for maps `isle-of-man` and `simple-stuttgart`.
+  - Describe every option in a __full config__ (like a __schema__).
+  - Support for __different vehicle-categories__.
+  - Add __tests__ for deserializing the default-configs.
+- Add module __`helpers`__ for general, handy implementations.
+  - The struct `MapFileExt` (name before: `Type`) is being moved from module `parsing` to here.
+  - __Initializing logging-levels__ is being moved from examples and executables to here.
+  - In the future: scalar-product
 
 
 ### Changed <a name="unreleased/changed"></a>
 
-- Implement clean ordering- and equal-traits for `CostNode`s in the routing-modules.
+- Implement clean __ordering-__ and __equal-traits__ for `CostNode`s in the routing-modules.
+- Let __github-action__ upload results of benches in a folder called like the commit-hash.
+- Improve memory-usage, performance and code-style of __metrics__ and __graphbuilding__.
+  - Store metrics in the graph as __`Vec<Vec<u32>>`__ (instead of `Vec<Vec<MetricU32>>` or multiple vecs).
+  - Access metrics as `u32` or access it as metric (like `Meters`).
+  - Let __graphbuilder__ add metrics with __limited memory-usage__.
+  - __Consume metrics after adding__ them to graph, but keep ids.
+  - __Sort proto-edges unstable__ to sort them fully in-place.
+- Simplify __indices-structs__ and __metric-structs__.
+  - Make underlying `u32`-values implicit (__`Struct(u32)`__) instead of explicit (`Struct { value: u32 }`).
+  - Implement __`Deref`__ and __`DerefMut`__ for them, replacing `value()`, `to_usize()` and similar.
+- Push __proto-edges__ in __graphbuilder__ as struct, not as separate attributes.
+- Make parser-functions dependent of `self` to add __`preprocessing`-phase__.
+  - The __`fmi`-parser__ uses this `preprocessing`-phase to determine the __node- and edge-ranges__ in the provided file using the counts at the beginning of a `fmi`-map-file.
+- Rename structs and fields, whose names based on __"type"__, because this is a reserved keyword.
+- Make `pbf`-parser __single-threaded__, since runtime's bottleneck is allocating memory many times.
+  The runtime for parsing ways single-threaded and multi-threaded was identical (`3:30 minutes` for multi-threaded, `3:20 minutes` for single-threaded).
+  The times are much faster, if the RAM has remaining capacity and doesn't have to use the swap-partition, which has been tested with a Germany-fmi-file with half the number of nodes as the Germany-pbf-file.
+- Refactor __tests__ making their names uniformly.
 
 
 ### Deprecated <a name="unreleased/deprecated"></a>
@@ -52,21 +83,20 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
   - Replace existing tags with ones referring to `CHANGELOG.md` and add old tag-texts to the `CHANGELOG.md`
   - Inconsistent `semver` in old tags -> probably `cargo yank VERSION` needed
 - The link to `doc.rs` is hardcoded to `major.minor.patch=0.y.z` because `docs.rs` chooses version `1.0.0` though it's yanked..
-- The graphbuilder uses __Array-of-Structs__ via `ProtoEdge`s to store the proto-info.
-  When finalizing the parsed graph, the metrics are copied to the graph.
-  This leads to a memory-usage, which is dependent of the number of metrics.
-  That's because all metrics have to be processed in one loop and they are not dropped until the loop has finished.
-  This could be fixed by storing the metrics as __Struct-of-Arrays__ and finalizing metrics in several loop-runs with immediate drops.
 
 
 ### Removed <a name="unreleased/removed"></a>
 
-\-
+- Remove `MetricU32`.
+- Due to the new configs, __edge-distances can not be calculated__ for some edges, which are missing this value, but only for all or none.
 
 
 ### Fixed <a name="unreleased/fixed"></a>
 
-\-
+- Improve graphbuilder's memory-usage.
+  By estimating the amount of proto-edges referring to `200 MB` (could be changed in the future), the graphbuilder can add only these proto-edges before reallocating.
+  This limits the needed memory-usage.
+- Add labels in benches to identify non-existent ids/indices.
 
 
 ### Security <a name="unreleased/security"></a>
