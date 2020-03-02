@@ -18,13 +18,7 @@ pub mod graph;
 /// With this `yaml`-config, the parser can be adjusted to parse (edge-)metrics in the order as provided by the config-file.
 /// This can help especially with map-files in `fmi`-format, since the metrics are read sequentially.
 /// But since `pbf`-files does not provide a column-based metric-list, but intrinsically by parsing `osm`-data, you can distinguish between default-metrics and custom-metrics via the key `category`.
-///
-/// Default-categories are
-/// - `id`, which is not a metric per se and stored differently, but needed for `csv`-like `fmi`-format
-/// - `length` in meters
-/// - `maxspeed` in km/h
-/// - `duration` in milliseconds
-/// - `lane-count`
+/// Default-categories are described in `MetricCategory`.
 ///
 /// Internally, a default-metric uses provided calculation-rules to be calculated by other default-categories as well (like the duration from length and maxspeed).
 ///
@@ -157,6 +151,14 @@ impl Display for MetricId {
 }
 
 /// Types of metrics to consider when parsing a map.
+///
+/// - `id`, which is not a metric per se and stored differently, but needed for `csv`-like `fmi`-format
+/// - `length` in meters
+/// - `maxspeed` in km/h
+/// - `duration` in milliseconds
+/// - `lane-count`
+/// - `custom`, which is just the plain u32-value
+/// - `ignore`, which is used in `csv`-like `fmi`-maps to jump over columns
 #[derive(Copy, Clone, Debug, Deserialize, Eq, PartialEq)]
 pub enum MetricCategory {
     Length,
