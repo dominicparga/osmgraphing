@@ -12,7 +12,7 @@ pub mod unidirectional {
     use std::{collections::BinaryHeap, ops::Add};
 
     /// Cost-function, Estimation-function and Metric
-    pub struct GenericAstar<C, M>
+    pub struct GenericDijkstra<C, M>
     where
         C: Fn(&HalfEdge) -> M,
         M: Metric,
@@ -23,13 +23,13 @@ pub mod unidirectional {
         queue: BinaryHeap<CostNode<M>>, // max-heap, but CostNode's natural order is reversed
     }
 
-    impl<C, M> GenericAstar<C, M>
+    impl<C, M> GenericDijkstra<C, M>
     where
         C: Fn(&HalfEdge) -> M,
         M: Metric + Ord,
     {
-        pub fn new(cost_fn: C) -> GenericAstar<C, M> {
-            GenericAstar {
+        pub fn new(cost_fn: C) -> GenericDijkstra<C, M> {
+            GenericDijkstra {
                 cost_fn,
                 costs: vec![M::inf(); 0],
                 predecessors: vec![None; 0],
@@ -46,7 +46,7 @@ pub mod unidirectional {
         }
     }
 
-    impl<C, M> Astar<M> for GenericAstar<C, M>
+    impl<C, M> Astar<M> for GenericDijkstra<C, M>
     where
         C: Fn(&HalfEdge) -> M,
         M: Metric + Ord + Add<M, Output = M>,
@@ -196,7 +196,7 @@ pub mod bidirectional {
     use std::{collections::BinaryHeap, ops::Add};
 
     /// Cost-function, Estimation-function and Metric
-    pub struct GenericAstar<C, M>
+    pub struct GenericDijkstra<C, M>
     where
         C: Fn(&HalfEdge) -> M,
         M: Metric,
@@ -213,13 +213,13 @@ pub mod bidirectional {
         is_visited_by_dst: Vec<bool>,
     }
 
-    impl<C, M> GenericAstar<C, M>
+    impl<C, M> GenericDijkstra<C, M>
     where
         C: Fn(&HalfEdge) -> M,
         M: Metric + Ord + Add<M, Output = M>,
     {
-        pub fn new(cost_fn: C) -> GenericAstar<C, M> {
-            GenericAstar {
+        pub fn new(cost_fn: C) -> GenericDijkstra<C, M> {
+            GenericDijkstra {
                 cost_fn,
                 queue: BinaryHeap::new(),
                 // fwd
@@ -264,7 +264,7 @@ pub mod bidirectional {
         }
     }
 
-    impl<C, M> Astar<M> for GenericAstar<C, M>
+    impl<C, M> Astar<M> for GenericDijkstra<C, M>
     where
         C: Fn(&HalfEdge) -> M,
         M: Metric + Ord + Add<M, Output = M>,

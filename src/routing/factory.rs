@@ -1,3 +1,46 @@
+pub mod dijkstra {
+    pub mod unidirectional {
+        use crate::{
+            network::{HalfEdge, MetricIdx},
+            routing::dijkstra::{unidirectional::GenericDijkstra, Astar},
+            units::{length::Meters, time::Milliseconds},
+        };
+
+        pub fn shortest(length_idx: MetricIdx) -> Box<dyn Astar<Meters>> {
+            let cost_fn = move |edge: &HalfEdge| edge.length(length_idx).unwrap();
+            Box::new(GenericDijkstra::new(cost_fn))
+        }
+
+        pub fn fastest(duration_idx: MetricIdx) -> Box<dyn Astar<Milliseconds>> {
+            let cost_fn = move |edge: &HalfEdge| edge.duration(duration_idx).unwrap();
+            Box::new(GenericDijkstra::new(cost_fn))
+        }
+
+        pub fn multi(metric_indices: Vec<MetricIdx>) -> Box<dyn Astar<u32>> {
+            let cost_fn = move |edge: &HalfEdge| edge.metric(metric_indices[0]).unwrap();
+            Box::new(GenericDijkstra::new(cost_fn))
+        }
+    }
+
+    pub mod bidirectional {
+        use crate::{
+            network::{HalfEdge, MetricIdx},
+            routing::dijkstra::{bidirectional::GenericDijkstra, Astar},
+            units::{length::Meters, time::Milliseconds},
+        };
+
+        pub fn shortest(length_idx: MetricIdx) -> Box<dyn Astar<Meters>> {
+            let cost_fn = move |edge: &HalfEdge| edge.length(length_idx).unwrap();
+            Box::new(GenericDijkstra::new(cost_fn))
+        }
+
+        pub fn fastest(duration_idx: MetricIdx) -> Box<dyn Astar<Milliseconds>> {
+            let cost_fn = move |edge: &HalfEdge| edge.duration(duration_idx).unwrap();
+            Box::new(GenericDijkstra::new(cost_fn))
+        }
+    }
+}
+
 pub mod astar {
     pub mod unidirectional {
         use crate::{
@@ -48,44 +91,6 @@ pub mod astar {
                 meters / maxspeed
             };
             Box::new(GenericAstar::new(cost_fn, estimate_fn))
-        }
-    }
-}
-
-pub mod dijkstra {
-    pub mod unidirectional {
-        use crate::{
-            network::{HalfEdge, MetricIdx},
-            routing::dijkstra::{unidirectional::GenericAstar, Astar},
-            units::{length::Meters, time::Milliseconds},
-        };
-
-        pub fn shortest(length_idx: MetricIdx) -> Box<dyn Astar<Meters>> {
-            let cost_fn = move |edge: &HalfEdge| edge.length(length_idx).unwrap();
-            Box::new(GenericAstar::new(cost_fn))
-        }
-
-        pub fn fastest(duration_idx: MetricIdx) -> Box<dyn Astar<Milliseconds>> {
-            let cost_fn = move |edge: &HalfEdge| edge.duration(duration_idx).unwrap();
-            Box::new(GenericAstar::new(cost_fn))
-        }
-    }
-
-    pub mod bidirectional {
-        use crate::{
-            network::{HalfEdge, MetricIdx},
-            routing::dijkstra::{bidirectional::GenericAstar, Astar},
-            units::{length::Meters, time::Milliseconds},
-        };
-
-        pub fn shortest(length_idx: MetricIdx) -> Box<dyn Astar<Meters>> {
-            let cost_fn = move |edge: &HalfEdge| edge.length(length_idx).unwrap();
-            Box::new(GenericAstar::new(cost_fn))
-        }
-
-        pub fn fastest(duration_idx: MetricIdx) -> Box<dyn Astar<Milliseconds>> {
-            let cost_fn = move |edge: &HalfEdge| edge.duration(duration_idx).unwrap();
-            Box::new(GenericAstar::new(cost_fn))
         }
     }
 }
