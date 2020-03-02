@@ -95,7 +95,13 @@ pub mod edges {
             }
 
             pub fn category(&self, idx: MetricIdx) -> MetricCategory {
-                self.categories[*idx]
+                match self.categories.get(*idx) {
+                    Some(category) => *category,
+                    None => {
+                        error!("Idx {} for category not found in config.", idx);
+                        std::process::exit(1);
+                    }
+                }
             }
 
             pub fn count(&self) -> usize {
@@ -103,19 +109,43 @@ pub mod edges {
             }
 
             pub fn is_provided(&self, idx: MetricIdx) -> bool {
-                self.are_provided[*idx]
+                match self.are_provided.get(*idx) {
+                    Some(is_provided) => *is_provided,
+                    None => {
+                        error!("Idx {} for info 'is-provided' not found in config.", idx);
+                        std::process::exit(1);
+                    }
+                }
             }
 
             pub fn idx(&self, id: &MetricId) -> MetricIdx {
-                self.indices[id]
+                match self.indices.get(id) {
+                    Some(idx) => *idx,
+                    None => {
+                        error!("Id {} not found in config.", id);
+                        std::process::exit(1);
+                    }
+                }
             }
 
             pub fn id(&self, idx: MetricIdx) -> &MetricId {
-                &self.ids[*idx]
+                match self.ids.get(*idx) {
+                    Some(id) => id,
+                    None => {
+                        error!("Idx {} for metric-id not found in config.", idx);
+                        std::process::exit(1);
+                    }
+                }
             }
 
             pub fn calc_rules(&self, idx: MetricIdx) -> &Vec<(MetricCategory, MetricIdx)> {
-                &self.calc_rules[*idx]
+                match self.calc_rules.get(*idx) {
+                    Some(calc_rule) => calc_rule,
+                    None => {
+                        error!("Idx {} for calc-rule not found in config.", idx);
+                        std::process::exit(1);
+                    }
+                }
             }
         }
 
@@ -167,7 +197,16 @@ pub mod edges {
                     if let Some(calc_rule) = opt_calc_rule {
                         // implement as given
                         for other_id in calc_rule.into_iter() {
-                            let other_idx = indices[&other_id];
+                            let other_idx = match indices.get(&other_id) {
+                                Some(idx) => *idx,
+                                None => {
+                                    error!(
+                                        "Calc-rule for metric of id {} has an unknown id {}.",
+                                        ids[metric_idx], other_id
+                                    );
+                                    std::process::exit(1);
+                                }
+                            };
                             let other_type = categories[*other_idx];
                             calc_rules[metric_idx].push((other_type, other_idx));
                         }
