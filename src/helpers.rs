@@ -50,23 +50,21 @@ impl MapFileExt {
 /// => use default (Warn)
 ///
 /// modules: in addition to default (`env!("CARGO_PKG_NAME")`)
-pub fn init_logging(max_log_level: Option<&str>, modules: Option<Vec<&str>>) -> Result<(), String> {
+///
+/// Environment-variable RUST_LOG has precedence.
+pub fn init_logging(max_log_level: &str, mut modules: Vec<&str>) -> Result<(), String> {
     let mut builder = env_logger::Builder::new();
 
     // maximum filter-level for all components: `warn`
     builder.filter(None, log::LevelFilter::Warn);
 
     // if quiet logging: doesn't log `info` for this repo
-    let max_log_level = match max_log_level {
-        Some(value) => log::LevelFilter::from_str(&value.to_ascii_uppercase())
-            .ok()
-            .ok_or(format!(
-                "The provided max-log-level {} is not supported.",
-                value
-            ))?,
-        None => log::LevelFilter::Warn,
-    };
-    let mut modules = modules.unwrap_or(vec![]);
+    let max_log_level = log::LevelFilter::from_str(&max_log_level.to_ascii_uppercase())
+        .ok()
+        .ok_or(format!(
+            "The provided max-log-level {} is not supported.",
+            max_log_level
+        ))?;
     modules.push(env!("CARGO_PKG_NAME"));
     for module in modules {
         builder.filter(Some(module), max_log_level);
