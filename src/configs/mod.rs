@@ -1,10 +1,6 @@
-use crate::{helpers, helpers::MapFileExt};
+use crate::helpers;
 use serde::Deserialize;
-use std::{
-    fmt,
-    fmt::Display,
-    path::{Path, PathBuf},
-};
+use std::{fmt, fmt::Display, path::Path};
 
 pub mod graph;
 
@@ -36,88 +32,24 @@ pub mod graph;
 ///
 /// ### Supported structure
 ///
-/// The following `yaml`-structure is supported.
-/// The used values below are not the defaults.
-/// For the defaults, see `resources/configs/`.
+/// The supported `yaml`-structure can be seen in `resources/configs/schema.yaml`.
 ///
-/// Please note, that metric-categories can be used multiple times.
-///
-///
-/// Every metric (!= every category) will be stored in the graph, if mentioned in this `yaml`-file.
+// Every metric (!= every category) will be stored in the graph, if mentioned in this `yaml`-file.
 /// If a metric is mentioned, but `provided` is false, it will be calculated (e.g. edge-length from node-coordinates and haversine).
 /// Please note, that metrics being calculated (like the duration from length and maxspeed) need the respective metrics to be calculated.
 ///
-/// ```yaml
-/// graph:
-///   vehicles:
-///     # car|bicycle|pedestrian
-///     type: car
-///     # Possible values: true|false
-///     # Value `false` leads to more edges, because edges are added, which are okay but not suitable for this vehicle-type.
-///     is-graph-suitable: false
-///   edges:
-///     # The order here matters if the map-file has a metric-order, like `fmi`-files.
-///     # Each metric below will be stored in the graph.
-///     # Metrics below, which have `provided=false`, will be calculated by other metrics and the result is being stored.
-///     # All other metrics are calculated, if possible, when asked for.
-///     #
-///     # Default metrics are length and maxspeed.
-///     metrics:
-///     # not a metric per se but needed here due to `csv`-like `fmi`-format
-///     - id: src-id
-///       type: id
-///     - type: length
-///       # Possible values: true|false
-///       # Value `false` leads to calculate the value via coordinates and haversine.
-///       provided: false
-///     - type: maxspeed
-///       # Possible values: true|false
-///       # Value `false` leads to calculate the value via length and duration.
-///       provided: true
-///     - type: duration
-///       # Possible values: true|false
-///       # Value `false` leads to calculate the value via length and maxspeed.
-///       provided: false
-///     - type: lane-count
-///     - id: <String>
-///       type: custom
-///     - id: <String>
-///       type: ignore
-///
-/// routing: # example with two metrics and default-weights
-///   metrics: [length, duration]
-///   preferences:
-///   - id: length
-///     alpha: 169
-///   - id: duration
-///     alpha: 331
-/// ```
 #[derive(Debug, Deserialize)]
 pub struct Config {
     pub graph: graph::Config,
 }
 
 impl Config {
-    pub fn from_path<P: AsRef<Path> + ?Sized>(path: &P) -> Result<Config, String> {
+    pub fn from_yaml<P: AsRef<Path> + ?Sized>(path: &P) -> Result<Config, String> {
         let file = helpers::open_file(path)?;
-        // let cfg: Result<Config, serde_yaml::Error> = serde_yaml::from_reader(file);
         match serde_yaml::from_reader(file) {
             Ok(cfg) => Ok(cfg),
             Err(e) => Err(format!("{}", e)),
         }
-    }
-
-    pub fn from_map_file<P: AsRef<Path> + ?Sized>(path: &P) -> Result<Config, String> {
-        let mut cfg = match MapFileExt::from_path(path)? {
-            MapFileExt::PBF => Config::from_path("resources/configs/pbf.yaml"),
-            MapFileExt::FMI => Config::from_path("resources/configs/fmi.yaml"),
-        }?;
-        cfg.graph.map_file = Some(PathBuf::from(path.as_ref()));
-        Ok(cfg)
-    }
-
-    pub fn from_yaml<P: AsRef<Path> + ?Sized>(_path: &P) -> Result<Config, String> {
-        unimplemented!("TODO implement Config::from_yaml")
     }
 }
 

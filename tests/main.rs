@@ -6,12 +6,14 @@ mod routing;
 
 use osmgraphing::{
     configs::{graph, Config},
+    helpers::MapFileExt,
     network::Graph,
     Parser,
 };
+use std::path::PathBuf;
 
 fn parse(cfg: graph::Config) -> Graph {
-    let map_file = cfg.map_file.clone().unwrap();
+    let map_file = cfg.map_file.clone();
     match Parser::parse_and_finalize(cfg) {
         Ok(graph) => graph,
         Err(msg) => {
@@ -28,13 +30,19 @@ enum TestType {
 }
 
 fn create_config(test_type: TestType) -> Config {
-    Config::from_map_file(match test_type {
-        TestType::BidirectionalBait => "resources/maps/bidirectional_bait.fmi",
+    let map_file = match test_type {
+        TestType::BidirectionalBait => "resources/maps/bidirectional-bait.fmi",
         TestType::IsleOfMan => "resources/maps/isle-of-man_2019-09-05.osm.pbf",
-        TestType::SimpleStuttgart => "resources/maps/simple_stuttgart.fmi",
+        TestType::SimpleStuttgart => "resources/maps/simple-stuttgart.fmi",
         TestType::Small => "resources/maps/small.fmi",
-    })
-    .expect("Config is tested separatedly.")
+    };
+    let mut cfg = match MapFileExt::from_path(map_file).expect("Map-file should exist.") {
+        MapFileExt::PBF => Config::from_yaml("resources/configs/isle-of-man.pbf.yaml"),
+        MapFileExt::FMI => Config::from_yaml("resources/configs/simple-stuttgart.fmi.yaml"),
+    }
+    .expect("Config is tested separatedly.");
+    cfg.graph.map_file = PathBuf::from(map_file);
+    cfg
 }
 
 #[rustfmt::skip]#[test]fn fmi__________________configs___deserialize_________________________() {configs::fmi::deserialize().unwrap();}

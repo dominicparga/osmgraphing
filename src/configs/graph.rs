@@ -4,15 +4,9 @@ use std::path::PathBuf;
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct Config {
-    pub map_file: Option<PathBuf>,
+    pub map_file: PathBuf,
     pub vehicles: vehicles::Config,
     pub edges: edges::Config,
-}
-
-impl Config {
-    pub fn map_file(&self) -> &PathBuf {
-        self.map_file.as_ref().expect("No map-file provided.")
-    }
 }
 
 pub mod vehicles {
@@ -40,6 +34,7 @@ pub mod edges {
             configs::{MetricCategory, MetricId},
             network::MetricIdx,
         };
+        use log::error;
         use serde::Deserialize;
         use std::collections::BTreeMap;
 
@@ -141,11 +136,12 @@ pub mod edges {
 
                     if entry.category.is_ignored() {
                         if entry.calc_rules.is_some() {
-                            panic!(
+                            error!(
                                 "Metric-category {} has calculation-rules given, \
                                  but is ignored and hence should not have any calculation-rule.",
                                 entry.category
                             );
+                            std::process::exit(1);
                         }
                     } else {
                         let entry_id = match entry.id {
@@ -158,7 +154,8 @@ pub mod edges {
 
                         let metric_idx = MetricIdx(indices.len());
                         if indices.insert(entry_id.clone(), metric_idx).is_some() {
-                            panic!("Config has duplicate id: {}", entry_id)
+                            error!("Config has duplicate id: {}", entry_id);
+                            std::process::exit(1);
                         }
                         proto_calc_rules.push(entry.calc_rules);
                     }
@@ -185,12 +182,13 @@ pub mod edges {
                         continue;
                     }
                     if calc_rules[metric_idx].len() != expected_categories.len() {
-                        panic!(
+                        error!(
                             "Metric of category {} has {} calculation-rules, but should have {}.",
                             category,
                             calc_rules[metric_idx].len(),
                             expected_categories.len()
-                        )
+                        );
+                        std::process::exit(1);
                     }
                     for expected_category in expected_categories.iter() {
                         if calc_rules[metric_idx]
@@ -199,7 +197,8 @@ pub mod edges {
                             .find(|c| c == expected_category)
                             .is_none()
                         {
-                            panic!("Calculation-rules of metric-category {} should contain {:?}, but doesn't.", category, expected_categories)
+                            error!("Calculation-rules of metric-category {} should contain {:?}, but doesn't.", category, expected_categories);
+                            std::process::exit(1);
                         }
                     }
                 }

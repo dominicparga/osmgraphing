@@ -1,13 +1,17 @@
 graph:
+  map-file: resources/maps/simple-stuttgart.fmi
   vehicles:
     category: 'Car'
     are-drivers-picky: false
   edges:
     metrics:
+    - category: 'Id'
+      id: 'src-id'
+    - category: 'Id'
+      id: 'dst-id'
     - category: 'Length'
-      is-provided: false
+    - category: 'Ignore'
     - category: 'Maxspeed'
     - category: 'Duration'
       is-provided: false
       calc-rules: ['Length', 'Maxspeed']
-    - category: 'LaneCount'

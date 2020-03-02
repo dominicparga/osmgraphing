@@ -2,31 +2,13 @@ use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use log::error;
 use osmgraphing::{
     configs::Config,
+    helpers,
     network::{Graph, MetricIdx, NodeIdx},
     routing, Parser,
 };
 
-fn init_logging(quietly: bool) {
-    let mut builder = env_logger::Builder::new();
-    // minimum filter-level: `warn`
-    builder.filter(None, log::LevelFilter::Warn);
-    // if quiet logging: doesn't log `info` for the server and this repo
-    if !quietly {
-        builder.filter(Some(env!("CARGO_PKG_NAME")), log::LevelFilter::Info);
-    }
-    // overwrite default with environment-variables
-    if let Ok(filters) = std::env::var("RUST_LOG") {
-        builder.parse_filters(&filters);
-    }
-    if let Ok(write_style) = std::env::var("RUST_LOG_STYLE") {
-        builder.parse_write_style(&write_style);
-    }
-    // init
-    builder.init();
-}
-
 fn criterion_benchmark(c: &mut Criterion) {
-    init_logging(true);
+    helpers::init_logging(None, None).expect("No user-input, so this should be fine.");
 
     // parsing
     let cfg = Config::from_map_file("resources/maps/isle-of-man_2019-09-05.osm.pbf").unwrap();
@@ -52,8 +34,8 @@ fn criterion_benchmark(c: &mut Criterion) {
             "",
             " with short routes (~3 km)",
             vec![(
-                nodes.idx_from(283500532).expect("A"),
-                nodes.idx_from(283501263).expect("B"),
+                nodes.idx_from(283_500_532).expect("A"),
+                nodes.idx_from(283_501_263).expect("B"),
             )],
         ),
         // medium route (~30 km)
@@ -61,8 +43,8 @@ fn criterion_benchmark(c: &mut Criterion) {
             "",
             " with medium routes (~30 km)",
             vec![(
-                nodes.idx_from(283483998).expect("C"),
-                nodes.idx_from(1746745421).expect("D"),
+                nodes.idx_from(283_483_998).expect("C"),
+                nodes.idx_from(1_746_745_421).expect("D"),
             )],
         ),
         // long route (~56 km)
@@ -70,8 +52,8 @@ fn criterion_benchmark(c: &mut Criterion) {
             "",
             " with long routes (~56 km)",
             vec![(
-                nodes.idx_from(1151603193).expect("E"),
-                nodes.idx_from(456478793).expect("F"),
+                nodes.idx_from(1_151_603_193).expect("E"),
+                nodes.idx_from(456_478_793).expect("F"),
             )],
         ),
     ];

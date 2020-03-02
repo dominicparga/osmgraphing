@@ -11,7 +11,7 @@ pub mod fmi {
     use osmgraphing::configs::Config;
 
     pub fn deserialize() -> Result<Config, String> {
-        Config::from_path("resources/configs/fmi.yaml")
+        Config::from_yaml("resources/configs/simple-stuttgart.fmi.yaml")
     }
 }
 
@@ -19,6 +19,6 @@ pub mod pbf {
     use osmgraphing::configs::Config;
 
     pub fn deserialize() -> Result<Config, String> {
-        Config::from_path("resources/configs/pbf.yaml")
+        Config::from_yaml("resources/configs/isle-of-man.pbf.yaml")
     }
 }

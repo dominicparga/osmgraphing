@@ -33,7 +33,7 @@ impl super::Parsing for Parser {
         let mut is_taking_counts = false;
         // counts are only metric-count, node-count, edge-count (in this order)
         let mut counts = vec![];
-        let file = helpers::open_file(cfg.map_file())?;
+        let file = helpers::open_file(&cfg.map_file)?;
         for line in intern::Reader::new(file)
             .lines()
             .map(Result::unwrap)
@@ -91,7 +91,7 @@ impl super::Parsing for Parser {
     ) -> Result<(), String> {
         info!("START Create edges from input-file.");
         let mut line_number = 0;
-        let file = helpers::open_file(cfg.map_file())?;
+        let file = helpers::open_file(&cfg.map_file)?;
         for line in intern::Reader::new(file)
             .lines()
             .map(Result::unwrap)
@@ -120,7 +120,7 @@ impl super::Parsing for Parser {
     ) -> Result<(), String> {
         info!("START Create nodes from input-file.");
         let mut line_number = 0;
-        let file = helpers::open_file(cfg.map_file())?;
+        let file = helpers::open_file(&cfg.map_file)?;
         for line in intern::Reader::new(file)
             .lines()
             .map(Result::unwrap)

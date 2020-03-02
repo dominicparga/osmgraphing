@@ -1,16 +1,14 @@
 graph:
+  map-file: "resources/maps/isle-of-man_2019-09-05.osm.pbf"
   vehicles:
     category: 'Car'
     are-drivers-picky: false
   edges:
     metrics:
-    - category: 'Id'
-      id: 'src-id'
-    - category: 'Id'
-      id: 'dst-id'
     - category: 'Length'
-    - category: 'Ignore'
+      is-provided: false
     - category: 'Maxspeed'
     - category: 'Duration'
       is-provided: false
       calc-rules: ['Length', 'Maxspeed']
+    - category: 'LaneCount'

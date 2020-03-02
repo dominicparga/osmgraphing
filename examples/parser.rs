@@ -1,40 +1,20 @@
 use log::{error, info};
-use osmgraphing::{configs::Config, Parser};
+use osmgraphing::{configs::Config, helpers, Parser};
 use std::{path::PathBuf, time::Instant};
 
 //------------------------------------------------------------------------------------------------//
 
-fn init_logging(quietly: bool) {
-    let mut builder = env_logger::Builder::new();
-    // minimum filter-level: `warn`
-    builder.filter(None, log::LevelFilter::Warn);
-    // if quiet logging: doesn't log `info` for the server and this repo
-    if !quietly {
-        builder.filter(Some(env!("CARGO_PKG_NAME")), log::LevelFilter::Info);
-        builder.filter(Some("parser"), log::LevelFilter::Info);
-    }
-    // overwrite default with environment-variables
-    if let Ok(filters) = std::env::var("RUST_LOG") {
-        builder.parse_filters(&filters);
-    }
-    if let Ok(write_style) = std::env::var("RUST_LOG_STYLE") {
-        builder.parse_write_style(&write_style);
-    }
-    // init
-    builder.init();
-}
-
 fn main() {
-    init_logging(false);
+    helpers::init_logging(Some("INFO"), Some(vec!["parser"])).expect("LogLevel 'INFO' does exist.");
     info!("Executing example: parser");
 
     // get config by provided map-file
     let cfg = {
-        let map_file = match std::env::args_os().nth(1) {
+        let cfg_file = match std::env::args_os().nth(1) {
             Some(path) => PathBuf::from(path),
-            None => PathBuf::from("resources/maps/isle-of-man_2019-09-05.osm.pbf"),
+            None => PathBuf::from("resources/configs/isle-of-man.pbf.yaml"),
         };
-        match Config::from_map_file(&map_file) {
+        match Config::from_yaml(&cfg_file) {
             Ok(cfg) => cfg,
             Err(msg) => {
                 error!("{}", msg);

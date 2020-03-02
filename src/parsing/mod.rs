@@ -46,14 +46,14 @@ pub struct Parser;
 
 impl Parser {
     pub fn parse(cfg: &graph::Config) -> Result<GraphBuilder, String> {
-        match MapFileExt::from_path(cfg.map_file())? {
+        match MapFileExt::from_path(&cfg.map_file)? {
             MapFileExt::PBF => pbf::Parser::new().parse(cfg),
             MapFileExt::FMI => fmi::Parser::new().parse(cfg),
         }
     }
 
     pub fn parse_and_finalize(cfg: graph::Config) -> Result<Graph, String> {
-        match MapFileExt::from_path(cfg.map_file())? {
+        match MapFileExt::from_path(&cfg.map_file)? {
             MapFileExt::PBF => pbf::Parser::new().parse_and_finalize(cfg),
             MapFileExt::FMI => fmi::Parser::new().parse_and_finalize(cfg),
         }
@@ -90,7 +90,7 @@ trait Parsing {
     ) -> Result<(), String>;
 
     fn parse_and_finalize(&mut self, cfg: graph::Config) -> Result<Graph, String> {
-        let path = Path::new(cfg.map_file());
+        let path = Path::new(&cfg.map_file);
         info!("START Parse from given path {}", path.display());
 
         // TODO parse "cycleway" and others

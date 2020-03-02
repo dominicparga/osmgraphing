@@ -1,5 +1,5 @@
 use log::{error, info};
-use osmgraphing::{configs::Config, network::NodeIdx, routing, Parser};
+use osmgraphing::{configs::Config, helpers, network::NodeIdx, routing, Parser};
 use rand::distributions::{Distribution, Uniform};
 use rand::SeedableRng;
 use std::{path::PathBuf, time::Instant};
@@ -24,37 +24,17 @@ use std::{path::PathBuf, time::Instant};
 
 //------------------------------------------------------------------------------------------------//
 
-fn init_logging(quietly: bool) {
-    let mut builder = env_logger::Builder::new();
-    // minimum filter-level: `warn`
-    builder.filter(None, log::LevelFilter::Warn);
-    // if quiet logging: doesn't log `info` for the server and this repo
-    if !quietly {
-        builder.filter(Some(env!("CARGO_PKG_NAME")), log::LevelFilter::Info);
-        builder.filter(Some("astar"), log::LevelFilter::Info);
-    }
-    // overwrite default with environment-variables
-    if let Ok(filters) = std::env::var("RUST_LOG") {
-        builder.parse_filters(&filters);
-    }
-    if let Ok(write_style) = std::env::var("RUST_LOG_STYLE") {
-        builder.parse_write_style(&write_style);
-    }
-    // init
-    builder.init();
-}
-
 fn main() {
-    init_logging(false);
+    helpers::init_logging(Some("INFO"), Some(vec!["astar"])).expect("LogLevel 'INFO' does exist.");
     info!("Executing example: A*");
 
     // get config by provided map-file
     let cfg = {
-        let map_file = match std::env::args_os().nth(1) {
+        let cfg_file = match std::env::args_os().nth(1) {
             Some(path) => PathBuf::from(path),
-            None => PathBuf::from("resources/maps/simple_stuttgart.fmi"),
+            None => PathBuf::from("resources/configs/simple-stuttgart.fmi.yaml"),
         };
-        match Config::from_map_file(&map_file) {
+        match Config::from_yaml(&cfg_file) {
             Ok(cfg) => cfg,
             Err(msg) => {
                 error!("{}", msg);

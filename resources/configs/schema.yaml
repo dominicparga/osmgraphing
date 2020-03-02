@@ -1,0 +1,67 @@
+graph:
+  # relative to user, not to script
+  map-file: "relative-path-to-map-file"
+
+  vehicles:
+    category: 'Car'
+    category: 'Bicycle'
+    category: 'Pedestrian'
+    # Value `false` leads to more edges,
+    # because edges are added, which are okay,
+    # but not suitable for this vehicle-category.
+    are-drivers-picky: false
+
+  edges:
+    # Here, the order matters, if the map-file has a metric-order, like
+    # `fmi`-files. Each metric below will be stored in the graph. Metrics below,
+    # which have `provided=false`, will be calculated by other metrics and the
+    # result is being stored.
+    #
+    # Default-Ids are the category-name, hence calc-rules are using
+    # category-names, which are actually ids.
+    metrics:
+
+    - category: 'Id'
+      id: 'src-id'
+
+    - category: 'Id'
+      id: 'dst-id'
+
+    - category: 'Length'
+      id: 'to-the-moon-and-back'
+      # Value `false` leads to calculate the value via coordinates and haversine.
+      is-provided: false
+
+    # categories can be used twice
+    - category: 'Length'
+      is-provided: true
+
+    - category: 'Maxspeed'
+      id: 'faster-than-light'
+      # Value `false` leads to calculate the value via length and duration.
+      is-provided: true
+      calc-rules: ['to-the-moon-and-back', 'Duration']
+
+    - category: 'Duration'
+      # Value `false` leads to calculate the value via length and maxspeed.
+      is-provided: false
+      calc-rules: ['to-the-moon-and-back', 'faster-than-light']
+
+    - category: 'LaneCount'
+      is-provided: true
+
+    - category: 'Custom'
+      id: 'my-custom-value'
+      is-provided: true
+
+    - category: 'Ignore'
+      id: 'unnecessary'
+
+# # future-plans
+# routing: # example with two metrics and default-weights
+#   metrics: [length, duration]
+#   preferences:
+#   - id: length
+#     alpha: 169
+#   - id: duration
+#     alpha: 331

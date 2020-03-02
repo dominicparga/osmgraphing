@@ -25,7 +25,7 @@ impl super::Parsing for Parser {
         graph_builder: &mut GraphBuilder,
     ) -> Result<(), String> {
         info!("START Create edges from input-file.");
-        let file = helpers::open_file(cfg.map_file())?;
+        let file = helpers::open_file(&cfg.map_file)?;
         for mut way in pbf::Reader::new(file)
             .iter()
             .filter_map(Result::ok)
@@ -132,7 +132,7 @@ impl super::Parsing for Parser {
         graph_builder: &mut GraphBuilder,
     ) -> Result<(), String> {
         info!("START Create nodes from input-file.");
-        let file = helpers::open_file(cfg.map_file())?;
+        let file = helpers::open_file(&cfg.map_file)?;
         for node in pbf::Reader::new(file)
             .iter()
             .filter_map(Result::ok)
