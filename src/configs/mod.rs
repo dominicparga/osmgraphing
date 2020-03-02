@@ -53,13 +53,6 @@ impl Config {
     }
 }
 
-#[derive(Copy, Clone, Debug, Deserialize)]
-pub enum VehicleCategory {
-    Car,
-    Bicycle,
-    Pedestrian,
-}
-
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Ord, PartialOrd)]
 #[serde(from = "String")]
 pub struct MetricId(pub String);

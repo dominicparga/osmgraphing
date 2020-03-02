@@ -1,14 +1,11 @@
-mod pbf {
-    pub use osmpbfreader::{reader::OsmPbfReader as Reader, OsmObj};
-}
-
 use crate::{
     configs::{graph, MetricCategory},
     helpers,
-    network::{GraphBuilder, MetricIdx, ProtoEdge, StreetType},
+    network::{GraphBuilder, MetricIdx, ProtoEdge, StreetCategory},
     units::geo::Coordinate,
 };
 use log::info;
+use osmpbfreader::{reader::OsmPbfReader, OsmObj};
 
 pub struct Parser;
 
@@ -26,11 +23,11 @@ impl super::Parsing for Parser {
     ) -> Result<(), String> {
         info!("START Create edges from input-file.");
         let file = helpers::open_file(&cfg.map_file)?;
-        for mut way in pbf::Reader::new(file)
+        for mut way in OsmPbfReader::new(file)
             .iter()
             .filter_map(Result::ok)
             .filter_map(|obj| match obj {
-                pbf::OsmObj::Way(way) => Some(way),
+                OsmObj::Way(way) => Some(way),
                 _ => None,
             })
         {
@@ -39,7 +36,7 @@ impl super::Parsing for Parser {
             }
 
             // collect relevant data from file, if way-type is as expected by user
-            let highway_tag = match StreetType::from(&way) {
+            let highway_tag = match StreetCategory::from(&way) {
                 Some(highway_tag) => highway_tag,
                 None => continue,
             };
@@ -133,11 +130,11 @@ impl super::Parsing for Parser {
     ) -> Result<(), String> {
         info!("START Create nodes from input-file.");
         let file = helpers::open_file(&cfg.map_file)?;
-        for node in pbf::Reader::new(file)
+        for node in OsmPbfReader::new(file)
             .iter()
             .filter_map(Result::ok)
             .filter_map(|obj| match obj {
-                pbf::OsmObj::Node(node) => Some(node),
+                OsmObj::Node(node) => Some(node),
                 _ => None,
             })
         {

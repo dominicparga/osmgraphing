@@ -28,6 +28,7 @@ osmpbfreader = "0.13" # read osm.pbf-files
 progressing = "2" # progress-bar
 serde = "1" # serialization
 serde_yaml = "0.8" # serialization
+smallvec = "1" # inlining small vecs
 
 [dev-dependencies]
 actix-web = "1" # backend-server
