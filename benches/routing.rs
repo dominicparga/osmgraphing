@@ -12,8 +12,8 @@ fn criterion_benchmark(c: &mut Criterion) {
 
     // parsing
     let cfg = Config::from_yaml("resources/configs/isle-of-man.pbf.yaml").unwrap();
-    // indices for routing
 
+    // indices for routing
     let length_idx = cfg.graph.edges.metrics.idx(&"Length".into());
     let _maxspeed_idx = cfg.graph.edges.metrics.idx(&"Maxspeed".into());
     let duration_idx = cfg.graph.edges.metrics.idx(&"Duration".into());
