@@ -8,7 +8,8 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 ## Table of contents
 
 1. [Unreleased](#unreleased)
-1. [v0.8.0](#v0.8.0)
+1. [v0.9.0](#v0.9.0)
+    1. [v0.8.0](#v0.8.0)
     1. [v0.7.1](#v0.7.1)
         1. [v0.7.0](#v0.7.0)
 1. [v1.0.0-yanked](#v1.0.0)
@@ -36,6 +37,38 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 
 ### Added <a name="unreleased/added"></a>
 
+\-
+
+
+### Changed <a name="unreleased/changed"></a>
+
+\-
+
+
+### Deprecated <a name="unreleased/deprecated"></a>
+
+\-
+
+
+### Removed <a name="unreleased/removed"></a>
+
+\-
+
+
+### Fixed <a name="unreleased/fixed"></a>
+
+\-
+
+
+### Security <a name="unreleased/security"></a>
+
+\-
+
+
+## [v0.9.0][github/self/v0.9.0] <a name="v0.9.0"></a>
+
+### Added <a name="v0.9.0/added"></a>
+
 - Implement `zero()` for `geo::Coordinate`.
 - Implement trait `Metric` for `u32`.
 - Add __format-check__ to github-action.
@@ -53,10 +86,11 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
   - In the future: scalar-product
 
 
-### Changed <a name="unreleased/changed"></a>
+### Changed <a name="v0.9.0/changed"></a>
 
 - Implement clean __ordering-__ and __equal-traits__ for `CostNode`s in the routing-modules.
 - Let __github-action__ upload results of benches in a folder called like the commit-hash.
+- Let __github-action__ deploy-and-tag only in a branch called `release` to remove `continue-on-error`
 - Improve memory-usage, performance and code-style of __metrics__ and __graphbuilding__.
   - Store metrics in the graph as __`Vec<Vec<u32>>`__ (instead of `Vec<Vec<MetricU32>>` or multiple vecs).
   - Access metrics as `u32` or access it as metric (like `Meters`).
@@ -76,7 +110,7 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 - Refactor __tests__ making their names uniformly.
 
 
-### Deprecated <a name="unreleased/deprecated"></a>
+### Deprecated <a name="v0.9.0/deprecated"></a>
 
 - Documentation is missing, though comments are very well.
 - `CHANGELOG.md` contains empty version-descriptions.
@@ -85,23 +119,18 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 - The link to `doc.rs` is hardcoded to `major.minor.patch=0.y.z` because `docs.rs` chooses version `1.0.0` though it's yanked..
 
 
-### Removed <a name="unreleased/removed"></a>
+### Removed <a name="v0.9.0/removed"></a>
 
 - Remove `MetricU32`.
 - Due to the new configs, __edge-distances can not be calculated__ for some edges, which are missing this value, but only for all or none.
 
 
-### Fixed <a name="unreleased/fixed"></a>
+### Fixed <a name="v0.9.0/fixed"></a>
 
 - Improve graphbuilder's memory-usage.
   By estimating the amount of proto-edges referring to `200 MB` (could be changed in the future), the graphbuilder can add only these proto-edges before reallocating.
   This limits the needed memory-usage.
 - Add labels in benches to identify non-existent ids/indices.
-
-
-### Security <a name="unreleased/security"></a>
-
-\-
 
 
 ## [v0.8.0][github/self/v0.8.0] <a name="v0.8.0"></a>
@@ -383,7 +412,8 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 [keepachangelog]: https://keepachangelog.com/en/
 [semver]: https://semver.org/
 
-[github/self/unreleased]: https://github.com/dominicparga/osmgraphing/compare/v0.8.0...HEAD
+[github/self/unreleased]: https://github.com/dominicparga/osmgraphing/compare/v0.9.0...HEAD
+[github/self/v0.9.0]: https://github.com/dominicparga/osmgraphing/compare/v0.8.0...v0.9.0
 [github/self/v0.8.0]: https://github.com/dominicparga/osmgraphing/compare/v0.7.1...v0.8.0
 [github/self/v0.7.1]: https://github.com/dominicparga/osmgraphing/compare/v0.7.0...v0.7.1
 [github/self/v0.7.0]: https://github.com/dominicparga/osmgraphing/compare/v1.0.0-yanked...v0.7.0

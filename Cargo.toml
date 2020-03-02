@@ -2,10 +2,10 @@
 
 [package]
 name = "osmgraphing"
-# Changing this version in master and pushing to GitHub
-# will lead to publishing it automatically to crates.io.
+# Changing this version in a branch 'release' and pushing it to
+# GitHub will lead to publishing it automatically to crates.io.
 # Hence do not forget updating Unreleased in CHANGELOG.md.
-version = "0.8.0" # !!!
+version = "0.9.0" # !!!
 description = "Playing around with graphs created via parsing OpenStreetMap data"
 edition = "2018"
 
