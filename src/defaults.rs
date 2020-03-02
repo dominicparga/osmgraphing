@@ -1,5 +1,3 @@
-pub const SMALLVEC_INLINE_SIZE: u8 = 10;
-
 pub mod speed {
     pub const MAX_KMH: u16 = 130;
     pub const MIN_KMH: u8 = 5;

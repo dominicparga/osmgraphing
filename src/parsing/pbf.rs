@@ -6,6 +6,7 @@ use crate::{
 };
 use log::info;
 use osmpbfreader::{reader::OsmPbfReader, OsmObj};
+use smallvec::{smallvec, SmallVec};
 
 pub struct Parser;
 
@@ -24,7 +25,7 @@ impl super::Parsing for Parser {
         info!("START Create edges from input-file.");
         let file = helpers::open_file(&cfg.map_file)?;
         for mut way in OsmPbfReader::new(file)
-            .iter()
+            .par_iter()
             .filter_map(Result::ok)
             .filter_map(|obj| match obj {
                 OsmObj::Way(way) => Some(way),
@@ -66,7 +67,7 @@ impl super::Parsing for Parser {
             // Collect metrics as expected by user-config
             // ATTENTION: A way contains multiple edges, thus be careful when adding new metrics.
             let cfg = &cfg.edges.metrics;
-            let mut metrics = vec![None; cfg.count()];
+            let mut metrics: SmallVec<[_; 5]> = smallvec![None; cfg.count()];
             for metric_idx in (0..cfg.count()).map(MetricIdx) {
                 let metric_type = cfg.category(metric_idx);
                 let is_provided = cfg.is_provided(metric_idx);
@@ -110,12 +111,12 @@ impl super::Parsing for Parser {
             }
 
             // for n nodes in a way, you can create (n-1) edges
-            for (node_idx, values) in vec![metrics; nodes.len() - 1].into_iter().enumerate() {
+            for node_idx in 0..(nodes.len() - 1) {
                 // add proto-edge to graph
                 graph_builder.push_edge(ProtoEdge {
                     src_id: nodes[node_idx],
                     dst_id: nodes[node_idx + 1],
-                    metrics: values,
+                    metrics: metrics.clone(),
                 });
             }
         }
@@ -131,7 +132,7 @@ impl super::Parsing for Parser {
         info!("START Create nodes from input-file.");
         let file = helpers::open_file(&cfg.map_file)?;
         for node in OsmPbfReader::new(file)
-            .iter()
+            .par_iter()
             .filter_map(Result::ok)
             .filter_map(|obj| match obj {
                 OsmObj::Node(node) => Some(node),

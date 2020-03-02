@@ -7,6 +7,7 @@ use crate::{
 use log::{debug, info};
 use progressing;
 use progressing::Bar;
+use smallvec::SmallVec;
 use std::{collections::BTreeMap, mem};
 
 //------------------------------------------------------------------------------------------------//
@@ -30,7 +31,7 @@ impl ProtoNode {
 pub struct ProtoEdge {
     pub src_id: i64,
     pub dst_id: i64,
-    pub metrics: Vec<Option<u32>>,
+    pub metrics: SmallVec<[Option<u32>; 5]>,
 }
 
 /// handy for remembering indices after sorting backwards

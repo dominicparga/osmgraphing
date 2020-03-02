@@ -1,11 +1,14 @@
-use osmgraphing::helpers;
 use log::error;
+use osmgraphing::helpers;
 
 fn main() {
     let matches = parse_cmdline();
     match helpers::init_logging(matches.value_of("log").unwrap(), vec![]) {
         Ok(_) => (),
-        Err(msg) => {error!("{}", msg); std::process::exit(1);},
+        Err(msg) => {
+            error!("{}", msg);
+            std::process::exit(1);
+        }
     };
 
     println!("Execute 'path/to/built/binary --help' (or 'cargo run -- --help') for more info.");
