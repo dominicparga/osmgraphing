@@ -11,7 +11,7 @@ fn criterion_benchmark(c: &mut Criterion) {
     helpers::init_logging(None, None).expect("No user-input, so this should be fine.");
 
     // parsing
-    let cfg = Config::from_map_file("resources/maps/isle-of-man_2019-09-05.osm.pbf").unwrap();
+    let cfg = Config::from_yaml("resources/configs/isle-of-man.pbf.yaml").unwrap();
     // indices for routing
 
     let length_idx = cfg.graph.edges.metrics.idx(&"Length".into());
