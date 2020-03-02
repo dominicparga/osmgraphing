@@ -26,13 +26,14 @@ env_logger = "0.6" # logging for external use, e.g. main.rs and examples
 log = "0.4"        # logging for internal use, e.g. lib.rs
 osmpbfreader = "0.13" # read osm.pbf-files
 progressing = "2" # progress-bar
+serde = "1" # serialization
+serde_yaml = "0.8" # serialization
 
 [dev-dependencies]
 actix-web = "1" # backend-server
 actix-rt = "0.2" # backend-server
 futures = "0.1" # backend-server
 quick-xml = "0.14" # read xml-files
-serde = "1.0" # serialization
 rand = "0.7" # generate random numbers
 rand_pcg = "0.2" # generate random numbers
 criterion = "0.3" # benchmarking

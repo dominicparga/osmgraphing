@@ -3,11 +3,14 @@ use std::{cmp, fmt, fmt::Display, str};
 mod pbf {
     pub use osmpbfreader::Way;
 }
+use crate::configs::VehicleCategory;
 
 //------------------------------------------------------------------------------------------------//
 
-pub const MAX_SPEED_KMH: u8 = 130;
-pub const MIN_SPEED_KMH: u8 = 5;
+pub mod speed {
+    pub const MAX_KMH: u16 = 130;
+    pub const MIN_KMH: u8 = 5;
+}
 
 /// TODO
 ///
@@ -151,7 +154,15 @@ impl StreetType {
         }
     }
 
-    pub fn is_for_vehicles(&self, is_suitable: bool) -> bool {
+    pub fn is_for(&self, vehicle_type: &VehicleCategory, is_driver_picky: bool) -> bool {
+        match vehicle_type {
+            VehicleCategory::Car => self.is_for_vehicles(is_driver_picky),
+            VehicleCategory::Bicycle => self.is_for_bicycles(is_driver_picky),
+            VehicleCategory::Pedestrian => self.is_for_pedestrians(is_driver_picky),
+        }
+    }
+
+    fn is_for_vehicles(&self, is_driver_picky: bool) -> bool {
         match self {
             StreetType::Motorway => true,
             StreetType::MotorwayLink => true,
@@ -166,40 +177,40 @@ impl StreetType {
             StreetType::Unclassified => true,
             StreetType::Residential => true,
             StreetType::LivingStreet => true,
-            StreetType::Service => !is_suitable,
-            StreetType::Track => !is_suitable,
-            StreetType::Road => !is_suitable,
+            StreetType::Service => !is_driver_picky,
+            StreetType::Track => !is_driver_picky,
+            StreetType::Road => !is_driver_picky,
             StreetType::Cycleway => false,
             StreetType::Pedestrian => false,
             StreetType::Path => false,
         }
     }
 
-    fn _is_for_bicycles(&self, is_suitable: bool) -> bool {
+    fn is_for_bicycles(&self, is_driver_picky: bool) -> bool {
         match self {
             StreetType::Motorway => false,
             StreetType::MotorwayLink => false,
             StreetType::Trunk => false,
             StreetType::TrunkLink => false,
-            StreetType::Primary => !is_suitable,
-            StreetType::PrimaryLink => !is_suitable,
-            StreetType::Secondary => !is_suitable,
-            StreetType::SecondaryLink => !is_suitable,
+            StreetType::Primary => !is_driver_picky,
+            StreetType::PrimaryLink => !is_driver_picky,
+            StreetType::Secondary => !is_driver_picky,
+            StreetType::SecondaryLink => !is_driver_picky,
             StreetType::Tertiary => true,
             StreetType::TertiaryLink => true,
             StreetType::Unclassified => true,
             StreetType::Residential => true,
             StreetType::LivingStreet => true,
             StreetType::Service => true,
-            StreetType::Track => !is_suitable,
-            StreetType::Road => !is_suitable,
+            StreetType::Track => !is_driver_picky,
+            StreetType::Road => !is_driver_picky,
             StreetType::Cycleway => true,
-            StreetType::Pedestrian => !is_suitable,
-            StreetType::Path => !is_suitable,
+            StreetType::Pedestrian => !is_driver_picky,
+            StreetType::Path => !is_driver_picky,
         }
     }
 
-    fn _is_for_pedestrians(&self, is_suitable: bool) -> bool {
+    fn is_for_pedestrians(&self, is_driver_picky: bool) -> bool {
         match self {
             StreetType::Motorway => false,
             StreetType::MotorwayLink => false,
@@ -216,7 +227,7 @@ impl StreetType {
             StreetType::LivingStreet => true,
             StreetType::Service => true,
             StreetType::Track => true,
-            StreetType::Road => !is_suitable,
+            StreetType::Road => !is_driver_picky,
             StreetType::Cycleway => false,
             StreetType::Pedestrian => true,
             StreetType::Path => true,
@@ -258,7 +269,7 @@ impl StreetType {
 
         // parse given maxspeed and return
         match snippet.parse::<u16>() {
-            Ok(maxspeed) => cmp::max(MIN_SPEED_KMH.into(), maxspeed),
+            Ok(maxspeed) => cmp::max(speed::MIN_KMH.into(), maxspeed),
             Err(_) => match snippet.trim().to_ascii_lowercase().as_ref() {
                 // motorway
                 "de:motorway"

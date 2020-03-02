@@ -1,9 +1,8 @@
 use log::{error, info};
-use osmgraphing::{network::NodeIdx, routing, Parser};
+use osmgraphing::{configs::Config, network::NodeIdx, routing, Parser};
 use rand::distributions::{Distribution, Uniform};
 use rand::SeedableRng;
-use std::ffi::OsString;
-use std::time::Instant;
+use std::{path::PathBuf, time::Instant};
 
 //------------------------------------------------------------------------------------------------//
 // points in Germany
@@ -49,16 +48,25 @@ fn main() {
     init_logging(false);
     info!("Executing example: A*");
 
-    //--------------------------------------------------------------------------------------------//
-    // parsing
-
-    let path = match std::env::args_os().nth(1) {
-        Some(path) => path,
-        None => OsString::from("resources/maps/simple_stuttgart.fmi"),
+    // get config by provided map-file
+    let cfg = {
+        let map_file = match std::env::args_os().nth(1) {
+            Some(path) => PathBuf::from(path),
+            None => PathBuf::from("resources/maps/simple_stuttgart.fmi"),
+        };
+        match Config::from_map_file(&map_file) {
+            Ok(cfg) => cfg,
+            Err(msg) => {
+                error!("{}", msg);
+                return;
+            }
+        }
     };
 
+    // measure parsing-time
     let now = Instant::now();
-    let graph = match Parser::parse_and_finalize(&path) {
+    // parse and create graph
+    let graph = match Parser::parse_and_finalize(cfg.graph) {
         Ok(graph) => graph,
         Err(msg) => {
             error!("{}", msg);
@@ -77,7 +85,9 @@ fn main() {
     // astar
 
     let nodes = graph.nodes();
-    let mut astar = routing::factory::astar::unidirectional::shortest();
+    let mut astar = routing::factory::astar::unidirectional::shortest(
+        graph.cfg().edges.metrics.idx(&"Length".into()),
+    );
 
     // generate random route-pairs
     let route_count = 100;
@@ -88,8 +98,8 @@ fn main() {
         // -> just print all possible routes
         // else: print random routes
         if nodes.count() * nodes.count() <= route_count {
-            for src_idx in (0..nodes.count()).map(NodeIdx::new) {
-                for dst_idx in (0..nodes.count()).map(NodeIdx::new) {
+            for src_idx in (0..nodes.count()).map(NodeIdx) {
+                for dst_idx in (0..nodes.count()).map(NodeIdx) {
                     routes.push((src_idx, dst_idx));
                 }
             }
@@ -97,8 +107,8 @@ fn main() {
             let mut rng = rand_pcg::Pcg32::seed_from_u64(seed);
             let die = Uniform::from(0..nodes.count());
             for _ in 0..route_count {
-                let src_idx = NodeIdx::new(die.sample(&mut rng));
-                let dst_idx = NodeIdx::new(die.sample(&mut rng));
+                let src_idx = NodeIdx(die.sample(&mut rng));
+                let dst_idx = NodeIdx(die.sample(&mut rng));
                 routes.push((src_idx, dst_idx));
             }
         }

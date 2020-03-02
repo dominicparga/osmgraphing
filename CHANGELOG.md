@@ -36,12 +36,13 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 
 ### Added <a name="unreleased/added"></a>
 
-\-
+- Implement `zero()` for `geo::Coordinate`.
+- Implement __multi-dimensional metrics__, being comparable according to __pareto-optimality__.
 
 
 ### Changed <a name="unreleased/changed"></a>
 
-\-
+- Implement clean ordering- and equal-traits for `CostNode`s in the routing-modules.
 
 
 ### Deprecated <a name="unreleased/deprecated"></a>
@@ -51,6 +52,11 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
   - Replace existing tags with ones referring to `CHANGELOG.md` and add old tag-texts to the `CHANGELOG.md`
   - Inconsistent `semver` in old tags -> probably `cargo yank VERSION` needed
 - The link to `doc.rs` is hardcoded to `major.minor.patch=0.y.z` because `docs.rs` chooses version `1.0.0` though it's yanked..
+- The graphbuilder uses __Array-of-Structs__ via `ProtoEdge`s to store the proto-info.
+  When finalizing the parsed graph, the metrics are copied to the graph.
+  This leads to a memory-usage, which is dependent of the number of metrics.
+  That's because all metrics have to be processed in one loop and they are not dropped until the loop has finished.
+  This could be fixed by storing the metrics as __Struct-of-Arrays__ and finalizing metrics in several loop-runs with immediate drops.
 
 
 ### Removed <a name="unreleased/removed"></a>
@@ -113,6 +119,7 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
   - Replace existing tags with ones referring to `CHANGELOG.md` and add old tag-texts to the `CHANGELOG.md`
   - Inconsistent `semver` in old tags -> probably `cargo yank VERSION` needed
 - The link to `doc.rs` is hardcoded to `major.minor.patch=0.y.z` because `docs.rs` chooses version `1.0.0` though it's yanked..
+- `CostNode`s in the routing-modules are implementing ordering- and equal-traits sloppy.
 
 
 ### Fixed <a name="v0.8.0/fixed"></a>

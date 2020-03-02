@@ -1,10 +1,10 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use log::error;
 use osmgraphing::{
-    network::{Graph, NodeIdx},
+    configs::Config,
+    network::{Graph, MetricIdx, NodeIdx},
     routing, Parser,
 };
-use std::ffi::OsString;
 
 fn init_logging(quietly: bool) {
     let mut builder = env_logger::Builder::new();
@@ -29,8 +29,14 @@ fn criterion_benchmark(c: &mut Criterion) {
     init_logging(true);
 
     // parsing
-    let path = OsString::from("resources/maps/isle-of-man_2019-09-05.osm.pbf");
-    let graph = match Parser::parse_and_finalize(&path) {
+    let cfg = Config::from_map_file("resources/maps/isle-of-man_2019-09-05.osm.pbf").unwrap();
+    // indices for routing
+
+    let length_idx = cfg.graph.edges.metrics.idx(&"Length".into());
+    let _maxspeed_idx = cfg.graph.edges.metrics.idx(&"Maxspeed".into());
+    let duration_idx = cfg.graph.edges.metrics.idx(&"Duration".into());
+    // create graph
+    let graph = match Parser::parse_and_finalize(cfg.graph) {
         Ok(graph) => graph,
         Err(msg) => {
             error!("{}", msg);
@@ -46,8 +52,8 @@ fn criterion_benchmark(c: &mut Criterion) {
             "",
             " with short routes (~3 km)",
             vec![(
-                nodes.idx_from(283500532).unwrap(),
-                nodes.idx_from(283501263).unwrap(),
+                nodes.idx_from(283500532).expect("A"),
+                nodes.idx_from(283501263).expect("B"),
             )],
         ),
         // medium route (~30 km)
@@ -55,8 +61,8 @@ fn criterion_benchmark(c: &mut Criterion) {
             "",
             " with medium routes (~30 km)",
             vec![(
-                nodes.idx_from(283483998).unwrap(),
-                nodes.idx_from(1746745421).unwrap(),
+                nodes.idx_from(283483998).expect("C"),
+                nodes.idx_from(1746745421).expect("D"),
             )],
         ),
         // long route (~56 km)
@@ -64,8 +70,8 @@ fn criterion_benchmark(c: &mut Criterion) {
             "",
             " with long routes (~56 km)",
             vec![(
-                nodes.idx_from(1151603193).unwrap(),
-                nodes.idx_from(456478793).unwrap(),
+                nodes.idx_from(1151603193).expect("E"),
+                nodes.idx_from(456478793).expect("F"),
             )],
         ),
     ];
@@ -74,19 +80,51 @@ fn criterion_benchmark(c: &mut Criterion) {
     for (prefix, suffix, routes) in labelled_routes.iter() {
         c.bench_function(
             &format!("{}Shortest Dijkstra (unidir){}", prefix, suffix),
-            |b| b.iter(|| unidir_shortest_dijkstra(black_box(&graph), black_box(&routes))),
+            |b| {
+                b.iter(|| {
+                    unidir_shortest_dijkstra(
+                        black_box(&graph),
+                        black_box(&routes),
+                        black_box(length_idx),
+                    )
+                })
+            },
         );
         c.bench_function(
             &format!("{}Shortest Dijkstra (bidir){}", prefix, suffix),
-            |b| b.iter(|| bidir_shortest_dijkstra(black_box(&graph), black_box(&routes))),
+            |b| {
+                b.iter(|| {
+                    bidir_shortest_dijkstra(
+                        black_box(&graph),
+                        black_box(&routes),
+                        black_box(length_idx),
+                    )
+                })
+            },
         );
         c.bench_function(
             &format!("{}Shortest Astar (unidir){}", prefix, suffix),
-            |b| b.iter(|| unidir_shortest_astar(black_box(&graph), black_box(&routes))),
+            |b| {
+                b.iter(|| {
+                    unidir_shortest_astar(
+                        black_box(&graph),
+                        black_box(&routes),
+                        black_box(length_idx),
+                    )
+                })
+            },
         );
         c.bench_function(
             &format!("{}Shortest Astar (bidir){}", prefix, suffix),
-            |b| b.iter(|| bidir_shortest_astar(black_box(&graph), black_box(&routes))),
+            |b| {
+                b.iter(|| {
+                    bidir_shortest_astar(
+                        black_box(&graph),
+                        black_box(&routes),
+                        black_box(length_idx),
+                    )
+                })
+            },
         );
     }
 
@@ -94,18 +132,48 @@ fn criterion_benchmark(c: &mut Criterion) {
     for (prefix, suffix, routes) in labelled_routes.iter() {
         c.bench_function(
             &format!("{}Fastest Dijkstra (unidir){}", prefix, suffix),
-            |b| b.iter(|| unidir_fastest_dijkstra(black_box(&graph), black_box(&routes))),
+            |b| {
+                b.iter(|| {
+                    unidir_fastest_dijkstra(
+                        black_box(&graph),
+                        black_box(&routes),
+                        black_box(duration_idx),
+                    )
+                })
+            },
         );
         c.bench_function(
             &format!("{}Fastest Dijkstra (bidir){}", prefix, suffix),
-            |b| b.iter(|| bidir_fastest_dijkstra(black_box(&graph), black_box(&routes))),
+            |b| {
+                b.iter(|| {
+                    bidir_fastest_dijkstra(
+                        black_box(&graph),
+                        black_box(&routes),
+                        black_box(duration_idx),
+                    )
+                })
+            },
         );
         c.bench_function(
             &format!("{}Fastest Astar (unidir){}", prefix, suffix),
-            |b| b.iter(|| unidir_fastest_astar(black_box(&graph), black_box(&routes))),
+            |b| {
+                b.iter(|| {
+                    unidir_fastest_astar(
+                        black_box(&graph),
+                        black_box(&routes),
+                        black_box(duration_idx),
+                    )
+                })
+            },
         );
         c.bench_function(&format!("{}Fastest Astar (bidir){}", prefix, suffix), |b| {
-            b.iter(|| bidir_fastest_astar(black_box(&graph), black_box(&routes)))
+            b.iter(|| {
+                bidir_fastest_astar(
+                    black_box(&graph),
+                    black_box(&routes),
+                    black_box(duration_idx),
+                )
+            })
         });
     }
 }
@@ -115,8 +183,12 @@ criterion_main!(benches);
 
 //------------------------------------------------------------------------------------------------//
 
-fn unidir_shortest_dijkstra(graph: &Graph, routes: &Vec<(NodeIdx, NodeIdx)>) {
-    let mut dijkstra = routing::factory::dijkstra::unidirectional::shortest();
+fn unidir_shortest_dijkstra(
+    graph: &Graph,
+    routes: &Vec<(NodeIdx, NodeIdx)>,
+    length_idx: MetricIdx,
+) {
+    let mut dijkstra = routing::factory::dijkstra::unidirectional::shortest(length_idx);
 
     let nodes = graph.nodes();
     for &(src_idx, dst_idx) in routes.iter() {
@@ -126,8 +198,8 @@ fn unidir_shortest_dijkstra(graph: &Graph, routes: &Vec<(NodeIdx, NodeIdx)>) {
     }
 }
 
-fn bidir_shortest_dijkstra(graph: &Graph, routes: &Vec<(NodeIdx, NodeIdx)>) {
-    let mut dijkstra = routing::factory::dijkstra::bidirectional::shortest();
+fn bidir_shortest_dijkstra(graph: &Graph, routes: &Vec<(NodeIdx, NodeIdx)>, length_idx: MetricIdx) {
+    let mut dijkstra = routing::factory::dijkstra::bidirectional::shortest(length_idx);
 
     let nodes = graph.nodes();
     for &(src_idx, dst_idx) in routes.iter() {
@@ -137,8 +209,8 @@ fn bidir_shortest_dijkstra(graph: &Graph, routes: &Vec<(NodeIdx, NodeIdx)>) {
     }
 }
 
-fn unidir_shortest_astar(graph: &Graph, routes: &Vec<(NodeIdx, NodeIdx)>) {
-    let mut astar = routing::factory::astar::unidirectional::shortest();
+fn unidir_shortest_astar(graph: &Graph, routes: &Vec<(NodeIdx, NodeIdx)>, length_idx: MetricIdx) {
+    let mut astar = routing::factory::astar::unidirectional::shortest(length_idx);
 
     let nodes = graph.nodes();
     for &(src_idx, dst_idx) in routes.iter() {
@@ -148,8 +220,8 @@ fn unidir_shortest_astar(graph: &Graph, routes: &Vec<(NodeIdx, NodeIdx)>) {
     }
 }
 
-fn bidir_shortest_astar(graph: &Graph, routes: &Vec<(NodeIdx, NodeIdx)>) {
-    let mut astar = routing::factory::astar::bidirectional::shortest();
+fn bidir_shortest_astar(graph: &Graph, routes: &Vec<(NodeIdx, NodeIdx)>, length_idx: MetricIdx) {
+    let mut astar = routing::factory::astar::bidirectional::shortest(length_idx);
 
     let nodes = graph.nodes();
     for &(src_idx, dst_idx) in routes.iter() {
@@ -159,8 +231,12 @@ fn bidir_shortest_astar(graph: &Graph, routes: &Vec<(NodeIdx, NodeIdx)>) {
     }
 }
 
-fn unidir_fastest_dijkstra(graph: &Graph, routes: &Vec<(NodeIdx, NodeIdx)>) {
-    let mut dijkstra = routing::factory::dijkstra::unidirectional::fastest();
+fn unidir_fastest_dijkstra(
+    graph: &Graph,
+    routes: &Vec<(NodeIdx, NodeIdx)>,
+    duration_idx: MetricIdx,
+) {
+    let mut dijkstra = routing::factory::dijkstra::unidirectional::fastest(duration_idx);
 
     let nodes = graph.nodes();
     for &(src_idx, dst_idx) in routes.iter() {
@@ -170,8 +246,12 @@ fn unidir_fastest_dijkstra(graph: &Graph, routes: &Vec<(NodeIdx, NodeIdx)>) {
     }
 }
 
-fn bidir_fastest_dijkstra(graph: &Graph, routes: &Vec<(NodeIdx, NodeIdx)>) {
-    let mut dijkstra = routing::factory::dijkstra::bidirectional::fastest();
+fn bidir_fastest_dijkstra(
+    graph: &Graph,
+    routes: &Vec<(NodeIdx, NodeIdx)>,
+    duration_idx: MetricIdx,
+) {
+    let mut dijkstra = routing::factory::dijkstra::bidirectional::fastest(duration_idx);
 
     let nodes = graph.nodes();
     for &(src_idx, dst_idx) in routes.iter() {
@@ -181,8 +261,8 @@ fn bidir_fastest_dijkstra(graph: &Graph, routes: &Vec<(NodeIdx, NodeIdx)>) {
     }
 }
 
-fn unidir_fastest_astar(graph: &Graph, routes: &Vec<(NodeIdx, NodeIdx)>) {
-    let mut astar = routing::factory::astar::unidirectional::fastest();
+fn unidir_fastest_astar(graph: &Graph, routes: &Vec<(NodeIdx, NodeIdx)>, duration_idx: MetricIdx) {
+    let mut astar = routing::factory::astar::unidirectional::fastest(duration_idx);
 
     let nodes = graph.nodes();
     for &(src_idx, dst_idx) in routes.iter() {
@@ -192,8 +272,8 @@ fn unidir_fastest_astar(graph: &Graph, routes: &Vec<(NodeIdx, NodeIdx)>) {
     }
 }
 
-fn bidir_fastest_astar(graph: &Graph, routes: &Vec<(NodeIdx, NodeIdx)>) {
-    let mut astar = routing::factory::astar::bidirectional::fastest();
+fn bidir_fastest_astar(graph: &Graph, routes: &Vec<(NodeIdx, NodeIdx)>, duration_idx: MetricIdx) {
+    let mut astar = routing::factory::astar::bidirectional::fastest(duration_idx);
 
     let nodes = graph.nodes();
     for &(src_idx, dst_idx) in routes.iter() {

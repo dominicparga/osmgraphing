@@ -1,0 +1,13 @@
+graph:
+  vehicles:
+    category: 'Car'
+    are-drivers-picky: false
+  edges:
+    metrics:
+    - category: 'Length'
+      is-provided: false
+    - category: 'Maxspeed'
+    - category: 'Duration'
+      is-provided: false
+      calc-rules: ['Length', 'Maxspeed']
+    - category: 'LaneCount'

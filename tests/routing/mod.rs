@@ -1,17 +1,18 @@
-use osmgraphing::{network::Graph, network::NodeIdx, routing, units::Metric};
+use super::{create_config, TestType};
+use osmgraphing::{configs::graph, network::Graph, network::NodeIdx, routing, units::Metric};
 use std::{fmt, fmt::Display};
 
-mod fastest;
-mod shortest;
+pub mod fastest;
+pub mod shortest;
 
 fn assert_correct<M>(
     astar: &mut Box<dyn routing::astar::Astar<M>>,
     expected_paths: Vec<(TestNode, TestNode, Option<(M, Vec<Vec<TestNode>>)>)>,
-    filepath: &str,
+    cfg: graph::Config,
 ) where
     M: Metric + PartialEq + Display,
 {
-    let graph = super::parse(filepath);
+    let graph = super::parse(cfg);
 
     for (src, dst, option_specs) in expected_paths {
         let nodes = graph.nodes();
@@ -37,7 +38,7 @@ fn assert_correct<M>(
     }
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
 struct TestNode {
     pub idx: NodeIdx,
     pub id: i64,
@@ -46,14 +47,6 @@ struct TestNode {
 impl Display for TestNode {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "(idx: {}, id: {})", self.idx, self.id)
-    }
-}
-
-impl Eq for TestNode {}
-
-impl PartialEq for TestNode {
-    fn eq(&self, other: &TestNode) -> bool {
-        self.idx.eq(&other.idx) && self.id.eq(&other.id)
     }
 }
 

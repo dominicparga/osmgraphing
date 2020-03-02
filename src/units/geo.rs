@@ -1,5 +1,5 @@
-use crate::units::{length::Meters, Metric};
-use std::{cmp::Ordering, fmt};
+use crate::units::length::Meters;
+use std::{cmp::Ordering, fmt, fmt::Display};
 
 /// Coordinate storing `lat`/`lon` as `i32` with accuracy `1e-7`.
 #[derive(Copy, Clone, Debug)]
@@ -8,19 +8,15 @@ pub struct Coordinate {
     decimicro_lon: i32,
 }
 
-impl Coordinate {
-    pub fn new(decimicro_lat: i32, decimicro_lon: i32) -> Coordinate {
-        Coordinate {
-            decimicro_lat,
-            decimicro_lon,
-        }
+impl Default for Coordinate {
+    fn default() -> Coordinate {
+        Coordinate::zero()
     }
+}
 
-    pub fn from_f64(lat: f64, lon: f64) -> Coordinate {
-        Coordinate {
-            decimicro_lat: (lat * 1e7) as i32,
-            decimicro_lon: (lon * 1e7) as i32,
-        }
+impl Coordinate {
+    pub fn zero() -> Coordinate {
+        (0, 0).into()
     }
 
     pub fn lat(&self) -> f64 {
@@ -40,6 +36,24 @@ impl Coordinate {
     }
 }
 
+impl From<(i32, i32)> for Coordinate {
+    fn from((decimicro_lat, decimicro_lon): (i32, i32)) -> Coordinate {
+        Coordinate {
+            decimicro_lat,
+            decimicro_lon,
+        }
+    }
+}
+
+impl From<(f64, f64)> for Coordinate {
+    fn from((lat, lon): (f64, f64)) -> Coordinate {
+        Coordinate {
+            decimicro_lat: (lat * 1e7) as i32,
+            decimicro_lon: (lon * 1e7) as i32,
+        }
+    }
+}
+
 impl Eq for Coordinate {}
 
 impl PartialEq for Coordinate {
@@ -49,7 +63,7 @@ impl PartialEq for Coordinate {
     }
 }
 
-impl fmt::Display for Coordinate {
+impl Display for Coordinate {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
@@ -94,6 +108,7 @@ pub fn haversine_distance(from: &Coordinate, to: &Coordinate) -> f64 {
         * (2.0 * earth_mean_radius)
 }
 
+/// Note that the result could have rounding errors due to up-scaling (* 1000.0) and cutting afterwards (f64 -> u32)
 pub fn haversine_distance_m(from: &Coordinate, to: &Coordinate) -> Meters {
-    Meters::new(1_000.0 * haversine_distance(from, to))
+    Meters((1_000.0 * haversine_distance(from, to)) as u32)
 }
