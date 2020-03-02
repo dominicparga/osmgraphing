@@ -45,19 +45,15 @@ pub struct Config {
 
 impl Config {
     pub fn from_yaml<P: AsRef<Path> + ?Sized>(path: &P) -> Result<Config, String> {
-        let file = helpers::open_file(path)?;
+        let file = {
+            helpers::is_file_ext_supported(path, &["yaml"])?;
+            helpers::open_file(path)?
+        };
         match serde_yaml::from_reader(file) {
             Ok(cfg) => Ok(cfg),
             Err(e) => Err(format!("{}", e)),
         }
     }
-}
-
-#[derive(Copy, Clone, Debug, Deserialize)]
-pub enum VehicleCategory {
-    Car,
-    Bicycle,
-    Pedestrian,
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Ord, PartialOrd)]

@@ -149,6 +149,7 @@ mod intern {
         network::{MetricIdx, ProtoEdge},
         units::geo,
     };
+    use smallvec::SmallVec;
     pub use std::{io::BufReader as Reader, str};
 
     pub struct ProtoNode {
@@ -217,7 +218,7 @@ mod intern {
         ///   The maximum possible value would be around `10^7 m`
         ///   (`2^32 km` ~ `10^10 km`, which is divided by `1_000` for accuracy in `m`).
         pub fn from_str(line: &str, cfg: &Config) -> Result<ProtoEdge, String> {
-            let mut metric_values = Vec::with_capacity(cfg.metrics.count());
+            let mut metric_values = SmallVec::<[_; 5]>::with_capacity(cfg.metrics.count());
             let mut src_id = None;
             let mut dst_id = None;
 

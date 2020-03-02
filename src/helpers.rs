@@ -8,6 +8,38 @@ pub fn open_file<P: AsRef<Path> + ?Sized>(path: &P) -> Result<File, String> {
     }
 }
 
+pub fn is_file_ext_supported<P: AsRef<Path> + ?Sized>(
+    path: &P,
+    supported_exts: &[&str],
+) -> Result<(), String> {
+    let path = path.as_ref();
+
+    // if file has extension
+    if let Some(os_str) = path.extension() {
+        // if filename is valid unicode
+        if let Some(extension) = os_str.to_str() {
+            // check if extension is supported
+            for supported_ext in supported_exts {
+                if supported_ext == &extension.to_ascii_lowercase() {
+                    return Ok(());
+                }
+            }
+            // extension is not supported
+            Err(format!(
+                "Unsupported extension `{}` was given. Supported extensions are {:?}",
+                extension, supported_exts
+            ))
+        } else {
+            Err(String::from("Filename is invalid Unicode."))
+        }
+    } else {
+        Err(format!(
+            "The file {:?} has no extension. Supported extensions are {:?}",
+            &path, supported_exts
+        ))
+    }
+}
+
 pub enum MapFileExt {
     PBF,
     FMI,
@@ -50,23 +82,21 @@ impl MapFileExt {
 /// => use default (Warn)
 ///
 /// modules: in addition to default (`env!("CARGO_PKG_NAME")`)
-pub fn init_logging(max_log_level: Option<&str>, modules: Option<Vec<&str>>) -> Result<(), String> {
+///
+/// Environment-variable RUST_LOG has precedence.
+pub fn init_logging(max_log_level: &str, mut modules: Vec<&str>) -> Result<(), String> {
     let mut builder = env_logger::Builder::new();
 
     // maximum filter-level for all components: `warn`
     builder.filter(None, log::LevelFilter::Warn);
 
     // if quiet logging: doesn't log `info` for this repo
-    let max_log_level = match max_log_level {
-        Some(value) => log::LevelFilter::from_str(&value.to_ascii_uppercase())
-            .ok()
-            .ok_or(format!(
-                "The provided max-log-level {} is not supported.",
-                value
-            ))?,
-        None => log::LevelFilter::Warn,
-    };
-    let mut modules = modules.unwrap_or(vec![]);
+    let max_log_level = log::LevelFilter::from_str(&max_log_level.to_ascii_uppercase())
+        .ok()
+        .ok_or(format!(
+            "The provided max-log-level {} is not supported.",
+            max_log_level
+        ))?;
     modules.push(env!("CARGO_PKG_NAME"));
     for module in modules {
         builder.filter(Some(module), max_log_level);

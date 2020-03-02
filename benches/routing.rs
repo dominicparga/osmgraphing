@@ -8,7 +8,7 @@ use osmgraphing::{
 };
 
 fn criterion_benchmark(c: &mut Criterion) {
-    helpers::init_logging(None, None).expect("No user-input, so this should be fine.");
+    helpers::init_logging("WARN", vec![]).expect("No user-input, so this should be fine.");
 
     // parsing
     let cfg = Config::from_yaml("resources/configs/isle-of-man.pbf.yaml").unwrap();

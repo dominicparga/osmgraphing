@@ -2,10 +2,8 @@ use log::{error, info};
 use osmgraphing::{configs::Config, helpers, Parser};
 use std::{path::PathBuf, time::Instant};
 
-//------------------------------------------------------------------------------------------------//
-
 fn main() {
-    helpers::init_logging(Some("INFO"), Some(vec!["parser"])).expect("LogLevel 'INFO' does exist.");
+    helpers::init_logging("INFO", vec!["parser"]).expect("LogLevel 'INFO' does exist.");
     info!("Executing example: parser");
 
     // get config by provided map-file

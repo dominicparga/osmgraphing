@@ -1,7 +1,7 @@
 pub mod astar {
     pub mod unidirectional {
         use crate::{
-            network,
+            defaults,
             network::{HalfEdge, MetricIdx, Node},
             routing::astar::{unidirectional::GenericAstar, Astar},
             units::{geo, length::Meters, speed::KilometersPerHour, time::Milliseconds},
@@ -18,7 +18,7 @@ pub mod astar {
             let cost_fn = move |edge: &HalfEdge| edge.duration(duration_idx).unwrap();
             let estimate_fn = |from: &Node, to: &Node| {
                 let meters = geo::haversine_distance_m(&from.coord(), &to.coord());
-                let maxspeed = KilometersPerHour(network::defaults::speed::MAX_KMH as u32);
+                let maxspeed = KilometersPerHour(defaults::speed::MAX_KMH as u32);
                 meters / maxspeed
             };
             Box::new(GenericAstar::new(cost_fn, estimate_fn))
@@ -27,7 +27,7 @@ pub mod astar {
 
     pub mod bidirectional {
         use crate::{
-            network,
+            defaults,
             network::{HalfEdge, MetricIdx, Node},
             routing::astar::{bidirectional::GenericAstar, Astar},
             units::{geo, length::Meters, speed::KilometersPerHour, time::Milliseconds},
@@ -44,7 +44,7 @@ pub mod astar {
             let cost_fn = move |edge: &HalfEdge| edge.duration(duration_idx).unwrap();
             let estimate_fn = |from: &Node, to: &Node| {
                 let meters = geo::haversine_distance_m(&from.coord(), &to.coord());
-                let maxspeed = KilometersPerHour(network::defaults::speed::MAX_KMH as u32);
+                let maxspeed = KilometersPerHour(defaults::speed::MAX_KMH as u32);
                 meters / maxspeed
             };
             Box::new(GenericAstar::new(cost_fn, estimate_fn))

@@ -10,7 +10,7 @@ pub struct Config {
 }
 
 pub mod vehicles {
-    use crate::configs::VehicleCategory;
+    use crate::network::VehicleCategory;
     use serde::Deserialize;
 
     #[derive(Debug, Deserialize)]
