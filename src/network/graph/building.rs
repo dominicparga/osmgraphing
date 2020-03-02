@@ -366,7 +366,7 @@ impl GraphBuilder {
         // memory-peak is here when sorting
 
         // sort reversed to make splice efficient
-        self.proto_edges.sort_by(|e1, e0| {
+        self.proto_edges.sort_unstable_by(|e1, e0| {
             e0.src_id
                 .cmp(&e1.src_id)
                 .then_with(|| e0.dst_id.cmp(&e1.dst_id))
@@ -529,7 +529,7 @@ impl GraphBuilder {
         // sort backward-edges by ascending dst-id, then by ascending src-id -> offset-array
 
         info!("START Sort proto-backward-edges by their dst/src-IDs.");
-        new_proto_edges.sort_by(|e0, e1| {
+        new_proto_edges.sort_unstable_by(|e0, e1| {
             e0.dst_id
                 .cmp(&e1.dst_id)
                 .then_with(|| e0.src_id.cmp(&e1.src_id))
