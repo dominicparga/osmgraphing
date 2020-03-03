@@ -100,7 +100,7 @@ where
         );
         assert_eq!(
             path.cost(),
-            self.cost,
+            &self.cost,
             "Path from src {} to dst {} should have cost {}",
             self.src,
             self.dst,

@@ -81,7 +81,8 @@ pub mod unidirectional {
                 if current.idx == dst.idx() {
                     let mut cur_idx = current.idx;
 
-                    let mut path = Path::with_capacity(src.idx(), dst.idx(), nodes.count());
+                    let mut path =
+                        Path::with_capacity(src.idx(), dst.idx(), M::inf(), nodes.count());
                     *(path.cost_mut()) = current.cost;
                     while let Some(pred_idx) = self.predecessors[*cur_idx] {
                         path.add_pred_succ(pred_idx, cur_idx);
@@ -365,7 +366,7 @@ pub mod bidirectional {
             // create path if found
 
             if let Some((meeting_node, total_cost)) = best_meeting {
-                let mut path = Path::with_capacity(src.idx(), dst.idx(), nodes.count());
+                let mut path = Path::with_capacity(src.idx(), dst.idx(), M::inf(), nodes.count());
                 *(path.cost_mut()) = total_cost;
 
                 // iterate backwards over fwd-path
