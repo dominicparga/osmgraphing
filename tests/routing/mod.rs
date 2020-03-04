@@ -1,17 +1,15 @@
 use super::{create_config, TestType};
-use osmgraphing::{configs::graph, network::Graph, network::NodeIdx, routing, units::Metric};
+use osmgraphing::{configs::graph, network::Graph, network::NodeIdx, routing};
 use std::{fmt, fmt::Display};
 
 pub mod fastest;
 pub mod shortest;
 
-fn assert_correct<M>(
-    astar: &mut Box<dyn routing::astar::Astar<M>>,
-    expected_paths: Vec<(TestNode, TestNode, Option<(M, Vec<Vec<TestNode>>)>)>,
+fn assert_correct(
+    astar: &mut Box<dyn routing::astar::Astar>,
+    expected_paths: Vec<(TestNode, TestNode, Option<(f32, Vec<Vec<TestNode>>)>)>,
     cfg: graph::Config,
-) where
-    M: Metric + PartialEq + Display,
-{
+) {
     let graph = super::parse(cfg);
 
     for (src, dst, option_specs) in expected_paths {
@@ -33,7 +31,7 @@ fn assert_correct<M>(
         );
 
         if let (Some((cost, nodes)), Some(path)) = (option_specs, option_path) {
-            TestPath::<M>::from_alternatives(src, dst, cost, nodes).assert_correct(&path, &graph);
+            TestPath::from_alternatives(src, dst, cost, nodes).assert_correct(&path, &graph);
         }
     }
 }
@@ -50,26 +48,20 @@ impl Display for TestNode {
     }
 }
 
-struct TestPath<M>
-where
-    M: Metric,
-{
+struct TestPath {
     src: TestNode,
     dst: TestNode,
-    cost: M,
+    cost: f32,
     alternative_nodes: Vec<Vec<TestNode>>,
 }
 
-impl<M> TestPath<M>
-where
-    M: Metric + PartialEq + Display,
-{
+impl TestPath {
     fn from_alternatives(
         src: TestNode,
         dst: TestNode,
-        cost: M,
+        cost: f32,
         alternative_nodes: Vec<Vec<TestNode>>,
-    ) -> TestPath<M> {
+    ) -> TestPath {
         TestPath {
             src,
             dst,
@@ -78,7 +70,7 @@ where
         }
     }
 
-    fn assert_correct(&self, path: &routing::paths::Path<M>, graph: &Graph) {
+    fn assert_correct(&self, path: &routing::paths::Path<f32>, graph: &Graph) {
         let node = |idx: NodeIdx| -> TestNode {
             TestNode {
                 idx,

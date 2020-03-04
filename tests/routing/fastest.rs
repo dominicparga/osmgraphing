@@ -1,5 +1,5 @@
 use super::{assert_correct, create_config, TestNode, TestType};
-use osmgraphing::{network::NodeIdx, units::time::Milliseconds};
+use osmgraphing::network::NodeIdx;
 
 //------------------------------------------------------------------------------------------------//
 
@@ -209,11 +209,7 @@ pub mod dijkstra {
 
 fn expected_paths(
     test_type: TestType,
-) -> Vec<(
-    TestNode,
-    TestNode,
-    Option<(Milliseconds, Vec<Vec<TestNode>>)>,
-)> {
+) -> Vec<(TestNode, TestNode, Option<(f32, Vec<Vec<TestNode>>)>)> {
     match test_type {
         TestType::BidirectionalBait => expected_paths_bait(),
         TestType::IsleOfMan => expected_paths_isle_of_man(),
@@ -222,11 +218,8 @@ fn expected_paths(
     }
 }
 
-fn expected_paths_simple_stuttgart() -> Vec<(
-    TestNode,
-    TestNode,
-    Option<(Milliseconds, Vec<Vec<TestNode>>)>,
-)> {
+fn expected_paths_simple_stuttgart() -> Vec<(TestNode, TestNode, Option<(f32, Vec<Vec<TestNode>>)>)>
+{
     // (idx, id)
     let opp = TestNode {
         idx: NodeIdx(0),
@@ -255,155 +248,63 @@ fn expected_paths_simple_stuttgart() -> Vec<(
 
     vec![
         // opp
-        (opp, opp, Some((Milliseconds(0u32), vec![vec![]]))),
-        (
-            opp,
-            bac,
-            Some((Milliseconds(576_000u32), vec![vec![opp, bac]])),
-        ),
-        (
-            opp,
-            wai,
-            Some((Milliseconds(1_266_000u32), vec![vec![opp, bac, wai]])),
-        ),
-        (
-            opp,
-            end,
-            Some((Milliseconds(1_566_000u32), vec![vec![opp, bac, end]])),
-        ),
-        (
-            opp,
-            dea,
-            Some((Milliseconds(704_280u32), vec![vec![opp, bac, dea]])),
-        ),
+        (opp, opp, Some((0.0, vec![vec![]]))),
+        (opp, bac, Some((576_000.0, vec![vec![opp, bac]]))),
+        (opp, wai, Some((1_266_000.0, vec![vec![opp, bac, wai]]))),
+        (opp, end, Some((1_566_000.0, vec![vec![opp, bac, end]]))),
+        (opp, dea, Some((704_280.0, vec![vec![opp, bac, dea]]))),
         (
             opp,
             stu,
-            Some((Milliseconds(1_878_000u32), vec![vec![opp, bac, wai, stu]])),
+            Some((1_878_000.0, vec![vec![opp, bac, wai, stu]])),
         ),
         // bac
-        (
-            bac,
-            opp,
-            Some((Milliseconds(576_000u32), vec![vec![bac, opp]])),
-        ),
-        (bac, bac, Some((Milliseconds(0u32), vec![vec![]]))),
-        (
-            bac,
-            wai,
-            Some((Milliseconds(690_000u32), vec![vec![bac, wai]])),
-        ),
-        (
-            bac,
-            end,
-            Some((Milliseconds(990_000u32), vec![vec![bac, end]])),
-        ),
-        (
-            bac,
-            dea,
-            Some((Milliseconds(128_280u32), vec![vec![bac, dea]])),
-        ),
-        (
-            bac,
-            stu,
-            Some((Milliseconds(1_302_000u32), vec![vec![bac, wai, stu]])),
-        ),
+        (bac, opp, Some((576_000.0, vec![vec![bac, opp]]))),
+        (bac, bac, Some((0.0, vec![vec![]]))),
+        (bac, wai, Some((690_000.0, vec![vec![bac, wai]]))),
+        (bac, end, Some((990_000.0, vec![vec![bac, end]]))),
+        (bac, dea, Some((128_280.0, vec![vec![bac, dea]]))),
+        (bac, stu, Some((1_302_000.0, vec![vec![bac, wai, stu]]))),
         // wai
-        (
-            wai,
-            opp,
-            Some((Milliseconds(1_266_000u32), vec![vec![wai, bac, opp]])),
-        ),
-        (
-            wai,
-            bac,
-            Some((Milliseconds(690_000u32), vec![vec![wai, bac]])),
-        ),
-        (wai, wai, Some((Milliseconds(0u32), vec![vec![]]))),
-        (
-            wai,
-            end,
-            Some((Milliseconds(576_000u32), vec![vec![wai, end]])),
-        ),
-        (
-            wai,
-            dea,
-            Some((Milliseconds(818_280u32), vec![vec![wai, bac, dea]])),
-        ),
-        (
-            wai,
-            stu,
-            Some((Milliseconds(612_000u32), vec![vec![wai, stu]])),
-        ),
+        (wai, opp, Some((1_266_000.0, vec![vec![wai, bac, opp]]))),
+        (wai, bac, Some((690_000.0, vec![vec![wai, bac]]))),
+        (wai, wai, Some((0.0, vec![vec![]]))),
+        (wai, end, Some((576_000.0, vec![vec![wai, end]]))),
+        (wai, dea, Some((818_280.0, vec![vec![wai, bac, dea]]))),
+        (wai, stu, Some((612_000.0, vec![vec![wai, stu]]))),
         // end
-        (
-            end,
-            opp,
-            Some((Milliseconds(1_566_000u32), vec![vec![end, bac, opp]])),
-        ),
-        (
-            end,
-            bac,
-            Some((Milliseconds(990_000u32), vec![vec![end, bac]])),
-        ),
-        (
-            end,
-            wai,
-            Some((Milliseconds(576_000u32), vec![vec![end, wai]])),
-        ),
-        (end, end, Some((Milliseconds(0u32), vec![vec![]]))),
-        (
-            end,
-            dea,
-            Some((Milliseconds(1_118_280u32), vec![vec![end, bac, dea]])),
-        ),
-        (
-            end,
-            stu,
-            Some((Milliseconds(945_000u32), vec![vec![end, stu]])),
-        ),
+        (end, opp, Some((1_566_000.0, vec![vec![end, bac, opp]]))),
+        (end, bac, Some((990_000.0, vec![vec![end, bac]]))),
+        (end, wai, Some((576_000.0, vec![vec![end, wai]]))),
+        (end, end, Some((0.0, vec![vec![]]))),
+        (end, dea, Some((1_118_280.0, vec![vec![end, bac, dea]]))),
+        (end, stu, Some((945_000.0, vec![vec![end, stu]]))),
         // dea
         (dea, opp, None),
         (dea, bac, None),
         (dea, wai, None),
         (dea, end, None),
-        (dea, dea, Some((Milliseconds(0u32), vec![vec![]]))),
+        (dea, dea, Some((0.0, vec![vec![]]))),
         (dea, stu, None),
         // stu
         (
             stu,
             opp,
-            Some((Milliseconds(1_878_000u32), vec![vec![stu, wai, bac, opp]])),
+            Some((1_878_000.0, vec![vec![stu, wai, bac, opp]])),
         ),
-        (
-            stu,
-            bac,
-            Some((Milliseconds(1_302_000u32), vec![vec![stu, wai, bac]])),
-        ),
-        (
-            stu,
-            wai,
-            Some((Milliseconds(612_000u32), vec![vec![stu, wai]])),
-        ),
-        (
-            stu,
-            end,
-            Some((Milliseconds(945_000u32), vec![vec![stu, end]])),
-        ),
+        (stu, bac, Some((1_302_000.0, vec![vec![stu, wai, bac]]))),
+        (stu, wai, Some((612_000.0, vec![vec![stu, wai]]))),
+        (stu, end, Some((945_000.0, vec![vec![stu, end]]))),
         (
             stu,
             dea,
-            Some((Milliseconds(1_430_280u32), vec![vec![stu, wai, bac, dea]])),
+            Some((1_430_280.0, vec![vec![stu, wai, bac, dea]])),
         ),
-        (stu, stu, Some((Milliseconds(0u32), vec![vec![]]))),
+        (stu, stu, Some((0.0, vec![vec![]]))),
     ]
 }
 
-fn expected_paths_small() -> Vec<(
-    TestNode,
-    TestNode,
-    Option<(Milliseconds, Vec<Vec<TestNode>>)>,
-)> {
+fn expected_paths_small() -> Vec<(TestNode, TestNode, Option<(f32, Vec<Vec<TestNode>>)>)> {
     // (idx, id)
     let a = TestNode {
         idx: NodeIdx(0),
@@ -440,7 +341,7 @@ fn expected_paths_small() -> Vec<(
 
     vec![
         // a
-        (a, a, Some((Milliseconds(0u32), vec![vec![]]))),
+        (a, a, Some((0.0, vec![vec![]]))),
         (a, b, None),
         (a, c, None),
         (a, d, None),
@@ -449,112 +350,87 @@ fn expected_paths_small() -> Vec<(
         (a, g, None),
         (a, h, None),
         // b
-        (b, a, Some((Milliseconds(120u32), vec![vec![b, a]]))),
-        (b, b, Some((Milliseconds(0u32), vec![vec![]]))),
-        (b, c, Some((Milliseconds(120u32), vec![vec![b, c]]))),
+        (b, a, Some((120.0, vec![vec![b, a]]))),
+        (b, b, Some((0.0, vec![vec![]]))),
+        (b, c, Some((120.0, vec![vec![b, c]]))),
         (b, d, None),
         (b, e, None),
         (b, f, None),
         (b, g, None),
         (b, h, None),
         // c
-        (c, a, Some((Milliseconds(120u32), vec![vec![c, a]]))),
-        (c, b, Some((Milliseconds(120u32), vec![vec![c, b]]))),
-        (c, c, Some((Milliseconds(0u32), vec![vec![]]))),
+        (c, a, Some((120.0, vec![vec![c, a]]))),
+        (c, b, Some((120.0, vec![vec![c, b]]))),
+        (c, c, Some((0.0, vec![vec![]]))),
         (c, d, None),
         (c, e, None),
         (c, f, None),
         (c, g, None),
         (c, h, None),
         // d
-        (d, a, Some((Milliseconds(240u32), vec![vec![d, b, a]]))),
-        (d, b, Some((Milliseconds(120u32), vec![vec![d, b]]))),
-        (d, c, Some((Milliseconds(240u32), vec![vec![d, b, c]]))),
-        (d, d, Some((Milliseconds(0u32), vec![vec![]]))),
-        (d, e, Some((Milliseconds(240u32), vec![vec![d, e]]))),
-        (d, f, Some((Milliseconds(240u32), vec![vec![d, h, f]]))),
+        (d, a, Some((240.0, vec![vec![d, b, a]]))),
+        (d, b, Some((120.0, vec![vec![d, b]]))),
+        (d, c, Some((240.0, vec![vec![d, b, c]]))),
+        (d, d, Some((0.0, vec![vec![]]))),
+        (d, e, Some((240.0, vec![vec![d, e]]))),
+        (d, f, Some((240.0, vec![vec![d, h, f]]))),
         (d, g, None),
-        (d, h, Some((Milliseconds(120u32), vec![vec![d, h]]))),
+        (d, h, Some((120.0, vec![vec![d, h]]))),
         // e
-        (e, a, Some((Milliseconds(480u32), vec![vec![e, d, b, a]]))),
-        (e, b, Some((Milliseconds(360u32), vec![vec![e, d, b]]))),
-        (e, c, Some((Milliseconds(480u32), vec![vec![e, d, b, c]]))),
-        (e, d, Some((Milliseconds(240u32), vec![vec![e, d]]))),
-        (e, e, Some((Milliseconds(0u32), vec![vec![]]))),
-        (e, f, Some((Milliseconds(120u32), vec![vec![e, f]]))),
+        (e, a, Some((480.0, vec![vec![e, d, b, a]]))),
+        (e, b, Some((360.0, vec![vec![e, d, b]]))),
+        (e, c, Some((480.0, vec![vec![e, d, b, c]]))),
+        (e, d, Some((240.0, vec![vec![e, d]]))),
+        (e, e, Some((0.0, vec![vec![]]))),
+        (e, f, Some((120.0, vec![vec![e, f]]))),
         (e, g, None),
-        (e, h, Some((Milliseconds(240u32), vec![vec![e, f, h]]))),
+        (e, h, Some((240.0, vec![vec![e, f, h]]))),
         // f
-        (
-            f,
-            a,
-            Some((Milliseconds(480u32), vec![vec![f, h, d, b, a]])),
-        ),
-        (f, b, Some((Milliseconds(360u32), vec![vec![f, h, d, b]]))),
-        (
-            f,
-            c,
-            Some((Milliseconds(480u32), vec![vec![f, h, d, b, c]])),
-        ),
-        (f, d, Some((Milliseconds(240u32), vec![vec![f, h, d]]))),
-        (f, e, Some((Milliseconds(120u32), vec![vec![f, e]]))),
-        (f, f, Some((Milliseconds(0u32), vec![vec![]]))),
+        (f, a, Some((480.0, vec![vec![f, h, d, b, a]]))),
+        (f, b, Some((360.0, vec![vec![f, h, d, b]]))),
+        (f, c, Some((480.0, vec![vec![f, h, d, b, c]]))),
+        (f, d, Some((240.0, vec![vec![f, h, d]]))),
+        (f, e, Some((120.0, vec![vec![f, e]]))),
+        (f, f, Some((0.0, vec![vec![]]))),
         (f, g, None),
-        (f, h, Some((Milliseconds(120u32), vec![vec![f, h]]))),
+        (f, h, Some((120.0, vec![vec![f, h]]))),
         // g
         (
             g,
             a,
-            Some((
-                Milliseconds(600u32),
-                vec![vec![g, f, h, d, b, a], vec![g, e, d, b, a]],
-            )),
+            Some((600.0, vec![vec![g, f, h, d, b, a], vec![g, e, d, b, a]])),
         ),
         (
             g,
             b,
-            Some((
-                Milliseconds(480u32),
-                vec![vec![g, e, d, b], vec![g, f, h, d, b]],
-            )),
+            Some((480.0, vec![vec![g, e, d, b], vec![g, f, h, d, b]])),
         ),
         (
             g,
             c,
-            Some((
-                Milliseconds(600u32),
-                vec![vec![g, e, d, b, c], vec![g, f, h, d, b, c]],
-            )),
+            Some((600.0, vec![vec![g, e, d, b, c], vec![g, f, h, d, b, c]])),
         ),
-        (
-            g,
-            d,
-            Some((Milliseconds(360u32), vec![vec![g, e, d], vec![g, f, h, d]])),
-        ),
-        (g, e, Some((Milliseconds(120u32), vec![vec![g, e]]))),
-        (g, f, Some((Milliseconds(120u32), vec![vec![g, f]]))),
-        (g, g, Some((Milliseconds(0u32), vec![vec![]]))),
-        (g, h, Some((Milliseconds(240u32), vec![vec![g, f, h]]))),
+        (g, d, Some((360.0, vec![vec![g, e, d], vec![g, f, h, d]]))),
+        (g, e, Some((120.0, vec![vec![g, e]]))),
+        (g, f, Some((120.0, vec![vec![g, f]]))),
+        (g, g, Some((0.0, vec![vec![]]))),
+        (g, h, Some((240.0, vec![vec![g, f, h]]))),
         // h
-        (h, a, Some((Milliseconds(360u32), vec![vec![h, d, b, a]]))),
-        (h, b, Some((Milliseconds(240u32), vec![vec![h, d, b]]))),
-        (h, c, Some((Milliseconds(360u32), vec![vec![h, d, b, c]]))),
-        (h, d, Some((Milliseconds(120u32), vec![vec![h, d]]))),
-        (h, e, Some((Milliseconds(240u32), vec![vec![h, f, e]]))),
-        (h, f, Some((Milliseconds(120u32), vec![vec![h, f]]))),
+        (h, a, Some((360.0, vec![vec![h, d, b, a]]))),
+        (h, b, Some((240.0, vec![vec![h, d, b]]))),
+        (h, c, Some((360.0, vec![vec![h, d, b, c]]))),
+        (h, d, Some((120.0, vec![vec![h, d]]))),
+        (h, e, Some((240.0, vec![vec![h, f, e]]))),
+        (h, f, Some((120.0, vec![vec![h, f]]))),
         (h, g, None),
-        (h, h, Some((Milliseconds(0u32), vec![vec![]]))),
+        (h, h, Some((0.0, vec![vec![]]))),
     ]
 }
 
 /// Consider a path from left to right.
 /// It is important to have the smaller hop-distance at the bottom-path,
 /// but the smaller weight-distance at the top-path.
-fn expected_paths_bait() -> Vec<(
-    TestNode,
-    TestNode,
-    Option<(Milliseconds, Vec<Vec<TestNode>>)>,
-)> {
+fn expected_paths_bait() -> Vec<(TestNode, TestNode, Option<(f32, Vec<Vec<TestNode>>)>)> {
     // (idx, id)
     // ll left
     // bb bottom
@@ -584,50 +460,38 @@ fn expected_paths_bait() -> Vec<(
 
     vec![
         // ll
-        (ll, ll, Some((Milliseconds(0u32), vec![vec![]]))),
-        (ll, bb, Some((Milliseconds(600u32), vec![vec![ll, bb]]))),
-        (
-            ll,
-            rr,
-            Some((Milliseconds(1080u32), vec![vec![ll, tl, tr, rr]])),
-        ),
-        (ll, tr, Some((Milliseconds(720u32), vec![vec![ll, tl, tr]]))),
-        (ll, tl, Some((Milliseconds(360u32), vec![vec![ll, tl]]))),
+        (ll, ll, Some((0.0, vec![vec![]]))),
+        (ll, bb, Some((600.0, vec![vec![ll, bb]]))),
+        (ll, rr, Some((1080.0, vec![vec![ll, tl, tr, rr]]))),
+        (ll, tr, Some((720.0, vec![vec![ll, tl, tr]]))),
+        (ll, tl, Some((360.0, vec![vec![ll, tl]]))),
         // bb
-        (bb, ll, Some((Milliseconds(600u32), vec![vec![bb, ll]]))),
-        (bb, bb, Some((Milliseconds(0u32), vec![vec![]]))),
-        (bb, rr, Some((Milliseconds(600u32), vec![vec![bb, rr]]))),
-        (bb, tr, Some((Milliseconds(960u32), vec![vec![bb, rr, tr]]))),
-        (bb, tl, Some((Milliseconds(960u32), vec![vec![bb, ll, tl]]))),
+        (bb, ll, Some((600.0, vec![vec![bb, ll]]))),
+        (bb, bb, Some((0.0, vec![vec![]]))),
+        (bb, rr, Some((600.0, vec![vec![bb, rr]]))),
+        (bb, tr, Some((960.0, vec![vec![bb, rr, tr]]))),
+        (bb, tl, Some((960.0, vec![vec![bb, ll, tl]]))),
         // rr
-        (
-            rr,
-            ll,
-            Some((Milliseconds(1080u32), vec![vec![rr, tr, tl, ll]])),
-        ),
-        (rr, bb, Some((Milliseconds(600u32), vec![vec![rr, bb]]))),
-        (rr, rr, Some((Milliseconds(0u32), vec![vec![]]))),
-        (rr, tr, Some((Milliseconds(360u32), vec![vec![rr, tr]]))),
-        (rr, tl, Some((Milliseconds(720u32), vec![vec![rr, tr, tl]]))),
+        (rr, ll, Some((1080.0, vec![vec![rr, tr, tl, ll]]))),
+        (rr, bb, Some((600.0, vec![vec![rr, bb]]))),
+        (rr, rr, Some((0.0, vec![vec![]]))),
+        (rr, tr, Some((360.0, vec![vec![rr, tr]]))),
+        (rr, tl, Some((720.0, vec![vec![rr, tr, tl]]))),
         // tr
-        (tr, ll, Some((Milliseconds(720u32), vec![vec![tr, tl, ll]]))),
-        (tr, bb, Some((Milliseconds(960u32), vec![vec![tr, rr, bb]]))),
-        (tr, rr, Some((Milliseconds(360u32), vec![vec![tr, rr]]))),
-        (tr, tr, Some((Milliseconds(0u32), vec![vec![]]))),
-        (tr, tl, Some((Milliseconds(360u32), vec![vec![tr, tl]]))),
+        (tr, ll, Some((720.0, vec![vec![tr, tl, ll]]))),
+        (tr, bb, Some((960.0, vec![vec![tr, rr, bb]]))),
+        (tr, rr, Some((360.0, vec![vec![tr, rr]]))),
+        (tr, tr, Some((0.0, vec![vec![]]))),
+        (tr, tl, Some((360.0, vec![vec![tr, tl]]))),
         // tl
-        (tl, ll, Some((Milliseconds(360u32), vec![vec![tl, ll]]))),
-        (tl, bb, Some((Milliseconds(960u32), vec![vec![tl, ll, bb]]))),
-        (tl, rr, Some((Milliseconds(720u32), vec![vec![tl, tr, rr]]))),
-        (tl, tr, Some((Milliseconds(360u32), vec![vec![tl, tr]]))),
-        (tl, tl, Some((Milliseconds(0u32), vec![vec![]]))),
+        (tl, ll, Some((360.0, vec![vec![tl, ll]]))),
+        (tl, bb, Some((960.0, vec![vec![tl, ll, bb]]))),
+        (tl, rr, Some((720.0, vec![vec![tl, tr, rr]]))),
+        (tl, tr, Some((360.0, vec![vec![tl, tr]]))),
+        (tl, tl, Some((0.0, vec![vec![]]))),
     ]
 }
 
-fn expected_paths_isle_of_man() -> Vec<(
-    TestNode,
-    TestNode,
-    Option<(Milliseconds, Vec<Vec<TestNode>>)>,
-)> {
+fn expected_paths_isle_of_man() -> Vec<(TestNode, TestNode, Option<(f32, Vec<Vec<TestNode>>)>)> {
     unimplemented!("Testing routing on isle-of-man is not supported yet.")
 }

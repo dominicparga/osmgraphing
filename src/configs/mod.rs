@@ -18,8 +18,7 @@ pub mod graph;
 ///
 /// Internally, a default-metric uses provided calculation-rules to be calculated by other default-categories as well (like the duration from length and maxspeed).
 ///
-/// Keep in mind, that metrics (except for id) are stored as `u32` for better maintainability and efficiency.
-/// Note that you can convert `floats` into `u32` by moving the comma.
+/// Keep in mind, that metrics (except for id) are stored as `f32` for better maintainability and efficiency.
 ///
 ///
 /// ### Specifying routing (in the future)
@@ -85,7 +84,7 @@ impl Display for MetricId {
 /// - `maxspeed` in km/h
 /// - `duration` in milliseconds
 /// - `lane-count`
-/// - `custom`, which is just the plain u32-value
+/// - `custom`, which is just the plain f32-value
 /// - `ignore`, which is used in `csv`-like `fmi`-maps to jump over columns
 #[derive(Copy, Clone, Debug, Deserialize, Eq, PartialEq)]
 pub enum MetricCategory {

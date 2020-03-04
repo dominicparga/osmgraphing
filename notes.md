@@ -22,6 +22,8 @@ Maybe, it is concept for later documentation, or just keep-up-the-good-work (`ku
   - Implement shortcut-edges more memory-efficient storing list of costs per src-dst-pair instead of per edge.
   - Routing from src-node to dst-node where dst-node has at least the city-level of the src-node.
 - Use preprocessing-phase for `pbf`-parser to count edges and allocate memory accordingly.
+- Implement `config-settings` for nodes (e.g. coordinates in float vs unsigned integral)
+- Replace duration in milliseconds by seconds.
 
 
 [kde/marble]: http://api.kde.org/4.x-api/kdeedu-apidocs/marble/html/namespaceMarble.html

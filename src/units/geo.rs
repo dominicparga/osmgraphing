@@ -67,19 +67,8 @@ impl Display for Coordinate {
     }
 }
 
-/// The haversince-distance is the distance (e.g. in meters) between two points on a sphere (given in latitude and longitude).
-///
-/// The earth-radius is taken as `6371 km` since
-///
-/// 1. the resuluting sphere has same volume as the earth-ellipsoid, and
-/// 1. it is the average radius.
-///
-///
-/// ## Additional info
-///
-/// - [detailled information](http://www.movable-type.co.uk/scripts/latlong.html)
-/// - [cpp](https://geographiclib.sourceforge.io/)
-pub fn haversine_distance(from: &Coordinate, to: &Coordinate) -> f64 {
+/// Result in km
+fn haversine_distance(from: &Coordinate, to: &Coordinate) -> f64 {
     let earth_mean_radius = 6_371.0; // kilometers
 
     let from_lat = from.lat();
@@ -102,7 +91,19 @@ pub fn haversine_distance(from: &Coordinate, to: &Coordinate) -> f64 {
         * (2.0 * earth_mean_radius)
 }
 
-/// Note that the result could have rounding errors due to up-scaling (* 1000.0) and cutting afterwards (f64 -> u32)
+/// The haversince-distance is the distance (e.g. in meters) between two points on a sphere (given in latitude and longitude).
+///
+/// The earth-radius is taken as `6371 km` since
+///
+/// 1. the resuluting sphere has same volume as the earth-ellipsoid, and
+/// 1. it is the average radius.
+///
+/// Note that the result could have rounding errors due to cutting (f64 -> u32) and up-scaling (* 1000.0) afterwards.
+///
+/// ## Additional info
+///
+/// - [detailled information](http://www.movable-type.co.uk/scripts/latlong.html)
+/// - [cpp](https://geographiclib.sourceforge.io/)
 pub fn haversine_distance_m(from: &Coordinate, to: &Coordinate) -> Meters {
-    Meters((1_000.0 * haversine_distance(from, to)) as u32)
+    Meters(1_000.0 * (haversine_distance(from, to) as f32))
 }

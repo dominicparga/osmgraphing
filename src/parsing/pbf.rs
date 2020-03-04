@@ -1,6 +1,6 @@
 use crate::{
     configs::{graph, MetricCategory},
-    helpers,
+    defaults, helpers,
     network::{GraphBuilder, MetricIdx, ProtoEdge, StreetCategory},
     units::geo::Coordinate,
 };
@@ -67,7 +67,8 @@ impl super::Parsing for Parser {
             // Collect metrics as expected by user-config
             // ATTENTION: A way contains multiple edges, thus be careful when adding new metrics.
             let cfg = &cfg.edges.metrics;
-            let mut metrics: SmallVec<[_; 5]> = smallvec![None; cfg.count()];
+            let mut metrics: SmallVec<[_; defaults::SMALL_VEC_INLINE_SIZE]> =
+                smallvec![None; cfg.count()];
             for metric_idx in (0..cfg.count()).map(MetricIdx) {
                 let metric_type = cfg.category(metric_idx);
                 let is_provided = cfg.is_provided(metric_idx);
@@ -85,7 +86,7 @@ impl super::Parsing for Parser {
                     MetricCategory::Maxspeed => {
                         if is_provided {
                             let maxspeed = highway_tag.parse_maxspeed(&way);
-                            metrics[*metric_idx] = Some(maxspeed as u32);
+                            metrics[*metric_idx] = Some(maxspeed as f32);
                         } else {
                             return Err(format!(
                                 "The {} of an edge in a pbf-file has to be provided, \
@@ -97,7 +98,7 @@ impl super::Parsing for Parser {
                     MetricCategory::LaneCount => {
                         if is_provided {
                             let lane_count = highway_tag.parse_lane_count(&way);
-                            metrics[*metric_idx] = Some(lane_count as u32);
+                            metrics[*metric_idx] = Some(lane_count as f32);
                         } else {
                             return Err(format!(
                                 "The {} of an edge in a pbf-file has to be provided, \

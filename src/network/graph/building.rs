@@ -1,6 +1,7 @@
 use super::{EdgeIdx, Graph, NodeIdx};
 use crate::{
     configs::{graph::Config, MetricCategory},
+    defaults,
     network::MetricIdx,
     units::{geo, geo::Coordinate, length::Meters, speed::KilometersPerHour, time::Milliseconds},
 };
@@ -31,7 +32,7 @@ impl ProtoNode {
 pub struct ProtoEdge {
     pub src_id: i64,
     pub dst_id: i64,
-    pub metrics: SmallVec<[Option<u32>; 5]>,
+    pub metrics: SmallVec<[Option<f32>; defaults::SMALL_VEC_INLINE_SIZE]>,
 }
 
 /// handy for remembering indices after sorting backwards
@@ -111,12 +112,12 @@ impl Graph {
                 // Jump if proto-edge has its value.
                 if let Some(value) = &mut proto_edge.metrics[*metric_idx] {
                     // But jump only if value is correct.
-                    if value == &0 && category.must_be_positive() {
+                    if value == &0.0 && category.must_be_positive() {
                         debug!(
-                            "Proto-edge (id:{}->id:{}) has {}=0, hence is corrected to 1.",
+                            "Proto-edge (id:{}->id:{}) has {}=0, hence is corrected to epsilon.",
                             proto_edge.src_id, proto_edge.dst_id, category
                         );
-                        *value += 1;
+                        *value = std::f32::EPSILON;
                     }
                     continue;
                 }
@@ -387,11 +388,11 @@ impl GraphBuilder {
 
         // Work off proto-edges in chunks to keep memory-usage lower.
         // For example:
-        // To keep additional memory-needs below 1 MB, the the maximum amount of four u32-values per
+        // To keep additional memory-needs below 1 MB, the the maximum amount of four f32-values per
         // worked-off chunk has to be limited to 250_000.
-        // Because ids are more expensive than metrics, (2x i64 = 4x u32), the number is much lower.
+        // Because ids are more expensive than metrics, (2x i64 = 4x f32), the number is much lower.
         let bytes_per_edge =
-            2 * mem::size_of::<i64>() + graph.cfg().edges.metrics.count() * mem::size_of::<u32>();
+            2 * mem::size_of::<i64>() + graph.cfg().edges.metrics.count() * mem::size_of::<f32>();
         let max_byte = 200 * 1_000_000;
         let max_chunk_size = max_byte / bytes_per_edge;
         log::debug!("max-chunk-size:                {}", max_chunk_size);

@@ -87,7 +87,7 @@ pub struct Graph {
     bwd_offsets: Vec<usize>,
     bwd_to_fwd_map: Vec<EdgeIdx>,
     // edge-metrics (sorted according to fwd_dsts)
-    metrics: Vec<Vec<u32>>,
+    metrics: Vec<Vec<f32>>,
 }
 
 /// public stuff for accessing the (static) graph
@@ -203,7 +203,7 @@ impl Display for Graph {
                     let edge_idx = EdgeIdx(j);
                     let src_idx = bwd_dsts.dst_idx(edge_idx).unwrap();
                     let half_edge = fwd_dsts.half_edge(edge_idx).unwrap();
-                    let metrics: Vec<u32> = (0..self.cfg.edges.metrics.count())
+                    let metrics: Vec<f32> = (0..self.cfg.edges.metrics.count())
                         .map(|i| self.metrics[i][*edge_idx])
                         .collect();
                     writeln!(
@@ -326,11 +326,11 @@ impl<'a> HalfEdge<'a> {
         self.metrics.duration(metric_idx, self.idx)
     }
 
-    pub fn lane_count(&self, metric_idx: MetricIdx) -> Option<u32> {
+    pub fn lane_count(&self, metric_idx: MetricIdx) -> Option<f32> {
         self.metrics.lane_count(metric_idx, self.idx)
     }
 
-    pub fn metric(&self, metric_idx: MetricIdx) -> Option<u32> {
+    pub fn metric(&self, metric_idx: MetricIdx) -> Option<f32> {
         self.metrics.get(metric_idx, self.idx)
     }
 }
@@ -505,7 +505,7 @@ impl<'a> EdgeContainer<'a> {
 #[derive(Debug)]
 pub struct MetricContainer<'a> {
     cfg: &'a Config,
-    metrics: &'a Vec<Vec<u32>>,
+    metrics: &'a Vec<Vec<f32>>,
 }
 
 impl<'a> Display for MetricContainer<'a> {
@@ -515,32 +515,32 @@ impl<'a> Display for MetricContainer<'a> {
 }
 
 impl<'a> MetricContainer<'a> {
-    pub fn get(&self, metric_idx: MetricIdx, edge_idx: EdgeIdx) -> Option<u32> {
+    pub fn get(&self, metric_idx: MetricIdx, edge_idx: EdgeIdx) -> Option<f32> {
         let metric_vec = &self.metrics[*metric_idx];
         Some(metric_vec[*edge_idx])
     }
 
     pub fn length(&self, metric_idx: MetricIdx, edge_idx: EdgeIdx) -> Option<Meters> {
         let length = self.get(metric_idx, edge_idx)?;
-        debug_assert!(length > 0, "Edge-length should be > 0");
+        debug_assert!(length > 0.0, "Edge-length should be > 0");
         Some(Meters(length))
     }
 
     pub fn maxspeed(&self, metric_idx: MetricIdx, edge_idx: EdgeIdx) -> Option<KilometersPerHour> {
         let maxspeed = self.get(metric_idx, edge_idx)?;
-        debug_assert!(maxspeed > 0, "Edge-maxspeed should be > 0");
+        debug_assert!(maxspeed > 0.0, "Edge-maxspeed should be > 0");
         Some(KilometersPerHour(maxspeed))
     }
 
     pub fn duration(&self, metric_idx: MetricIdx, edge_idx: EdgeIdx) -> Option<Milliseconds> {
         let duration = self.get(metric_idx, edge_idx)?;
-        debug_assert!(duration > 0, "Edge-duration should be > 0");
+        debug_assert!(duration > 0.0, "Edge-duration should be > 0");
         Some(Milliseconds(duration))
     }
 
-    pub fn lane_count(&self, metric_idx: MetricIdx, edge_idx: EdgeIdx) -> Option<u32> {
+    pub fn lane_count(&self, metric_idx: MetricIdx, edge_idx: EdgeIdx) -> Option<f32> {
         let lane_count = self.get(metric_idx, edge_idx)?;
-        debug_assert!(lane_count > 0, "Edge-lane-count should be > 0");
+        debug_assert!(lane_count > 0.0, "Edge-lane-count should be > 0");
         Some(lane_count)
     }
 }

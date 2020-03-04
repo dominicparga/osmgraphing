@@ -5,33 +5,28 @@ use super::paths::Path;
 
 pub mod unidirectional {
     use super::{Astar, Path};
-    use crate::{
-        network::{Graph, HalfEdge, Node, NodeIdx},
-        units::Metric,
-    };
-    use std::{collections::BinaryHeap, ops::Add};
+    use crate::network::{Graph, HalfEdge, Node, NodeIdx};
+    use std::collections::BinaryHeap;
 
     /// Cost-function, Estimation-function and Metric
-    pub struct GenericDijkstra<C, M>
+    pub struct GenericDijkstra<C>
     where
-        C: Fn(&HalfEdge) -> M,
-        M: Metric,
+        C: Fn(&HalfEdge) -> f32,
     {
         cost_fn: C,
-        costs: Vec<M>,
+        costs: Vec<f32>,
         predecessors: Vec<Option<NodeIdx>>,
-        queue: BinaryHeap<CostNode<M>>, // max-heap, but CostNode's natural order is reversed
+        queue: BinaryHeap<CostNode>, // max-heap, but CostNode's natural order is reversed
     }
 
-    impl<C, M> GenericDijkstra<C, M>
+    impl<C> GenericDijkstra<C>
     where
-        C: Fn(&HalfEdge) -> M,
-        M: Metric + Ord,
+        C: Fn(&HalfEdge) -> f32,
     {
-        pub fn new(cost_fn: C) -> GenericDijkstra<C, M> {
+        pub fn new(cost_fn: C) -> GenericDijkstra<C> {
             GenericDijkstra {
                 cost_fn,
-                costs: vec![M::inf(); 0],
+                costs: vec![std::f32::INFINITY; 0],
                 predecessors: vec![None; 0],
                 queue: BinaryHeap::new(),
             }
@@ -39,19 +34,23 @@ pub mod unidirectional {
 
         /// Resizes existing datastructures storing routing-data like costs saving re-allocations.
         fn resize(&mut self, new_len: usize) {
-            self.costs.splice(.., vec![M::inf(); new_len]);
+            self.costs.splice(.., vec![std::f32::INFINITY; new_len]);
             self.predecessors.splice(.., vec![None; new_len]);
 
             self.queue.clear();
         }
     }
 
-    impl<C, M> Astar<M> for GenericDijkstra<C, M>
+    impl<C> Astar for GenericDijkstra<C>
     where
-        C: Fn(&HalfEdge) -> M,
-        M: Metric + Ord + Add<M, Output = M>,
+        C: Fn(&HalfEdge) -> f32,
     {
-        fn compute_best_path(&mut self, src: &Node, dst: &Node, graph: &Graph) -> Option<Path<M>> {
+        fn compute_best_path(
+            &mut self,
+            src: &Node,
+            dst: &Node,
+            graph: &Graph,
+        ) -> Option<Path<f32>> {
             //----------------------------------------------------------------------------------------//
             // initialization-stuff
 
@@ -65,10 +64,9 @@ pub mod unidirectional {
             // push src-node
             self.queue.push(CostNode {
                 idx: src.idx(),
-                cost: M::zero(),
-                pred_idx: None,
+                cost: 0.0,
             });
-            self.costs[*src.idx()] = M::zero();
+            self.costs[*src.idx()] = 0.0;
 
             //----------------------------------------------------------------------------------------//
             // search for shortest path
@@ -81,8 +79,12 @@ pub mod unidirectional {
                 if current.idx == dst.idx() {
                     let mut cur_idx = current.idx;
 
-                    let mut path =
-                        Path::with_capacity(src.idx(), dst.idx(), M::inf(), nodes.count());
+                    let mut path = Path::with_capacity(
+                        src.idx(),
+                        dst.idx(),
+                        std::f32::INFINITY,
+                        nodes.count(),
+                    );
                     *(path.cost_mut()) = current.cost;
                     while let Some(pred_idx) = self.predecessors[*cur_idx] {
                         path.add_pred_succ(pred_idx, cur_idx);
@@ -118,7 +120,6 @@ pub mod unidirectional {
                         self.queue.push(CostNode {
                             idx: leaving_edge.dst_idx(),
                             cost: new_cost,
-                            pred_idx: Some(current.idx),
                         });
                     }
                 }
@@ -131,55 +132,41 @@ pub mod unidirectional {
     //--------------------------------------------------------------------------------------------//
 
     #[derive(Copy, Clone)]
-    struct CostNode<M>
-    where
-        M: Metric,
-    {
+    struct CostNode {
         idx: NodeIdx,
-        cost: M,
-        pred_idx: Option<NodeIdx>,
+        cost: f32,
     }
 
     mod costnode {
         use super::CostNode;
-        use crate::units::Metric;
         use std::cmp::Ordering;
 
-        impl<M> Ord for CostNode<M>
-        where
-            M: Metric + Ord,
-        {
-            fn cmp(&self, other: &CostNode<M>) -> Ordering {
-                // (1) cost in float, but cmp uses only m, which is ok
-                // (2) inverse order since BinaryHeap is max-heap, but min-heap is needed
+        impl Ord for CostNode {
+            fn cmp(&self, other: &CostNode) -> Ordering {
+                // inverse order since BinaryHeap is max-heap, but min-heap is needed
                 other
                     .cost
-                    .cmp(&(self.cost))
+                    .partial_cmp(&(self.cost))
+                    .expect("Didn't expect NaN when comparing cost-nodes!")
                     .then_with(|| other.idx.cmp(&self.idx))
             }
         }
 
-        impl<M> PartialOrd for CostNode<M>
-        where
-            M: Metric + PartialOrd,
-        {
-            fn partial_cmp(&self, other: &CostNode<M>) -> Option<Ordering> {
-                let order = other.cost.partial_cmp(&(self.cost))?;
-                if order == Ordering::Equal {
-                    other.idx.partial_cmp(&self.idx)
-                } else {
-                    Some(order)
-                }
+        impl PartialOrd for CostNode {
+            fn partial_cmp(&self, other: &CostNode) -> Option<Ordering> {
+                Some(
+                    other
+                        .cost
+                        .partial_cmp(&self.cost)?
+                        .then_with(|| other.idx.cmp(&self.idx)),
+                )
             }
         }
 
-        impl<M> Eq for CostNode<M> where M: Metric + Eq {}
+        impl Eq for CostNode {}
 
-        impl<M> PartialEq for CostNode<M>
-        where
-            M: Metric + PartialEq,
-        {
-            fn eq(&self, other: &CostNode<M>) -> bool {
+        impl PartialEq for CostNode {
+            fn eq(&self, other: &CostNode) -> bool {
                 self.idx == other.idx && self.cost == other.cost
             }
         }
@@ -190,45 +177,40 @@ pub mod unidirectional {
 
 pub mod bidirectional {
     use super::{Astar, Path};
-    use crate::{
-        network::{Graph, HalfEdge, Node, NodeIdx},
-        units::Metric,
-    };
-    use std::{collections::BinaryHeap, ops::Add};
+    use crate::network::{Graph, HalfEdge, Node, NodeIdx};
+    use std::collections::BinaryHeap;
 
     /// Cost-function, Estimation-function and Metric
-    pub struct GenericDijkstra<C, M>
+    pub struct GenericDijkstra<C>
     where
-        C: Fn(&HalfEdge) -> M,
-        M: Metric,
+        C: Fn(&HalfEdge) -> f32,
     {
         cost_fn: C,
-        queue: BinaryHeap<CostNode<M>>, // max-heap, but CostNode's natural order is reversed
+        queue: BinaryHeap<CostNode>, // max-heap, but CostNode's natural order is reversed
         // fwd
-        fwd_costs: Vec<M>,
+        fwd_costs: Vec<f32>,
         predecessors: Vec<Option<NodeIdx>>,
         is_visited_by_src: Vec<bool>,
         // bwd
-        bwd_costs: Vec<M>,
+        bwd_costs: Vec<f32>,
         successors: Vec<Option<NodeIdx>>,
         is_visited_by_dst: Vec<bool>,
     }
 
-    impl<C, M> GenericDijkstra<C, M>
+    impl<C> GenericDijkstra<C>
     where
-        C: Fn(&HalfEdge) -> M,
-        M: Metric + Ord + Add<M, Output = M>,
+        C: Fn(&HalfEdge) -> f32,
     {
-        pub fn new(cost_fn: C) -> GenericDijkstra<C, M> {
+        pub fn new(cost_fn: C) -> GenericDijkstra<C> {
             GenericDijkstra {
                 cost_fn,
                 queue: BinaryHeap::new(),
                 // fwd
-                fwd_costs: vec![M::inf(); 0],
+                fwd_costs: vec![std::f32::INFINITY; 0],
                 predecessors: vec![None; 0],
                 is_visited_by_src: vec![false; 0],
                 // bwd
-                bwd_costs: vec![M::inf(); 0],
+                bwd_costs: vec![std::f32::INFINITY; 0],
                 successors: vec![None; 0],
                 is_visited_by_dst: vec![false; 0],
             }
@@ -237,11 +219,11 @@ pub mod bidirectional {
         /// Resizes existing datastructures storing routing-data like costs saving re-allocations.
         fn resize(&mut self, new_len: usize) {
             // fwd
-            self.fwd_costs.splice(.., vec![M::inf(); new_len]);
+            self.fwd_costs.splice(.., vec![std::f32::INFINITY; new_len]);
             self.predecessors.splice(.., vec![None; new_len]);
             self.is_visited_by_src.splice(.., vec![false; new_len]);
             // bwd
-            self.bwd_costs.splice(.., vec![M::inf(); new_len]);
+            self.bwd_costs.splice(.., vec![std::f32::INFINITY; new_len]);
             self.successors.splice(.., vec![None; new_len]);
             self.is_visited_by_dst.splice(.., vec![false; new_len]);
 
@@ -249,28 +231,32 @@ pub mod bidirectional {
         }
 
         /// The given costnode is a meeting-costnode, if it is visited by both, the search starting in src and the search starting in dst.
-        fn is_meeting_costnode(&self, costnode: &CostNode<M>) -> bool {
+        fn is_meeting_costnode(&self, costnode: &CostNode) -> bool {
             self.is_visited_by_src[*costnode.idx] && self.is_visited_by_dst[*costnode.idx]
         }
 
-        fn visit(&mut self, costnode: &CostNode<M>) {
+        fn visit(&mut self, costnode: &CostNode) {
             match costnode.direction {
                 Direction::FWD => self.is_visited_by_src[*costnode.idx] = true,
                 Direction::BWD => self.is_visited_by_dst[*costnode.idx] = true,
             }
         }
 
-        fn total_cost(&self, costnode: &CostNode<M>) -> M {
+        fn total_cost(&self, costnode: &CostNode) -> f32 {
             self.fwd_costs[*costnode.idx] + self.bwd_costs[*costnode.idx]
         }
     }
 
-    impl<C, M> Astar<M> for GenericDijkstra<C, M>
+    impl<C> Astar for GenericDijkstra<C>
     where
-        C: Fn(&HalfEdge) -> M,
-        M: Metric + Ord + Add<M, Output = M>,
+        C: Fn(&HalfEdge) -> f32,
     {
-        fn compute_best_path(&mut self, src: &Node, dst: &Node, graph: &Graph) -> Option<Path<M>> {
+        fn compute_best_path(
+            &mut self,
+            src: &Node,
+            dst: &Node,
+            graph: &Graph,
+        ) -> Option<Path<f32>> {
             //------------------------------------------------------------------------------------//
             // initialization-stuff
 
@@ -278,7 +264,7 @@ pub mod bidirectional {
             let fwd_edges = graph.fwd_edges();
             let bwd_edges = graph.bwd_edges();
             self.resize(nodes.count());
-            let mut best_meeting: Option<(CostNode<M>, M)> = None;
+            let mut best_meeting: Option<(CostNode, f32)> = None;
 
             //------------------------------------------------------------------------------------//
             // prepare first iteration(s)
@@ -286,21 +272,21 @@ pub mod bidirectional {
             // push src-node
             self.queue.push(CostNode {
                 idx: src.idx(),
-                cost: M::zero(),
+                cost: 0.0,
                 pred_idx: None,
                 direction: Direction::FWD,
             });
             // push dst-node
             self.queue.push(CostNode {
                 idx: dst.idx(),
-                cost: M::zero(),
+                cost: 0.0,
                 pred_idx: None,
                 direction: Direction::BWD,
             });
             // update fwd-stats
-            self.fwd_costs[*src.idx()] = M::zero();
+            self.fwd_costs[*src.idx()] = 0.0;
             // update bwd-stats
-            self.bwd_costs[*dst.idx()] = M::zero();
+            self.bwd_costs[*dst.idx()] = 0.0;
 
             //------------------------------------------------------------------------------------//
             // search for shortest path
@@ -366,7 +352,8 @@ pub mod bidirectional {
             // create path if found
 
             if let Some((meeting_node, total_cost)) = best_meeting {
-                let mut path = Path::with_capacity(src.idx(), dst.idx(), M::inf(), nodes.count());
+                let mut path =
+                    Path::with_capacity(src.idx(), dst.idx(), std::f32::INFINITY, nodes.count());
                 *(path.cost_mut()) = total_cost;
 
                 // iterate backwards over fwd-path
@@ -395,12 +382,9 @@ pub mod bidirectional {
     //--------------------------------------------------------------------------------------------//
 
     #[derive(Copy, Clone)]
-    struct CostNode<M>
-    where
-        M: Metric,
-    {
+    struct CostNode {
         idx: NodeIdx,
-        cost: M,
+        cost: f32,
         pred_idx: Option<NodeIdx>,
         direction: Direction,
     }
@@ -413,13 +397,9 @@ pub mod bidirectional {
 
     mod costnode {
         use super::{CostNode, Direction};
-        use crate::units::Metric;
         use std::{cmp::Ordering, fmt, fmt::Display};
 
-        impl<M> Display for CostNode<M>
-        where
-            M: Metric,
-        {
+        impl Display for CostNode {
             fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
                 write!(
                     f,
@@ -435,37 +415,29 @@ pub mod bidirectional {
             }
         }
 
-        impl<M> Ord for CostNode<M>
-        where
-            M: Metric + Ord,
-        {
-            fn cmp(&self, other: &CostNode<M>) -> Ordering {
+        impl Ord for CostNode {
+            fn cmp(&self, other: &CostNode) -> Ordering {
                 // (1) cost in float, but cmp uses only m, which is ok
                 // (2) inverse order since BinaryHeap is max-heap, but min-heap is needed
                 other
                     .cost
-                    .cmp(&(self.cost))
+                    .partial_cmp(&(self.cost))
+                    .expect("Didn't expect NaN when comparing cost-nodes!")
                     .then_with(|| other.idx.cmp(&self.idx))
                     .then_with(|| other.direction.cmp(&self.direction))
             }
         }
 
-        impl<M> PartialOrd for CostNode<M>
-        where
-            M: Metric + Ord,
-        {
-            fn partial_cmp(&self, other: &CostNode<M>) -> Option<Ordering> {
+        impl PartialOrd for CostNode {
+            fn partial_cmp(&self, other: &CostNode) -> Option<Ordering> {
                 Some(self.cmp(other))
             }
         }
 
-        impl<M> Eq for CostNode<M> where M: Metric + Ord {}
+        impl Eq for CostNode {}
 
-        impl<M> PartialEq for CostNode<M>
-        where
-            M: Metric + Ord,
-        {
-            fn eq(&self, other: &CostNode<M>) -> bool {
+        impl PartialEq for CostNode {
+            fn eq(&self, other: &CostNode) -> bool {
                 self.cmp(other) == Ordering::Equal
             }
         }
