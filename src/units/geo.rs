@@ -1,4 +1,4 @@
-use crate::units::length::Meters;
+use crate::units::length::Kilometers;
 use std::{cmp::Ordering, fmt, fmt::Display};
 
 /// Coordinate storing `lat`/`lon` as `i32` with accuracy `1e-7`.
@@ -104,6 +104,6 @@ fn haversine_distance(from: &Coordinate, to: &Coordinate) -> f64 {
 ///
 /// - [detailled information](http://www.movable-type.co.uk/scripts/latlong.html)
 /// - [cpp](https://geographiclib.sourceforge.io/)
-pub fn haversine_distance_m(from: &Coordinate, to: &Coordinate) -> Meters {
-    Meters(1_000.0 * (haversine_distance(from, to) as f32))
+pub fn haversine_distance_km(from: &Coordinate, to: &Coordinate) -> Kilometers {
+    Kilometers(haversine_distance(from, to) as f32)
 }

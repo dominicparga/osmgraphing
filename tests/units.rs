@@ -1,29 +1,13 @@
 use osmgraphing::{
     helpers::Approx,
-    units::{
-        length::{Kilometers, Meters},
-        speed::KilometersPerHour,
-        time::Seconds,
-    },
+    units::{length::Kilometers, speed::KilometersPerHour, time::Seconds},
 };
 
 pub fn length() {
-    let length = Meters(1_000.0);
+    let length = Kilometers(1.0);
     let duration = Seconds(1_000.0);
     let speed = KilometersPerHour(3.6);
 
-    // meters
-    assert!(
-        (length / duration).approx_eq(&speed),
-        format!("{} = {} / {} is wrong", speed, length, duration)
-    );
-    assert!(
-        (length / speed).approx_eq(&duration),
-        format!("{} = {} / {} is wrong", duration, length, speed)
-    );
-
-    // kilometers
-    let length = Kilometers::from(length);
     assert!(
         (length / duration).approx_eq(&speed),
         format!("{} = {} / {} is wrong", speed, length, duration)
@@ -35,7 +19,7 @@ pub fn length() {
 }
 
 pub fn duration() {
-    let length = Kilometers::from(Meters(1_000.0));
+    let length = Kilometers(1.0);
     let duration = Seconds(1_000.0);
     let speed = KilometersPerHour(3.6);
 
@@ -46,7 +30,7 @@ pub fn duration() {
 }
 
 pub fn speed() {
-    let length = Kilometers::from(Meters(1_000.0));
+    let length = Kilometers(1.0);
     let duration = Seconds(1_000.0);
     let speed = KilometersPerHour(3.6);
 

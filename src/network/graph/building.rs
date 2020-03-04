@@ -4,7 +4,7 @@ use crate::{
     defaults,
     helpers::Approx,
     network::MetricIdx,
-    units::{geo, geo::Coordinate, length::Meters, speed::KilometersPerHour, time::Seconds},
+    units::{geo, geo::Coordinate, length::Kilometers, speed::KilometersPerHour, time::Seconds},
 };
 use log::{debug, info};
 use progressing;
@@ -130,7 +130,7 @@ impl Graph {
                         let src_coord = self.node_coords[*src_idx];
                         let dst_coord = self.node_coords[*dst_idx];
                         proto_edge.metrics[*metric_idx] =
-                            Some(*geo::haversine_distance_m(&src_coord, &dst_coord));
+                            Some(*geo::haversine_distance_km(&src_coord, &dst_coord));
                     }
                     MetricCategory::Duration => {
                         // get length and maxspeed to calculate duration
@@ -154,7 +154,8 @@ impl Graph {
                         }
                         // calc duration and update proto-edge
                         if let (Some(length), Some(maxspeed)) = (length, maxspeed) {
-                            let duration = Meters(length) / KilometersPerHour(maxspeed);
+                            let duration: Seconds =
+                                Kilometers(length) / KilometersPerHour(maxspeed);
                             proto_edge.metrics[*metric_idx] = Some(*duration)
                         } else {
                             are_all_metrics_some = false;
@@ -182,7 +183,8 @@ impl Graph {
                         }
                         // calc maxspeed and update proto-edge
                         if let (Some(length), Some(duration)) = (length, duration) {
-                            let maxspeed = Meters(length) / Seconds(duration);
+                            let maxspeed: KilometersPerHour =
+                                Kilometers(length) / Seconds(duration);
                             proto_edge.metrics[*metric_idx] = Some(*maxspeed)
                         } else {
                             are_all_metrics_some = false;

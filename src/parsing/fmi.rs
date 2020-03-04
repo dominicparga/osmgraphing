@@ -254,8 +254,24 @@ mod intern {
                             ));
                         }
                     }
-                    MetricCategory::Length
-                    | MetricCategory::Maxspeed
+                    MetricCategory::Length => {
+                        let metric_idx = MetricIdx(metric_values.len());
+                        let is_provided = cfg.metrics.is_provided(metric_idx);
+
+                        if is_provided {
+                            if let Ok(meters) = param.parse::<f32>() {
+                                metric_values.push(Some(meters / 1_000.0));
+                            } else {
+                                return Err(format!(
+                                    "Parsing {} '{}' of edge-param #{} didn't work.",
+                                    metric_type, param, param_idx
+                                ));
+                            };
+                        } else {
+                            metric_values.push(None);
+                        }
+                    }
+                    MetricCategory::Maxspeed
                     | MetricCategory::Duration
                     | MetricCategory::LaneCount
                     | MetricCategory::Custom => {
@@ -264,7 +280,7 @@ mod intern {
 
                         if is_provided {
                             if let Ok(value) = param.parse::<f32>() {
-                                metric_values.push(Some(value.into()));
+                                metric_values.push(Some(value));
                             } else {
                                 return Err(format!(
                                     "Parsing {} '{}' of edge-param #{} didn't work.",

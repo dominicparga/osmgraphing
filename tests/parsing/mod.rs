@@ -86,7 +86,7 @@ struct TestEdge {
 impl TestEdge {
     fn new_fwd(
         name: Option<&str>,
-        edge_idx: EdgeIdx,
+        edge_idx: usize,
         src: &TestNode,
         dst: &TestNode,
         length: f32,
@@ -95,7 +95,7 @@ impl TestEdge {
     ) -> TestEdge {
         TestEdge {
             name: (name.unwrap_or(&format!("{}->{}", src.name, dst.name))).to_owned(),
-            edge_idx,
+            edge_idx: EdgeIdx(edge_idx),
             is_fwd: true,
             src_idx: src.idx.into(),
             dst_idx: dst.idx.into(),
@@ -105,7 +105,7 @@ impl TestEdge {
 
     fn new_bwd(
         name: Option<&str>,
-        edge_idx: EdgeIdx,
+        edge_idx: usize,
         src: &TestNode,
         dst: &TestNode,
         length: f32,
@@ -114,7 +114,7 @@ impl TestEdge {
     ) -> TestEdge {
         TestEdge {
             name: (name.unwrap_or(&format!("{}->{}", src.name, dst.name))).to_owned(),
-            edge_idx,
+            edge_idx: EdgeIdx(edge_idx),
             is_fwd: false,
             src_idx: src.idx.into(),
             dst_idx: dst.idx.into(),

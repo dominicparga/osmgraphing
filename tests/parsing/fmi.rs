@@ -1,5 +1,5 @@
 use super::{TestEdge, TestNode, TestType};
-use osmgraphing::network::{EdgeIdx, NodeIdx};
+use osmgraphing::network::NodeIdx;
 
 //------------------------------------------------------------------------------------------------//
 // TODO take results from actions of commit f28d88a
@@ -21,191 +21,37 @@ pub fn simple_stuttgart() {
     let node_stu = TestNode::new("Stuttgart", 2_933_335_353, 48.7701757, 9.1565768, &graph);
 
     // Due to the offset-array, the fwd-edge-ids should match with sorting by src-id, then by dst-id.
-    // name, idx, id, src, dst, meters, maxspeed, s
-    let fwd_edge_opp_bac =
-        TestEdge::new_fwd(None, EdgeIdx(0), &node_opp, &node_bac, 8_000.0, 50.0, 576.0);
-    let fwd_edge_bac_opp =
-        TestEdge::new_fwd(None, EdgeIdx(1), &node_bac, &node_opp, 8_000.0, 50.0, 576.0);
-    let fwd_edge_bac_wai = TestEdge::new_fwd(
-        None,
-        EdgeIdx(2),
-        &node_bac,
-        &node_wai,
-        23_000.0,
-        120.0,
-        690.0,
-    );
-    let fwd_edge_bac_end = TestEdge::new_fwd(
-        None,
-        EdgeIdx(3),
-        &node_bac,
-        &node_end,
-        22_000.0,
-        80.0,
-        990.0,
-    );
-    // 1_069 is the length of a straight line, since the file contains trash in there.
-    let fwd_edge_bac_dea = TestEdge::new_fwd(
-        None,
-        EdgeIdx(4),
-        &node_bac,
-        &node_dea,
-        1_069.0,
-        30.0,
-        128.28,
-    );
-    let fwd_edge_wai_bac = TestEdge::new_fwd(
-        None,
-        EdgeIdx(5),
-        &node_wai,
-        &node_bac,
-        23_000.0,
-        120.0,
-        690.0,
-    );
-    let fwd_edge_wai_end =
-        TestEdge::new_fwd(None, EdgeIdx(6), &node_wai, &node_end, 8_000.0, 50.0, 576.0);
-    let fwd_edge_wai_stu = TestEdge::new_fwd(
-        None,
-        EdgeIdx(7),
-        &node_wai,
-        &node_stu,
-        17_000.0,
-        100.0,
-        612.0,
-    );
-    let fwd_edge_end_bac = TestEdge::new_fwd(
-        None,
-        EdgeIdx(8),
-        &node_end,
-        &node_bac,
-        22_000.0,
-        80.0,
-        990.0,
-    );
-    let fwd_edge_end_wai =
-        TestEdge::new_fwd(None, EdgeIdx(9), &node_end, &node_wai, 8_000.0, 50.0, 576.0);
-    let fwd_edge_end_stu = TestEdge::new_fwd(
-        None,
-        EdgeIdx(10),
-        &node_end,
-        &node_stu,
-        21_000.0,
-        80.0,
-        945.0,
-    );
-    let fwd_edge_stu_wai = TestEdge::new_fwd(
-        None,
-        EdgeIdx(11),
-        &node_stu,
-        &node_wai,
-        17_000.0,
-        100.0,
-        612.0,
-    );
-    let fwd_edge_stu_end = TestEdge::new_fwd(
-        None,
-        EdgeIdx(12),
-        &node_stu,
-        &node_end,
-        21_000.0,
-        80.0,
-        945.0,
-    );
+    // name, idx, id, src, dst, length, maxspeed, duration
+    let fwd_edge_opp_bac = TestEdge::new_fwd(None, 0, &node_opp, &node_bac, 8.0, 50.0, 576.0);
+    let fwd_edge_bac_opp = TestEdge::new_fwd(None, 1, &node_bac, &node_opp, 8.0, 50.0, 576.0);
+    let fwd_edge_bac_wai = TestEdge::new_fwd(None, 2, &node_bac, &node_wai, 23.0, 120.0, 690.0);
+    let fwd_edge_bac_end = TestEdge::new_fwd(None, 3, &node_bac, &node_end, 22.0, 80.0, 990.0);
+    let fwd_edge_bac_dea = TestEdge::new_fwd(None, 4, &node_bac, &node_dea, 1.069, 30.0, 128.28);
+    let fwd_edge_wai_bac = TestEdge::new_fwd(None, 5, &node_wai, &node_bac, 23.0, 120.0, 690.0);
+    let fwd_edge_wai_end = TestEdge::new_fwd(None, 6, &node_wai, &node_end, 8.0, 50.0, 576.0);
+    let fwd_edge_wai_stu = TestEdge::new_fwd(None, 7, &node_wai, &node_stu, 17.0, 100.0, 612.0);
+    let fwd_edge_end_bac = TestEdge::new_fwd(None, 8, &node_end, &node_bac, 22.0, 80.0, 990.0);
+    let fwd_edge_end_wai = TestEdge::new_fwd(None, 9, &node_end, &node_wai, 8.0, 50.0, 576.0);
+    let fwd_edge_end_stu = TestEdge::new_fwd(None, 10, &node_end, &node_stu, 21.0, 80.0, 945.0);
+    let fwd_edge_stu_wai = TestEdge::new_fwd(None, 11, &node_stu, &node_wai, 17.0, 100.0, 612.0);
+    let fwd_edge_stu_end = TestEdge::new_fwd(None, 12, &node_stu, &node_end, 21.0, 80.0, 945.0);
 
     // Due to the offset-array, the bwd-edge-ids should match with sorting by src-id, then by dst-id.
     // But the graph-structure changes that to the same as fwd-edges (dst-id, then src-id).
-    // name, idx, id, src, dst, meters, maxspeed, s
-    let bwd_edge_bac_opp =
-        TestEdge::new_bwd(None, EdgeIdx(0), &node_bac, &node_opp, 8_000.0, 50.0, 576.0);
-    let bwd_edge_opp_bac =
-        TestEdge::new_bwd(None, EdgeIdx(1), &node_opp, &node_bac, 8_000.0, 50.0, 576.0);
-    let bwd_edge_wai_bac = TestEdge::new_bwd(
-        None,
-        EdgeIdx(2),
-        &node_wai,
-        &node_bac,
-        23_000.0,
-        120.0,
-        690.0,
-    );
-    let bwd_edge_end_bac = TestEdge::new_bwd(
-        None,
-        EdgeIdx(3),
-        &node_end,
-        &node_bac,
-        22_000.0,
-        80.0,
-        990.0,
-    );
-    // 1_069 is the length of a straight line, since the file contains trash in there.
-    let bwd_edge_dea_bac = TestEdge::new_bwd(
-        None,
-        EdgeIdx(4),
-        &node_dea,
-        &node_bac,
-        1_069.0,
-        30.0,
-        128.28,
-    );
-    let bwd_edge_bac_wai = TestEdge::new_bwd(
-        None,
-        EdgeIdx(5),
-        &node_bac,
-        &node_wai,
-        23_000.0,
-        120.0,
-        690.0,
-    );
-    let bwd_edge_end_wai =
-        TestEdge::new_bwd(None, EdgeIdx(6), &node_end, &node_wai, 8_000.0, 50.0, 576.0);
-    let bwd_edge_stu_wai = TestEdge::new_bwd(
-        None,
-        EdgeIdx(7),
-        &node_stu,
-        &node_wai,
-        17_000.0,
-        100.0,
-        612.0,
-    );
-    let bwd_edge_bac_end = TestEdge::new_bwd(
-        None,
-        EdgeIdx(8),
-        &node_bac,
-        &node_end,
-        22_000.0,
-        80.0,
-        990.0,
-    );
-    let bwd_edge_wai_end =
-        TestEdge::new_bwd(None, EdgeIdx(9), &node_wai, &node_end, 8_000.0, 50.0, 576.0);
-    let bwd_edge_stu_end = TestEdge::new_bwd(
-        None,
-        EdgeIdx(10),
-        &node_stu,
-        &node_end,
-        21_000.0,
-        80.0,
-        945.0,
-    );
-    let bwd_edge_wai_stu = TestEdge::new_bwd(
-        None,
-        EdgeIdx(11),
-        &node_wai,
-        &node_stu,
-        17_000.0,
-        100.0,
-        612.0,
-    );
-    let bwd_edge_end_stu = TestEdge::new_bwd(
-        None,
-        EdgeIdx(12),
-        &node_end,
-        &node_stu,
-        21_000.0,
-        80.0,
-        945.0,
-    );
+    // name, idx, id, src, dst, length, maxspeed, duration
+    let bwd_edge_bac_opp = TestEdge::new_bwd(None, 0, &node_bac, &node_opp, 8.0, 50.0, 576.0);
+    let bwd_edge_opp_bac = TestEdge::new_bwd(None, 1, &node_opp, &node_bac, 8.0, 50.0, 576.0);
+    let bwd_edge_wai_bac = TestEdge::new_bwd(None, 2, &node_wai, &node_bac, 23.0, 120.0, 690.0);
+    let bwd_edge_end_bac = TestEdge::new_bwd(None, 3, &node_end, &node_bac, 22.0, 80.0, 990.0);
+    let bwd_edge_dea_bac = TestEdge::new_bwd(None, 4, &node_dea, &node_bac, 1.069, 30.0, 128.28);
+    let bwd_edge_bac_wai = TestEdge::new_bwd(None, 5, &node_bac, &node_wai, 23.0, 120.0, 690.0);
+    let bwd_edge_end_wai = TestEdge::new_bwd(None, 6, &node_end, &node_wai, 8.0, 50.0, 576.0);
+    let bwd_edge_stu_wai = TestEdge::new_bwd(None, 7, &node_stu, &node_wai, 17.0, 100.0, 612.0);
+    let bwd_edge_bac_end = TestEdge::new_bwd(None, 8, &node_bac, &node_end, 22.0, 80.0, 990.0);
+    let bwd_edge_wai_end = TestEdge::new_bwd(None, 9, &node_wai, &node_end, 8.0, 50.0, 576.0);
+    let bwd_edge_stu_end = TestEdge::new_bwd(None, 10, &node_stu, &node_end, 21.0, 80.0, 945.0);
+    let bwd_edge_wai_stu = TestEdge::new_bwd(None, 11, &node_wai, &node_stu, 17.0, 100.0, 612.0);
+    let bwd_edge_end_stu = TestEdge::new_bwd(None, 12, &node_end, &node_stu, 21.0, 80.0, 945.0);
 
     //--------------------------------------------------------------------------------------------//
     // testing graph
@@ -333,43 +179,43 @@ pub fn small() {
     let node_h = TestNode::new("h", 7, 0.0000000, 0.0000000, &graph);
 
     // Due to the offset-array, the fwd-edge-ids should match with sorting by src-id, then by dst-id.
-    // name, idx, id, src, dst, meters, maxspeed, s
-    let fwd_edge_b_a = TestEdge::new_fwd(None, EdgeIdx(0), &node_b, &node_a, 1.0, 30.0, 0.12);
-    let fwd_edge_b_c = TestEdge::new_fwd(None, EdgeIdx(1), &node_b, &node_c, 1.0, 30.0, 0.12);
-    let fwd_edge_c_a = TestEdge::new_fwd(None, EdgeIdx(2), &node_c, &node_a, 1.0, 30.0, 0.12);
-    let fwd_edge_c_b = TestEdge::new_fwd(None, EdgeIdx(3), &node_c, &node_b, 1.0, 30.0, 0.12);
-    let fwd_edge_d_b = TestEdge::new_fwd(None, EdgeIdx(4), &node_d, &node_b, 1.0, 30.0, 0.12);
-    let fwd_edge_d_e = TestEdge::new_fwd(None, EdgeIdx(5), &node_d, &node_e, 2.0, 30.0, 0.24);
-    let fwd_edge_d_h = TestEdge::new_fwd(None, EdgeIdx(6), &node_d, &node_h, 1.0, 30.0, 0.12);
-    let fwd_edge_e_d = TestEdge::new_fwd(None, EdgeIdx(7), &node_e, &node_d, 2.0, 30.0, 0.24);
-    let fwd_edge_e_f = TestEdge::new_fwd(None, EdgeIdx(8), &node_e, &node_f, 1.0, 30.0, 0.12);
-    let fwd_edge_f_e = TestEdge::new_fwd(None, EdgeIdx(9), &node_f, &node_e, 1.0, 30.0, 0.12);
-    let fwd_edge_f_h = TestEdge::new_fwd(None, EdgeIdx(10), &node_f, &node_h, 1.0, 30.0, 0.12);
-    let fwd_edge_g_e = TestEdge::new_fwd(None, EdgeIdx(11), &node_g, &node_e, 1.0, 30.0, 0.12);
-    let fwd_edge_g_f = TestEdge::new_fwd(None, EdgeIdx(12), &node_g, &node_f, 1.0, 30.0, 0.12);
-    let fwd_edge_h_c = TestEdge::new_fwd(None, EdgeIdx(13), &node_h, &node_c, 4.0, 30.0, 0.48);
-    let fwd_edge_h_d = TestEdge::new_fwd(None, EdgeIdx(14), &node_h, &node_d, 1.0, 30.0, 0.12);
-    let fwd_edge_h_f = TestEdge::new_fwd(None, EdgeIdx(15), &node_h, &node_f, 1.0, 30.0, 0.12);
+    // name, idx, id, src, dst, length, maxspeed, duration
+    let fwd_edge_b_a = TestEdge::new_fwd(None, 0, &node_b, &node_a, 0.001, 30.0, 0.12);
+    let fwd_edge_b_c = TestEdge::new_fwd(None, 1, &node_b, &node_c, 0.001, 30.0, 0.12);
+    let fwd_edge_c_a = TestEdge::new_fwd(None, 2, &node_c, &node_a, 0.001, 30.0, 0.12);
+    let fwd_edge_c_b = TestEdge::new_fwd(None, 3, &node_c, &node_b, 0.001, 30.0, 0.12);
+    let fwd_edge_d_b = TestEdge::new_fwd(None, 4, &node_d, &node_b, 0.001, 30.0, 0.12);
+    let fwd_edge_d_e = TestEdge::new_fwd(None, 5, &node_d, &node_e, 0.002, 30.0, 0.24);
+    let fwd_edge_d_h = TestEdge::new_fwd(None, 6, &node_d, &node_h, 0.001, 30.0, 0.12);
+    let fwd_edge_e_d = TestEdge::new_fwd(None, 7, &node_e, &node_d, 0.002, 30.0, 0.24);
+    let fwd_edge_e_f = TestEdge::new_fwd(None, 8, &node_e, &node_f, 0.001, 30.0, 0.12);
+    let fwd_edge_f_e = TestEdge::new_fwd(None, 9, &node_f, &node_e, 0.001, 30.0, 0.12);
+    let fwd_edge_f_h = TestEdge::new_fwd(None, 10, &node_f, &node_h, 0.001, 30.0, 0.12);
+    let fwd_edge_g_e = TestEdge::new_fwd(None, 11, &node_g, &node_e, 0.001, 30.0, 0.12);
+    let fwd_edge_g_f = TestEdge::new_fwd(None, 12, &node_g, &node_f, 0.001, 30.0, 0.12);
+    let fwd_edge_h_c = TestEdge::new_fwd(None, 13, &node_h, &node_c, 0.004, 30.0, 0.48);
+    let fwd_edge_h_d = TestEdge::new_fwd(None, 14, &node_h, &node_d, 0.001, 30.0, 0.12);
+    let fwd_edge_h_f = TestEdge::new_fwd(None, 15, &node_h, &node_f, 0.001, 30.0, 0.12);
 
     // Due to the offset-array, the bwd-edge-ids should match with sorting by src-id, then by dst-id.
     // But the graph-structure changes that to the same as fwd-edges (dst-id, then src-id).
-    // name, idx, id, src, dst, meters, maxspeed, s
-    let bwd_edge_a_b = TestEdge::new_bwd(None, EdgeIdx(0), &node_a, &node_b, 1.0, 30.0, 0.12);
-    let bwd_edge_c_b = TestEdge::new_bwd(None, EdgeIdx(1), &node_c, &node_b, 1.0, 30.0, 0.12);
-    let bwd_edge_a_c = TestEdge::new_bwd(None, EdgeIdx(2), &node_a, &node_c, 1.0, 30.0, 0.12);
-    let bwd_edge_b_c = TestEdge::new_bwd(None, EdgeIdx(3), &node_b, &node_c, 1.0, 30.0, 0.12);
-    let bwd_edge_b_d = TestEdge::new_bwd(None, EdgeIdx(4), &node_b, &node_d, 1.0, 30.0, 0.12);
-    let bwd_edge_e_d = TestEdge::new_bwd(None, EdgeIdx(5), &node_e, &node_d, 2.0, 30.0, 0.24);
-    let bwd_edge_h_d = TestEdge::new_bwd(None, EdgeIdx(6), &node_h, &node_d, 1.0, 30.0, 0.12);
-    let bwd_edge_d_e = TestEdge::new_bwd(None, EdgeIdx(7), &node_d, &node_e, 2.0, 30.0, 0.24);
-    let bwd_edge_f_e = TestEdge::new_bwd(None, EdgeIdx(8), &node_f, &node_e, 1.0, 30.0, 0.12);
-    let bwd_edge_e_f = TestEdge::new_bwd(None, EdgeIdx(9), &node_e, &node_f, 1.0, 30.0, 0.12);
-    let bwd_edge_h_f = TestEdge::new_bwd(None, EdgeIdx(10), &node_h, &node_f, 1.0, 30.0, 0.12);
-    let bwd_edge_e_g = TestEdge::new_bwd(None, EdgeIdx(11), &node_e, &node_g, 1.0, 30.0, 0.12);
-    let bwd_edge_f_g = TestEdge::new_bwd(None, EdgeIdx(12), &node_f, &node_g, 1.0, 30.0, 0.12);
-    let bwd_edge_c_h = TestEdge::new_bwd(None, EdgeIdx(13), &node_c, &node_h, 4.0, 30.0, 0.48);
-    let bwd_edge_d_h = TestEdge::new_bwd(None, EdgeIdx(14), &node_d, &node_h, 1.0, 30.0, 0.12);
-    let bwd_edge_f_h = TestEdge::new_bwd(None, EdgeIdx(15), &node_f, &node_h, 1.0, 30.0, 0.12);
+    // name, idx, id, src, dst, length, maxspeed, duration
+    let bwd_edge_a_b = TestEdge::new_bwd(None, 0, &node_a, &node_b, 0.001, 30.0, 0.12);
+    let bwd_edge_c_b = TestEdge::new_bwd(None, 1, &node_c, &node_b, 0.001, 30.0, 0.12);
+    let bwd_edge_a_c = TestEdge::new_bwd(None, 2, &node_a, &node_c, 0.001, 30.0, 0.12);
+    let bwd_edge_b_c = TestEdge::new_bwd(None, 3, &node_b, &node_c, 0.001, 30.0, 0.12);
+    let bwd_edge_b_d = TestEdge::new_bwd(None, 4, &node_b, &node_d, 0.001, 30.0, 0.12);
+    let bwd_edge_e_d = TestEdge::new_bwd(None, 5, &node_e, &node_d, 0.002, 30.0, 0.24);
+    let bwd_edge_h_d = TestEdge::new_bwd(None, 6, &node_h, &node_d, 0.001, 30.0, 0.12);
+    let bwd_edge_d_e = TestEdge::new_bwd(None, 7, &node_d, &node_e, 0.002, 30.0, 0.24);
+    let bwd_edge_f_e = TestEdge::new_bwd(None, 8, &node_f, &node_e, 0.001, 30.0, 0.12);
+    let bwd_edge_e_f = TestEdge::new_bwd(None, 9, &node_e, &node_f, 0.001, 30.0, 0.12);
+    let bwd_edge_h_f = TestEdge::new_bwd(None, 10, &node_h, &node_f, 0.001, 30.0, 0.12);
+    let bwd_edge_e_g = TestEdge::new_bwd(None, 11, &node_e, &node_g, 0.001, 30.0, 0.12);
+    let bwd_edge_f_g = TestEdge::new_bwd(None, 12, &node_f, &node_g, 0.001, 30.0, 0.12);
+    let bwd_edge_c_h = TestEdge::new_bwd(None, 13, &node_c, &node_h, 0.004, 30.0, 0.48);
+    let bwd_edge_d_h = TestEdge::new_bwd(None, 14, &node_d, &node_h, 0.001, 30.0, 0.12);
+    let bwd_edge_f_h = TestEdge::new_bwd(None, 15, &node_f, &node_h, 0.001, 30.0, 0.12);
 
     //--------------------------------------------------------------------------------------------//
     // testing graph
@@ -502,31 +348,31 @@ pub fn bidirectional_bait() {
     let node_tl = TestNode::new("top-left", 4, 0.0000000, 0.0000000, &graph);
 
     // Due to the offset-array, the fwd-edge-ids should match with sorting by src-id, then by dst-id.
-    // name, idx, id, src, dst, meters, maxspeed, s
-    let fwd_edge_ll_bb = TestEdge::new_fwd(None, EdgeIdx(0), &node_ll, &node_bb, 5.0, 30.0, 0.60);
-    let fwd_edge_ll_tl = TestEdge::new_fwd(None, EdgeIdx(1), &node_ll, &node_tl, 3.0, 30.0, 0.36);
-    let fwd_edge_bb_ll = TestEdge::new_fwd(None, EdgeIdx(2), &node_bb, &node_ll, 5.0, 30.0, 0.60);
-    let fwd_edge_bb_rr = TestEdge::new_fwd(None, EdgeIdx(3), &node_bb, &node_rr, 5.0, 30.0, 0.60);
-    let fwd_edge_rr_bb = TestEdge::new_fwd(None, EdgeIdx(4), &node_rr, &node_bb, 5.0, 30.0, 0.60);
-    let fwd_edge_rr_tr = TestEdge::new_fwd(None, EdgeIdx(5), &node_rr, &node_tr, 3.0, 30.0, 0.36);
-    let fwd_edge_tr_rr = TestEdge::new_fwd(None, EdgeIdx(6), &node_tr, &node_rr, 3.0, 30.0, 0.36);
-    let fwd_edge_tr_tl = TestEdge::new_fwd(None, EdgeIdx(7), &node_tr, &node_tl, 3.0, 30.0, 0.36);
-    let fwd_edge_tl_ll = TestEdge::new_fwd(None, EdgeIdx(8), &node_tl, &node_ll, 3.0, 30.0, 0.36);
-    let fwd_edge_tl_tr = TestEdge::new_fwd(None, EdgeIdx(9), &node_tl, &node_tr, 3.0, 30.0, 0.36);
+    // name, idx, id, src, dst, length, maxspeed, duration
+    let fwd_edge_ll_bb = TestEdge::new_fwd(None, 0, &node_ll, &node_bb, 0.005, 30.0, 0.60);
+    let fwd_edge_ll_tl = TestEdge::new_fwd(None, 1, &node_ll, &node_tl, 0.003, 30.0, 0.36);
+    let fwd_edge_bb_ll = TestEdge::new_fwd(None, 2, &node_bb, &node_ll, 0.005, 30.0, 0.60);
+    let fwd_edge_bb_rr = TestEdge::new_fwd(None, 3, &node_bb, &node_rr, 0.005, 30.0, 0.60);
+    let fwd_edge_rr_bb = TestEdge::new_fwd(None, 4, &node_rr, &node_bb, 0.005, 30.0, 0.60);
+    let fwd_edge_rr_tr = TestEdge::new_fwd(None, 5, &node_rr, &node_tr, 0.003, 30.0, 0.36);
+    let fwd_edge_tr_rr = TestEdge::new_fwd(None, 6, &node_tr, &node_rr, 0.003, 30.0, 0.36);
+    let fwd_edge_tr_tl = TestEdge::new_fwd(None, 7, &node_tr, &node_tl, 0.003, 30.0, 0.36);
+    let fwd_edge_tl_ll = TestEdge::new_fwd(None, 8, &node_tl, &node_ll, 0.003, 30.0, 0.36);
+    let fwd_edge_tl_tr = TestEdge::new_fwd(None, 9, &node_tl, &node_tr, 0.003, 30.0, 0.36);
 
     // Due to the offset-array, the bwd-edge-ids should match with sorting by src-id, then by dst-id.
     // But the graph-structure changes that to the same as fwd-edges (dst-id, then src-id).
-    // name, idx, id, src, dst, meters, maxspeed, s
-    let bwd_edge_bb_ll = TestEdge::new_bwd(None, EdgeIdx(0), &node_bb, &node_ll, 5.0, 30.0, 0.60);
-    let bwd_edge_tl_ll = TestEdge::new_bwd(None, EdgeIdx(1), &node_tl, &node_ll, 3.0, 30.0, 0.36);
-    let bwd_edge_ll_bb = TestEdge::new_bwd(None, EdgeIdx(2), &node_ll, &node_bb, 5.0, 30.0, 0.60);
-    let bwd_edge_rr_bb = TestEdge::new_bwd(None, EdgeIdx(3), &node_rr, &node_bb, 5.0, 30.0, 0.60);
-    let bwd_edge_bb_rr = TestEdge::new_bwd(None, EdgeIdx(4), &node_bb, &node_rr, 5.0, 30.0, 0.60);
-    let bwd_edge_tr_rr = TestEdge::new_bwd(None, EdgeIdx(5), &node_tr, &node_rr, 3.0, 30.0, 0.36);
-    let bwd_edge_rr_tr = TestEdge::new_bwd(None, EdgeIdx(6), &node_rr, &node_tr, 3.0, 30.0, 0.36);
-    let bwd_edge_tl_tr = TestEdge::new_bwd(None, EdgeIdx(7), &node_tl, &node_tr, 3.0, 30.0, 0.36);
-    let bwd_edge_ll_tl = TestEdge::new_bwd(None, EdgeIdx(8), &node_ll, &node_tl, 3.0, 30.0, 0.36);
-    let bwd_edge_tr_tl = TestEdge::new_bwd(None, EdgeIdx(9), &node_tr, &node_tl, 3.0, 30.0, 0.36);
+    // name, idx, id, src, dst, length, maxspeed, duration
+    let bwd_edge_bb_ll = TestEdge::new_bwd(None, 0, &node_bb, &node_ll, 0.005, 30.0, 0.60);
+    let bwd_edge_tl_ll = TestEdge::new_bwd(None, 1, &node_tl, &node_ll, 0.003, 30.0, 0.36);
+    let bwd_edge_ll_bb = TestEdge::new_bwd(None, 2, &node_ll, &node_bb, 0.005, 30.0, 0.60);
+    let bwd_edge_rr_bb = TestEdge::new_bwd(None, 3, &node_rr, &node_bb, 0.005, 30.0, 0.60);
+    let bwd_edge_bb_rr = TestEdge::new_bwd(None, 4, &node_bb, &node_rr, 0.005, 30.0, 0.60);
+    let bwd_edge_tr_rr = TestEdge::new_bwd(None, 5, &node_tr, &node_rr, 0.003, 30.0, 0.36);
+    let bwd_edge_rr_tr = TestEdge::new_bwd(None, 6, &node_rr, &node_tr, 0.003, 30.0, 0.36);
+    let bwd_edge_tl_tr = TestEdge::new_bwd(None, 7, &node_tl, &node_tr, 0.003, 30.0, 0.36);
+    let bwd_edge_ll_tl = TestEdge::new_bwd(None, 8, &node_ll, &node_tl, 0.003, 30.0, 0.36);
+    let bwd_edge_tr_tl = TestEdge::new_bwd(None, 9, &node_tr, &node_tl, 0.003, 30.0, 0.36);
 
     //--------------------------------------------------------------------------------------------//
     // testing graph

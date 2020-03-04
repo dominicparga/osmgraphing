@@ -6,12 +6,12 @@ pub mod dijkstra {
         };
 
         pub fn shortest(length_idx: MetricIdx) -> Box<dyn Astar> {
-            let cost_fn = move |edge: &HalfEdge| *edge.length(length_idx).unwrap();
+            let cost_fn = move |edge: &HalfEdge| edge.metric(length_idx).unwrap();
             Box::new(GenericDijkstra::new(cost_fn))
         }
 
         pub fn fastest(duration_idx: MetricIdx) -> Box<dyn Astar> {
-            let cost_fn = move |edge: &HalfEdge| *edge.duration(duration_idx).unwrap();
+            let cost_fn = move |edge: &HalfEdge| edge.metric(duration_idx).unwrap();
             Box::new(GenericDijkstra::new(cost_fn))
         }
     }
@@ -23,12 +23,12 @@ pub mod dijkstra {
         };
 
         pub fn shortest(length_idx: MetricIdx) -> Box<dyn Astar> {
-            let cost_fn = move |edge: &HalfEdge| *edge.length(length_idx).unwrap();
+            let cost_fn = move |edge: &HalfEdge| edge.metric(length_idx).unwrap();
             Box::new(GenericDijkstra::new(cost_fn))
         }
 
         pub fn fastest(duration_idx: MetricIdx) -> Box<dyn Astar> {
-            let cost_fn = move |edge: &HalfEdge| *edge.duration(duration_idx).unwrap();
+            let cost_fn = move |edge: &HalfEdge| edge.metric(duration_idx).unwrap();
             Box::new(GenericDijkstra::new(cost_fn))
         }
     }
@@ -44,16 +44,16 @@ pub mod astar {
         };
 
         pub fn shortest(length_idx: MetricIdx) -> Box<dyn Astar> {
-            let cost_fn = move |edge: &HalfEdge| *edge.length(length_idx).unwrap();
+            let cost_fn = move |edge: &HalfEdge| edge.metric(length_idx).unwrap();
             let estimate_fn =
-                |from: &Node, to: &Node| *geo::haversine_distance_m(&from.coord(), &to.coord());
+                |from: &Node, to: &Node| *geo::haversine_distance_km(&from.coord(), &to.coord());
             Box::new(GenericAstar::new(cost_fn, estimate_fn))
         }
 
         pub fn fastest(duration_idx: MetricIdx) -> Box<dyn Astar> {
-            let cost_fn = move |edge: &HalfEdge| *edge.duration(duration_idx).unwrap();
+            let cost_fn = move |edge: &HalfEdge| edge.metric(duration_idx).unwrap();
             let estimate_fn = |from: &Node, to: &Node| {
-                let meters = geo::haversine_distance_m(&from.coord(), &to.coord());
+                let meters = geo::haversine_distance_km(&from.coord(), &to.coord());
                 let maxspeed = KilometersPerHour(defaults::speed::MAX_KMH as f32);
                 *(meters / maxspeed)
             };
@@ -70,16 +70,16 @@ pub mod astar {
         };
 
         pub fn shortest(length_idx: MetricIdx) -> Box<dyn Astar> {
-            let cost_fn = move |edge: &HalfEdge| *edge.length(length_idx).unwrap();
+            let cost_fn = move |edge: &HalfEdge| edge.metric(length_idx).unwrap();
             let estimate_fn =
-                |from: &Node, to: &Node| *geo::haversine_distance_m(&from.coord(), &to.coord());
+                |from: &Node, to: &Node| *geo::haversine_distance_km(&from.coord(), &to.coord());
             Box::new(GenericAstar::new(cost_fn, estimate_fn))
         }
 
         pub fn fastest(duration_idx: MetricIdx) -> Box<dyn Astar> {
-            let cost_fn = move |edge: &HalfEdge| *edge.duration(duration_idx).unwrap();
+            let cost_fn = move |edge: &HalfEdge| edge.metric(duration_idx).unwrap();
             let estimate_fn = |from: &Node, to: &Node| {
-                let meters = geo::haversine_distance_m(&from.coord(), &to.coord());
+                let meters = geo::haversine_distance_km(&from.coord(), &to.coord());
                 let maxspeed = KilometersPerHour(defaults::speed::MAX_KMH as f32);
                 *(meters / maxspeed)
             };
