@@ -61,6 +61,6 @@ impl Mul<KilometersPerHour> for Seconds {
     type Output = Meters;
 
     fn mul(self, speed: KilometersPerHour) -> Meters {
-        Meters((*speed) * self.0 / 3_600.0)
+        Meters((*speed) * self.0 / 3.6)
     }
 }

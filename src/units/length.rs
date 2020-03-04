@@ -61,7 +61,7 @@ impl Div<Seconds> for Meters {
     type Output = KilometersPerHour;
 
     fn div(self, duration: Seconds) -> KilometersPerHour {
-        KilometersPerHour(3_600.0 * self.0 / (*duration))
+        KilometersPerHour(3.6 * self.0 / (*duration))
     }
 }
 

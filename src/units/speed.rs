@@ -1,17 +1,9 @@
-//------------------------------------------------------------------------------------------------//
-// own modules
-
-//------------------------------------------------------------------------------------------------//
-// other modules
-
 use super::{length::Meters, time::Seconds};
 use std::{
     fmt,
     fmt::Display,
     ops::{Add, AddAssign, Deref, DerefMut, Mul, Sub, SubAssign},
 };
-
-//------------------------------------------------------------------------------------------------//
 
 #[derive(Debug, Default, Clone, Copy, PartialOrd, PartialEq)]
 pub struct KilometersPerHour(pub f32);
@@ -35,9 +27,6 @@ impl DerefMut for KilometersPerHour {
         &mut self.0
     }
 }
-
-//--------------------------------------------------------------------------------------------//
-// arithmetic operations
 
 impl Add<KilometersPerHour> for KilometersPerHour {
     type Output = KilometersPerHour;

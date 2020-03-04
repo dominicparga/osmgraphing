@@ -3,6 +3,7 @@
 mod configs;
 mod parsing;
 mod routing;
+mod units;
 
 use osmgraphing::{
     configs::{graph, Config},
@@ -45,6 +46,9 @@ fn create_config(test_type: TestType) -> Config {
     cfg
 }
 
+#[rustfmt::skip]#[test]fn length_______________units_________________________________________() {units::length();}
+#[rustfmt::skip]#[test]fn duration_____________units_________________________________________() {units::duration();}
+#[rustfmt::skip]#[test]fn speed________________units_________________________________________() {units::speed();}
 #[rustfmt::skip]#[test]fn fmi__________________configs___deserialize_________________________() {configs::fmi::deserialize().unwrap();}
 #[rustfmt::skip]#[test]fn pbf__________________configs___deserialize_________________________() {configs::pbf::deserialize().unwrap();}
 #[rustfmt::skip]#[test]fn small________________routing___shortest___astar______bidirectional_() {routing::shortest::astar::bidirectional::small();}
