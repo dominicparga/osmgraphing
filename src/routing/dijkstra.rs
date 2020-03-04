@@ -2,8 +2,6 @@ pub use super::astar::Astar;
 use super::paths::Path;
 use crate::network::NodeIdx;
 
-//------------------------------------------------------------------------------------------------//
-
 pub mod unidirectional {
     use super::{Astar, CostNode, Path};
     use crate::network::{Graph, HalfEdge, Node, NodeIdx};
@@ -118,7 +116,6 @@ pub mod unidirectional {
                         self.predecessors[*leaving_edge.dst_idx()] = Some(current.idx);
                         self.costs[*leaving_edge.dst_idx()] = new_cost;
 
-                        let leaving_edge_of_dst = nodes.create(leaving_edge.dst_idx());
                         self.queue.push(Reverse(CostNode {
                             idx: leaving_edge.dst_idx(),
                             cost: new_cost,
@@ -268,14 +265,9 @@ pub mod bidirectional {
                 }
 
                 // distinguish between fwd and bwd
-                let (xwd_costs, xwd_edges, xwd_predecessors, xwd_dst) = match current.direction {
-                    Direction::FWD => (
-                        &mut self.fwd_costs,
-                        &fwd_edges,
-                        &mut self.predecessors,
-                        &dst,
-                    ),
-                    Direction::BWD => (&mut self.bwd_costs, &bwd_edges, &mut self.successors, &src),
+                let (xwd_costs, xwd_edges, xwd_predecessors) = match current.direction {
+                    Direction::FWD => (&mut self.fwd_costs, &fwd_edges, &mut self.predecessors),
+                    Direction::BWD => (&mut self.bwd_costs, &bwd_edges, &mut self.successors),
                 };
 
                 // first occurrence has lowest cost
@@ -301,7 +293,6 @@ pub mod bidirectional {
                         //    since the shortest path could have longer hop-distance
                         //    with shorter weight-distance than currently found node.
                         if best_meeting.is_none() {
-                            let leaving_edge_dst = nodes.create(leaving_edge.dst_idx());
                             self.queue.push(Reverse(BiCostNode {
                                 core: CostNode {
                                     idx: leaving_edge.dst_idx(),

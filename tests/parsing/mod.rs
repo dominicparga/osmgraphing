@@ -7,7 +7,7 @@ use osmgraphing::{
     configs::MetricCategory,
     helpers::Approx,
     network::{EdgeIdx, Graph, MetricIdx, Node, NodeContainer, NodeIdx},
-    units::{geo, length::Meters, speed::KilometersPerHour, time::Seconds},
+    units::geo,
 };
 use std::{fmt, fmt::Display};
 
