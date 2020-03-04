@@ -1,4 +1,4 @@
-use super::{length::Meters, time::Seconds};
+use super::{length::Kilometers, time::Seconds};
 use std::{
     fmt,
     fmt::Display,
@@ -58,9 +58,9 @@ impl SubAssign<KilometersPerHour> for KilometersPerHour {
 
 /// s = v * t
 impl Mul<Seconds> for KilometersPerHour {
-    type Output = Meters;
+    type Output = Kilometers;
 
-    fn mul(self, duration: Seconds) -> Meters {
-        Meters(self.0 * (*duration) / 3.6)
+    fn mul(self, duration: Seconds) -> Kilometers {
+        Kilometers(self.0 * (*duration) / 3_600.0)
     }
 }

@@ -1,42 +1,57 @@
 use osmgraphing::{
     helpers::Approx,
-    units::{length::Meters, speed::KilometersPerHour, time::Seconds},
+    units::{
+        length::{Kilometers, Meters},
+        speed::KilometersPerHour,
+        time::Seconds,
+    },
 };
 
 pub fn length() {
+    let length = Meters(1_000.0);
+    let duration = Seconds(1_000.0);
+    let speed = KilometersPerHour(3.6);
+
     // meters
     assert!(
-        (Meters(1.0) / Seconds(1.0)).approx_eq(&Seconds(3.6)),
-        "kmph = m / s is wrong"
+        (length / duration).approx_eq(&speed),
+        format!("{} = {} / {} is wrong", speed, length, duration)
     );
     assert!(
-        (Meters(1.0) / KilometersPerHour(1.0)).approx_eq(&Seconds(3.6)),
-        "s = m / kmph is wrong"
+        (length / speed).approx_eq(&duration),
+        format!("{} = {} / {} is wrong", duration, length, speed)
     );
 
     // kilometers
+    let length = Kilometers::from(length);
     assert!(
-        (Meters(1.0) / Seconds(1.0)).approx_eq(&Seconds(3.6)),
-        "kmph = m / s is wrong"
+        (length / duration).approx_eq(&speed),
+        format!("{} = {} / {} is wrong", speed, length, duration)
     );
     assert!(
-        (Meters(1.0) / KilometersPerHour(1.0)).approx_eq(&Seconds(3.6)),
-        "s = m / kmph is wrong"
+        (length / speed).approx_eq(&duration),
+        format!("{} = {} / {} is wrong", duration, length, speed)
     );
 }
 
 pub fn duration() {
-    // seconds
+    let length = Kilometers::from(Meters(1_000.0));
+    let duration = Seconds(1_000.0);
+    let speed = KilometersPerHour(3.6);
+
     assert!(
-        (Seconds(3.6) * KilometersPerHour(1.0)).approx_eq(&Meters(1.0)),
-        "m = s * kmph is wrong"
+        (duration * speed).approx_eq(&length),
+        format!("{} = {} * {} is wrong", length, duration, speed)
     );
 }
 
 pub fn speed() {
-    // kmph
+    let length = Kilometers::from(Meters(1_000.0));
+    let duration = Seconds(1_000.0);
+    let speed = KilometersPerHour(3.6);
+
     assert!(
-        (KilometersPerHour(3.6) * Seconds(1.0)).approx_eq(&Meters(1.0)),
-        "m = kmph * s is wrong"
+        (speed * duration).approx_eq(&length),
+        format!("{} = {} * {} is wrong", length, speed, duration)
     );
 }
