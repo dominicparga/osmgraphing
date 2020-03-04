@@ -1,4 +1,37 @@
-use std::{fs::File, path::Path, str::FromStr};
+use std::{
+    cmp::Ordering::{self, Equal, Greater, Less},
+    fs::File,
+    path::Path,
+    str::FromStr,
+};
+
+pub trait Approx {
+    fn approx_eq(&self, other: &Self) -> bool;
+    fn approx_partial_cmp(&self, other: &Self) -> Option<Ordering>;
+    fn approx_cmp(&self, other: &Self) -> Ordering;
+}
+
+impl Approx for f32 {
+    fn approx_eq(&self, other: &f32) -> bool {
+        (self - other).abs() <= std::f32::EPSILON
+    }
+
+    fn approx_partial_cmp(&self, other: &f32) -> Option<Ordering> {
+        match (self < other, self > other, self.approx_eq(other)) {
+            (false, false, false) => None,
+            (false, true, false) => Some(Greater),
+            (true, false, false) => Some(Less),
+            (true, true, false) | (_, _, true) => Some(Equal),
+        }
+    }
+
+    fn approx_cmp(&self, other: &f32) -> Ordering {
+        self.approx_partial_cmp(other).expect(&format!(
+            "No f32-comparison for {} and {} possible.",
+            self, other
+        ))
+    }
+}
 
 pub fn open_file<P: AsRef<Path> + ?Sized>(path: &P) -> Result<File, String> {
     let path = path.as_ref();

@@ -4,8 +4,10 @@ pub mod pbf;
 
 use super::{create_config, parse, TestType};
 use osmgraphing::{
+    configs::MetricCategory,
+    helpers::Approx,
     network::{EdgeIdx, Graph, MetricIdx, Node, NodeContainer, NodeIdx},
-    units::{geo, length::Meters, speed::KilometersPerHour, time::Milliseconds},
+    units::{geo, length::Meters, speed::KilometersPerHour, time::Seconds},
 };
 use std::{fmt, fmt::Display};
 
@@ -78,9 +80,7 @@ struct TestEdge {
     is_fwd: bool,
     src_idx: NodeIdx,
     dst_idx: NodeIdx,
-    length: Meters,
-    maxspeed: KilometersPerHour,
-    duration: Milliseconds,
+    metrics: Vec<f32>,
 }
 
 impl TestEdge {
@@ -89,9 +89,9 @@ impl TestEdge {
         edge_idx: EdgeIdx,
         src: &TestNode,
         dst: &TestNode,
-        length: u32,
-        maxspeed: u16,
-        duration: u32,
+        length: f32,
+        maxspeed: f32,
+        duration: f32,
     ) -> TestEdge {
         TestEdge {
             name: (name.unwrap_or(&format!("{}->{}", src.name, dst.name))).to_owned(),
@@ -99,9 +99,7 @@ impl TestEdge {
             is_fwd: true,
             src_idx: src.idx.into(),
             dst_idx: dst.idx.into(),
-            length: Meters(length as f32),
-            maxspeed: KilometersPerHour(maxspeed as f32),
-            duration: Milliseconds(duration as f32),
+            metrics: vec![length, maxspeed, duration],
         }
     }
 
@@ -110,9 +108,9 @@ impl TestEdge {
         edge_idx: EdgeIdx,
         src: &TestNode,
         dst: &TestNode,
-        length: u32,
-        maxspeed: u16,
-        duration: u32,
+        length: f32,
+        maxspeed: f32,
+        duration: f32,
     ) -> TestEdge {
         TestEdge {
             name: (name.unwrap_or(&format!("{}->{}", src.name, dst.name))).to_owned(),
@@ -120,9 +118,7 @@ impl TestEdge {
             is_fwd: false,
             src_idx: src.idx.into(),
             dst_idx: dst.idx.into(),
-            length: Meters(length as f32),
-            maxspeed: KilometersPerHour(maxspeed as f32),
-            duration: Milliseconds(duration as f32),
+            metrics: vec![length, maxspeed, duration],
         }
     }
 
@@ -169,31 +165,23 @@ impl TestEdge {
             self.name
         );
 
-        let length_idx = MetricIdx(0);
-        let maxspeed_idx = MetricIdx(1);
-        let duration_idx = MetricIdx(2);
-
-        let length = edge.length(length_idx).expect("Edge should have a length.");
-        assert_eq!(
-            length, self.length,
-            "Wrong length={} for {}edge {}",
-            length, prefix, self.name
-        );
-        let maxspeed = edge
-            .maxspeed(maxspeed_idx)
-            .expect("Edge should have a maxspeed.");
-        assert_eq!(
-            maxspeed, self.maxspeed,
-            "Wrong maxspeed={} for {}edge {}",
-            maxspeed, prefix, self.name
-        );
-        let duration = edge
-            .duration(duration_idx)
-            .expect("Edge should have a duration.");
-        assert_eq!(
-            duration, self.duration,
-            "Wrong duration={} for {}edge {}",
-            duration, prefix, self.name
-        );
+        let access_stuff = vec![
+            (MetricIdx(0), MetricCategory::Length),
+            (MetricIdx(1), MetricCategory::Maxspeed),
+            (MetricIdx(2), MetricCategory::Duration),
+        ];
+        for (metric_idx, metric_category) in access_stuff {
+            let value = edge
+                .metric(metric_idx)
+                .expect(&format!("Edge should have a {}.", metric_category));
+            assert!(
+                value.approx_eq(&self.metrics[*metric_idx]),
+                "Wrong {}={} for {}edge {}",
+                metric_category,
+                value,
+                prefix,
+                self.name
+            );
+        }
     }
 }

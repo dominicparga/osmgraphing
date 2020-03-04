@@ -2,8 +2,9 @@ use super::{EdgeIdx, Graph, NodeIdx};
 use crate::{
     configs::{graph::Config, MetricCategory},
     defaults,
+    helpers::Approx,
     network::MetricIdx,
-    units::{geo, geo::Coordinate, length::Meters, speed::KilometersPerHour, time::Milliseconds},
+    units::{geo, geo::Coordinate, length::Meters, speed::KilometersPerHour, time::Seconds},
 };
 use log::{debug, info};
 use progressing;
@@ -112,7 +113,7 @@ impl Graph {
                 // Jump if proto-edge has its value.
                 if let Some(value) = &mut proto_edge.metrics[*metric_idx] {
                     // But jump only if value is correct.
-                    if value == &0.0 && category.must_be_positive() {
+                    if value.approx_eq(&0.0) && category.must_be_positive() {
                         debug!(
                             "Proto-edge (id:{}->id:{}) has {}=0, hence is corrected to epsilon.",
                             proto_edge.src_id, proto_edge.dst_id, category
@@ -181,7 +182,7 @@ impl Graph {
                         }
                         // calc maxspeed and update proto-edge
                         if let (Some(length), Some(duration)) = (length, duration) {
-                            let maxspeed = Meters(length) / Milliseconds(duration);
+                            let maxspeed = Meters(length) / Seconds(duration);
                             proto_edge.metrics[*metric_idx] = Some(*maxspeed)
                         } else {
                             are_all_metrics_some = false;

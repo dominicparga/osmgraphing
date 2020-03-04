@@ -1,9 +1,3 @@
-//------------------------------------------------------------------------------------------------//
-// own modules
-
-//------------------------------------------------------------------------------------------------//
-// other modules
-
 use super::{length::Meters, speed::KilometersPerHour};
 use std::{
     fmt,
@@ -11,18 +5,16 @@ use std::{
     ops::{Add, AddAssign, Deref, DerefMut, Mul, Sub, SubAssign},
 };
 
-//------------------------------------------------------------------------------------------------//
-
 #[derive(Debug, Default, Clone, Copy, PartialOrd, PartialEq)]
-pub struct Milliseconds(pub f32);
+pub struct Seconds(pub f32);
 
-impl Display for Milliseconds {
+impl Display for Seconds {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{} ms", self.0)
+        write!(f, "{} s", self.0)
     }
 }
 
-impl Deref for Milliseconds {
+impl Deref for Seconds {
     type Target = f32;
 
     fn deref(&self) -> &f32 {
@@ -30,45 +22,42 @@ impl Deref for Milliseconds {
     }
 }
 
-impl DerefMut for Milliseconds {
+impl DerefMut for Seconds {
     fn deref_mut(&mut self) -> &mut f32 {
         &mut self.0
     }
 }
 
-//--------------------------------------------------------------------------------------------//
-// arithmetic operations
+impl Add<Seconds> for Seconds {
+    type Output = Seconds;
 
-impl Add<Milliseconds> for Milliseconds {
-    type Output = Milliseconds;
-
-    fn add(self, other: Milliseconds) -> Milliseconds {
-        Milliseconds(self.0 + other.0)
+    fn add(self, other: Seconds) -> Seconds {
+        Seconds(self.0 + other.0)
     }
 }
 
-impl AddAssign<Milliseconds> for Milliseconds {
-    fn add_assign(&mut self, other: Milliseconds) {
+impl AddAssign<Seconds> for Seconds {
+    fn add_assign(&mut self, other: Seconds) {
         self.0 += other.0;
     }
 }
 
-impl Sub<Milliseconds> for Milliseconds {
-    type Output = Milliseconds;
+impl Sub<Seconds> for Seconds {
+    type Output = Seconds;
 
-    fn sub(self, other: Milliseconds) -> Milliseconds {
-        Milliseconds(self.0 - other.0)
+    fn sub(self, other: Seconds) -> Seconds {
+        Seconds(self.0 - other.0)
     }
 }
 
-impl SubAssign<Milliseconds> for Milliseconds {
-    fn sub_assign(&mut self, other: Milliseconds) {
+impl SubAssign<Seconds> for Seconds {
+    fn sub_assign(&mut self, other: Seconds) {
         self.0 -= other.0;
     }
 }
 
 /// s = v * t
-impl Mul<KilometersPerHour> for Milliseconds {
+impl Mul<KilometersPerHour> for Seconds {
     type Output = Meters;
 
     fn mul(self, speed: KilometersPerHour) -> Meters {

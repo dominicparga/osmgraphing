@@ -4,7 +4,7 @@ pub use indexing::{EdgeIdx, MetricIdx, NodeIdx};
 
 use crate::{
     configs::graph::Config,
-    units::{geo::Coordinate, length::Meters, speed::KilometersPerHour, time::Milliseconds},
+    units::{geo::Coordinate, length::Meters, speed::KilometersPerHour, time::Seconds},
 };
 use std::{fmt, fmt::Display};
 
@@ -322,7 +322,7 @@ impl<'a> HalfEdge<'a> {
         self.metrics.maxspeed(metric_idx, self.idx)
     }
 
-    pub fn duration(&self, metric_idx: MetricIdx) -> Option<Milliseconds> {
+    pub fn duration(&self, metric_idx: MetricIdx) -> Option<Seconds> {
         self.metrics.duration(metric_idx, self.idx)
     }
 
@@ -532,10 +532,10 @@ impl<'a> MetricContainer<'a> {
         Some(KilometersPerHour(maxspeed))
     }
 
-    pub fn duration(&self, metric_idx: MetricIdx, edge_idx: EdgeIdx) -> Option<Milliseconds> {
+    pub fn duration(&self, metric_idx: MetricIdx, edge_idx: EdgeIdx) -> Option<Seconds> {
         let duration = self.get(metric_idx, edge_idx)?;
         debug_assert!(duration > 0.0, "Edge-duration should be > 0");
-        Some(Milliseconds(duration))
+        Some(Seconds(duration))
     }
 
     pub fn lane_count(&self, metric_idx: MetricIdx, edge_idx: EdgeIdx) -> Option<f32> {

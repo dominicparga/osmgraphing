@@ -1,4 +1,4 @@
-use super::{speed::KilometersPerHour, time::Milliseconds};
+use super::{speed::KilometersPerHour, time::Seconds};
 use std::{
     fmt,
     fmt::Display,
@@ -57,19 +57,19 @@ impl SubAssign<Meters> for Meters {
 }
 
 /// v = s / t
-impl Div<Milliseconds> for Meters {
+impl Div<Seconds> for Meters {
     type Output = KilometersPerHour;
 
-    fn div(self, duration: Milliseconds) -> KilometersPerHour {
+    fn div(self, duration: Seconds) -> KilometersPerHour {
         KilometersPerHour(3_600.0 * self.0 / (*duration))
     }
 }
 
 /// t = s / v
 impl Div<KilometersPerHour> for Meters {
-    type Output = Milliseconds;
+    type Output = Seconds;
 
-    fn div(self, speed: KilometersPerHour) -> Milliseconds {
-        Milliseconds(3_600.0 * self.0 / (*speed))
+    fn div(self, speed: KilometersPerHour) -> Seconds {
+        Seconds(3.6 * self.0 / (*speed))
     }
 }

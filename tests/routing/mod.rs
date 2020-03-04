@@ -1,5 +1,5 @@
 use super::{create_config, TestType};
-use osmgraphing::{configs::graph, network::Graph, network::NodeIdx, routing};
+use osmgraphing::{configs::graph, helpers::Approx, network::Graph, network::NodeIdx, routing};
 use std::{fmt, fmt::Display};
 
 pub mod fastest;
@@ -90,13 +90,13 @@ impl TestPath {
             "Path has wrong dst {} (should be {})",
             path_dst, self.dst,
         );
-        assert_eq!(
-            path.cost(),
-            &self.cost,
-            "Path from src {} to dst {} should have cost {}",
+        assert!(
+            path.cost().approx_eq(&self.cost),
+            "Path from src {} to dst {} should have cost {}, but has {}.",
             self.src,
             self.dst,
             self.cost,
+            path.cost() // path.cost().approx_eq(&self.cost),
         );
 
         // src has no predecessor
