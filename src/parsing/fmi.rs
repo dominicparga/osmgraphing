@@ -182,7 +182,7 @@ mod intern {
                     ))
                 }
             };
-            let lat = match params[2].parse::<f64>() {
+            let lat = match params[2].parse::<f32>() {
                 Ok(lat) => lat,
                 Err(_) => {
                     return Err(format!(
@@ -191,7 +191,7 @@ mod intern {
                     ))
                 }
             };
-            let lon = match params[3].parse::<f64>() {
+            let lon = match params[3].parse::<f32>() {
                 Ok(lon) => lon,
                 Err(_) => {
                     return Err(format!(
@@ -203,7 +203,7 @@ mod intern {
 
             Ok(ProtoNode {
                 id,
-                coord: geo::Coordinate::from((lat, lon)),
+                coord: geo::Coordinate { lat, lon },
             })
         }
     }

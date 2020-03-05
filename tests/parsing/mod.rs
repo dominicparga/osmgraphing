@@ -60,7 +60,7 @@ impl PartialEq for TestNode {
 }
 
 impl TestNode {
-    fn new(name: &str, id: i64, lat: f64, lon: f64, graph: &Graph) -> TestNode {
+    fn new(name: &str, id: i64, lat: f32, lon: f32, graph: &Graph) -> TestNode {
         let idx = graph
             .nodes()
             .idx_from(id)
@@ -69,7 +69,7 @@ impl TestNode {
             name: String::from(name),
             id,
             idx,
-            coord: geo::Coordinate::from((lat, lon)),
+            coord: geo::Coordinate { lat, lon },
         }
     }
 }

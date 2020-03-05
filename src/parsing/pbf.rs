@@ -144,7 +144,7 @@ impl super::Parsing for Parser {
             if graph_builder.is_node_in_edge(node.id.0) {
                 graph_builder.push_node(
                     node.id.0,
-                    Coordinate::from((node.decimicro_lat, node.decimicro_lon)),
+                    Coordinate::from_decimicro(node.decimicro_lat, node.decimicro_lon),
                 );
             }
         }

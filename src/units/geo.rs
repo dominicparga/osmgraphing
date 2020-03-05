@@ -1,49 +1,22 @@
-use crate::units::length::Kilometers;
-use std::{cmp::Ordering, fmt, fmt::Display};
+use crate::{helpers::Approx, units::length::Kilometers};
+use std::{fmt, fmt::Display};
 
 /// Coordinate storing `lat`/`lon` as `i32` with accuracy `1e-7`.
 #[derive(Copy, Clone, Debug)]
 pub struct Coordinate {
-    decimicro_lat: i32,
-    decimicro_lon: i32,
+    pub lat: f32,
+    pub lon: f32,
 }
 
 impl Coordinate {
     pub fn zero() -> Coordinate {
-        (0, 0).into()
+        Coordinate { lat: 0.0, lon: 0.0 }
     }
 
-    pub fn lat(&self) -> f64 {
-        self.decimicro_lat as f64 * 1e-7
-    }
-
-    pub fn lon(&self) -> f64 {
-        self.decimicro_lon as f64 * 1e-7
-    }
-
-    pub fn decimicro_lat(&self) -> i32 {
-        self.decimicro_lat
-    }
-
-    pub fn decimicro_lon(&self) -> i32 {
-        self.decimicro_lon
-    }
-}
-
-impl From<(i32, i32)> for Coordinate {
-    fn from((decimicro_lat, decimicro_lon): (i32, i32)) -> Coordinate {
+    pub fn from_decimicro(decimicro_lat: i32, decimicro_lon: i32) -> Coordinate {
         Coordinate {
-            decimicro_lat,
-            decimicro_lon,
-        }
-    }
-}
-
-impl From<(f64, f64)> for Coordinate {
-    fn from((lat, lon): (f64, f64)) -> Coordinate {
-        Coordinate {
-            decimicro_lat: (lat * 1e7) as i32,
-            decimicro_lon: (lon * 1e7) as i32,
+            lat: (decimicro_lat as f64 * 1e-7) as f32,
+            lon: (decimicro_lon as f64 * 1e-7) as f32,
         }
     }
 }
@@ -52,18 +25,13 @@ impl Eq for Coordinate {}
 
 impl PartialEq for Coordinate {
     fn eq(&self, other: &Coordinate) -> bool {
-        self.decimicro_lat.cmp(&other.decimicro_lat) == Ordering::Equal
-            && self.decimicro_lon.cmp(&other.decimicro_lon) == Ordering::Equal
+        self.lat.approx_eq(&other.lat) && self.lon.approx_eq(&other.lon)
     }
 }
 
 impl Display for Coordinate {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "(dµ_lat: {}, dµ_lon: {})",
-            self.decimicro_lat, self.decimicro_lon
-        )
+        write!(f, "(lat: {}, lon: {})", self.lat, self.lon)
     }
 }
 
@@ -71,10 +39,10 @@ impl Display for Coordinate {
 fn haversine_distance(from: &Coordinate, to: &Coordinate) -> f64 {
     let earth_mean_radius = 6_371.0; // kilometers
 
-    let from_lat = from.lat();
-    let from_lon = from.lon();
-    let to_lat = to.lat();
-    let to_lon = to.lon();
+    let from_lat = from.lat as f64;
+    let from_lon = from.lon as f64;
+    let to_lat = to.lat as f64;
+    let to_lon = to.lon as f64;
 
     let delta_lat = (from_lat - to_lat).to_radians();
     let delta_lon = (from_lon - to_lon).to_radians();
