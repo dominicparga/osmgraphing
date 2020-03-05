@@ -74,7 +74,7 @@ impl super::Parsing for Parser {
                 let is_provided = cfg.is_provided(metric_idx);
 
                 match metric_type {
-                    MetricCategory::Length | MetricCategory::Duration | MetricCategory::Custom => {
+                    MetricCategory::Meters | MetricCategory::Seconds | MetricCategory::Custom => {
                         if is_provided {
                             return Err(format!(
                                 "The {} of an edge in a pbf-file has to be calculated, \
@@ -83,7 +83,7 @@ impl super::Parsing for Parser {
                             ));
                         }
                     }
-                    MetricCategory::Maxspeed => {
+                    MetricCategory::KilometersPerHour => {
                         if is_provided {
                             let maxspeed = highway_tag.parse_maxspeed(&way);
                             metrics[*metric_idx] = Some(maxspeed as f32);

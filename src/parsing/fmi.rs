@@ -254,7 +254,7 @@ mod intern {
                             ));
                         }
                     }
-                    MetricCategory::Length => {
+                    MetricCategory::Meters => {
                         let metric_idx = MetricIdx(metric_values.len());
                         let is_provided = cfg.metrics.is_provided(metric_idx);
 
@@ -271,8 +271,8 @@ mod intern {
                             metric_values.push(None);
                         }
                     }
-                    MetricCategory::Maxspeed
-                    | MetricCategory::Duration
+                    MetricCategory::KilometersPerHour
+                    | MetricCategory::Seconds
                     | MetricCategory::LaneCount
                     | MetricCategory::Custom => {
                         let metric_idx = MetricIdx(metric_values.len());

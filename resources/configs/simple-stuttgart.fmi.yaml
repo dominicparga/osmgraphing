@@ -9,9 +9,9 @@ graph:
       id: 'src-id'
     - category: 'Id'
       id: 'dst-id'
-    - category: 'Length'
+    - category: 'Meters'
     - category: 'Ignore'
-    - category: 'Maxspeed'
-    - category: 'Duration'
+    - category: 'KilometersPerHour'
+    - category: 'Seconds'
       is-provided: false
-      calc-rules: ['Length', 'Maxspeed']
+      calc-rules: ['Meters', 'KilometersPerHour']

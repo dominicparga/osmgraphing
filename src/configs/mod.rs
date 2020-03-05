@@ -88,9 +88,9 @@ impl Display for MetricId {
 /// - `ignore`, which is used in `csv`-like `fmi`-maps to jump over columns
 #[derive(Copy, Clone, Debug, Deserialize, Eq, PartialEq)]
 pub enum MetricCategory {
-    Length,
-    Maxspeed,
-    Duration,
+    Meters,
+    KilometersPerHour,
+    Seconds,
     LaneCount,
     Custom,
     Id,
@@ -106,9 +106,9 @@ impl Display for MetricCategory {
 impl MetricCategory {
     pub fn must_be_positive(&self) -> bool {
         match self {
-            MetricCategory::Length
-            | MetricCategory::Maxspeed
-            | MetricCategory::Duration
+            MetricCategory::Meters
+            | MetricCategory::KilometersPerHour
+            | MetricCategory::Seconds
             | MetricCategory::LaneCount => true,
             MetricCategory::Custom | MetricCategory::Id | MetricCategory::Ignore => false,
         }
@@ -117,9 +117,9 @@ impl MetricCategory {
     pub fn is_ignored(&self) -> bool {
         match self {
             MetricCategory::Id | MetricCategory::Ignore => true,
-            MetricCategory::Length
-            | MetricCategory::Maxspeed
-            | MetricCategory::Duration
+            MetricCategory::Meters
+            | MetricCategory::KilometersPerHour
+            | MetricCategory::Seconds
             | MetricCategory::LaneCount
             | MetricCategory::Custom => false,
         }
@@ -127,9 +127,13 @@ impl MetricCategory {
 
     fn expected_calc_rules(&self) -> Vec<MetricCategory> {
         match self {
-            MetricCategory::Maxspeed => vec![MetricCategory::Length, MetricCategory::Duration],
-            MetricCategory::Duration => vec![MetricCategory::Length, MetricCategory::Maxspeed],
-            MetricCategory::Length
+            MetricCategory::KilometersPerHour => {
+                vec![MetricCategory::Meters, MetricCategory::Seconds]
+            }
+            MetricCategory::Seconds => {
+                vec![MetricCategory::Meters, MetricCategory::KilometersPerHour]
+            }
+            MetricCategory::Meters
             | MetricCategory::LaneCount
             | MetricCategory::Custom
             | MetricCategory::Id

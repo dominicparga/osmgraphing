@@ -1,16 +1,18 @@
 use super::{assert_correct, create_config, TestNode, TestType};
 use osmgraphing::network::NodeIdx;
 
+const LENGTH_ID: &str = "Meters";
+
 pub mod astar {
     pub mod unidirectional {
-        use super::super::{assert_correct, create_config, expected_paths, TestType};
+        use super::super::{assert_correct, create_config, expected_paths, TestType, LENGTH_ID};
         use osmgraphing::routing;
 
         pub fn simple_stuttgart() {
             let cfg = create_config(TestType::SimpleStuttgart);
 
             let mut astar = routing::factory::astar::unidirectional::shortest(
-                cfg.graph.edges.metrics.idx(&"Length".into()),
+                cfg.graph.edges.metrics.idx(&LENGTH_ID.into()),
             );
             let expected_paths = expected_paths(TestType::SimpleStuttgart);
 
@@ -21,7 +23,7 @@ pub mod astar {
             let cfg = create_config(TestType::Small);
 
             let mut astar = routing::factory::astar::unidirectional::shortest(
-                cfg.graph.edges.metrics.idx(&"Length".into()),
+                cfg.graph.edges.metrics.idx(&LENGTH_ID.into()),
             );
             let expected_paths = expected_paths(TestType::Small);
 
@@ -32,7 +34,7 @@ pub mod astar {
             let cfg = create_config(TestType::BidirectionalBait);
 
             let mut astar = routing::factory::astar::unidirectional::shortest(
-                cfg.graph.edges.metrics.idx(&"Length".into()),
+                cfg.graph.edges.metrics.idx(&LENGTH_ID.into()),
             );
             let expected_paths = expected_paths(TestType::BidirectionalBait);
 
@@ -43,7 +45,7 @@ pub mod astar {
             let cfg = create_config(TestType::IsleOfMan);
 
             let mut astar = routing::factory::astar::unidirectional::shortest(
-                cfg.graph.edges.metrics.idx(&"Length".into()),
+                cfg.graph.edges.metrics.idx(&LENGTH_ID.into()),
             );
             let expected_paths = expected_paths(TestType::IsleOfMan);
 
@@ -52,14 +54,14 @@ pub mod astar {
     }
 
     pub mod bidirectional {
-        use super::super::{assert_correct, create_config, expected_paths, TestType};
+        use super::super::{assert_correct, create_config, expected_paths, TestType, LENGTH_ID};
         use osmgraphing::routing;
 
         pub fn simple_stuttgart() {
             let cfg = create_config(TestType::SimpleStuttgart);
 
             let mut astar = routing::factory::astar::bidirectional::shortest(
-                cfg.graph.edges.metrics.idx(&"Length".into()),
+                cfg.graph.edges.metrics.idx(&LENGTH_ID.into()),
             );
             let expected_paths = expected_paths(TestType::SimpleStuttgart);
 
@@ -70,7 +72,7 @@ pub mod astar {
             let cfg = create_config(TestType::Small);
 
             let mut astar = routing::factory::astar::bidirectional::shortest(
-                cfg.graph.edges.metrics.idx(&"Length".into()),
+                cfg.graph.edges.metrics.idx(&LENGTH_ID.into()),
             );
             let expected_paths = expected_paths(TestType::Small);
 
@@ -81,7 +83,7 @@ pub mod astar {
             let cfg = create_config(TestType::BidirectionalBait);
 
             let mut astar = routing::factory::astar::bidirectional::shortest(
-                cfg.graph.edges.metrics.idx(&"Length".into()),
+                cfg.graph.edges.metrics.idx(&LENGTH_ID.into()),
             );
             let expected_paths = expected_paths(TestType::BidirectionalBait);
 
@@ -92,7 +94,7 @@ pub mod astar {
             let cfg = create_config(TestType::IsleOfMan);
 
             let mut astar = routing::factory::astar::bidirectional::shortest(
-                cfg.graph.edges.metrics.idx(&"Length".into()),
+                cfg.graph.edges.metrics.idx(&LENGTH_ID.into()),
             );
             let expected_paths = expected_paths(TestType::IsleOfMan);
 
@@ -100,19 +102,17 @@ pub mod astar {
         }
     }
 }
-
-//------------------------------------------------------------------------------------------------//
 
 pub mod dijkstra {
     pub mod unidirectional {
-        use super::super::{assert_correct, create_config, expected_paths, TestType};
+        use super::super::{assert_correct, create_config, expected_paths, TestType, LENGTH_ID};
         use osmgraphing::routing;
 
         pub fn simple_stuttgart() {
             let cfg = create_config(TestType::SimpleStuttgart);
 
             let mut dijkstra = routing::factory::dijkstra::unidirectional::shortest(
-                cfg.graph.edges.metrics.idx(&"Length".into()),
+                cfg.graph.edges.metrics.idx(&LENGTH_ID.into()),
             );
             let expected_paths = expected_paths(TestType::SimpleStuttgart);
 
@@ -123,7 +123,7 @@ pub mod dijkstra {
             let cfg = create_config(TestType::Small);
 
             let mut dijkstra = routing::factory::dijkstra::unidirectional::shortest(
-                cfg.graph.edges.metrics.idx(&"Length".into()),
+                cfg.graph.edges.metrics.idx(&LENGTH_ID.into()),
             );
             let expected_paths = expected_paths(TestType::Small);
 
@@ -134,7 +134,7 @@ pub mod dijkstra {
             let cfg = create_config(TestType::BidirectionalBait);
 
             let mut dijkstra = routing::factory::dijkstra::unidirectional::shortest(
-                cfg.graph.edges.metrics.idx(&"Length".into()),
+                cfg.graph.edges.metrics.idx(&LENGTH_ID.into()),
             );
             let expected_paths = expected_paths(TestType::BidirectionalBait);
 
@@ -145,7 +145,7 @@ pub mod dijkstra {
             let cfg = create_config(TestType::IsleOfMan);
 
             let mut dijkstra = routing::factory::dijkstra::unidirectional::shortest(
-                cfg.graph.edges.metrics.idx(&"Length".into()),
+                cfg.graph.edges.metrics.idx(&LENGTH_ID.into()),
             );
             let expected_paths = expected_paths(TestType::BidirectionalBait);
 
@@ -154,14 +154,14 @@ pub mod dijkstra {
     }
 
     pub mod bidirectional {
-        use super::super::{assert_correct, create_config, expected_paths, TestType};
+        use super::super::{assert_correct, create_config, expected_paths, TestType, LENGTH_ID};
         use osmgraphing::routing;
 
         pub fn simple_stuttgart() {
             let cfg = create_config(TestType::SimpleStuttgart);
 
             let mut dijkstra = routing::factory::dijkstra::bidirectional::shortest(
-                cfg.graph.edges.metrics.idx(&"Length".into()),
+                cfg.graph.edges.metrics.idx(&LENGTH_ID.into()),
             );
             let expected_paths = expected_paths(TestType::SimpleStuttgart);
 
@@ -172,7 +172,7 @@ pub mod dijkstra {
             let cfg = create_config(TestType::Small);
 
             let mut dijkstra = routing::factory::dijkstra::bidirectional::shortest(
-                cfg.graph.edges.metrics.idx(&"Length".into()),
+                cfg.graph.edges.metrics.idx(&LENGTH_ID.into()),
             );
             let expected_paths = expected_paths(TestType::Small);
 
@@ -183,7 +183,7 @@ pub mod dijkstra {
             let cfg = create_config(TestType::BidirectionalBait);
 
             let mut dijkstra = routing::factory::dijkstra::bidirectional::shortest(
-                cfg.graph.edges.metrics.idx(&"Length".into()),
+                cfg.graph.edges.metrics.idx(&LENGTH_ID.into()),
             );
             let expected_paths = expected_paths(TestType::BidirectionalBait);
 
@@ -194,7 +194,7 @@ pub mod dijkstra {
             let cfg = create_config(TestType::IsleOfMan);
 
             let mut dijkstra = routing::factory::dijkstra::bidirectional::shortest(
-                cfg.graph.edges.metrics.idx(&"Length".into()),
+                cfg.graph.edges.metrics.idx(&LENGTH_ID.into()),
             );
             let expected_paths = expected_paths(TestType::BidirectionalBait);
 
@@ -202,8 +202,6 @@ pub mod dijkstra {
         }
     }
 }
-
-//------------------------------------------------------------------------------------------------//
 
 fn expected_paths(
     test_type: TestType,

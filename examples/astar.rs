@@ -66,7 +66,7 @@ fn main() {
 
     let nodes = graph.nodes();
     let mut astar = routing::factory::astar::unidirectional::shortest(
-        graph.cfg().edges.metrics.idx(&"Length".into()),
+        graph.cfg().edges.metrics.idx(&"Meters".into()),
     );
 
     // generate random route-pairs

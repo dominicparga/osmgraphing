@@ -27,22 +27,22 @@ graph:
     - category: 'Id'
       id: 'dst-id'
 
-    - category: 'Length'
+    - category: 'Meters'
       id: 'to-the-moon-and-back'
       # Value `false` leads to calculate the value via coordinates and haversine.
       is-provided: false
 
     # categories can be used twice
-    - category: 'Length'
+    - category: 'Meters'
       is-provided: true
 
-    - category: 'Maxspeed'
+    - category: 'KilometersPerHour'
       id: 'faster-than-light'
       # Value `false` leads to calculate the value via length and duration.
       is-provided: true
       calc-rules: ['to-the-moon-and-back', 'Duration']
 
-    - category: 'Duration'
+    - category: 'Seconds'
       # Value `false` leads to calculate the value via length and maxspeed.
       is-provided: false
       calc-rules: ['to-the-moon-and-back', 'faster-than-light']

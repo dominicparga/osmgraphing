@@ -166,9 +166,9 @@ impl TestEdge {
         );
 
         let access_stuff = vec![
-            (MetricIdx(0), MetricCategory::Length),
-            (MetricIdx(1), MetricCategory::Maxspeed),
-            (MetricIdx(2), MetricCategory::Duration),
+            (MetricIdx(0), MetricCategory::Meters),
+            (MetricIdx(1), MetricCategory::KilometersPerHour),
+            (MetricIdx(2), MetricCategory::Seconds),
         ];
         for (metric_idx, metric_category) in access_stuff {
             let value = edge
