@@ -67,16 +67,10 @@ pub mod unidirectional {
             dst: &Node,
             graph: &Graph,
         ) -> Option<Path<f32>> {
-            //----------------------------------------------------------------------------------------//
             // initialization-stuff
+            self.resize(graph.nodes().count());
 
-            let nodes = graph.nodes();
-            let fwd_edges = graph.fwd_edges();
-            self.resize(nodes.count());
-
-            //----------------------------------------------------------------------------------------//
             // prepare first iteration(s)
-
             // push src-node
             self.queue.push(Reverse(CostNode {
                 idx: src.idx(),
@@ -85,14 +79,12 @@ pub mod unidirectional {
             }));
             self.costs[*src.idx()] = 0.0;
 
-            //----------------------------------------------------------------------------------------//
+            //------------------------------------------------------------------------------------//
             // search for shortest path
 
             while let Some(Reverse(current)) = self.queue.pop() {
-                //------------------------------------------------------------------------------------//
                 // if shortest path found
                 // -> create path
-
                 if current.idx == dst.idx() {
                     let mut cur_idx = current.idx;
 
@@ -100,7 +92,7 @@ pub mod unidirectional {
                         src.idx(),
                         dst.idx(),
                         std::f32::INFINITY,
-                        nodes.count(),
+                        graph.nodes().count(),
                     );
                     *(path.cost_mut()) = current.cost;
                     while let Some(pred_idx) = self.predecessors[*cur_idx] {
@@ -112,18 +104,15 @@ pub mod unidirectional {
                     return Some(path);
                 }
 
-                //------------------------------------------------------------------------------------//
                 // first occurrence has lowest cost
                 // -> check if current has already been visited
-
                 if current.cost > self.costs[*current.idx] {
                     continue;
                 }
 
-                //------------------------------------------------------------------------------------//
                 // update costs and add predecessors
                 // of nodes, which are dst of current's leaving edges
-
+                let fwd_edges = graph.fwd_edges();
                 let leaving_edges = match fwd_edges.starting_from(current.idx) {
                     Some(e) => e,
                     None => continue,
@@ -134,7 +123,7 @@ pub mod unidirectional {
                         self.predecessors[*leaving_edge.dst_idx()] = Some(current.idx);
                         self.costs[*leaving_edge.dst_idx()] = new_cost;
 
-                        let leaving_edge_of_dst = nodes.create(leaving_edge.dst_idx());
+                        let leaving_edge_of_dst = graph.nodes().create(leaving_edge.dst_idx());
                         let estimation = (self.estimate_fn)(&leaving_edge_of_dst, dst);
                         self.queue.push(Reverse(CostNode {
                             idx: leaving_edge.dst_idx(),
@@ -240,11 +229,8 @@ pub mod bidirectional {
             //------------------------------------------------------------------------------------//
             // initialization-stuff
 
-            let nodes = graph.nodes();
-            let fwd_edges = graph.fwd_edges();
-            let bwd_edges = graph.bwd_edges();
-            self.resize(nodes.count());
-            let mut best_meeting: Option<(BiCostNode, f32)> = None;
+            self.resize(graph.nodes().count());
+            let mut best_meeting: Option<(NodeIdx, f32)> = None;
 
             //------------------------------------------------------------------------------------//
             // prepare first iteration(s)
@@ -285,10 +271,11 @@ pub mod bidirectional {
                         // check if new meeting-node is better
                         let new_total_cost = self.total_cost(&current);
                         if new_total_cost < total_cost {
-                            best_meeting = Some((current, new_total_cost));
+                            best_meeting = Some((current.core.idx, new_total_cost));
                         }
                     } else {
-                        best_meeting = Some((current, self.total_cost(&current)));
+                        let total_cost = self.total_cost(&current);
+                        best_meeting = Some((current.core.idx, total_cost));
                     }
                 }
 
@@ -296,11 +283,16 @@ pub mod bidirectional {
                 let (xwd_costs, xwd_edges, xwd_predecessors, xwd_dst) = match current.direction {
                     Direction::FWD => (
                         &mut self.fwd_costs,
-                        &fwd_edges,
+                        graph.fwd_edges(),
                         &mut self.predecessors,
                         &dst,
                     ),
-                    Direction::BWD => (&mut self.bwd_costs, &bwd_edges, &mut self.successors, &src),
+                    Direction::BWD => (
+                        &mut self.bwd_costs,
+                        graph.bwd_edges(),
+                        &mut self.successors,
+                        &src,
+                    ),
                 };
 
                 // first occurrence has lowest cost
@@ -326,7 +318,7 @@ pub mod bidirectional {
                         //    since the shortest path could have longer hop-distance
                         //    with shorter weight-distance than currently found node.
                         if best_meeting.is_none() {
-                            let leaving_edge_dst = nodes.create(leaving_edge.dst_idx());
+                            let leaving_edge_dst = graph.nodes().create(leaving_edge.dst_idx());
                             let estimation = (self.estimate_fn)(&leaving_edge_dst, xwd_dst);
                             self.queue.push(Reverse(BiCostNode {
                                 core: CostNode {
@@ -344,20 +336,24 @@ pub mod bidirectional {
             //------------------------------------------------------------------------------------//
             // create path if found
 
-            if let Some((meeting_node, total_cost)) = best_meeting {
-                let mut path =
-                    Path::with_capacity(src.idx(), dst.idx(), std::f32::INFINITY, nodes.count());
+            if let Some((meeting_node_idx, total_cost)) = best_meeting {
+                let mut path = Path::with_capacity(
+                    src.idx(),
+                    dst.idx(),
+                    std::f32::INFINITY,
+                    graph.nodes().count(),
+                );
                 *(path.cost_mut()) = total_cost;
 
                 // iterate backwards over fwd-path
-                let mut cur_idx = meeting_node.core.idx;
+                let mut cur_idx = meeting_node_idx;
                 while let Some(pred_idx) = self.predecessors[*cur_idx] {
                     path.add_pred_succ(pred_idx, cur_idx);
                     cur_idx = pred_idx;
                 }
 
                 // iterate backwards over bwd-path
-                let mut cur_idx = meeting_node.core.idx;
+                let mut cur_idx = meeting_node_idx;
                 while let Some(succ_idx) = self.successors[*cur_idx] {
                     path.add_pred_succ(cur_idx, succ_idx);
                     cur_idx = succ_idx;
@@ -373,7 +369,7 @@ pub mod bidirectional {
     }
 }
 
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 struct CostNode {
     idx: NodeIdx,
     cost: f32,
@@ -432,7 +428,7 @@ enum Direction {
     BWD,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 struct BiCostNode {
     core: CostNode,
     direction: Direction,

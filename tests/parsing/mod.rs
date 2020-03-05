@@ -6,12 +6,12 @@ use super::{create_config, parse, TestType};
 use osmgraphing::{
     configs::MetricCategory,
     helpers::Approx,
-    network::{EdgeIdx, Graph, MetricIdx, Node, NodeContainer, NodeIdx},
+    network::{EdgeIdx, Graph, MetricIdx, Node, NodeAccessor, NodeIdx},
     units::geo,
 };
 use std::{fmt, fmt::Display};
 
-fn assert_nodes(test_nodes: &Vec<TestNode>, nodes: &NodeContainer) {
+fn assert_nodes(test_nodes: &Vec<TestNode>, nodes: &NodeAccessor) {
     for (expected, original) in test_nodes
         .iter()
         .map(|expected| (expected, TestNode::from(nodes.create(expected.idx))))

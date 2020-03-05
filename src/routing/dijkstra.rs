@@ -53,9 +53,7 @@ pub mod unidirectional {
             //----------------------------------------------------------------------------------------//
             // initialization-stuff
 
-            let nodes = graph.nodes();
-            let fwd_edges = graph.fwd_edges();
-            self.resize(nodes.count());
+            self.resize(graph.nodes().count());
 
             //----------------------------------------------------------------------------------------//
             // prepare first iteration(s)
@@ -82,7 +80,7 @@ pub mod unidirectional {
                         src.idx(),
                         dst.idx(),
                         std::f32::INFINITY,
-                        nodes.count(),
+                        graph.nodes().count(),
                     );
                     *(path.cost_mut()) = current.cost;
                     while let Some(pred_idx) = self.predecessors[*cur_idx] {
@@ -106,6 +104,7 @@ pub mod unidirectional {
                 // update costs and add predecessors
                 // of nodes, which are dst of current's leaving edges
 
+                let fwd_edges = graph.fwd_edges();
                 let leaving_edges = match fwd_edges.starting_from(current.idx) {
                     Some(e) => e,
                     None => continue,
@@ -214,10 +213,7 @@ pub mod bidirectional {
             //------------------------------------------------------------------------------------//
             // initialization-stuff
 
-            let nodes = graph.nodes();
-            let fwd_edges = graph.fwd_edges();
-            let bwd_edges = graph.bwd_edges();
-            self.resize(nodes.count());
+            self.resize(graph.nodes().count());
             let mut best_meeting: Option<(BiCostNode, f32)> = None;
 
             //------------------------------------------------------------------------------------//
@@ -266,8 +262,14 @@ pub mod bidirectional {
 
                 // distinguish between fwd and bwd
                 let (xwd_costs, xwd_edges, xwd_predecessors) = match current.direction {
-                    Direction::FWD => (&mut self.fwd_costs, &fwd_edges, &mut self.predecessors),
-                    Direction::BWD => (&mut self.bwd_costs, &bwd_edges, &mut self.successors),
+                    Direction::FWD => (
+                        &mut self.fwd_costs,
+                        graph.fwd_edges(),
+                        &mut self.predecessors,
+                    ),
+                    Direction::BWD => {
+                        (&mut self.bwd_costs, graph.bwd_edges(), &mut self.successors)
+                    }
                 };
 
                 // first occurrence has lowest cost
@@ -309,8 +311,12 @@ pub mod bidirectional {
             // create path if found
 
             if let Some((meeting_node, total_cost)) = best_meeting {
-                let mut path =
-                    Path::with_capacity(src.idx(), dst.idx(), std::f32::INFINITY, nodes.count());
+                let mut path = Path::with_capacity(
+                    src.idx(),
+                    dst.idx(),
+                    std::f32::INFINITY,
+                    graph.nodes().count(),
+                );
                 *(path.cost_mut()) = total_cost;
 
                 // iterate backwards over fwd-path

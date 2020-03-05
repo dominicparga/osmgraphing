@@ -93,15 +93,15 @@ impl Graph {
         &self.cfg
     }
 
-    pub fn nodes<'a>(&'a self) -> NodeContainer<'a> {
-        NodeContainer {
+    pub fn nodes<'a>(&'a self) -> NodeAccessor<'a> {
+        NodeAccessor {
             node_ids: &self.node_ids,
             node_coords: &self.node_coords,
         }
     }
 
-    pub fn fwd_edges<'a>(&'a self) -> EdgeContainer<'a> {
-        EdgeContainer {
+    pub fn fwd_edges<'a>(&'a self) -> EdgeAccessor<'a> {
+        EdgeAccessor {
             edge_dsts: &(self.fwd_dsts),
             offsets: &(self.fwd_offsets),
             xwd_to_fwd_map: &(self.fwd_to_fwd_map),
@@ -109,8 +109,8 @@ impl Graph {
         }
     }
 
-    pub fn bwd_edges<'a>(&'a self) -> EdgeContainer<'a> {
-        EdgeContainer {
+    pub fn bwd_edges<'a>(&'a self) -> EdgeAccessor<'a> {
+        EdgeAccessor {
             edge_dsts: &(self.bwd_dsts),
             offsets: &(self.bwd_offsets),
             xwd_to_fwd_map: &(self.bwd_to_fwd_map),
@@ -118,8 +118,8 @@ impl Graph {
         }
     }
 
-    pub fn metrics<'a>(&'a self) -> MetricContainer<'a> {
-        MetricContainer {
+    pub fn metrics<'a>(&'a self) -> MetricAccessor<'a> {
+        MetricAccessor {
             cfg: &(self.cfg),
             metrics: &(self.metrics),
         }
@@ -303,7 +303,7 @@ impl Display for Node {
 pub struct HalfEdge<'a> {
     idx: EdgeIdx,
     edge_dsts: &'a Vec<NodeIdx>,
-    metrics: &'a MetricContainer<'a>,
+    metrics: &'a MetricAccessor<'a>,
 }
 
 impl<'a> HalfEdge<'a> {
@@ -333,12 +333,12 @@ impl<'a> Display for HalfEdge<'a> {
 /// A shallow container for accessing nodes.
 /// Shallow means that it does only contain references to the graph's data-arrays.
 #[derive(Debug)]
-pub struct NodeContainer<'a> {
+pub struct NodeAccessor<'a> {
     node_ids: &'a Vec<i64>,
     node_coords: &'a Vec<Coordinate>,
 }
 
-impl<'a> NodeContainer<'a> {
+impl<'a> NodeAccessor<'a> {
     pub fn count(&self) -> usize {
         self.node_ids.len()
     }
@@ -400,15 +400,15 @@ impl<'a> NodeContainer<'a> {
 /// A shallow container for accessing edges.
 /// Shallow means that it does only contain references to the graph's data-arrays.
 #[derive(Debug)]
-pub struct EdgeContainer<'a> {
+pub struct EdgeAccessor<'a> {
     edge_dsts: &'a Vec<NodeIdx>,
     offsets: &'a Vec<usize>,
     // indirect mapping to save memory
     xwd_to_fwd_map: &'a Vec<EdgeIdx>,
-    metrics: MetricContainer<'a>,
+    metrics: MetricAccessor<'a>,
 }
 
-impl<'a> EdgeContainer<'a> {
+impl<'a> EdgeAccessor<'a> {
     pub fn count(&self) -> usize {
         self.edge_dsts.len()
     }
@@ -484,18 +484,18 @@ impl<'a> EdgeContainer<'a> {
 /// A shallow container for accessing metrics.
 /// Shallow means that it does only contain references to the graph's data-arrays.
 #[derive(Debug)]
-pub struct MetricContainer<'a> {
+pub struct MetricAccessor<'a> {
     cfg: &'a Config,
     metrics: &'a Vec<Vec<f32>>,
 }
 
-impl<'a> Display for MetricContainer<'a> {
+impl<'a> Display for MetricAccessor<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{:?}", self.metrics)
     }
 }
 
-impl<'a> MetricContainer<'a> {
+impl<'a> MetricAccessor<'a> {
     pub fn get(&self, metric_idx: MetricIdx, edge_idx: EdgeIdx) -> Option<f32> {
         let metric_vec = &self.metrics[*metric_idx];
         Some(metric_vec[*edge_idx])
