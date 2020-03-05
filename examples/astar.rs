@@ -1,5 +1,7 @@
 use log::{error, info};
-use osmgraphing::{configs::Config, helpers, network::NodeIdx, routing, Parser};
+use osmgraphing::{
+    configs::Config, helpers, network::NodeIdx, routing, units::length::Kilometers, Parser,
+};
 use rand::distributions::{Distribution, Uniform};
 use rand::SeedableRng;
 use std::{path::PathBuf, time::Instant};
@@ -105,12 +107,16 @@ fn main() {
         let now = Instant::now();
         let option_path = astar.compute_best_path(&src, &dst, &graph);
         info!(
-            "Ran A* in {} µs a.k.a {} seconds",
-            now.elapsed().as_micros(),
-            now.elapsed().as_secs()
+            "Ran Astar-query in {} ms",
+            now.elapsed().as_micros() as f32 / 1_000.0,
         );
         if let Some(path) = option_path {
-            info!("Distance {} from ({}) to ({}).", path.cost(), src, dst);
+            info!(
+                "Distance {} from ({}) to ({}).",
+                Kilometers(*path.cost()),
+                src,
+                dst
+            );
         } else {
             info!("No path from ({}) to ({}).", src, dst);
         }
