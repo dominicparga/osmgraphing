@@ -43,7 +43,7 @@ graph:
       id: 'faster-than-light'
       # Value `false` leads to calculate the value via length and duration.
       is-provided: true
-      calc-rules: ['to-the-moon-and-back', 'Duration']
+      calc-rules: ['to-the-moon-and-back', 'Seconds']
 
     - category: 'Seconds'
       # Value `false` leads to calculate the value via length and maxspeed.
@@ -60,11 +60,9 @@ graph:
     - category: 'Ignore'
       id: 'unnecessary'
 
-# # future-plans
-# routing: # example with two metrics and default-weights
-#   metrics: [length, duration]
-#   preferences:
-#   - id: length
-#     alpha: 169
-#   - id: duration
-#     alpha: 331
+# The metrics, which should be considered in routing, are listed here.
+# The given alphas are used as scale.
+routing:
+  'preferences':
+    'to-the-moon-and-back': 169.0
+    'Seconds': 331.0

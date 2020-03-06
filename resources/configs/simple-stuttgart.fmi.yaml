@@ -15,3 +15,6 @@ graph:
     - category: 'Seconds'
       is-provided: false
       calc-rules: ['Meters', 'KilometersPerHour']
+
+routing:
+  - id: 'Meters'

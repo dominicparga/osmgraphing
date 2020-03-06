@@ -2,7 +2,9 @@ use crate::helpers;
 use serde::Deserialize;
 use std::{fmt, fmt::Display, path::Path};
 
+mod building;
 pub mod graph;
+pub mod routing;
 
 /// Storing (default) settings for parsing the graph.
 ///
@@ -38,8 +40,11 @@ pub mod graph;
 /// Please note, that metrics being calculated (like the duration from length and maxspeed) need the respective metrics to be calculated.
 ///
 #[derive(Debug, Deserialize)]
+#[serde(from = "building::Config")]
 pub struct Config {
     pub graph: graph::Config,
+    #[serde(skip)] // thanks to building::Config
+    pub routing: routing::Config,
 }
 
 impl Config {
