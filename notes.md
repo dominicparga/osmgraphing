@@ -27,8 +27,6 @@ Maybe, it is concept for later documentation, or just keep-up-the-good-work (`ku
 
 ### General
 
-- Rename master to nightly
-- Reduce number of provided algos in shortest-path-factory (shortest == fastest with same metric-idx...).
 - Update README (`"Memory-usage and performance have been better, but now, the graph supports multiple metrics."` -> it's great again)
 - Use log::debug by flag
 

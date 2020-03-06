@@ -67,7 +67,7 @@ fn main() {
     // astar
 
     let nodes = graph.nodes();
-    let mut astar = routing::factory::astar::bidirectional::shortest(
+    let mut astar = routing::factory::astar::shortest::bidirectional(
         graph.cfg().edges.metrics.idx(&"Meters".into()),
     );
 

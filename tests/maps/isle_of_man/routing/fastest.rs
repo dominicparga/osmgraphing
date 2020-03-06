@@ -10,7 +10,7 @@ mod astar {
     fn bidirectional() {
         let cfg = create_config(TestType::IsleOfMan);
 
-        let mut astar = routing::factory::astar::bidirectional::fastest(
+        let mut astar = routing::factory::astar::fastest::bidirectional(
             cfg.graph.edges.metrics.idx(&defaults::DURATION_ID.into()),
         );
         let expected_paths = expected_paths();
@@ -23,7 +23,7 @@ mod astar {
     pub fn unidirectional() {
         let cfg = create_config(TestType::IsleOfMan);
 
-        let mut astar = routing::factory::astar::unidirectional::fastest(
+        let mut astar = routing::factory::astar::fastest::unidirectional(
             cfg.graph.edges.metrics.idx(&defaults::DURATION_ID.into()),
         );
         let expected_paths = expected_paths();
@@ -42,7 +42,7 @@ mod dijkstra {
     fn bidirectional() {
         let cfg = create_config(TestType::IsleOfMan);
 
-        let mut dijkstra = routing::factory::dijkstra::bidirectional::fastest(
+        let mut dijkstra = routing::factory::dijkstra::bidirectional(
             cfg.graph.edges.metrics.idx(&defaults::DURATION_ID.into()),
         );
         let expected_paths = expected_paths();
@@ -55,7 +55,7 @@ mod dijkstra {
     pub fn unidirectional() {
         let cfg = create_config(TestType::IsleOfMan);
 
-        let mut dijkstra = routing::factory::dijkstra::unidirectional::fastest(
+        let mut dijkstra = routing::factory::dijkstra::unidirectional(
             cfg.graph.edges.metrics.idx(&defaults::DURATION_ID.into()),
         );
         let expected_paths = expected_paths();

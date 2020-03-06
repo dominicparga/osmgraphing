@@ -170,7 +170,7 @@ fn unidir_shortest_dijkstra(
     routes: &Vec<(NodeIdx, NodeIdx)>,
     length_idx: MetricIdx,
 ) {
-    let mut dijkstra = routing::factory::dijkstra::unidirectional::shortest(length_idx);
+    let mut dijkstra = routing::factory::dijkstra::unidirectional(length_idx);
 
     let nodes = graph.nodes();
     for &(src_idx, dst_idx) in routes.iter() {
@@ -181,7 +181,7 @@ fn unidir_shortest_dijkstra(
 }
 
 fn bidir_shortest_dijkstra(graph: &Graph, routes: &Vec<(NodeIdx, NodeIdx)>, length_idx: MetricIdx) {
-    let mut dijkstra = routing::factory::dijkstra::bidirectional::shortest(length_idx);
+    let mut dijkstra = routing::factory::dijkstra::bidirectional(length_idx);
 
     let nodes = graph.nodes();
     for &(src_idx, dst_idx) in routes.iter() {
@@ -192,7 +192,7 @@ fn bidir_shortest_dijkstra(graph: &Graph, routes: &Vec<(NodeIdx, NodeIdx)>, leng
 }
 
 fn unidir_shortest_astar(graph: &Graph, routes: &Vec<(NodeIdx, NodeIdx)>, length_idx: MetricIdx) {
-    let mut astar = routing::factory::astar::unidirectional::shortest(length_idx);
+    let mut astar = routing::factory::astar::shortest::unidirectional(length_idx);
 
     let nodes = graph.nodes();
     for &(src_idx, dst_idx) in routes.iter() {
@@ -203,7 +203,7 @@ fn unidir_shortest_astar(graph: &Graph, routes: &Vec<(NodeIdx, NodeIdx)>, length
 }
 
 fn bidir_shortest_astar(graph: &Graph, routes: &Vec<(NodeIdx, NodeIdx)>, length_idx: MetricIdx) {
-    let mut astar = routing::factory::astar::bidirectional::shortest(length_idx);
+    let mut astar = routing::factory::astar::shortest::bidirectional(length_idx);
 
     let nodes = graph.nodes();
     for &(src_idx, dst_idx) in routes.iter() {
@@ -218,7 +218,7 @@ fn unidir_fastest_dijkstra(
     routes: &Vec<(NodeIdx, NodeIdx)>,
     duration_idx: MetricIdx,
 ) {
-    let mut dijkstra = routing::factory::dijkstra::unidirectional::fastest(duration_idx);
+    let mut dijkstra = routing::factory::dijkstra::unidirectional(duration_idx);
 
     let nodes = graph.nodes();
     for &(src_idx, dst_idx) in routes.iter() {
@@ -233,7 +233,7 @@ fn bidir_fastest_dijkstra(
     routes: &Vec<(NodeIdx, NodeIdx)>,
     duration_idx: MetricIdx,
 ) {
-    let mut dijkstra = routing::factory::dijkstra::bidirectional::fastest(duration_idx);
+    let mut dijkstra = routing::factory::dijkstra::bidirectional(duration_idx);
 
     let nodes = graph.nodes();
     for &(src_idx, dst_idx) in routes.iter() {
@@ -244,7 +244,7 @@ fn bidir_fastest_dijkstra(
 }
 
 fn unidir_fastest_astar(graph: &Graph, routes: &Vec<(NodeIdx, NodeIdx)>, duration_idx: MetricIdx) {
-    let mut astar = routing::factory::astar::unidirectional::fastest(duration_idx);
+    let mut astar = routing::factory::astar::fastest::unidirectional(duration_idx);
 
     let nodes = graph.nodes();
     for &(src_idx, dst_idx) in routes.iter() {
@@ -255,7 +255,7 @@ fn unidir_fastest_astar(graph: &Graph, routes: &Vec<(NodeIdx, NodeIdx)>, duratio
 }
 
 fn bidir_fastest_astar(graph: &Graph, routes: &Vec<(NodeIdx, NodeIdx)>, duration_idx: MetricIdx) {
-    let mut astar = routing::factory::astar::bidirectional::fastest(duration_idx);
+    let mut astar = routing::factory::astar::fastest::bidirectional(duration_idx);
 
     let nodes = graph.nodes();
     for &(src_idx, dst_idx) in routes.iter() {
