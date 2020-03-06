@@ -25,18 +25,39 @@ Maybe, it is concept for later documentation, or just keep-up-the-good-work (`ku
 
 ## Ideas
 
+### General
+
+- Rename master to nightly
+- Reduce number of provided algos in shortest-path-factory (shortest == fastest with same metric-idx...).
+- Update README (`"Memory-usage and performance have been better, but now, the graph supports multiple metrics."` -> it's great again)
 - Use log::debug by flag
-- implement tests comparing upcoming ch-dijkstra with normal dijkstra on isle-of-man
-- implement routing-tests for parsed pbf-files (just comparing src-id, dst-id and length)
-- flag: keep metric or not -> save memory
+
+
+### Documentation
+
 - Write down alternative implementation-approaches
   - Implement shortcut-edges more memory-efficient storing list of costs per src-dst-pair instead of per edge.
   - Routing from src-node to dst-node where dst-node has at least the city-level of the src-node.
-- Use preprocessing-phase for `pbf`-parser to count edges and allocate memory accordingly.
-- Implement `config-settings` for nodes (e.g. coordinates in float vs unsigned integral)
-- Replace duration in milliseconds by seconds.
-- Reduce number of provided algos in shortest-path-factory (shortest == fastest with same metric-idx...).
+
+
+### Extend tests
+
+- extend routing-tests
+  - implement tests comparing upcoming ch-dijkstra with normal dijkstra on isle-of-man
+  - implement routing-tests for parsed pbf-files (just comparing src-id, dst-id and length)
 - Take results from actions of commit f28d88a for parsing-tests (fmi).
+
+
+### Extend configs
+
+- extend configs
+  - flag: keep metric or not -> save memory
+- Implement `config-settings` for nodes (e.g. coordinates in float vs unsigned integral)
+
+
+### Extend parsing
+
+- Use preprocessing-phase for `pbf`-parser to count edges and allocate memory accordingly.
 
 
 [kde/marble]: http://api.kde.org/4.x-api/kdeedu-apidocs/marble/html/namespaceMarble.html
