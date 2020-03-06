@@ -2,7 +2,7 @@ use crate::helpers::{assert_nodes, create_config, parse, TestEdge, TestNode, Tes
 use osmgraphing::network::NodeIdx;
 
 #[test]
-pub fn fmi() {
+fn fmi() {
     let cfg = create_config(TestType::Small);
     let graph = parse(cfg.graph);
 

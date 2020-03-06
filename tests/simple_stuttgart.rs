@@ -7,6 +7,5 @@ mod maps {
             mod fastest;
             mod shortest;
         }
-        mod configs;
     }
 }

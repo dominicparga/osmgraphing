@@ -4,7 +4,7 @@ pub mod parsing {
     use std::path::PathBuf;
 
     #[test]
-    pub fn wrong_extension() {
+    fn wrong_extension() {
         let mut cfg = create_config(TestType::Small);
         cfg.graph.map_file = PathBuf::from("foo.asdf");
         assert!(

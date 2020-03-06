@@ -19,7 +19,7 @@ mod astar {
     }
 
     #[test]
-    pub fn unidirectional() {
+    fn unidirectional() {
         let cfg = create_config(TestType::SimpleStuttgart);
 
         let mut astar = routing::factory::astar::fastest::unidirectional(
@@ -49,7 +49,7 @@ mod dijkstra {
     }
 
     #[test]
-    pub fn unidirectional() {
+    fn unidirectional() {
         let cfg = create_config(TestType::SimpleStuttgart);
 
         let mut dijkstra = routing::factory::dijkstra::unidirectional(

@@ -1,8 +1,13 @@
 use crate::helpers::{assert_nodes, create_config, parse, TestEdge, TestNode, TestType};
-use osmgraphing::network::NodeIdx;
+use osmgraphing::{configs::Config, network::NodeIdx};
 
 #[test]
-pub fn fmi() {
+fn yaml() {
+    Config::from_yaml("resources/configs/simple-stuttgart.fmi.yaml").unwrap();
+}
+
+#[test]
+fn fmi() {
     let cfg = create_config(TestType::SimpleStuttgart);
     let graph = parse(cfg.graph);
 

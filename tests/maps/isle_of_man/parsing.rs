@@ -1,7 +1,13 @@
 use crate::helpers::{create_config, parse, TestType};
+use osmgraphing::configs::Config;
 
 #[test]
-pub fn pbf() {
+fn yaml() {
+    Config::from_yaml("resources/configs/isle-of-man.pbf.yaml").unwrap();
+}
+
+#[test]
+fn pbf() {
     let cfg = create_config(TestType::IsleOfMan);
     let graph = parse(cfg.graph);
 
