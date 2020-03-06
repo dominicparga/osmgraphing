@@ -1,6 +1,6 @@
 # osmgraphing
 
-[![Build Status master][github/self/actions/badge]][github/self/actions]
+[![Build Status nightly][github/self/actions/badge]][github/self/actions]
 
 [![Tag][github/self/tags/badge]][github/self/tags]
 [![Crates.io][crates.io/self/badge]][crates.io/self]
@@ -78,15 +78,15 @@ He has implemented the first (and running) approach of the `A*`-algorithm.
 [github/lesstat/multi-ch-constructor]: https://github.com/Lesstat/multi-ch-constructor
 [github/lesstat/pbfextractor]: https://github.com/Lesstat/pbfextractor
 [github/self/actions]: https://github.com/dominicparga/osmgraphing/actions
-[github/self/actions/badge]: https://img.shields.io/github/workflow/status/dominicparga/osmgraphing/Rust?label=master-build&style=for-the-badge
-[github/self/blob/changelog]: https://github.com/dominicparga/osmgraphing/blob/master/CHANGELOG.md
-[github/self/blob/changelog/badge]: https://img.shields.io/badge/CHANGELOG-master-blueviolet?style=for-the-badge
+[github/self/actions/badge]: https://img.shields.io/github/workflow/status/dominicparga/osmgraphing/Rust?label=nightly-build&style=for-the-badge
+[github/self/blob/changelog]: https://github.com/dominicparga/osmgraphing/blob/nightly/CHANGELOG.md
+[github/self/blob/changelog/badge]: https://img.shields.io/badge/CHANGELOG-nightly-blueviolet?style=for-the-badge
 [github/self/last-commit]: https://github.com/dominicparga/osmgraphing/commits
 [github/self/last-commit/badge]: https://img.shields.io/github/last-commit/dominicparga/osmgraphing?style=for-the-badge
-[github/self/license]: https://github.com/dominicparga/osmgraphing/blob/master/LICENSE
+[github/self/license]: https://github.com/dominicparga/osmgraphing/blob/nightly/LICENSE
 [github/self/license/badge]: https://img.shields.io/github/license/dominicparga/osmgraphing?style=for-the-badge
 [github/self/tags]: https://github.com/dominicparga/osmgraphing/tags
 [github/self/tags/badge]: https://img.shields.io/github/v/tag/dominicparga/osmgraphing?sort=semver&style=for-the-badge
-[github/self/tree/examples]: https://github.com/dominicparga/osmgraphing/tree/master/examples
+[github/self/tree/examples]: https://github.com/dominicparga/osmgraphing/tree/nightly/examples
 [github/self/wiki/usage]: https://github.com/dominicparga/osmgraphing/wiki/Usage
 [osm]: https://openstreetmap.org
