@@ -19,6 +19,9 @@ graph:
     #
     # Default-Ids are the category-name, hence calc-rules are using
     # category-names, which are actually ids.
+    #
+    # In module 'defaults', set the inline-size accordingly for best performance
+    # and memory-usage.
     metrics:
 
     - category: 'Id'

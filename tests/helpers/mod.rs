@@ -2,13 +2,15 @@
 // March 6th, 2020
 
 use osmgraphing::{
-    configs::{graph, Config, MetricCategory},
-    helpers::{Approx, MapFileExt},
+    configs::{graph, Config},
+    defaults::DimVec,
+    helpers::{ApproxEq, MapFileExt},
     network::{EdgeIdx, Graph, MetricIdx, Node, NodeAccessor, NodeIdx},
-    routing,
+    routing::{self, dijkstra},
     units::geo::Coordinate,
     Parser,
 };
+use smallvec::{smallvec, SmallVec};
 use std::{
     fmt::{self, Display},
     path::PathBuf,
@@ -71,17 +73,17 @@ pub fn assert_nodes(test_nodes: &Vec<TestNode>, nodes: &NodeAccessor) {
 
 #[allow(dead_code)]
 pub fn assert_path(
-    dijkstra: &mut Box<dyn routing::dijkstra::Dijkstra>,
+    dijkstra: &mut routing::Dijkstra,
+    preferences: &dijkstra::Preferences,
     expected_paths: Vec<(TestNode, TestNode, Option<(f32, Vec<Vec<TestNode>>)>)>,
     cfg: graph::Config,
 ) {
     let graph = parse(cfg);
-
     for (src, dst, option_specs) in expected_paths {
         let nodes = graph.nodes();
         let graph_src = nodes.create(src.idx);
         let graph_dst = nodes.create(dst.idx);
-        let option_path = dijkstra.compute_best_path(&graph_src, &graph_dst, &graph);
+        let option_path = dijkstra.compute_best_path(&graph_src, &graph_dst, &graph, preferences);
         assert_eq!(
             option_path.is_some(),
             option_specs.is_some(),
@@ -96,7 +98,8 @@ pub fn assert_path(
         );
 
         if let (Some((cost, nodes)), Some(path)) = (option_specs, option_path) {
-            TestPath::from_alternatives(src, dst, cost, nodes).assert_correct(&path, &graph);
+            TestPath::from_alternatives(src, dst, smallvec![cost], nodes)
+                .assert_correct(&path, &graph);
         }
     }
 }
@@ -247,31 +250,24 @@ impl TestEdge {
             self.name
         );
 
-        let access_stuff = vec![
-            (MetricIdx(0), MetricCategory::Meters),
-            (MetricIdx(1), MetricCategory::KilometersPerHour),
-            (MetricIdx(2), MetricCategory::Seconds),
-        ];
-        for (metric_idx, metric_category) in access_stuff {
-            let value = edge
-                .metric(metric_idx)
-                .expect(&format!("Edge should have a {}.", metric_category));
-            assert!(
-                value.approx_eq(&self.metrics[*metric_idx]),
-                "Wrong {}={} for {}edge {}",
-                metric_category,
-                value,
-                prefix,
-                self.name
-            );
-        }
+        let metric_indices = smallvec![MetricIdx(0), MetricIdx(1), MetricIdx(2)];
+        let value = edge.metric(&metric_indices);
+        let expected = SmallVec::from_slice(&self.metrics);
+        assert!(
+            value.approx_eq(&expected),
+            "Wrong metrics {:?} for {}edge {}. Expected: {:?}",
+            value,
+            prefix,
+            self.name,
+            expected
+        );
     }
 }
 
 pub struct TestPath {
     src: TestNode,
     dst: TestNode,
-    cost: f32,
+    cost: DimVec<f32>,
     alternative_nodes: Vec<Vec<TestNode>>,
 }
 
@@ -279,7 +275,7 @@ impl TestPath {
     pub fn from_alternatives(
         src: TestNode,
         dst: TestNode,
-        cost: f32,
+        cost: DimVec<f32>,
         alternative_nodes: Vec<Vec<TestNode>>,
     ) -> TestPath {
         TestPath {
@@ -290,7 +286,7 @@ impl TestPath {
         }
     }
 
-    pub fn assert_correct(&self, path: &routing::paths::Path<f32>, graph: &Graph) {
+    pub fn assert_correct(&self, path: &routing::paths::Path<DimVec<f32>>, graph: &Graph) {
         let node = |idx: NodeIdx| -> TestNode { TestNode::from(graph.nodes().create(idx)) };
 
         let path_src = node(path.src_idx());
@@ -307,7 +303,7 @@ impl TestPath {
         );
         assert!(
             path.cost().approx_eq(&self.cost),
-            "Path from src {} to dst {} should have cost {}, but has {}.",
+            "Path from src {} to dst {} should have cost {:?}, but has {:?}.",
             self.src,
             self.dst,
             self.cost,

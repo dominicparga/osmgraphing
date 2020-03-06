@@ -1,4 +1,4 @@
-use crate::{helpers::Approx, units::length::Kilometers};
+use crate::{helpers::ApproxEq, units::length::Kilometers};
 use std::{fmt, fmt::Display};
 
 /// Coordinate storing `lat`/`lon` as `i32` with accuracy `1e-7`.

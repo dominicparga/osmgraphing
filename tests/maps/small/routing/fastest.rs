@@ -1,34 +1,20 @@
 use crate::helpers::TestNode;
-use osmgraphing::{network::NodeIdx, units::geo::Coordinate};
+use crate::helpers::{assert_path, create_config, defaults, TestType};
+use osmgraphing::{network::NodeIdx, routing, units::geo::Coordinate};
+use smallvec::smallvec;
 
-mod dijkstra {
-    use super::expected_paths;
-    use crate::helpers::{assert_path, create_config, defaults, TestType};
-    use osmgraphing::routing;
+#[test]
+fn bidirectional() {
+    let cfg = create_config(TestType::Small);
 
-    #[test]
-    fn bidirectional() {
-        let cfg = create_config(TestType::Small);
+    let mut dijkstra = routing::Dijkstra::new();
+    let expected_paths = expected_paths();
+    let preferences = routing::dijkstra::Preferences {
+        alphas: smallvec![1.0],
+        metric_indices: smallvec![cfg.graph.edges.metrics.idx(&defaults::DURATION_ID.into())],
+    };
 
-        let mut dijkstra = routing::factory::dijkstra::bidirectional(
-            cfg.graph.edges.metrics.idx(&defaults::DURATION_ID.into()),
-        );
-        let expected_paths = expected_paths();
-
-        assert_path(&mut dijkstra, expected_paths, cfg.graph);
-    }
-
-    #[test]
-    fn unidirectional() {
-        let cfg = create_config(TestType::Small);
-
-        let mut dijkstra = routing::factory::dijkstra::unidirectional(
-            cfg.graph.edges.metrics.idx(&defaults::DURATION_ID.into()),
-        );
-        let expected_paths = expected_paths();
-
-        assert_path(&mut dijkstra, expected_paths, cfg.graph);
-    }
+    assert_path(&mut dijkstra, &preferences, expected_paths, cfg.graph);
 }
 
 fn expected_paths() -> Vec<(TestNode, TestNode, Option<(f32, Vec<Vec<TestNode>>)>)> {

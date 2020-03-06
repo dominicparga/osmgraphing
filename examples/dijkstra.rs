@@ -1,9 +1,17 @@
 use log::{error, info};
 use osmgraphing::{
-    configs::Config, helpers, network::NodeIdx, routing, units::length::Kilometers, Parser,
+    configs::Config,
+    helpers,
+    network::NodeIdx,
+    routing::{self, dijkstra},
+    units::length::Kilometers,
+    Parser,
 };
-use rand::distributions::{Distribution, Uniform};
-use rand::SeedableRng;
+use rand::{
+    distributions::{Distribution, Uniform},
+    SeedableRng,
+};
+use smallvec::smallvec;
 use std::{path::PathBuf, time::Instant};
 
 //------------------------------------------------------------------------------------------------//
@@ -67,8 +75,7 @@ fn main() {
     // dijkstra
 
     let nodes = graph.nodes();
-    let mut dijkstra =
-        routing::factory::dijkstra::bidirectional(graph.cfg().edges.metrics.idx(&"Meters".into()));
+    let mut dijkstra = routing::Dijkstra::new();
 
     // generate random route-pairs
     let route_count = 100;
@@ -104,7 +111,11 @@ fn main() {
         info!("");
 
         let now = Instant::now();
-        let option_path = dijkstra.compute_best_path(&src, &dst, &graph);
+        let preferences = dijkstra::Preferences {
+            alphas: smallvec![1.0],
+            metric_indices: smallvec![graph.cfg().edges.metrics.idx(&"Meters".into())],
+        };
+        let option_path = dijkstra.compute_best_path(&src, &dst, &graph, &preferences);
         info!(
             "Ran Dijkstra-query in {} ms",
             now.elapsed().as_micros() as f32 / 1_000.0,
@@ -112,7 +123,7 @@ fn main() {
         if let Some(path) = option_path {
             info!(
                 "Distance {} from ({}) to ({}).",
-                Kilometers(*path.cost()),
+                Kilometers(path.cost()[0]),
                 src,
                 dst
             );

@@ -1,3 +1,4 @@
+use crate::defaults::DimVec;
 use std::{
     cmp::Ordering::{self, Equal, Greater, Less},
     fs::File,
@@ -5,17 +6,36 @@ use std::{
     str::FromStr,
 };
 
-pub trait Approx {
+pub fn add(a: &DimVec<f32>, b: &DimVec<f32>) -> DimVec<f32> {
+    a.iter().zip(b).map(|(aa, bb)| aa + bb).collect()
+}
+
+pub fn add_to(a: &mut DimVec<f32>, b: &DimVec<f32>) {
+    a.iter_mut().zip(b).for_each(|(aa, bb)| *aa += bb);
+}
+
+pub fn scalar_product(a: &DimVec<f32>, b: &DimVec<f32>) -> f32 {
+    a.iter()
+        .zip(b)
+        .fold(0.0, |start, (aa, &bb)| aa.mul_add(bb, start))
+}
+
+pub trait ApproxEq {
     fn approx_eq(&self, other: &Self) -> bool;
+}
+
+pub trait ApproxCmp {
     fn approx_partial_cmp(&self, other: &Self) -> Option<Ordering>;
     fn approx_cmp(&self, other: &Self) -> Ordering;
 }
 
-impl Approx for f32 {
+impl ApproxEq for f32 {
     fn approx_eq(&self, other: &f32) -> bool {
         (self - other).abs() <= std::f32::EPSILON
     }
+}
 
+impl ApproxCmp for f32 {
     fn approx_partial_cmp(&self, other: &f32) -> Option<Ordering> {
         match (self < other, self > other, self.approx_eq(other)) {
             (false, false, false) => None,
@@ -30,6 +50,14 @@ impl Approx for f32 {
             "No f32-comparison for {} and {} possible.",
             self, other
         ))
+    }
+}
+
+impl ApproxEq for DimVec<f32> {
+    fn approx_eq(&self, other: &DimVec<f32>) -> bool {
+        self.iter()
+            .zip(other)
+            .fold(true, |acc, (aa, bb)| acc && aa.approx_eq(bb))
     }
 }
 

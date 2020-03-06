@@ -1,6 +1,6 @@
 mod units {
     use osmgraphing::{
-        helpers::Approx,
+        helpers::ApproxEq,
         units::{length::Kilometers, speed::KilometersPerHour, time::Seconds},
     };
 
