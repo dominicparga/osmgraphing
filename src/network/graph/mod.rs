@@ -465,11 +465,12 @@ impl<'a> EdgeAccessor<'a> {
         // i0 < i1 <-> node has leaving edges
         if i0 < i1 {
             // map usizes to respective EdgeIdx
-            let mut edge_indices = vec![];
-            for i in i0..i1 {
-                edge_indices.push(self.xwd_to_fwd_map[i])
-            }
-            Some(edge_indices)
+            Some(
+                (i0..i1)
+                    .into_iter()
+                    .map(|i| self.xwd_to_fwd_map[i])
+                    .collect(),
+            )
         } else {
             None
         }
