@@ -1,8 +1,9 @@
-use super::super::TestType;
+use crate::helpers::{create_config, parse, TestType};
 
-pub fn isle_of_man() {
-    let cfg = super::create_config(TestType::IsleOfMan);
-    let graph = super::parse(cfg.graph);
+#[test]
+pub fn pbf() {
+    let cfg = create_config(TestType::IsleOfMan);
+    let graph = parse(cfg.graph);
 
     let nodes = graph.nodes();
     let expected = 51_310;
