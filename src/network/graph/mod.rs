@@ -198,8 +198,8 @@ impl Display for Graph {
                         j = fwd_dsts.count() - 1;
                     }
                     let edge_idx = EdgeIdx(j);
-                    let src_idx = bwd_dsts.dst_idx(edge_idx).unwrap();
-                    let half_edge = fwd_dsts.half_edge(edge_idx).unwrap();
+                    let src_idx = bwd_dsts.dst_idx(edge_idx);
+                    let half_edge = fwd_dsts.half_edge(edge_idx);
                     let metrics: Vec<f32> = (0..self.cfg.edges.metrics.count())
                         .map(|i| self.metrics[i][*edge_idx])
                         .collect();
@@ -413,44 +413,35 @@ impl<'a> EdgeAccessor<'a> {
         self.edge_dsts.len()
     }
 
-    pub fn half_edge(&'a self, idx: EdgeIdx) -> Option<HalfEdge> {
-        Some(HalfEdge {
+    pub fn half_edge(&'a self, idx: EdgeIdx) -> HalfEdge {
+        HalfEdge {
             idx,
-            edge_dsts: &self.edge_dsts,
+            edge_dsts: self.edge_dsts,
             metrics: &self.metrics,
-        })
-    }
-
-    pub fn dst_idx(&self, idx: EdgeIdx) -> Option<NodeIdx> {
-        Some(*(self.edge_dsts.get(*idx)?))
-    }
-
-    /// Creates `HalfEdge`s containing all metric-data.
-    /// For only indices, see `dsts_starting_from(...)`
-    pub fn starting_from(&self, idx: NodeIdx) -> Option<Vec<HalfEdge>> {
-        // get indices by reading offset-array
-        let leaving_indices = self.offset_indices(idx)?;
-
-        // create array of leaving edges
-        let mut leaving_edges = vec![];
-        for edge_idx in leaving_indices {
-            let edge = self.half_edge(edge_idx)?;
-            leaving_edges.push(edge);
         }
-        Some(leaving_edges)
+    }
+
+    pub fn dst_idx(&self, idx: EdgeIdx) -> NodeIdx {
+        self.edge_dsts[*idx]
+    }
+
+    pub fn starting_from(&self, idx: NodeIdx) -> Option<Vec<HalfEdge>> {
+        Some(
+            self.offset_indices(idx)?
+                .into_iter()
+                .map(|edge_idx| self.half_edge(edge_idx))
+                .collect(),
+        )
     }
 
     /// uses linear-search, but only on src's leaving edges (±3), so more or less in O(1)
     ///
     /// Returns the index of the edge, which can be used in the function `half_edge(...)`
     pub fn between(&self, src_idx: NodeIdx, dst_idx: NodeIdx) -> Option<(HalfEdge, EdgeIdx)> {
-        // get indices by reading offset-array if src-node has leaving edges
-        let leaving_indices = self.offset_indices(src_idx)?;
-
         // find edge of same dst-idx and create edge
-        for edge_idx in leaving_indices {
-            if self.dst_idx(edge_idx)? == dst_idx {
-                return Some((self.half_edge(edge_idx)?, edge_idx));
+        for edge_idx in self.offset_indices(src_idx)? {
+            if self.dst_idx(edge_idx) == dst_idx {
+                return Some((self.half_edge(edge_idx), edge_idx));
             }
         }
 
