@@ -71,7 +71,7 @@ pub fn assert_nodes(test_nodes: &Vec<TestNode>, nodes: &NodeAccessor) {
 
 #[allow(dead_code)]
 pub fn assert_path(
-    astar: &mut Box<dyn routing::astar::Astar>,
+    dijkstra: &mut Box<dyn routing::dijkstra::Dijkstra>,
     expected_paths: Vec<(TestNode, TestNode, Option<(f32, Vec<Vec<TestNode>>)>)>,
     cfg: graph::Config,
 ) {
@@ -81,7 +81,7 @@ pub fn assert_path(
         let nodes = graph.nodes();
         let graph_src = nodes.create(src.idx);
         let graph_dst = nodes.create(dst.idx);
-        let option_path = astar.compute_best_path(&graph_src, &graph_dst, &graph);
+        let option_path = dijkstra.compute_best_path(&graph_src, &graph_dst, &graph);
         assert_eq!(
             option_path.is_some(),
             option_specs.is_some(),

@@ -1,36 +1,6 @@
 use crate::helpers::TestNode;
 use osmgraphing::{network::NodeIdx, units::geo::Coordinate};
 
-mod astar {
-    use super::expected_paths;
-    use crate::helpers::{assert_path, create_config, defaults, TestType};
-    use osmgraphing::routing;
-
-    #[test]
-    fn bidirectional() {
-        let cfg = create_config(TestType::Small);
-
-        let mut astar = routing::factory::astar::fastest::bidirectional(
-            cfg.graph.edges.metrics.idx(&defaults::DURATION_ID.into()),
-        );
-        let expected_paths = expected_paths();
-
-        assert_path(&mut astar, expected_paths, cfg.graph);
-    }
-
-    #[test]
-    fn unidirectional() {
-        let cfg = create_config(TestType::Small);
-
-        let mut astar = routing::factory::astar::fastest::unidirectional(
-            cfg.graph.edges.metrics.idx(&defaults::DURATION_ID.into()),
-        );
-        let expected_paths = expected_paths();
-
-        assert_path(&mut astar, expected_paths, cfg.graph);
-    }
-}
-
 mod dijkstra {
     use super::expected_paths;
     use crate::helpers::{assert_path, create_config, defaults, TestType};

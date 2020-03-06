@@ -84,30 +84,6 @@ fn criterion_benchmark(c: &mut Criterion) {
                 })
             },
         );
-        c.bench_function(
-            &format!("{}Shortest Astar (unidir){}", prefix, suffix),
-            |b| {
-                b.iter(|| {
-                    unidir_shortest_astar(
-                        black_box(&graph),
-                        black_box(&routes),
-                        black_box(length_idx),
-                    )
-                })
-            },
-        );
-        c.bench_function(
-            &format!("{}Shortest Astar (bidir){}", prefix, suffix),
-            |b| {
-                b.iter(|| {
-                    bidir_shortest_astar(
-                        black_box(&graph),
-                        black_box(&routes),
-                        black_box(length_idx),
-                    )
-                })
-            },
-        );
     }
 
     // benchmarking fastest routing
@@ -136,27 +112,6 @@ fn criterion_benchmark(c: &mut Criterion) {
                 })
             },
         );
-        c.bench_function(
-            &format!("{}Fastest Astar (unidir){}", prefix, suffix),
-            |b| {
-                b.iter(|| {
-                    unidir_fastest_astar(
-                        black_box(&graph),
-                        black_box(&routes),
-                        black_box(duration_idx),
-                    )
-                })
-            },
-        );
-        c.bench_function(&format!("{}Fastest Astar (bidir){}", prefix, suffix), |b| {
-            b.iter(|| {
-                bidir_fastest_astar(
-                    black_box(&graph),
-                    black_box(&routes),
-                    black_box(duration_idx),
-                )
-            })
-        });
     }
 }
 
@@ -191,28 +146,6 @@ fn bidir_shortest_dijkstra(graph: &Graph, routes: &Vec<(NodeIdx, NodeIdx)>, leng
     }
 }
 
-fn unidir_shortest_astar(graph: &Graph, routes: &Vec<(NodeIdx, NodeIdx)>, length_idx: MetricIdx) {
-    let mut astar = routing::factory::astar::shortest::unidirectional(length_idx);
-
-    let nodes = graph.nodes();
-    for &(src_idx, dst_idx) in routes.iter() {
-        let src = nodes.create(src_idx);
-        let dst = nodes.create(dst_idx);
-        let _option_path = astar.compute_best_path(&src, &dst, graph);
-    }
-}
-
-fn bidir_shortest_astar(graph: &Graph, routes: &Vec<(NodeIdx, NodeIdx)>, length_idx: MetricIdx) {
-    let mut astar = routing::factory::astar::shortest::bidirectional(length_idx);
-
-    let nodes = graph.nodes();
-    for &(src_idx, dst_idx) in routes.iter() {
-        let src = nodes.create(src_idx);
-        let dst = nodes.create(dst_idx);
-        let _option_path = astar.compute_best_path(&src, &dst, graph);
-    }
-}
-
 fn unidir_fastest_dijkstra(
     graph: &Graph,
     routes: &Vec<(NodeIdx, NodeIdx)>,
@@ -240,27 +173,5 @@ fn bidir_fastest_dijkstra(
         let src = nodes.create(src_idx);
         let dst = nodes.create(dst_idx);
         let _option_path = dijkstra.compute_best_path(&src, &dst, graph);
-    }
-}
-
-fn unidir_fastest_astar(graph: &Graph, routes: &Vec<(NodeIdx, NodeIdx)>, duration_idx: MetricIdx) {
-    let mut astar = routing::factory::astar::fastest::unidirectional(duration_idx);
-
-    let nodes = graph.nodes();
-    for &(src_idx, dst_idx) in routes.iter() {
-        let src = nodes.create(src_idx);
-        let dst = nodes.create(dst_idx);
-        let _option_path = astar.compute_best_path(&src, &dst, graph);
-    }
-}
-
-fn bidir_fastest_astar(graph: &Graph, routes: &Vec<(NodeIdx, NodeIdx)>, duration_idx: MetricIdx) {
-    let mut astar = routing::factory::astar::fastest::bidirectional(duration_idx);
-
-    let nodes = graph.nodes();
-    for &(src_idx, dst_idx) in routes.iter() {
-        let src = nodes.create(src_idx);
-        let dst = nodes.create(dst_idx);
-        let _option_path = astar.compute_best_path(&src, &dst, graph);
     }
 }

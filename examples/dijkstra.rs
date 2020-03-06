@@ -27,7 +27,7 @@ use std::{path::PathBuf, time::Instant};
 //------------------------------------------------------------------------------------------------//
 
 fn main() {
-    helpers::init_logging("INFO", vec!["astar"]).expect("LogLevel 'INFO' does exist.");
+    helpers::init_logging("INFO", vec!["dijkstra"]).expect("LogLevel 'INFO' does exist.");
     info!("Executing example: A*");
 
     // get config by provided map-file
@@ -64,12 +64,11 @@ fn main() {
     info!("{}", graph);
 
     //--------------------------------------------------------------------------------------------//
-    // astar
+    // dijkstra
 
     let nodes = graph.nodes();
-    let mut astar = routing::factory::astar::shortest::bidirectional(
-        graph.cfg().edges.metrics.idx(&"Meters".into()),
-    );
+    let mut dijkstra =
+        routing::factory::dijkstra::bidirectional(graph.cfg().edges.metrics.idx(&"Meters".into()));
 
     // generate random route-pairs
     let route_count = 100;
@@ -105,9 +104,9 @@ fn main() {
         info!("");
 
         let now = Instant::now();
-        let option_path = astar.compute_best_path(&src, &dst, &graph);
+        let option_path = dijkstra.compute_best_path(&src, &dst, &graph);
         info!(
-            "Ran Astar-query in {} ms",
+            "Ran Dijkstra-query in {} ms",
             now.elapsed().as_micros() as f32 / 1_000.0,
         );
         if let Some(path) = option_path {
