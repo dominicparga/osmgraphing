@@ -3,9 +3,7 @@ graph:
   map-file: 'relative-path-to-map-file'
 
   vehicles:
-    category: 'Car'
-    category: 'Bicycle'
-    category: 'Pedestrian'
+    category: 'Car' # | 'Bicycle' | 'Pedestrian'
     # Value `false` leads to more edges,
     # because edges are added, which are okay,
     # but not suitable for this vehicle-category.

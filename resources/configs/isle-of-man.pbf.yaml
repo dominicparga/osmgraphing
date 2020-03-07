@@ -5,10 +5,10 @@ graph:
     are-drivers-picky: false
   edges:
     metrics:
-    - category: 'Meters'
-      is-provided: false
-    - category: 'KilometersPerHour'
-    - category: 'Seconds'
-      is-provided: false
-      calc-rules: ['Meters', 'KilometersPerHour']
-    - category: 'LaneCount'
+      - category: 'Meters'
+        is-provided: false
+      - category: 'KilometersPerHour'
+      - category: 'Seconds'
+        is-provided: false
+        calc-rules: ['Meters', 'KilometersPerHour']
+      - category: 'LaneCount'
