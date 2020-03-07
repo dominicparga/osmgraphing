@@ -16,5 +16,4 @@ graph:
       is-provided: false
       calc-rules: ['Meters', 'KilometersPerHour']
 
-routing:
-  - id: 'Meters'
+routing: [{ id: 'Meters' }]

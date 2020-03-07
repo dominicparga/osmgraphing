@@ -1,5 +1,6 @@
 use super::paths::Path;
 use crate::{
+    configs::routing::Config,
     defaults::DimVec,
     helpers,
     network::{EdgeIdx, Graph, MetricIdx, Node, NodeIdx},
@@ -83,8 +84,12 @@ impl Dijkstra {
         src: &Node,
         dst: &Node,
         graph: &Graph,
-        preferences: &Preferences,
+        cfg: &Config,
     ) -> Option<Path<DimVec<f32>>> {
+        if cfg.dim() <= 0 {
+            panic!("Best path should be computed, but no metric is specified.");
+        }
+
         //------------------------------------------------------------------------------------//
         // initialization-stuff
 
@@ -156,10 +161,7 @@ impl Dijkstra {
             };
             for leaving_edge in leaving_edges {
                 let new_cost = current.cost
-                    + helpers::scalar_product(
-                        &preferences.alphas,
-                        &leaving_edge.metric(&preferences.metric_indices),
-                    );
+                    + helpers::scalar_product(&cfg.alphas(), &leaving_edge.metric(&cfg.indices()));
                 if new_cost < xwd_costs[*leaving_edge.dst_idx()] {
                     xwd_predecessors[*leaving_edge.dst_idx()] = Some(leaving_edge.idx());
                     xwd_costs[*leaving_edge.dst_idx()] = new_cost;
@@ -186,7 +188,7 @@ impl Dijkstra {
             let mut path = Path::with_capacity(
                 src.idx(),
                 dst.idx(),
-                smallvec![0.0; preferences.dim()],
+                smallvec![0.0; cfg.dim()],
                 graph.nodes().count(),
             );
 
@@ -200,7 +202,7 @@ impl Dijkstra {
                 // update real path-costs
                 helpers::add_to(
                     path.cost_mut(),
-                    &reverse_incoming_edge.metric(&preferences.metric_indices),
+                    &reverse_incoming_edge.metric(&cfg.indices()),
                 );
 
                 // add predecessor/successor and prepare next loop-run
@@ -219,7 +221,7 @@ impl Dijkstra {
                 // update real path-costs
                 helpers::add_to(
                     path.cost_mut(),
-                    &reverse_leaving_edge.metric(&preferences.metric_indices),
+                    &reverse_leaving_edge.metric(&cfg.indices()),
                 );
 
                 // add predecessor/successor and prepare next loop-run

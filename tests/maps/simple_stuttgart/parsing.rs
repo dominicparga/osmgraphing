@@ -1,5 +1,8 @@
-use crate::helpers::{assert_nodes, create_config, parse, TestEdge, TestNode, TestType};
-use osmgraphing::{configs::Config, network::NodeIdx};
+use crate::helpers::{assert_nodes, create_config, defaults, parse, TestEdge, TestNode, TestType};
+use osmgraphing::{
+    configs::{self, Config},
+    network::NodeIdx,
+};
 
 #[test]
 fn yaml() {
@@ -7,8 +10,19 @@ fn yaml() {
 }
 
 #[test]
+fn yaml_str() {
+    let cfg = Config::from_yaml("resources/configs/simple-stuttgart.fmi.yaml").unwrap();
+
+    let yaml_str = &format!("routing: [{{ id: '{}' }}]", defaults::DURATION_ID);
+    configs::routing::Config::from_str(yaml_str, &cfg.graph).unwrap();
+
+    let yaml_str = &format!("routing: [{{ id: '{}' }}]", defaults::LENGTH_ID);
+    configs::routing::Config::from_str(yaml_str, &cfg.graph).unwrap();
+}
+
+#[test]
 fn fmi() {
-    let cfg = create_config(TestType::SimpleStuttgart);
+    let cfg = create_config(TestType::SimpleStuttgart, None);
     let graph = parse(cfg.graph);
 
     //--------------------------------------------------------------------------------------------//

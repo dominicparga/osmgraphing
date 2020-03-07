@@ -2,11 +2,11 @@
 // March 6th, 2020
 
 use osmgraphing::{
-    configs::{graph, Config},
+    configs::{self, Config},
     defaults::DimVec,
     helpers::{ApproxEq, MapFileExt},
     network::{EdgeIdx, Graph, MetricIdx, Node, NodeAccessor, NodeIdx},
-    routing::{self, dijkstra},
+    routing::{self},
     units::geo::Coordinate,
     Parser,
 };
@@ -30,7 +30,8 @@ pub enum TestType {
     Small,
 }
 
-pub fn create_config(test_type: TestType) -> Config {
+pub fn create_config(test_type: TestType, routing_cfg: Option<&str>) -> Config {
+    // cfg.graph
     let map_file = match test_type {
         TestType::BidirectionalBait => "resources/maps/bidirectional-bait.fmi",
         TestType::IsleOfMan => "resources/maps/isle-of-man_2019-09-05.osm.pbf",
@@ -43,11 +44,19 @@ pub fn create_config(test_type: TestType) -> Config {
     }
     .expect("Config is tested separatedly.");
     cfg.graph.map_file = PathBuf::from(map_file);
+
+    // cfg.routing
+    if let Some(yaml_str) = routing_cfg {
+        cfg.routing = configs::routing::Config::from_str(yaml_str, &cfg.graph)
+            .expect("Config is tested separatedly");
+    }
+
+    // return
     cfg
 }
 
 #[allow(dead_code)]
-pub fn parse(cfg: graph::Config) -> Graph {
+pub fn parse(cfg: configs::graph::Config) -> Graph {
     let map_file = cfg.map_file.clone();
     match Parser::parse_and_finalize(cfg) {
         Ok(graph) => graph,
@@ -74,16 +83,15 @@ pub fn assert_nodes(test_nodes: &Vec<TestNode>, nodes: &NodeAccessor) {
 #[allow(dead_code)]
 pub fn assert_path(
     dijkstra: &mut routing::Dijkstra,
-    preferences: &dijkstra::Preferences,
     expected_paths: Vec<(TestNode, TestNode, Option<(f32, Vec<Vec<TestNode>>)>)>,
-    cfg: graph::Config,
+    cfg: Config,
 ) {
-    let graph = parse(cfg);
+    let graph = parse(cfg.graph);
     for (src, dst, option_specs) in expected_paths {
         let nodes = graph.nodes();
         let graph_src = nodes.create(src.idx);
         let graph_dst = nodes.create(dst.idx);
-        let option_path = dijkstra.compute_best_path(&graph_src, &graph_dst, &graph, preferences);
+        let option_path = dijkstra.compute_best_path(&graph_src, &graph_dst, &graph, &cfg.routing);
         assert_eq!(
             option_path.is_some(),
             option_specs.is_some(),

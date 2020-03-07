@@ -62,7 +62,12 @@ graph:
 
 # The metrics, which should be considered in routing, are listed here.
 # The given alphas are used as scale.
+#
+# Optional, but will panic as soon as routing will try to use it
 routing:
-  'preferences':
-    'to-the-moon-and-back': 169.0
-    'Seconds': 331.0
+  - id: 'to-the-moon-and-back',
+    # optional; default is 1.0
+    alpha: 169.0
+  - id: 'Seconds',
+    # optional; default is 1.0
+    alpha: 331.0

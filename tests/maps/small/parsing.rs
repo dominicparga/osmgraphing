@@ -3,7 +3,7 @@ use osmgraphing::network::NodeIdx;
 
 #[test]
 fn fmi() {
-    let cfg = create_config(TestType::Small);
+    let cfg = create_config(TestType::Small, None);
     let graph = parse(cfg.graph);
 
     //--------------------------------------------------------------------------------------------//

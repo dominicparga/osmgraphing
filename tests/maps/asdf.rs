@@ -5,7 +5,7 @@ pub mod parsing {
 
     #[test]
     fn wrong_extension() {
-        let mut cfg = create_config(TestType::Small);
+        let mut cfg = create_config(TestType::Small, None);
         cfg.graph.map_file = PathBuf::from("foo.asdf");
         assert!(
             Parser::parse(&cfg.graph).is_err(),

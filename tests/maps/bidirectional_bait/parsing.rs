@@ -3,7 +3,7 @@ use osmgraphing::network::NodeIdx;
 
 #[test]
 fn fmi() {
-    let cfg = create_config(TestType::BidirectionalBait);
+    let cfg = create_config(TestType::BidirectionalBait, None);
     let graph = parse(cfg.graph);
 
     //--------------------------------------------------------------------------------------------//

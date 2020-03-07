@@ -1,4 +1,3 @@
-use log::error;
 use osmgraphing::helpers;
 
 fn main() {
@@ -6,8 +5,7 @@ fn main() {
     match helpers::init_logging(matches.value_of("log").unwrap(), vec![]) {
         Ok(_) => (),
         Err(msg) => {
-            error!("{}", msg);
-            std::process::exit(1);
+            panic!("{}", msg);
         }
     };
 

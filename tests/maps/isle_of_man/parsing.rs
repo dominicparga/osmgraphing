@@ -1,5 +1,5 @@
-use crate::helpers::{create_config, parse, TestType};
-use osmgraphing::configs::Config;
+use crate::helpers::{create_config, defaults, parse, TestType};
+use osmgraphing::configs::{self, Config};
 
 #[test]
 fn yaml() {
@@ -7,8 +7,19 @@ fn yaml() {
 }
 
 #[test]
+fn yaml_str() {
+    let cfg = Config::from_yaml("resources/configs/isle-of-man.pbf.yaml").unwrap();
+
+    let yaml_str = &format!("routing: [{{ id: '{}' }}]", defaults::DURATION_ID);
+    configs::routing::Config::from_str(yaml_str, &cfg.graph).unwrap();
+
+    let yaml_str = &format!("routing: [{{ id: '{}' }}]", defaults::LENGTH_ID);
+    configs::routing::Config::from_str(yaml_str, &cfg.graph).unwrap();
+}
+
+#[test]
 fn pbf() {
-    let cfg = create_config(TestType::IsleOfMan);
+    let cfg = create_config(TestType::IsleOfMan, None);
     let graph = parse(cfg.graph);
 
     let nodes = graph.nodes();

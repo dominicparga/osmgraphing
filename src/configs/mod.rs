@@ -2,7 +2,6 @@ use crate::helpers;
 use serde::Deserialize;
 use std::{fmt, fmt::Display, path::Path};
 
-mod building;
 pub mod graph;
 pub mod routing;
 
@@ -40,10 +39,10 @@ pub mod routing;
 /// Please note, that metrics being calculated (like the duration from length and maxspeed) need the respective metrics to be calculated.
 ///
 #[derive(Debug, Deserialize)]
-#[serde(from = "building::Config")]
+#[serde(from = "ProtoConfig")]
 pub struct Config {
     pub graph: graph::Config,
-    #[serde(skip)] // thanks to building::Config
+    #[serde(skip)] // thanks to ProtoConfig
     pub routing: routing::Config,
 }
 
@@ -57,6 +56,49 @@ impl Config {
             Ok(cfg) => Ok(cfg),
             Err(e) => Err(format!("{}", e)),
         }
+    }
+}
+
+impl From<ProtoConfig> for Config {
+    fn from(proto_cfg: ProtoConfig) -> Config {
+        let routing_cfg = routing::Config::from_entries(proto_cfg.routing, &proto_cfg.graph);
+        Config {
+            graph: proto_cfg.graph,
+            routing: routing_cfg,
+        }
+    }
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ProtoConfig {
+    graph: graph::Config,
+    #[serde(default)]
+    routing: Vec<Entry>,
+}
+
+#[derive(Debug, Deserialize)]
+struct Entry {
+    id: MetricId,
+    alpha: Option<f32>,
+}
+
+impl routing::Config {
+    fn from_entries(entries: Vec<Entry>, graph_cfg: &graph::Config) -> routing::Config {
+        // create super-config's structures
+        let mut routing = routing::Config::with_capacity(graph_cfg.edges.metrics.count());
+
+        // translate ids into indices
+        for Entry {
+            id: metric_id,
+            alpha,
+        } in entries.iter()
+        {
+            let metric_idx = graph_cfg.edges.metrics.idx(metric_id);
+            routing.push(metric_idx, alpha.unwrap_or(1.0));
+        }
+
+        // return
+        routing
     }
 }
 

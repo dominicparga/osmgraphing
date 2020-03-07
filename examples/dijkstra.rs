@@ -3,15 +3,13 @@ use osmgraphing::{
     configs::Config,
     helpers,
     network::NodeIdx,
-    routing::{self, dijkstra},
-    units::length::Kilometers,
+    routing::{self},
     Parser,
 };
 use rand::{
     distributions::{Distribution, Uniform},
     SeedableRng,
 };
-use smallvec::smallvec;
 use std::{path::PathBuf, time::Instant};
 
 //------------------------------------------------------------------------------------------------//
@@ -111,22 +109,13 @@ fn main() {
         info!("");
 
         let now = Instant::now();
-        let preferences = dijkstra::Preferences {
-            alphas: smallvec![1.0],
-            metric_indices: smallvec![graph.cfg().edges.metrics.idx(&"Meters".into())],
-        };
-        let option_path = dijkstra.compute_best_path(&src, &dst, &graph, &preferences);
+        let option_path = dijkstra.compute_best_path(&src, &dst, &graph, &cfg.routing);
         info!(
             "Ran Dijkstra-query in {} ms",
             now.elapsed().as_micros() as f32 / 1_000.0,
         );
         if let Some(path) = option_path {
-            info!(
-                "Distance {} from ({}) to ({}).",
-                Kilometers(path.cost()[0]),
-                src,
-                dst
-            );
+            info!("Cost {:?} from ({}) to ({}).", path.cost(), src, dst);
         } else {
             info!("No path from ({}) to ({}).", src, dst);
         }

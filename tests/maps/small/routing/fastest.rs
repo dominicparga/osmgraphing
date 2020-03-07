@@ -1,20 +1,17 @@
-use crate::helpers::TestNode;
-use crate::helpers::{assert_path, create_config, defaults, TestType};
+use crate::helpers::{assert_path, create_config, defaults, TestNode, TestType};
 use osmgraphing::{network::NodeIdx, routing, units::geo::Coordinate};
-use smallvec::smallvec;
 
 #[test]
 fn bidirectional() {
-    let cfg = create_config(TestType::Small);
+    let cfg = create_config(
+        TestType::Small,
+        Some(&format!("routing: [{{ id: '{}' }}]", defaults::DURATION_ID)),
+    );
 
     let mut dijkstra = routing::Dijkstra::new();
     let expected_paths = expected_paths();
-    let preferences = routing::dijkstra::Preferences {
-        alphas: smallvec![1.0],
-        metric_indices: smallvec![cfg.graph.edges.metrics.idx(&defaults::DURATION_ID.into())],
-    };
 
-    assert_path(&mut dijkstra, &preferences, expected_paths, cfg.graph);
+    assert_path(&mut dijkstra, expected_paths, cfg);
 }
 
 fn expected_paths() -> Vec<(TestNode, TestNode, Option<(f32, Vec<Vec<TestNode>>)>)> {

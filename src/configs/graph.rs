@@ -34,7 +34,6 @@ pub mod edges {
             configs::{MetricCategory, MetricId},
             network::MetricIdx,
         };
-        use log::error;
         use serde::Deserialize;
         use std::collections::BTreeMap;
 
@@ -98,8 +97,7 @@ pub mod edges {
                 match self.categories.get(*idx) {
                     Some(category) => *category,
                     None => {
-                        error!("Idx {} for category not found in config.", idx);
-                        std::process::exit(1);
+                        panic!("Idx {} for category not found in config.", idx);
                     }
                 }
             }
@@ -112,8 +110,7 @@ pub mod edges {
                 match self.are_provided.get(*idx) {
                     Some(is_provided) => *is_provided,
                     None => {
-                        error!("Idx {} for info 'is-provided' not found in config.", idx);
-                        std::process::exit(1);
+                        panic!("Idx {} for info 'is-provided' not found in config.", idx);
                     }
                 }
             }
@@ -122,8 +119,7 @@ pub mod edges {
                 match self.indices.get(id) {
                     Some(idx) => *idx,
                     None => {
-                        error!("Id {} not found in config.", id);
-                        std::process::exit(1);
+                        panic!("Id {} not found in config.", id);
                     }
                 }
             }
@@ -132,8 +128,7 @@ pub mod edges {
                 match self.ids.get(*idx) {
                     Some(id) => id,
                     None => {
-                        error!("Idx {} for metric-id not found in config.", idx);
-                        std::process::exit(1);
+                        panic!("Idx {} for metric-id not found in config.", idx);
                     }
                 }
             }
@@ -142,8 +137,7 @@ pub mod edges {
                 match self.calc_rules.get(*idx) {
                     Some(calc_rule) => calc_rule,
                     None => {
-                        error!("Idx {} for calc-rule not found in config.", idx);
-                        std::process::exit(1);
+                        panic!("Idx {} for calc-rule not found in config.", idx);
                     }
                 }
             }
@@ -166,12 +160,11 @@ pub mod edges {
 
                     if entry.category.is_ignored() {
                         if entry.calc_rules.is_some() {
-                            error!(
+                            panic!(
                                 "Metric-category {} has calculation-rules given, \
                                  but is ignored and hence should not have any calculation-rule.",
                                 entry.category
                             );
-                            std::process::exit(1);
                         }
                     } else {
                         let entry_id = match entry.id {
@@ -184,8 +177,7 @@ pub mod edges {
 
                         let metric_idx = MetricIdx(indices.len());
                         if indices.insert(entry_id.clone(), metric_idx).is_some() {
-                            error!("Config has duplicate id: {}", entry_id);
-                            std::process::exit(1);
+                            panic!("Config has duplicate id: {}", entry_id);
                         }
                         proto_calc_rules.push(entry.calc_rules);
                     }
@@ -200,11 +192,10 @@ pub mod edges {
                             let other_idx = match indices.get(&other_id) {
                                 Some(idx) => *idx,
                                 None => {
-                                    error!(
+                                    panic!(
                                         "Calc-rule for metric of id {} has an unknown id {}.",
                                         ids[metric_idx], other_id
                                     );
-                                    std::process::exit(1);
                                 }
                             };
                             let other_type = categories[*other_idx];
@@ -221,13 +212,12 @@ pub mod edges {
                         continue;
                     }
                     if calc_rules[metric_idx].len() != expected_categories.len() {
-                        error!(
+                        panic!(
                             "Metric of category {} has {} calculation-rules, but should have {}.",
                             category,
                             calc_rules[metric_idx].len(),
                             expected_categories.len()
                         );
-                        std::process::exit(1);
                     }
                     for expected_category in expected_categories.iter() {
                         if calc_rules[metric_idx]
@@ -236,8 +226,7 @@ pub mod edges {
                             .find(|c| c == expected_category)
                             .is_none()
                         {
-                            error!("Calculation-rules of metric-category {} should contain {:?}, but doesn't.", category, expected_categories);
-                            std::process::exit(1);
+                            panic!("Calculation-rules of metric-category {} should contain {:?}, but doesn't.", category, expected_categories);
                         }
                     }
                 }
