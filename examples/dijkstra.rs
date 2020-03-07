@@ -50,6 +50,10 @@ fn main() {
             }
         }
     };
+    if cfg.routing.dim() <= 0 {
+        error!("The provided config does not specify routing-parameters.");
+        return;
+    }
 
     // measure parsing-time
     let now = Instant::now();
