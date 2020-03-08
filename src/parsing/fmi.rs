@@ -148,11 +148,10 @@ impl super::Parsing for Parser {
 mod intern {
     use crate::{
         configs::{graph::edges::Config, MetricCategory},
-        defaults,
+        defaults::DimVec,
         network::{MetricIdx, ProtoEdge},
         units::geo,
     };
-    use smallvec::SmallVec;
     pub use std::{io::BufReader as Reader, str};
 
     pub struct ProtoNode {
@@ -217,7 +216,7 @@ mod intern {
         ///
         /// - When NodeIds are parsed, the first one is interpreted as src-id and the second one as dst-id.
         pub fn from_str(line: &str, cfg: &Config) -> Result<ProtoEdge, String> {
-            let mut metric_values = SmallVec::<[_; defaults::SMALL_VEC_INLINE_SIZE]>::with_capacity(
+            let mut metric_values = DimVec::<_>::with_capacity(
                 cfg.metrics.count(),
             );
             let mut src_id = None;

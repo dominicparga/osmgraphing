@@ -1,12 +1,12 @@
 use crate::{
     configs::{graph, MetricCategory},
-    defaults, helpers,
+    defaults::DimVec, helpers,
     network::{GraphBuilder, MetricIdx, ProtoEdge, StreetCategory},
     units::geo::Coordinate,
 };
 use log::info;
 use osmpbfreader::{reader::OsmPbfReader, OsmObj};
-use smallvec::{smallvec, SmallVec};
+use smallvec::{smallvec};
 
 pub struct Parser;
 
@@ -67,7 +67,7 @@ impl super::Parsing for Parser {
             // Collect metrics as expected by user-config
             // ATTENTION: A way contains multiple edges, thus be careful when adding new metrics.
             let cfg = &cfg.edges.metrics;
-            let mut metrics: SmallVec<[_; defaults::SMALL_VEC_INLINE_SIZE]> =
+            let mut metrics: DimVec<_> =
                 smallvec![None; cfg.count()];
             for metric_idx in (0..cfg.count()).map(MetricIdx) {
                 let metric_type = cfg.category(metric_idx);

@@ -1,7 +1,7 @@
 use super::{EdgeIdx, Graph, NodeIdx};
 use crate::{
     configs::{graph::Config, MetricCategory},
-    defaults,
+    defaults::{DimVec},
     helpers::ApproxEq,
     network::MetricIdx,
     units::{geo, geo::Coordinate, length::Kilometers, speed::KilometersPerHour, time::Seconds},
@@ -9,7 +9,6 @@ use crate::{
 use log::{debug, info};
 use progressing;
 use progressing::Bar;
-use smallvec::SmallVec;
 use std::{collections::BTreeMap, mem};
 
 //------------------------------------------------------------------------------------------------//
@@ -33,7 +32,7 @@ impl ProtoNode {
 pub struct ProtoEdge {
     pub src_id: i64,
     pub dst_id: i64,
-    pub metrics: SmallVec<[Option<f32>; defaults::SMALL_VEC_INLINE_SIZE]>,
+    pub metrics: DimVec<Option<f32>>,
 }
 
 /// handy for remembering indices after sorting backwards
