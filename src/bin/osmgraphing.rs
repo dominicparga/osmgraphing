@@ -6,6 +6,26 @@ use rand::{
 };
 use std::{path::PathBuf, time::Instant};
 
+//------------------------------------------------------------------------------------------------//
+// points in Germany
+
+// somewhere in Stuttgart (Schwabstrasse)
+// id 20_443_604 osm-id 2_933_335_353 lat 48.77017570000000291 lon 9.15657690000000102
+
+// "near" Esslingen
+// id:4_647 osm-id:163_354 lat:48.66743380000000485 lon:9.24459110000000095
+
+// somewhere in Ulm
+// id 9_058_109 osm-id 580_012_224 lat 48.39352330000000535 lon 9.9816315000000006
+
+// near Aalen
+// id 54_288 osm-id 2_237_652 lat 48.88542720000000230 lon 10.13642900000000147
+
+// somewhere in Berlin
+// id 296_679 osm-id 26_765_334 lat 52.50536590000000103 lon 13.38662390000000002
+
+//------------------------------------------------------------------------------------------------//
+
 fn main() {
     // process user-input
     let matches = parse_cmdline();
@@ -18,7 +38,7 @@ fn main() {
     };
 
     // execute
-    info!("Executing {}", env!("CARGO_PKG_NAME"));
+    info!("EXECUTE {}", env!("CARGO_PKG_NAME"));
 
     //--------------------------------------------------------------------------------------------//
     // parsing config
@@ -36,15 +56,11 @@ fn main() {
     };
     if cfg.routing.dim() > 0 {
         info!(
-            "Parsing map-file {:?}, then routing with {} metric(s)",
-            cfg.graph.map_file,
+            "EXECUTE Parse graph, then do routing with {} metrics.",
             cfg.routing.dim()
         );
     } else {
-        info!(
-            "Parsing map-file {:?} without routing (no metrics specified)",
-            cfg.graph.map_file
-        );
+        info!("EXECUTE Parse graph without routing.");
     }
 
     //--------------------------------------------------------------------------------------------//

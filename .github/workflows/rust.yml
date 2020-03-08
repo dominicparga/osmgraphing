@@ -11,7 +11,12 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v2
     - name: Build
-      run: cargo build --verbose
+      run: cargo build --release --features="osmgraphing" --verbose
+    - name: Upload binary 'osmgraphing'
+      uses: actions/upload-artifact@v1
+      with:
+        name: osmgraphing
+        path: target/release/osmgraphing
     - name: Run tests
       run: |
         cargo test --verbose
