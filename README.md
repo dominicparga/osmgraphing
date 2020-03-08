@@ -37,15 +37,16 @@ Tools creating `fmi`-files are [pbfextractor][github/lesstat/pbfextractor] and [
 In general, the requirements depend on the size of the parsed map and your machine.
 Following numbers base on an __8-core-CPU__ and the `pbf`-map `Germany` running on `archlinux`.
 Further, they base on the assumption, that you don't use more than 5 metrics (besides ignore and ids), because up to 5 metrics are inlined with `SmallVec`.
-You should change the number of inlined metrics according to your needs.
+You should change the number of inlined metrics according to your needs in the module `defaults`.
 
 - Parsing `Germany` needs less than __11 GB of RAM__.
-- Preprocessing `Germany` (including parsing) needs less than __4 minutes__.
+  After parsing, the memory-needs could be much less (multiple `GB`s) due to the optimized graph-structure.
+- Preprocessing `Germany` (including parsing) needs around __4 minutes__.
   This highly depends on the number of cores.
-- A __routing query__ on `Germany` of length `670 km` takes around __6 seconds__ with `bidirectional A*`.
+- A __routing query__ on `Germany` of length `620 km` takes around __16 seconds__ with `bidirectional Dijkstra`.
   This could be improved by removing intermediate nodes (like `b` in `a->b->c`), but they are kept for now.
-
-Memory-usage and performance have been better, but now, the graph supports multiple metrics.
+  An `Astar` is not used, because its only purpose is reducing the search-space, which can be reduced much more using `Contraction Hierarchies`.
+  Further, `Astar` has issues when it comes to multiple metrics, because of the metrics' heuristics.
 
 Small maps like `Isle of Man` run on every machine and are parsed in less than a second.
 

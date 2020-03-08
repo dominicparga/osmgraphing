@@ -1,5 +1,27 @@
-use crate::helpers::{assert_nodes, create_config, parse, TestEdge, TestNode, TestType};
-use osmgraphing::network::NodeIdx;
+use crate::helpers::{assert_nodes, create_config, defaults, parse, TestEdge, TestNode, TestType};
+use osmgraphing::{
+    configs::{self, Config},
+    network::NodeIdx,
+};
+use std::path::PathBuf;
+
+#[test]
+fn yaml() {
+    let mut cfg = Config::from_yaml("resources/configs/simple-stuttgart.fmi.yaml").unwrap();
+    cfg.graph.map_file = PathBuf::from("resources/maps/small.fmi");
+}
+
+#[test]
+fn yaml_str() {
+    let mut cfg = Config::from_yaml("resources/configs/simple-stuttgart.fmi.yaml").unwrap();
+    cfg.graph.map_file = PathBuf::from("resources/maps/small.fmi");
+
+    let yaml_str = &format!("routing: [{{ id: '{}' }}]", defaults::DURATION_ID);
+    configs::routing::Config::from_str(yaml_str, &cfg.graph).unwrap();
+
+    let yaml_str = &format!("routing: [{{ id: '{}' }}]", defaults::LENGTH_ID);
+    configs::routing::Config::from_str(yaml_str, &cfg.graph).unwrap();
+}
 
 #[test]
 fn fmi() {

@@ -1,9 +1,9 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use log::error;
 use osmgraphing::{
-    configs::Config,
+    configs::{self, Config},
     helpers,
-    network::{Graph, MetricIdx, NodeIdx},
+    network::{Graph, NodeIdx},
     routing, Parser,
 };
 
@@ -13,10 +13,6 @@ fn criterion_benchmark(c: &mut Criterion) {
     // parsing
     let cfg = Config::from_yaml("resources/configs/isle-of-man.pbf.yaml").unwrap();
 
-    // indices for routing
-    let length_idx = cfg.graph.edges.metrics.idx(&"Meters".into());
-    let _maxspeed_idx = cfg.graph.edges.metrics.idx(&"KilometersPerHour".into());
-    let duration_idx = cfg.graph.edges.metrics.idx(&"Seconds".into());
     // create graph
     let graph = match Parser::parse_and_finalize(cfg.graph) {
         Ok(graph) => graph,
@@ -59,59 +55,44 @@ fn criterion_benchmark(c: &mut Criterion) {
     ];
 
     // benchmarking shortest routing
-    for (prefix, suffix, routes) in labelled_routes.iter() {
-        c.bench_function(
-            &format!("{}Shortest Dijkstra (unidir){}", prefix, suffix),
-            |b| {
-                b.iter(|| {
-                    unidir_shortest_dijkstra(
-                        black_box(&graph),
-                        black_box(&routes),
-                        black_box(length_idx),
-                    )
-                })
-            },
-        );
-        c.bench_function(
-            &format!("{}Shortest Dijkstra (bidir){}", prefix, suffix),
-            |b| {
-                b.iter(|| {
-                    bidir_shortest_dijkstra(
-                        black_box(&graph),
-                        black_box(&routes),
-                        black_box(length_idx),
-                    )
-                })
-            },
-        );
-    }
+    let routing_strs = vec![
+        "routing: [{ id: 'Meters' }]",
+        "routing: [{ id: 'Meters' }, { id: 'Seconds' }]",
+    ];
+    for routing_str in routing_strs {
+        let routing_cfg = configs::routing::Config::from_str(routing_str, graph.cfg())
+            .expect("MetricIds should be provided.");
 
-    // benchmarking fastest routing
-    for (prefix, suffix, routes) in labelled_routes.iter() {
-        c.bench_function(
-            &format!("{}Fastest Dijkstra (unidir){}", prefix, suffix),
-            |b| {
-                b.iter(|| {
-                    unidir_fastest_dijkstra(
-                        black_box(&graph),
-                        black_box(&routes),
-                        black_box(duration_idx),
-                    )
-                })
-            },
-        );
-        c.bench_function(
-            &format!("{}Fastest Dijkstra (bidir){}", prefix, suffix),
-            |b| {
-                b.iter(|| {
-                    bidir_fastest_dijkstra(
-                        black_box(&graph),
-                        black_box(&routes),
-                        black_box(duration_idx),
-                    )
-                })
-            },
-        );
+        for (prefix, suffix, routes) in labelled_routes.iter() {
+            c.bench_function(
+                &format!("{}Shortest Dijkstra (bidir){}", prefix, suffix),
+                |b| {
+                    b.iter(|| {
+                        bidir_shortest_dijkstra(
+                            black_box(&graph),
+                            black_box(&routes),
+                            black_box(&routing_cfg),
+                        )
+                    })
+                },
+            );
+        }
+
+        // benchmarking fastest routing
+        for (prefix, suffix, routes) in labelled_routes.iter() {
+            c.bench_function(
+                &format!("{}Fastest Dijkstra (bidir){}", prefix, suffix),
+                |b| {
+                    b.iter(|| {
+                        bidir_fastest_dijkstra(
+                            black_box(&graph),
+                            black_box(&routes),
+                            black_box(&routing_cfg),
+                        )
+                    })
+                },
+            );
+        }
     }
 }
 
@@ -120,58 +101,32 @@ criterion_main!(benches);
 
 //------------------------------------------------------------------------------------------------//
 
-fn unidir_shortest_dijkstra(
+fn bidir_shortest_dijkstra(
     graph: &Graph,
     routes: &Vec<(NodeIdx, NodeIdx)>,
-    length_idx: MetricIdx,
+    cfg: &configs::routing::Config,
 ) {
-    let mut dijkstra = routing::factory::dijkstra::unidirectional(length_idx);
+    let mut dijkstra = routing::Dijkstra::new();
 
     let nodes = graph.nodes();
     for &(src_idx, dst_idx) in routes.iter() {
         let src = nodes.create(src_idx);
         let dst = nodes.create(dst_idx);
-        let _option_path = dijkstra.compute_best_path(&src, &dst, graph);
-    }
-}
-
-fn bidir_shortest_dijkstra(graph: &Graph, routes: &Vec<(NodeIdx, NodeIdx)>, length_idx: MetricIdx) {
-    let mut dijkstra = routing::factory::dijkstra::bidirectional(length_idx);
-
-    let nodes = graph.nodes();
-    for &(src_idx, dst_idx) in routes.iter() {
-        let src = nodes.create(src_idx);
-        let dst = nodes.create(dst_idx);
-        let _option_path = dijkstra.compute_best_path(&src, &dst, graph);
-    }
-}
-
-fn unidir_fastest_dijkstra(
-    graph: &Graph,
-    routes: &Vec<(NodeIdx, NodeIdx)>,
-    duration_idx: MetricIdx,
-) {
-    let mut dijkstra = routing::factory::dijkstra::unidirectional(duration_idx);
-
-    let nodes = graph.nodes();
-    for &(src_idx, dst_idx) in routes.iter() {
-        let src = nodes.create(src_idx);
-        let dst = nodes.create(dst_idx);
-        let _option_path = dijkstra.compute_best_path(&src, &dst, graph);
+        let _option_path = dijkstra.compute_best_path(&src, &dst, graph, cfg);
     }
 }
 
 fn bidir_fastest_dijkstra(
     graph: &Graph,
     routes: &Vec<(NodeIdx, NodeIdx)>,
-    duration_idx: MetricIdx,
+    cfg: &configs::routing::Config,
 ) {
-    let mut dijkstra = routing::factory::dijkstra::bidirectional(duration_idx);
+    let mut dijkstra = routing::Dijkstra::new();
 
     let nodes = graph.nodes();
     for &(src_idx, dst_idx) in routes.iter() {
         let src = nodes.create(src_idx);
         let dst = nodes.create(dst_idx);
-        let _option_path = dijkstra.compute_best_path(&src, &dst, graph);
+        let _option_path = dijkstra.compute_best_path(&src, &dst, graph, cfg);
     }
 }

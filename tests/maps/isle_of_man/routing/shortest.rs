@@ -3,7 +3,7 @@ use osmgraphing::routing;
 
 #[test]
 #[ignore]
-fn bidirectional() {
+fn bidirectional_dijkstra() {
     let cfg = create_config(
         TestType::IsleOfMan,
         Some(&format!("routing: [{{ id: '{}' }}]", defaults::LENGTH_ID)),

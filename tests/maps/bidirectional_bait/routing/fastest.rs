@@ -2,7 +2,7 @@ use crate::helpers::{assert_path, create_config, defaults, TestNode, TestType};
 use osmgraphing::{network::NodeIdx, routing, units::geo::Coordinate};
 
 #[test]
-fn bidirectional() {
+fn bidirectional_dijkstra() {
     let cfg = create_config(
         TestType::BidirectionalBait,
         Some(&format!("routing: [{{ id: '{}' }}]", defaults::DURATION_ID)),
