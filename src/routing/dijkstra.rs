@@ -3,21 +3,10 @@ use crate::{
     configs::routing::Config,
     defaults::DimVec,
     helpers,
-    network::{EdgeIdx, Graph, MetricIdx, Node, NodeIdx},
+    network::{EdgeIdx, Graph, Node, NodeIdx},
 };
 use smallvec::smallvec;
 use std::{cmp::Reverse, collections::BinaryHeap};
-
-pub struct Preferences {
-    pub alphas: DimVec<f32>,
-    pub metric_indices: DimVec<MetricIdx>,
-}
-
-impl Preferences {
-    pub fn dim(&self) -> usize {
-        self.metric_indices.len()
-    }
-}
 
 /// A bidirectional implementation of Dijkstra's algorithm.
 pub struct Dijkstra {
@@ -161,7 +150,7 @@ impl Dijkstra {
             };
             for leaving_edge in leaving_edges {
                 let new_cost = current.cost
-                    + helpers::scalar_product(&cfg.alphas(), &leaving_edge.metric(&cfg.indices()));
+                    + helpers::dot_product(&cfg.alphas(), &leaving_edge.metric(&cfg.indices()));
                 if new_cost < xwd_costs[*leaving_edge.dst_idx()] {
                     xwd_predecessors[*leaving_edge.dst_idx()] = Some(leaving_edge.idx());
                     xwd_costs[*leaving_edge.dst_idx()] = new_cost;

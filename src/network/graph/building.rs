@@ -1,7 +1,7 @@
 use super::{EdgeIdx, Graph, NodeIdx};
 use crate::{
     configs::{graph::Config, MetricCategory},
-    defaults::{DimVec},
+    defaults::DimVec,
     helpers::ApproxEq,
     network::MetricIdx,
     units::{geo, geo::Coordinate, length::Kilometers, speed::KilometersPerHour, time::Seconds},

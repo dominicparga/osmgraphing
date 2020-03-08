@@ -216,9 +216,7 @@ mod intern {
         ///
         /// - When NodeIds are parsed, the first one is interpreted as src-id and the second one as dst-id.
         pub fn from_str(line: &str, cfg: &Config) -> Result<ProtoEdge, String> {
-            let mut metric_values = DimVec::<_>::with_capacity(
-                cfg.metrics.count(),
-            );
+            let mut metric_values = DimVec::<_>::with_capacity(cfg.metrics.count());
             let mut src_id = None;
             let mut dst_id = None;
 

@@ -1,12 +1,13 @@
 use crate::{
     configs::{graph, MetricCategory},
-    defaults::DimVec, helpers,
+    defaults::DimVec,
+    helpers,
     network::{GraphBuilder, MetricIdx, ProtoEdge, StreetCategory},
     units::geo::Coordinate,
 };
 use log::info;
 use osmpbfreader::{reader::OsmPbfReader, OsmObj};
-use smallvec::{smallvec};
+use smallvec::smallvec;
 
 pub struct Parser;
 
@@ -67,19 +68,18 @@ impl super::Parsing for Parser {
             // Collect metrics as expected by user-config
             // ATTENTION: A way contains multiple edges, thus be careful when adding new metrics.
             let cfg = &cfg.edges.metrics;
-            let mut metrics: DimVec<_> =
-                smallvec![None; cfg.count()];
+            let mut metrics: DimVec<_> = smallvec![None; cfg.count()];
             for metric_idx in (0..cfg.count()).map(MetricIdx) {
-                let metric_type = cfg.category(metric_idx);
+                let category = cfg.category(metric_idx);
                 let is_provided = cfg.is_provided(metric_idx);
 
-                match metric_type {
+                match category {
                     MetricCategory::Meters | MetricCategory::Seconds | MetricCategory::Custom => {
                         if is_provided {
                             return Err(format!(
                                 "The {} of an edge in a pbf-file has to be calculated, \
                                  but is expected to be provided.",
-                                metric_type
+                                category
                             ));
                         }
                     }
@@ -91,7 +91,7 @@ impl super::Parsing for Parser {
                             return Err(format!(
                                 "The {} of an edge in a pbf-file has to be provided, \
                                  but is expected to be calculated.",
-                                metric_type
+                                category
                             ));
                         }
                     }
@@ -103,7 +103,7 @@ impl super::Parsing for Parser {
                             return Err(format!(
                                 "The {} of an edge in a pbf-file has to be provided, \
                                  but is expected to be calculated.",
-                                metric_type
+                                category
                             ));
                         }
                     }
