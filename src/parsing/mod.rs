@@ -9,14 +9,12 @@ use crate::{
 use log::info;
 use std::path::Path;
 
-//------------------------------------------------------------------------------------------------//
-
 /// The parser parsing `*.osm.pbf`- and `*.fmi`-files into a graphbuilder or a graph.
 ///
 ///
 /// ## The filter-pipeline
 ///
-/// 1. Download raw osm-data (see [README](https://github.com/dominicparga/osmgraphing/blob/master/README.md))
+/// 1. Download raw osm-data (see [README](https://github.com/dominicparga/osmgraphing/blob/nightly/README.md))
 /// 1. Read in this data
 /// 1. Filter and process osm-components like nodes and edges, e.g. filtering via tags
 /// 1. Create a memory- and runtime-efficient routing-graph.

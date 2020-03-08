@@ -1,4 +1,4 @@
-use crate::{network::NodeIdx, units::Metric};
+use crate::network::NodeIdx;
 use std::collections::HashMap;
 
 //------------------------------------------------------------------------------------------------//
@@ -10,28 +10,27 @@ use std::collections::HashMap;
 /// - Since the vector-approach stores two fully allocated vectors, it probably consumes more memory than the hashmap-approach.
 /// - Just by looking at resulting times of long paths (~670 km) in Germany, the hashmap-approach seems to be slightly better in performance, but both approaches take around 7 seconds for it.
 #[derive(Clone)]
-pub struct Path<M>
-where
-    M: Metric,
-{
+pub struct Path<M> {
     // core: paths::VecPath<M>,
     core: HashPath<M>,
 }
 
-impl<M> Path<M>
-where
-    M: Metric,
-{
-    fn new(src_idx: NodeIdx, dst_idx: NodeIdx) -> Self {
-        let core = HashPath::new(src_idx, dst_idx);
+impl<M> Path<M> {
+    fn new(src_idx: NodeIdx, dst_idx: NodeIdx, cost_max: M) -> Self {
+        let core = HashPath::new(src_idx, dst_idx, cost_max);
         Path { core }
     }
 
     /// Capacity is `graph.nodes().count()`, which is only used, if the path bases on vectors.
     /// If it bases on hashmaps, it ignores the given capacity.
-    pub fn with_capacity(src_idx: NodeIdx, dst_idx: NodeIdx, _capacity: usize) -> Self {
+    pub fn with_capacity(
+        src_idx: NodeIdx,
+        dst_idx: NodeIdx,
+        cost_max: M,
+        _capacity: usize,
+    ) -> Self {
         // let core = VecPath::with_capacity(src_idx, dst_idx, capacity);
-        Path::new(src_idx, dst_idx)
+        Path::new(src_idx, dst_idx, cost_max)
     }
 
     pub fn src_idx(&self) -> NodeIdx {
@@ -42,8 +41,8 @@ where
         self.core.dst_idx
     }
 
-    pub fn cost(&self) -> M {
-        self.core.cost
+    pub fn cost(&self) -> &M {
+        &self.core.cost
     }
 
     pub fn cost_mut(&mut self) -> &mut M {
@@ -77,15 +76,12 @@ pub struct VecPath<M> {
 }
 
 #[allow(dead_code)]
-impl<M> VecPath<M>
-where
-    M: Metric,
-{
-    pub fn with_capacity(src_idx: NodeIdx, dst_idx: NodeIdx, capacity: usize) -> Self {
+impl<M> VecPath<M> {
+    pub fn with_capacity(src_idx: NodeIdx, dst_idx: NodeIdx, cost_max: M, capacity: usize) -> Self {
         VecPath {
             src_idx,
             dst_idx,
-            cost: M::inf(),
+            cost: cost_max,
             predecessors: vec![None; capacity],
             successors: vec![None; capacity],
         }
@@ -108,10 +104,7 @@ where
 //------------------------------------------------------------------------------------------------//
 
 #[derive(Clone)]
-pub struct HashPath<M>
-where
-    M: Metric,
-{
+pub struct HashPath<M> {
     src_idx: NodeIdx,
     dst_idx: NodeIdx,
     cost: M,
@@ -119,15 +112,12 @@ where
     successors: HashMap<NodeIdx, NodeIdx>,
 }
 
-impl<M> HashPath<M>
-where
-    M: Metric,
-{
-    pub fn new(src_idx: NodeIdx, dst_idx: NodeIdx) -> Self {
+impl<M> HashPath<M> {
+    pub fn new(src_idx: NodeIdx, dst_idx: NodeIdx, cost_max: M) -> Self {
         HashPath {
             src_idx,
             dst_idx,
-            cost: M::inf(),
+            cost: cost_max,
             predecessors: HashMap::new(),
             successors: HashMap::new(),
         }

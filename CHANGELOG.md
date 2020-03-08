@@ -37,27 +37,73 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 
 ### Added <a name="unreleased/added"></a>
 
-\-
+- Add support for __routing-config__ using existing config-files or a str-parser.
+  - Let the new routing-config specify the metrics used by the `Dijkstra`.
+  - Let the new routing-config specify preferences for each metric.
+  - Let the big Config being built by a ProtoConfig to support dependencies between Config-components (like `cfg.routing`, having a list of ids, depends on the mapping from id to idx, which is stored in `cfg.graph`).
+  - Add tests considering the routing-config.
+- Support __multiple metrics__ in `Dijkstra`, using dot-product with a preference-vector.
+- Little __build-script__ for convenience.
+- Create __module `helpers`__ collecting handy functions and adding approximation-comparison for `f32` (like `ApproxEq` or `ApproxCmp`).
 
 
 ### Changed <a name="unreleased/changed"></a>
 
-\-
+- Rename __container-structs__ in graph to accessors, since they are only accessing, not owning the graph's data.
+- Refactor and update __`notes.md`__.
+- Rename __metric-categories__ in configs as the expected unit (like `Length` -> `Meters`), because explicit is better than implicit.
+- Extend __binary `osmgraphing`__
+  - Move complexity from examples to binary.
+  - Make __examples__ less complex.
+  - Let binary accept __logging-level__ as cli-arg.
+- Move __module `defaults`__ from `network` to a global module.
+  Rename its content accordingly and extend it.
+- Refactor __metrics__
+  - __Replace units__ `Meters` by `Kilometers` and `Milliseconds` by `Seconds` to keep numbers nearer to `1.0`, which is nearer to the routing-preferences (`alpha`).
+    This, hopefully, improves routing-calculations' accuracy.
+  - Let very small __non-zero metrics__, which are around (or exactly) `0.0`, be `std::f32::EPSILON` instead of `1.0`.
+  - Remove trait `Metric` for more simplicity.
+  - Replace all metrics and calculations in `u32` by __`f32`__.
+    Coordinates are included and uses `f32` from now.
+  - Add __tests__ for unit-conversions/-calculations.
+- Improve __memory-consumption__ by using inlining via `SmallVec` at certain spots.
+  - Makes the use of `par_iter()` (instead of `iter()`) in `pbf`-parser great again.
+- Simplify __graph-access-functions__ by replacing return-values with `panic!`s.
+- Rename all occurences of `type` to `category`.
+- Make __test-implementations__ fabulous again.
+  - Now, the main-test-files are separated and have a cleaner overview than the underscore-naming-convention and the first approach, where all tests have been in one single test-script.
+  - Create a module `helpers` containing general implementations, which can be used by the real test-functions.
+    This makes the tests cleaner.
+  - Testing configs is part of `parsing`-tests.
 
 
 ### Deprecated <a name="unreleased/deprecated"></a>
 
-\-
+- Documentation is missing, though comments are very well.
+- `CHANGELOG.md` contains empty version-descriptions.
+  - Replace existing tags with ones referring to `CHANGELOG.md` and add old tag-texts to the `CHANGELOG.md`
+  - Inconsistent `semver` in old tags -> probably `cargo yank VERSION` needed
+- The link to `doc.rs` is hardcoded to `major.minor.patch=0.y.z` because `docs.rs` chooses version `1.0.0` though it's yanked..
 
 
 ### Removed <a name="unreleased/removed"></a>
 
-\-
+- Remove __`Astar`__ completely, since this project will be used with multiple (custom) metrics and a graph contracted via contraction hierarchies.
+  The old implementation is kept in a `kutgw`-branch.
+  This makes the routing-module much less complex.
+  - Remove __`unidirectional Dijkstra`__ since the `bidirectional Dijkstra` uses only one priority-queue, so overhead for short routes is, if existent, very small.
+  - Remove __generics__, since their main-purpose has been supporting estimation-functions of `Astar`.
+    For the cost-functions, use the metric-indices from the routing-config instead.
+  - Remove some `CostNode`-implementations.
+  - Remove `routing::factory`.
+- Remove graph-functions __accessing specific metrics__, so only one access-method remains.
+- Replace branch `master` by `nightly` to emphasize the difference between `release`s and `master`.
 
 
 ### Fixed <a name="unreleased/fixed"></a>
 
-\-
+- Fix markdown-references in old headings in __`CHANGELOG.md`__.
+- Replace __`std::process::exit(...)`__ by `panic!(...)` to improve feedback, e.g. in tests (where logging-messages are swallowed).
 
 
 ### Security <a name="unreleased/security"></a>
@@ -71,7 +117,7 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 
 - Implement `zero()` for `geo::Coordinate`.
 - Implement trait `Metric` for `u32`.
-- Add __format-check__ to github-action.
+- Add __format-check__ to github-action (`cargo fmt -- --check`).
 - Support __mulitple metrics__, where the number is only known during runtime.
 - __Parse graph__ with config instead of map-file, which can be provided as `yaml`-file.
   - Let __metrics__ have __ids__.
@@ -83,7 +129,7 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 - Add module __`helpers`__ for general, handy implementations.
   - The struct `MapFileExt` (name before: `Type`) is being moved from module `parsing` to here.
   - __Initializing logging-levels__ is being moved from examples and executables to here.
-  - In the future: scalar-product
+  - In the future: dot-product
 
 
 ### Changed <a name="v0.9.0/changed"></a>
@@ -117,6 +163,7 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
   - Replace existing tags with ones referring to `CHANGELOG.md` and add old tag-texts to the `CHANGELOG.md`
   - Inconsistent `semver` in old tags -> probably `cargo yank VERSION` needed
 - The link to `doc.rs` is hardcoded to `major.minor.patch=0.y.z` because `docs.rs` chooses version `1.0.0` though it's yanked..
+- `CHANGELOG.md` has wrong markdown-references in old headings.
 
 
 ### Removed <a name="v0.9.0/removed"></a>
@@ -285,126 +332,126 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 
 ## [v0.6.1][github/self/v0.6.1] <a name="v0.6.1"></a>
 
-### Deprecated <a name="0.6.1/deprecated"></a>
+### Deprecated <a name="v0.6.1/deprecated"></a>
 
 - todo
 
 
 ## [v0.6.0][github/self/v0.6.0] <a name="v0.6.0"></a>
 
-### Deprecated <a name="0.6.0/deprecated"></a>
+### Deprecated <a name="v0.6.0/deprecated"></a>
 
 - todo
 
 
 ## [v0.5.0][github/self/v0.5.0] <a name="v0.5.0"></a>
 
-### Deprecated <a name="0.5.0/deprecated"></a>
+### Deprecated <a name="v0.5.0/deprecated"></a>
 
 - todo
 
 
 ## [v0.4.1][github/self/v0.4.1] <a name="v0.4.1"></a>
 
-### Deprecated <a name="0.4.1/deprecated"></a>
+### Deprecated <a name="v0.4.1/deprecated"></a>
 
 - todo
 
 
 ## [v0.4.0][github/self/v0.4.0] <a name="v0.4.0"></a>
 
-### Deprecated <a name="0.4.0/deprecated"></a>
+### Deprecated <a name="v0.4.0/deprecated"></a>
 
 - todo
 
 
 ## [v0.3.1][github/self/v0.3.1] <a name="v0.3.1"></a>
 
-### Deprecated <a name="0.3.1/deprecated"></a>
+### Deprecated <a name="v0.3.1/deprecated"></a>
 
 - todo
 
 
 ## [v0.3.0][github/self/v0.3.0] <a name="v0.3.0"></a>
 
-### Deprecated <a name="0.3.0/deprecated"></a>
+### Deprecated <a name="v0.3.0/deprecated"></a>
 
 - todo
 
 
 ## [v0.2.4][github/self/v0.2.4] <a name="v0.2.4"></a>
 
-### Deprecated <a name="0.2.4/deprecated"></a>
+### Deprecated <a name="v0.2.4/deprecated"></a>
 
 - todo
 
 
 ## [v0.2.3][github/self/v0.2.3] <a name="v0.2.3"></a>
 
-### Deprecated <a name="0.2.3/deprecated"></a>
+### Deprecated <a name="v0.2.3/deprecated"></a>
 
 - todo
 
 
 ## [v0.2.2][github/self/v0.2.2] <a name="v0.2.2"></a>
 
-### Deprecated <a name="0.2.2/deprecated"></a>
+### Deprecated <a name="v0.2.2/deprecated"></a>
 
 - todo
 
 
 ## [v0.2.1][github/self/v0.2.1] <a name="v0.2.1"></a>
 
-### Deprecated <a name="0.2.1/deprecated"></a>
+### Deprecated <a name="v0.2.1/deprecated"></a>
 
 - todo
 
 
 ## [v0.2.0][github/self/v0.2.0] <a name="v0.2.0"></a>
 
-### Deprecated <a name="0.2.0/deprecated"></a>
+### Deprecated <a name="v0.2.0/deprecated"></a>
 
 - todo
 
 
 ## [v0.1.5][github/self/v0.1.5] <a name="v0.1.5"></a>
 
-### Deprecated <a name="0.1.5/deprecated"></a>
+### Deprecated <a name="v0.1.5/deprecated"></a>
 
 - todo
 
 
 ## [v0.1.4][github/self/v0.1.4] <a name="v0.1.4"></a>
 
-### Deprecated <a name="0.1.4/deprecated"></a>
+### Deprecated <a name="v0.1.4/deprecated"></a>
 
 - todo
 
 
 ## [v0.1.3][github/self/v0.1.3] <a name="v0.1.3"></a>
 
-### Deprecated <a name="0.1.3/deprecated"></a>
+### Deprecated <a name="v0.1.3/deprecated"></a>
 
 - todo
 
 
 ## [v0.1.2][github/self/v0.1.2] <a name="v0.1.2"></a>
 
-### Deprecated <a name="0.1.2/deprecated"></a>
+### Deprecated <a name="v0.1.2/deprecated"></a>
 
 - todo
 
 
 ## [v0.1.1][github/self/v0.1.1] <a name="v0.1.1"></a>
 
-### Deprecated <a name="0.1.1/deprecated"></a>
+### Deprecated <a name="v0.1.1/deprecated"></a>
 
 - todo
 
 
 ## [v0.1.0][github/self/v0.1.0] <a name="v0.1.0"></a>
 
-### Deprecated <a name="0.1.0/deprecated"></a>
+### Deprecated <a name="v0.1.0/deprecated"></a>
 
 - todo
 

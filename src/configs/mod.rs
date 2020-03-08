@@ -3,6 +3,7 @@ use serde::Deserialize;
 use std::{fmt, fmt::Display, path::Path};
 
 pub mod graph;
+pub mod routing;
 
 /// Storing (default) settings for parsing the graph.
 ///
@@ -18,8 +19,7 @@ pub mod graph;
 ///
 /// Internally, a default-metric uses provided calculation-rules to be calculated by other default-categories as well (like the duration from length and maxspeed).
 ///
-/// Keep in mind, that metrics (except for id) are stored as `u32` for better maintainability and efficiency.
-/// Note that you can convert `floats` into `u32` by moving the comma.
+/// Keep in mind, that metrics (except for id) are stored as `f32` for better maintainability and efficiency.
 ///
 ///
 /// ### Specifying routing (in the future)
@@ -39,13 +39,19 @@ pub mod graph;
 /// Please note, that metrics being calculated (like the duration from length and maxspeed) need the respective metrics to be calculated.
 ///
 #[derive(Debug, Deserialize)]
+#[serde(from = "ProtoConfig")]
 pub struct Config {
     pub graph: graph::Config,
+    #[serde(skip)] // thanks to ProtoConfig
+    pub routing: routing::Config,
 }
 
 impl Config {
     pub fn from_yaml<P: AsRef<Path> + ?Sized>(path: &P) -> Result<Config, String> {
-        let file = helpers::open_file(path)?;
+        let file = {
+            helpers::is_file_ext_supported(path, &["yaml"])?;
+            helpers::open_file(path)?
+        };
         match serde_yaml::from_reader(file) {
             Ok(cfg) => Ok(cfg),
             Err(e) => Err(format!("{}", e)),
@@ -53,11 +59,47 @@ impl Config {
     }
 }
 
-#[derive(Copy, Clone, Debug, Deserialize)]
-pub enum VehicleCategory {
-    Car,
-    Bicycle,
-    Pedestrian,
+impl From<ProtoConfig> for Config {
+    fn from(proto_cfg: ProtoConfig) -> Config {
+        let routing_cfg = routing::Config::from_entries(proto_cfg.routing, &proto_cfg.graph);
+        Config {
+            graph: proto_cfg.graph,
+            routing: routing_cfg,
+        }
+    }
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ProtoConfig {
+    graph: graph::Config,
+    #[serde(default)]
+    routing: Vec<Entry>,
+}
+
+#[derive(Debug, Deserialize)]
+struct Entry {
+    id: MetricId,
+    alpha: Option<f32>,
+}
+
+impl routing::Config {
+    fn from_entries(entries: Vec<Entry>, graph_cfg: &graph::Config) -> routing::Config {
+        // create super-config's structures
+        let mut routing = routing::Config::with_capacity(graph_cfg.edges.metrics.count());
+
+        // translate ids into indices
+        for Entry {
+            id: metric_id,
+            alpha,
+        } in entries.iter()
+        {
+            let metric_idx = graph_cfg.edges.metrics.idx(metric_id);
+            routing.push(metric_idx, alpha.unwrap_or(1.0));
+        }
+
+        // return
+        routing
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Ord, PartialOrd)]
@@ -89,13 +131,13 @@ impl Display for MetricId {
 /// - `maxspeed` in km/h
 /// - `duration` in milliseconds
 /// - `lane-count`
-/// - `custom`, which is just the plain u32-value
+/// - `custom`, which is just the plain f32-value
 /// - `ignore`, which is used in `csv`-like `fmi`-maps to jump over columns
 #[derive(Copy, Clone, Debug, Deserialize, Eq, PartialEq)]
 pub enum MetricCategory {
-    Length,
-    Maxspeed,
-    Duration,
+    Meters,
+    KilometersPerHour,
+    Seconds,
     LaneCount,
     Custom,
     Id,
@@ -111,9 +153,9 @@ impl Display for MetricCategory {
 impl MetricCategory {
     pub fn must_be_positive(&self) -> bool {
         match self {
-            MetricCategory::Length
-            | MetricCategory::Maxspeed
-            | MetricCategory::Duration
+            MetricCategory::Meters
+            | MetricCategory::KilometersPerHour
+            | MetricCategory::Seconds
             | MetricCategory::LaneCount => true,
             MetricCategory::Custom | MetricCategory::Id | MetricCategory::Ignore => false,
         }
@@ -122,9 +164,9 @@ impl MetricCategory {
     pub fn is_ignored(&self) -> bool {
         match self {
             MetricCategory::Id | MetricCategory::Ignore => true,
-            MetricCategory::Length
-            | MetricCategory::Maxspeed
-            | MetricCategory::Duration
+            MetricCategory::Meters
+            | MetricCategory::KilometersPerHour
+            | MetricCategory::Seconds
             | MetricCategory::LaneCount
             | MetricCategory::Custom => false,
         }
@@ -132,9 +174,13 @@ impl MetricCategory {
 
     fn expected_calc_rules(&self) -> Vec<MetricCategory> {
         match self {
-            MetricCategory::Maxspeed => vec![MetricCategory::Length, MetricCategory::Duration],
-            MetricCategory::Duration => vec![MetricCategory::Length, MetricCategory::Maxspeed],
-            MetricCategory::Length
+            MetricCategory::KilometersPerHour => {
+                vec![MetricCategory::Meters, MetricCategory::Seconds]
+            }
+            MetricCategory::Seconds => {
+                vec![MetricCategory::Meters, MetricCategory::KilometersPerHour]
+            }
+            MetricCategory::Meters
             | MetricCategory::LaneCount
             | MetricCategory::Custom
             | MetricCategory::Id

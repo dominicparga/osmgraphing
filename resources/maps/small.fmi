@@ -16,7 +16,7 @@
          7       -     0.0000000 0.0000000 # h
 
 # edges
-#   src-id     dst-id    distance  ?  maxspeed
+#   src-id     dst-id   length(m)  ?  maxspeed
        1          0          1     _     30 # b -> a
        1          2          1     _     30 # b -> c
 

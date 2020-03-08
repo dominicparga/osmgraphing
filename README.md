@@ -1,6 +1,6 @@
 # osmgraphing
 
-[![Build Status master][github/self/actions/badge]][github/self/actions]
+[![Build Status nightly][github/self/actions/badge]][github/self/actions]
 
 [![Tag][github/self/tags/badge]][github/self/tags]
 [![Crates.io][crates.io/self/badge]][crates.io/self]
@@ -36,14 +36,17 @@ Tools creating `fmi`-files are [pbfextractor][github/lesstat/pbfextractor] and [
 
 In general, the requirements depend on the size of the parsed map and your machine.
 Following numbers base on an __8-core-CPU__ and the `pbf`-map `Germany` running on `archlinux`.
+Further, they base on the assumption, that you don't use more than 5 metrics (besides ignore and ids), because up to 5 metrics are inlined with `SmallVec`.
+You should change the number of inlined metrics according to your needs in the module `defaults`.
 
-- Parsing `Germany` needs around __13 GB of RAM__.
-- Preprocessing `Germany` (including parsing) needs less than __8 minutes__.
+- Parsing `Germany` (~50 million nodes, ~103 million edges) needs around __10 GB of RAM__.
+  After parsing, the memory-needs are less (up to few `GB`s) due to the optimized graph-structure.
+- Preprocessing `Germany` (including parsing) needs around __4 minutes__.
   This highly depends on the number of cores.
-- A __routing query__ on `Germany` of length `670 km` takes around __6 seconds__ with `bidirectional A*`.
+- A __routing query__ on `Germany` of length `620 km` takes around __16 seconds__ with `bidirectional Dijkstra`.
   This could be improved by removing intermediate nodes (like `b` in `a->b->c`), but they are kept for now.
-
-Memory-usage and performance have been better, but now, the graph supports multiple metrics.
+  An `Astar` is not used anymore, because its only purpose is reducing the search-space, which can be reduced much more using `Contraction Hierarchies`.
+  Further, `Astar` has issues when it comes to multiple or custom metrics, because of the metrics' heuristics.
 
 Small maps like `Isle of Man` run on every machine and are parsed in less than a second.
 
@@ -53,7 +56,7 @@ Small maps like `Isle of Man` run on every machine and are parsed in less than a
 The project started in the mid of 2019 as a student project.
 This page honors the workers and helpers of this project, sorted by their last names.
 
-__[Florian B.][github/lesstat]__  
+__[Florian Barth][github/lesstat]__  
 is the supervisor of the project since beginning and is always helping immediately with his experience and advice.
 
 __[Dominic Parga Cacheiro][github/dominicparga]__  
@@ -76,15 +79,15 @@ He has implemented the first (and running) approach of the `A*`-algorithm.
 [github/lesstat/multi-ch-constructor]: https://github.com/Lesstat/multi-ch-constructor
 [github/lesstat/pbfextractor]: https://github.com/Lesstat/pbfextractor
 [github/self/actions]: https://github.com/dominicparga/osmgraphing/actions
-[github/self/actions/badge]: https://img.shields.io/github/workflow/status/dominicparga/osmgraphing/Rust?label=master-build&style=for-the-badge
-[github/self/blob/changelog]: https://github.com/dominicparga/osmgraphing/blob/master/CHANGELOG.md
-[github/self/blob/changelog/badge]: https://img.shields.io/badge/CHANGELOG-master-blueviolet?style=for-the-badge
+[github/self/actions/badge]: https://img.shields.io/github/workflow/status/dominicparga/osmgraphing/Rust?label=nightly-build&style=for-the-badge
+[github/self/blob/changelog]: https://github.com/dominicparga/osmgraphing/blob/nightly/CHANGELOG.md
+[github/self/blob/changelog/badge]: https://img.shields.io/badge/CHANGELOG-nightly-blueviolet?style=for-the-badge
 [github/self/last-commit]: https://github.com/dominicparga/osmgraphing/commits
 [github/self/last-commit/badge]: https://img.shields.io/github/last-commit/dominicparga/osmgraphing?style=for-the-badge
-[github/self/license]: https://github.com/dominicparga/osmgraphing/blob/master/LICENSE
+[github/self/license]: https://github.com/dominicparga/osmgraphing/blob/nightly/LICENSE
 [github/self/license/badge]: https://img.shields.io/github/license/dominicparga/osmgraphing?style=for-the-badge
 [github/self/tags]: https://github.com/dominicparga/osmgraphing/tags
 [github/self/tags/badge]: https://img.shields.io/github/v/tag/dominicparga/osmgraphing?sort=semver&style=for-the-badge
-[github/self/tree/examples]: https://github.com/dominicparga/osmgraphing/tree/master/examples
+[github/self/tree/examples]: https://github.com/dominicparga/osmgraphing/tree/nightly/examples
 [github/self/wiki/usage]: https://github.com/dominicparga/osmgraphing/wiki/Usage
 [osm]: https://openstreetmap.org

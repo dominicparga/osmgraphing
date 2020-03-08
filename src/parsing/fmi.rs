@@ -135,7 +135,9 @@ impl super::Parsing for Parser {
 
             // create node and add it
             let proto_node = line.parse::<intern::ProtoNode>()?;
-            graph_builder.push_node(proto_node.id, proto_node.coord);
+            if graph_builder.is_node_in_edge(proto_node.id) {
+                graph_builder.push_node(proto_node.id, proto_node.coord);
+            }
         }
         info!("FINISHED");
 
@@ -146,6 +148,7 @@ impl super::Parsing for Parser {
 mod intern {
     use crate::{
         configs::{graph::edges::Config, MetricCategory},
+        defaults::DimVec,
         network::{MetricIdx, ProtoEdge},
         units::geo,
     };
@@ -180,7 +183,7 @@ mod intern {
                     ))
                 }
             };
-            let lat = match params[2].parse::<f64>() {
+            let lat = match params[2].parse::<f32>() {
                 Ok(lat) => lat,
                 Err(_) => {
                     return Err(format!(
@@ -189,7 +192,7 @@ mod intern {
                     ))
                 }
             };
-            let lon = match params[3].parse::<f64>() {
+            let lon = match params[3].parse::<f32>() {
                 Ok(lon) => lon,
                 Err(_) => {
                     return Err(format!(
@@ -201,7 +204,7 @@ mod intern {
 
             Ok(ProtoNode {
                 id,
-                coord: geo::Coordinate::from((lat, lon)),
+                coord: geo::Coordinate { lat, lon },
             })
         }
     }
@@ -212,12 +215,8 @@ mod intern {
         /// Parse a line of metrics into an edge.
         ///
         /// - When NodeIds are parsed, the first one is interpreted as src-id and the second one as dst-id.
-        /// - If a metric is given as float, it tries to parse it into `u32` of accuracy in millis.
-        ///   Example: given metric of `3.1415 km` becomes `3141 m`.
-        ///   The maximum possible value would be around `10^7 m`
-        ///   (`2^32 km` ~ `10^10 km`, which is divided by `1_000` for accuracy in `m`).
         pub fn from_str(line: &str, cfg: &Config) -> Result<ProtoEdge, String> {
-            let mut metric_values = Vec::with_capacity(cfg.metrics.count());
+            let mut metric_values = DimVec::<_>::with_capacity(cfg.metrics.count());
             let mut src_id = None;
             let mut dst_id = None;
 
@@ -254,33 +253,39 @@ mod intern {
                             ));
                         }
                     }
-                    MetricCategory::Length
-                    | MetricCategory::Maxspeed
-                    | MetricCategory::Duration
+                    MetricCategory::Meters => {
+                        let metric_idx = MetricIdx(metric_values.len());
+                        let is_provided = cfg.metrics.is_provided(metric_idx);
+
+                        if is_provided {
+                            if let Ok(meters) = param.parse::<f32>() {
+                                metric_values.push(Some(meters / 1_000.0));
+                            } else {
+                                return Err(format!(
+                                    "Parsing {} '{}' of edge-param #{} didn't work.",
+                                    metric_type, param, param_idx
+                                ));
+                            };
+                        } else {
+                            metric_values.push(None);
+                        }
+                    }
+                    MetricCategory::KilometersPerHour
+                    | MetricCategory::Seconds
                     | MetricCategory::LaneCount
                     | MetricCategory::Custom => {
                         let metric_idx = MetricIdx(metric_values.len());
                         let is_provided = cfg.metrics.is_provided(metric_idx);
 
                         if is_provided {
-                            // Try parsing as u32.
-                            // If value is float, parsing keeps accuracy of millis.
-                            // Example: given as 3.1415 km becomes 3141 m
-                            // Maximum possible value would be around 10^7 m
-                            // (2^32 km ~ 10^10 km, which is divided by 1_000 for accuracy in m)
-                            let value = {
-                                if let Ok(value_u32) = param.parse::<u32>() {
-                                    value_u32
-                                } else if let Ok(value_f64) = param.parse::<f64>() {
-                                    (value_f64 * 1e3) as u32
-                                } else {
-                                    return Err(format!(
-                                        "Parsing {} '{}' of edge-param #{} didn't work.",
-                                        metric_type, param, param_idx
-                                    ));
-                                }
+                            if let Ok(value) = param.parse::<f32>() {
+                                metric_values.push(Some(value));
+                            } else {
+                                return Err(format!(
+                                    "Parsing {} '{}' of edge-param #{} didn't work.",
+                                    metric_type, param, param_idx
+                                ));
                             };
-                            metric_values.push(Some(value.into()));
                         } else {
                             metric_values.push(None);
                         }

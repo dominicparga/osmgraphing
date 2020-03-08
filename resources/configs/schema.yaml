@@ -1,11 +1,9 @@
 graph:
   # relative to user, not to script
-  map-file: "relative-path-to-map-file"
+  map-file: 'relative-path-to-map-file'
 
   vehicles:
-    category: 'Car'
-    category: 'Bicycle'
-    category: 'Pedestrian'
+    category: 'Car' # | 'Bicycle' | 'Pedestrian'
     # Value `false` leads to more edges,
     # because edges are added, which are okay,
     # but not suitable for this vehicle-category.
@@ -19,6 +17,9 @@ graph:
     #
     # Default-Ids are the category-name, hence calc-rules are using
     # category-names, which are actually ids.
+    #
+    # In module 'defaults', set the inline-size accordingly for best performance
+    # and memory-usage.
     metrics:
 
     - category: 'Id'
@@ -27,22 +28,22 @@ graph:
     - category: 'Id'
       id: 'dst-id'
 
-    - category: 'Length'
+    - category: 'Meters'
       id: 'to-the-moon-and-back'
       # Value `false` leads to calculate the value via coordinates and haversine.
       is-provided: false
 
     # categories can be used twice
-    - category: 'Length'
+    - category: 'Meters'
       is-provided: true
 
-    - category: 'Maxspeed'
+    - category: 'KilometersPerHour'
       id: 'faster-than-light'
       # Value `false` leads to calculate the value via length and duration.
       is-provided: true
-      calc-rules: ['to-the-moon-and-back', 'Duration']
+      calc-rules: ['to-the-moon-and-back', 'Seconds']
 
-    - category: 'Duration'
+    - category: 'Seconds'
       # Value `false` leads to calculate the value via length and maxspeed.
       is-provided: false
       calc-rules: ['to-the-moon-and-back', 'faster-than-light']
@@ -57,11 +58,14 @@ graph:
     - category: 'Ignore'
       id: 'unnecessary'
 
-# # future-plans
-# routing: # example with two metrics and default-weights
-#   metrics: [length, duration]
-#   preferences:
-#   - id: length
-#     alpha: 169
-#   - id: duration
-#     alpha: 331
+# The metrics, which should be considered in routing, are listed here.
+# The given alphas are used as scale.
+#
+# Optional, but will panic as soon as routing will try to use it
+routing:
+- id: 'to-the-moon-and-back',
+  # optional; default is 1.0
+  alpha: 169.0
+- id: 'Seconds',
+  # optional; default is 1.0
+  alpha: 331.0

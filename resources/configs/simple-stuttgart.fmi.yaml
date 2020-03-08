@@ -1,5 +1,5 @@
 graph:
-  map-file: resources/maps/simple-stuttgart.fmi
+  map-file: 'resources/maps/simple-stuttgart.fmi'
   vehicles:
     category: 'Car'
     are-drivers-picky: false
@@ -9,9 +9,12 @@ graph:
       id: 'src-id'
     - category: 'Id'
       id: 'dst-id'
-    - category: 'Length'
+    - category: 'Meters'
     - category: 'Ignore'
-    - category: 'Maxspeed'
-    - category: 'Duration'
+    - category: 'KilometersPerHour'
+    - category: 'Seconds'
       is-provided: false
-      calc-rules: ['Length', 'Maxspeed']
+      calc-rules: ['Meters', 'KilometersPerHour']
+
+routing:
+- id: 'Meters'
