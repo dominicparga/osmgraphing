@@ -9,8 +9,6 @@ use crate::{
 use log::info;
 use std::path::Path;
 
-//------------------------------------------------------------------------------------------------//
-
 /// The parser parsing `*.osm.pbf`- and `*.fmi`-files into a graphbuilder or a graph.
 ///
 ///

@@ -237,6 +237,7 @@ pub struct GraphBuilder {
     proto_nodes: BTreeMap<i64, ProtoNode>,
     proto_edges: Vec<ProtoEdge>,
 }
+
 impl GraphBuilder {
     pub fn new() -> Self {
         Self {
@@ -328,6 +329,8 @@ impl GraphBuilder {
         info!("{}", progress_bar);
         // start looping
         let mut node_idx = 0;
+        graph.node_ids.reserve_exact(self.proto_nodes.len());
+        graph.node_coords.reserve_exact(self.proto_nodes.len());
         // BTreeMap's iter returns sorted by key (asc)
         for (_id, proto_node) in self.proto_nodes.into_iter() {
             // add nodes only if they belong to an edge

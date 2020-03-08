@@ -37,13 +37,13 @@ impl Dijkstra {
         Dijkstra {
             queue: BinaryHeap::new(),
             // fwd
-            fwd_costs: Vec::with_capacity(0),
-            predecessors: Vec::with_capacity(0),
-            is_visited_by_src: Vec::with_capacity(0),
+            fwd_costs: Vec::new(),
+            predecessors: Vec::new(),
+            is_visited_by_src: Vec::new(),
             // bwd
-            bwd_costs: Vec::with_capacity(0),
-            successors: Vec::with_capacity(0),
-            is_visited_by_dst: Vec::with_capacity(0),
+            bwd_costs: Vec::new(),
+            successors: Vec::new(),
+            is_visited_by_dst: Vec::new(),
         }
     }
 
