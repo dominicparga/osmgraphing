@@ -38,6 +38,8 @@ Maybe, it is concept for later documentation, or just keep-up-the-good-work (`ku
 ### Extend parsing
 
 - Use preprocessing-phase for `pbf`-parser to count edges and allocate memory accordingly.
+- Store proto-edges in graphbuilder in a `Vec` instead of `BTreeMap`
+  -> optimize memory and memory-allocation
 
 
 ## Mapviewer-libs

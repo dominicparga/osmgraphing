@@ -18,4 +18,3 @@ graph:
 
 routing:
   - id: 'Meters'
-    alpha: 2.0

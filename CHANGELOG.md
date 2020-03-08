@@ -71,7 +71,7 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 
 - Implement `zero()` for `geo::Coordinate`.
 - Implement trait `Metric` for `u32`.
-- Add __format-check__ to github-action.
+- Add __format-check__ to github-action (`cargo fmt -- --check`).
 - Support __mulitple metrics__, where the number is only known during runtime.
 - __Parse graph__ with config instead of map-file, which can be provided as `yaml`-file.
   - Let __metrics__ have __ids__.
