@@ -8,7 +8,8 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 ## Table of contents
 
 1. [Unreleased](#unreleased)
-1. [v0.9.0](#v0.9.0)
+1. [v0.10.0](#v0.10.0)
+    1. [v0.9.0](#v0.9.0)
     1. [v0.8.0](#v0.8.0)
     1. [v0.7.1](#v0.7.1)
         1. [v0.7.0](#v0.7.0)
@@ -37,6 +38,42 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 
 ### Added <a name="unreleased/added"></a>
 
+\-
+
+
+### Changed <a name="unreleased/changed"></a>
+
+\-
+
+
+### Deprecated <a name="unreleased/deprecated"></a>
+
+- Documentation is missing, though comments are very well.
+- `CHANGELOG.md` contains empty version-descriptions.
+  - Replace existing tags with ones referring to `CHANGELOG.md` and add old tag-texts to the `CHANGELOG.md`
+  - Inconsistent `semver` in old tags -> probably `cargo yank VERSION` needed
+- The link to `doc.rs` is hardcoded to `major.minor.patch=0.y.z` because `docs.rs` chooses version `1.0.0` though it's yanked..
+
+
+### Removed <a name="unreleased/removed"></a>
+
+\-
+
+
+### Fixed <a name="unreleased/fixed"></a>
+
+\-
+
+
+### Security <a name="unreleased/security"></a>
+
+\-
+
+
+## [v0.10.0][github/self/v0.10.0] <a name="v0.10.0"></a>
+
+### Added <a name="v0.10.0/added"></a>
+
 - Add support for __routing-config__ using existing config-files or a str-parser.
   - Let the new routing-config specify the metrics used by the `Dijkstra`.
   - Let the new routing-config specify preferences for each metric.
@@ -47,7 +84,7 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 - Create __module `helpers`__ collecting handy functions and adding approximation-comparison for `f32` (like `ApproxEq` or `ApproxCmp`).
 
 
-### Changed <a name="unreleased/changed"></a>
+### Changed <a name="v0.10.0/changed"></a>
 
 - Rename __container-structs__ in graph to accessors, since they are only accessing, not owning the graph's data.
 - Refactor and update __`notes.md`__.
@@ -77,7 +114,7 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
   - Testing configs is part of `parsing`-tests.
 
 
-### Deprecated <a name="unreleased/deprecated"></a>
+### Deprecated <a name="v0.10.0/deprecated"></a>
 
 - Documentation is missing, though comments are very well.
 - `CHANGELOG.md` contains empty version-descriptions.
@@ -86,7 +123,7 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 - The link to `doc.rs` is hardcoded to `major.minor.patch=0.y.z` because `docs.rs` chooses version `1.0.0` though it's yanked..
 
 
-### Removed <a name="unreleased/removed"></a>
+### Removed <a name="v0.10.0/removed"></a>
 
 - Remove __`Astar`__ completely, since this project will be used with multiple (custom) metrics and a graph contracted via contraction hierarchies.
   The old implementation is kept in a `kutgw`-branch.
@@ -100,15 +137,10 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 - Replace branch `master` by `nightly` to emphasize the difference between `release`s and `master`.
 
 
-### Fixed <a name="unreleased/fixed"></a>
+### Fixed <a name="v0.10.0/fixed"></a>
 
 - Fix markdown-references in old headings in __`CHANGELOG.md`__.
 - Replace __`std::process::exit(...)`__ by `panic!(...)` to improve feedback, e.g. in tests (where logging-messages are swallowed).
-
-
-### Security <a name="unreleased/security"></a>
-
-\-
 
 
 ## [v0.9.0][github/self/v0.9.0] <a name="v0.9.0"></a>
@@ -459,7 +491,8 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 [keepachangelog]: https://keepachangelog.com/en/
 [semver]: https://semver.org/
 
-[github/self/unreleased]: https://github.com/dominicparga/osmgraphing/compare/v0.9.0...HEAD
+[github/self/unreleased]: https://github.com/dominicparga/osmgraphing/compare/v0.10.0...HEAD
+[github/self/v0.10.0]: https://github.com/dominicparga/osmgraphing/compare/v0.9.0...v0.10.0
 [github/self/v0.9.0]: https://github.com/dominicparga/osmgraphing/compare/v0.8.0...v0.9.0
 [github/self/v0.8.0]: https://github.com/dominicparga/osmgraphing/compare/v0.7.1...v0.8.0
 [github/self/v0.7.1]: https://github.com/dominicparga/osmgraphing/compare/v0.7.0...v0.7.1
