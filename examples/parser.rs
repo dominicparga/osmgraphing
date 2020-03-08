@@ -8,10 +8,7 @@ fn main() {
 
     // get config by provided map-file
     let cfg = {
-        let cfg_file = match std::env::args_os().nth(1) {
-            Some(path) => PathBuf::from(path),
-            None => PathBuf::from("resources/configs/isle-of-man.pbf.yaml"),
-        };
+        let cfg_file = PathBuf::from("resources/configs/isle-of-man.pbf.yaml");
         match Config::from_yaml(&cfg_file) {
             Ok(cfg) => cfg,
             Err(msg) => {
