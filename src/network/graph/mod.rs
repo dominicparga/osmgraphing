@@ -2,10 +2,7 @@ pub mod building;
 mod indexing;
 pub use indexing::{EdgeIdx, MetricIdx, NodeIdx};
 
-use crate::{
-    configs::graph::Config,
-    units::{geo::Coordinate, length::Meters, speed::KilometersPerHour, time::Milliseconds},
-};
+use crate::{configs::graph::Config, defaults::DimVec, units::geo::Coordinate};
 use std::{fmt, fmt::Display};
 
 /// Stores graph-data as offset-graph in arrays and provides methods and shallow structs for accessing them.
@@ -87,7 +84,7 @@ pub struct Graph {
     bwd_offsets: Vec<usize>,
     bwd_to_fwd_map: Vec<EdgeIdx>,
     // edge-metrics (sorted according to fwd_dsts)
-    metrics: Vec<Vec<u32>>,
+    metrics: Vec<Vec<f32>>,
 }
 
 /// public stuff for accessing the (static) graph
@@ -96,15 +93,15 @@ impl Graph {
         &self.cfg
     }
 
-    pub fn nodes<'a>(&'a self) -> NodeContainer<'a> {
-        NodeContainer {
+    pub fn nodes<'a>(&'a self) -> NodeAccessor<'a> {
+        NodeAccessor {
             node_ids: &self.node_ids,
             node_coords: &self.node_coords,
         }
     }
 
-    pub fn fwd_edges<'a>(&'a self) -> EdgeContainer<'a> {
-        EdgeContainer {
+    pub fn fwd_edges<'a>(&'a self) -> EdgeAccessor<'a> {
+        EdgeAccessor {
             edge_dsts: &(self.fwd_dsts),
             offsets: &(self.fwd_offsets),
             xwd_to_fwd_map: &(self.fwd_to_fwd_map),
@@ -112,8 +109,8 @@ impl Graph {
         }
     }
 
-    pub fn bwd_edges<'a>(&'a self) -> EdgeContainer<'a> {
-        EdgeContainer {
+    pub fn bwd_edges<'a>(&'a self) -> EdgeAccessor<'a> {
+        EdgeAccessor {
             edge_dsts: &(self.bwd_dsts),
             offsets: &(self.bwd_offsets),
             xwd_to_fwd_map: &(self.bwd_to_fwd_map),
@@ -121,8 +118,8 @@ impl Graph {
         }
     }
 
-    pub fn metrics<'a>(&'a self) -> MetricContainer<'a> {
-        MetricContainer {
+    pub fn metrics<'a>(&'a self) -> MetricAccessor<'a> {
+        MetricAccessor {
             cfg: &(self.cfg),
             metrics: &(self.metrics),
         }
@@ -201,9 +198,9 @@ impl Display for Graph {
                         j = fwd_dsts.count() - 1;
                     }
                     let edge_idx = EdgeIdx(j);
-                    let src_idx = bwd_dsts.dst_idx(edge_idx).unwrap();
-                    let half_edge = fwd_dsts.half_edge(edge_idx).unwrap();
-                    let metrics: Vec<u32> = (0..self.cfg.edges.metrics.count())
+                    let src_idx = bwd_dsts.dst_idx(edge_idx);
+                    let half_edge = fwd_dsts.half_edge(edge_idx);
+                    let metrics: Vec<f32> = (0..self.cfg.edges.metrics.count())
                         .map(|i| self.metrics[i][*edge_idx])
                         .collect();
                     writeln!(
@@ -306,32 +303,20 @@ impl Display for Node {
 pub struct HalfEdge<'a> {
     idx: EdgeIdx,
     edge_dsts: &'a Vec<NodeIdx>,
-    metrics: &'a MetricContainer<'a>,
+    metrics: &'a MetricAccessor<'a>,
 }
 
 impl<'a> HalfEdge<'a> {
+    pub fn idx(&self) -> EdgeIdx {
+        self.idx
+    }
+
     pub fn dst_idx(&self) -> NodeIdx {
         self.edge_dsts[*self.idx]
     }
 
-    pub fn length(&self, metric_idx: MetricIdx) -> Option<Meters> {
-        self.metrics.length(metric_idx, self.idx)
-    }
-
-    pub fn maxspeed(&self, metric_idx: MetricIdx) -> Option<KilometersPerHour> {
-        self.metrics.maxspeed(metric_idx, self.idx)
-    }
-
-    pub fn duration(&self, metric_idx: MetricIdx) -> Option<Milliseconds> {
-        self.metrics.duration(metric_idx, self.idx)
-    }
-
-    pub fn lane_count(&self, metric_idx: MetricIdx) -> Option<u32> {
-        self.metrics.lane_count(metric_idx, self.idx)
-    }
-
-    pub fn metric(&self, metric_idx: MetricIdx) -> Option<u32> {
-        self.metrics.get(metric_idx, self.idx)
+    pub fn metric(&self, metric_indices: &DimVec<MetricIdx>) -> DimVec<f32> {
+        self.metrics.get(metric_indices, self.idx)
     }
 }
 
@@ -352,12 +337,12 @@ impl<'a> Display for HalfEdge<'a> {
 /// A shallow container for accessing nodes.
 /// Shallow means that it does only contain references to the graph's data-arrays.
 #[derive(Debug)]
-pub struct NodeContainer<'a> {
+pub struct NodeAccessor<'a> {
     node_ids: &'a Vec<i64>,
     node_coords: &'a Vec<Coordinate>,
 }
 
-impl<'a> NodeContainer<'a> {
+impl<'a> NodeAccessor<'a> {
     pub fn count(&self) -> usize {
         self.node_ids.len()
     }
@@ -419,57 +404,48 @@ impl<'a> NodeContainer<'a> {
 /// A shallow container for accessing edges.
 /// Shallow means that it does only contain references to the graph's data-arrays.
 #[derive(Debug)]
-pub struct EdgeContainer<'a> {
+pub struct EdgeAccessor<'a> {
     edge_dsts: &'a Vec<NodeIdx>,
     offsets: &'a Vec<usize>,
     // indirect mapping to save memory
     xwd_to_fwd_map: &'a Vec<EdgeIdx>,
-    metrics: MetricContainer<'a>,
+    metrics: MetricAccessor<'a>,
 }
 
-impl<'a> EdgeContainer<'a> {
+impl<'a> EdgeAccessor<'a> {
     pub fn count(&self) -> usize {
         self.edge_dsts.len()
     }
 
-    pub fn half_edge(&'a self, idx: EdgeIdx) -> Option<HalfEdge> {
-        Some(HalfEdge {
+    pub fn half_edge(&'a self, idx: EdgeIdx) -> HalfEdge {
+        HalfEdge {
             idx,
-            edge_dsts: &self.edge_dsts,
+            edge_dsts: self.edge_dsts,
             metrics: &self.metrics,
-        })
-    }
-
-    pub fn dst_idx(&self, idx: EdgeIdx) -> Option<NodeIdx> {
-        Some(*(self.edge_dsts.get(*idx)?))
-    }
-
-    /// Creates `HalfEdge`s containing all metric-data.
-    /// For only indices, see `dsts_starting_from(...)`
-    pub fn starting_from(&self, idx: NodeIdx) -> Option<Vec<HalfEdge>> {
-        // get indices by reading offset-array
-        let leaving_indices = self.offset_indices(idx)?;
-
-        // create array of leaving edges
-        let mut leaving_edges = vec![];
-        for edge_idx in leaving_indices {
-            let edge = self.half_edge(edge_idx)?;
-            leaving_edges.push(edge);
         }
-        Some(leaving_edges)
+    }
+
+    pub fn dst_idx(&self, idx: EdgeIdx) -> NodeIdx {
+        self.edge_dsts[*idx]
+    }
+
+    pub fn starting_from(&self, idx: NodeIdx) -> Option<Vec<HalfEdge>> {
+        Some(
+            self.offset_indices(idx)?
+                .into_iter()
+                .map(|edge_idx| self.half_edge(edge_idx))
+                .collect(),
+        )
     }
 
     /// uses linear-search, but only on src's leaving edges (±3), so more or less in O(1)
     ///
     /// Returns the index of the edge, which can be used in the function `half_edge(...)`
     pub fn between(&self, src_idx: NodeIdx, dst_idx: NodeIdx) -> Option<(HalfEdge, EdgeIdx)> {
-        // get indices by reading offset-array if src-node has leaving edges
-        let leaving_indices = self.offset_indices(src_idx)?;
-
         // find edge of same dst-idx and create edge
-        for edge_idx in leaving_indices {
-            if self.dst_idx(edge_idx)? == dst_idx {
-                return Some((self.half_edge(edge_idx)?, edge_idx));
+        for edge_idx in self.offset_indices(src_idx)? {
+            if self.dst_idx(edge_idx) == dst_idx {
+                return Some((self.half_edge(edge_idx), edge_idx));
             }
         }
 
@@ -489,11 +465,12 @@ impl<'a> EdgeContainer<'a> {
         // i0 < i1 <-> node has leaving edges
         if i0 < i1 {
             // map usizes to respective EdgeIdx
-            let mut edge_indices = vec![];
-            for i in i0..i1 {
-                edge_indices.push(self.xwd_to_fwd_map[i])
-            }
-            Some(edge_indices)
+            Some(
+                (i0..i1)
+                    .into_iter()
+                    .map(|i| self.xwd_to_fwd_map[i])
+                    .collect(),
+            )
         } else {
             None
         }
@@ -503,44 +480,22 @@ impl<'a> EdgeContainer<'a> {
 /// A shallow container for accessing metrics.
 /// Shallow means that it does only contain references to the graph's data-arrays.
 #[derive(Debug)]
-pub struct MetricContainer<'a> {
+pub struct MetricAccessor<'a> {
     cfg: &'a Config,
-    metrics: &'a Vec<Vec<u32>>,
+    metrics: &'a Vec<Vec<f32>>,
 }
 
-impl<'a> Display for MetricContainer<'a> {
+impl<'a> Display for MetricAccessor<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{:?}", self.metrics)
     }
 }
 
-impl<'a> MetricContainer<'a> {
-    pub fn get(&self, metric_idx: MetricIdx, edge_idx: EdgeIdx) -> Option<u32> {
-        let metric_vec = &self.metrics[*metric_idx];
-        Some(metric_vec[*edge_idx])
-    }
-
-    pub fn length(&self, metric_idx: MetricIdx, edge_idx: EdgeIdx) -> Option<Meters> {
-        let length = self.get(metric_idx, edge_idx)?;
-        debug_assert!(length > 0, "Edge-length should be > 0");
-        Some(Meters(length))
-    }
-
-    pub fn maxspeed(&self, metric_idx: MetricIdx, edge_idx: EdgeIdx) -> Option<KilometersPerHour> {
-        let maxspeed = self.get(metric_idx, edge_idx)?;
-        debug_assert!(maxspeed > 0, "Edge-maxspeed should be > 0");
-        Some(KilometersPerHour(maxspeed))
-    }
-
-    pub fn duration(&self, metric_idx: MetricIdx, edge_idx: EdgeIdx) -> Option<Milliseconds> {
-        let duration = self.get(metric_idx, edge_idx)?;
-        debug_assert!(duration > 0, "Edge-duration should be > 0");
-        Some(Milliseconds(duration))
-    }
-
-    pub fn lane_count(&self, metric_idx: MetricIdx, edge_idx: EdgeIdx) -> Option<u32> {
-        let lane_count = self.get(metric_idx, edge_idx)?;
-        debug_assert!(lane_count > 0, "Edge-lane-count should be > 0");
-        Some(lane_count)
+impl<'a> MetricAccessor<'a> {
+    pub fn get(&self, metric_indices: &DimVec<MetricIdx>, edge_idx: EdgeIdx) -> DimVec<f32> {
+        metric_indices
+            .iter()
+            .map(|&midx| self.metrics[*midx][*edge_idx])
+            .collect()
     }
 }

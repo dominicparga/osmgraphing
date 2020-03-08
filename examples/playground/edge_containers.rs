@@ -5,11 +5,11 @@ mod refcells {
     //--------------------------------------------------------------------------------------------//
 
     #[derive(Debug)]
-    pub struct EdgeContainer {
+    pub struct EdgeAccessor {
         graph: RefCell<Weak<Graph>>,
     }
 
-    impl EdgeContainer {
+    impl EdgeAccessor {
         fn graph(&self) -> Weak<Graph> {
             Weak::clone(&self.graph.borrow())
         }
@@ -29,11 +29,11 @@ mod refcells {
     #[derive(Debug)]
     pub struct Graph {
         value: u32,
-        fwd_edges: RefCell<Rc<EdgeContainer>>,
+        fwd_edges: RefCell<Rc<EdgeAccessor>>,
     }
 
     impl Graph {
-        pub fn fwd_edges(&self) -> Rc<EdgeContainer> {
+        pub fn fwd_edges(&self) -> Rc<EdgeAccessor> {
             Rc::clone(&self.fwd_edges.borrow())
         }
 
@@ -45,7 +45,7 @@ mod refcells {
     impl Graph {
         pub fn new() -> Rc<Graph> {
             // init fwd-edges with empty ref to graph
-            let fwd_edges = Rc::new(EdgeContainer {
+            let fwd_edges = Rc::new(EdgeAccessor {
                 graph: RefCell::new(Weak::new()),
             });
             // init graph with ref to fwd-edges
@@ -76,13 +76,13 @@ mod moving {
     //--------------------------------------------------------------------------------------------//
 
     #[derive(Debug)]
-    pub struct EdgeContainer {
+    pub struct EdgeAccessor {
         graph: Graph,
     }
 
-    impl EdgeContainer {
-        fn from(graph: Graph) -> EdgeContainer {
-            EdgeContainer { graph }
+    impl EdgeAccessor {
+        fn from(graph: Graph) -> EdgeAccessor {
+            EdgeAccessor { graph }
         }
 
         pub fn graph(self) -> Graph {
@@ -106,13 +106,13 @@ mod moving {
         pub fn new() -> Graph {
             Graph {
                 edges: vec![Edge {
-                    treasure: String::from("Access this from EdgeContainer hehe"),
+                    treasure: String::from("Access this from EdgeAccessor hehe"),
                 }],
             }
         }
 
-        pub fn fwd_edges(self) -> EdgeContainer {
-            EdgeContainer::from(self)
+        pub fn fwd_edges(self) -> EdgeAccessor {
+            EdgeAccessor::from(self)
         }
     }
 }
@@ -135,20 +135,20 @@ mod borrowing {
     //--------------------------------------------------------------------------------------------//
 
     #[derive(Debug)]
-    pub struct EdgeContainer<'a> {
+    pub struct EdgeAccessor<'a> {
         graph: &'a Graph,
         // general name since information is stored in memory, not in code/algorithm/...
         edges: &'a Vec<usize>,
         offsets: &'a Vec<usize>,
     }
 
-    impl<'a> EdgeContainer<'a> {
+    impl<'a> EdgeAccessor<'a> {
         fn from(
             graph: &'a Graph,
             edges: &'a Vec<usize>,
             offsets: &'a Vec<usize>,
-        ) -> EdgeContainer<'a> {
-            EdgeContainer {
+        ) -> EdgeAccessor<'a> {
+            EdgeAccessor {
                 graph,
                 edges,
                 offsets,
@@ -166,7 +166,7 @@ mod borrowing {
     #[derive(Debug)]
     pub struct Graph {
         edges: Vec<Edge>,
-        // important: store everything in here, but provide pointers to the EdgeContainer
+        // important: store everything in here, but provide pointers to the EdgeAccessor
         fwd_edges: Vec<usize>,
         fwd_offsets: Vec<usize>,
         bwd_edges: Vec<usize>,
@@ -178,7 +178,7 @@ mod borrowing {
             Graph {
                 edges: vec![
                     Edge {
-                        treasure: Some(String::from("Access this from EdgeContainer hehe")),
+                        treasure: Some(String::from("Access this from EdgeAccessor hehe")),
                     },
                     Edge { treasure: None },
                 ],
@@ -189,12 +189,12 @@ mod borrowing {
             }
         }
 
-        pub fn fwd_edges<'a>(&'a self) -> EdgeContainer<'a> {
-            EdgeContainer::from(self, &(self.fwd_edges), &(self.fwd_offsets))
+        pub fn fwd_edges<'a>(&'a self) -> EdgeAccessor<'a> {
+            EdgeAccessor::from(self, &(self.fwd_edges), &(self.fwd_offsets))
         }
 
-        pub fn bwd_edges<'a>(&'a self) -> EdgeContainer<'a> {
-            EdgeContainer::from(self, &(self.bwd_edges), &(self.bwd_offsets))
+        pub fn bwd_edges<'a>(&'a self) -> EdgeAccessor<'a> {
+            EdgeAccessor::from(self, &(self.bwd_edges), &(self.bwd_offsets))
         }
     }
 }

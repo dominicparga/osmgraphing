@@ -1,8 +1,10 @@
 use super::{EdgeIdx, Graph, NodeIdx};
 use crate::{
     configs::{graph::Config, MetricCategory},
+    defaults,
+    helpers::ApproxEq,
     network::MetricIdx,
-    units::{geo, geo::Coordinate, length::Meters, speed::KilometersPerHour, time::Milliseconds},
+    units::{geo, geo::Coordinate, length::Kilometers, speed::KilometersPerHour, time::Seconds},
 };
 use log::{debug, info};
 use progressing;
@@ -31,7 +33,7 @@ impl ProtoNode {
 pub struct ProtoEdge {
     pub src_id: i64,
     pub dst_id: i64,
-    pub metrics: SmallVec<[Option<u32>; 5]>,
+    pub metrics: SmallVec<[Option<f32>; defaults::SMALL_VEC_INLINE_SIZE]>,
 }
 
 /// handy for remembering indices after sorting backwards
@@ -111,12 +113,12 @@ impl Graph {
                 // Jump if proto-edge has its value.
                 if let Some(value) = &mut proto_edge.metrics[*metric_idx] {
                     // But jump only if value is correct.
-                    if value == &0 && category.must_be_positive() {
+                    if value.approx_eq(&0.0) && category.must_be_positive() {
                         debug!(
-                            "Proto-edge (id:{}->id:{}) has {}=0, hence is corrected to 1.",
+                            "Proto-edge (id:{}->id:{}) has {}=0, hence is corrected to epsilon.",
                             proto_edge.src_id, proto_edge.dst_id, category
                         );
-                        *value += 1;
+                        *value = std::f32::EPSILON;
                     }
                     continue;
                 }
@@ -124,13 +126,13 @@ impl Graph {
 
                 // calculate metric dependent on category
                 match category {
-                    MetricCategory::Length => {
+                    MetricCategory::Meters => {
                         let src_coord = self.node_coords[*src_idx];
                         let dst_coord = self.node_coords[*dst_idx];
                         proto_edge.metrics[*metric_idx] =
-                            Some(*geo::haversine_distance_m(&src_coord, &dst_coord));
+                            Some(*geo::haversine_distance_km(&src_coord, &dst_coord));
                     }
-                    MetricCategory::Duration => {
+                    MetricCategory::Seconds => {
                         // get length and maxspeed to calculate duration
                         let mut length = None;
                         let mut maxspeed = None;
@@ -138,8 +140,8 @@ impl Graph {
                         for &(other_type, other_idx) in cfg.calc_rules(metric_idx) {
                             // get values from edge dependent of calculation-rules
                             match other_type {
-                                MetricCategory::Length => length = proto_edge.metrics[*other_idx],
-                                MetricCategory::Maxspeed => {
+                                MetricCategory::Meters => length = proto_edge.metrics[*other_idx],
+                                MetricCategory::KilometersPerHour => {
                                     maxspeed = proto_edge.metrics[*other_idx];
                                 }
                                 _ => {
@@ -152,13 +154,14 @@ impl Graph {
                         }
                         // calc duration and update proto-edge
                         if let (Some(length), Some(maxspeed)) = (length, maxspeed) {
-                            let duration = Meters(length) / KilometersPerHour(maxspeed);
+                            let duration: Seconds =
+                                Kilometers(length) / KilometersPerHour(maxspeed);
                             proto_edge.metrics[*metric_idx] = Some(*duration)
                         } else {
                             are_all_metrics_some = false;
                         }
                     }
-                    MetricCategory::Maxspeed => {
+                    MetricCategory::KilometersPerHour => {
                         // get length and duration to calculate maxspeed
                         let mut length = None;
                         let mut duration = None;
@@ -166,8 +169,8 @@ impl Graph {
                         for &(other_type, other_idx) in cfg.calc_rules(metric_idx) {
                             // get values from edge dependent of calculation-rules
                             match other_type {
-                                MetricCategory::Length => length = proto_edge.metrics[*other_idx],
-                                MetricCategory::Duration => {
+                                MetricCategory::Meters => length = proto_edge.metrics[*other_idx],
+                                MetricCategory::Seconds => {
                                     duration = proto_edge.metrics[*other_idx];
                                 }
                                 _ => {
@@ -180,7 +183,8 @@ impl Graph {
                         }
                         // calc maxspeed and update proto-edge
                         if let (Some(length), Some(duration)) = (length, duration) {
-                            let maxspeed = Meters(length) / Milliseconds(duration);
+                            let maxspeed: KilometersPerHour =
+                                Kilometers(length) / Seconds(duration);
                             proto_edge.metrics[*metric_idx] = Some(*maxspeed)
                         } else {
                             are_all_metrics_some = false;
@@ -233,6 +237,7 @@ pub struct GraphBuilder {
     proto_nodes: BTreeMap<i64, ProtoNode>,
     proto_edges: Vec<ProtoEdge>,
 }
+
 impl GraphBuilder {
     pub fn new() -> Self {
         Self {
@@ -324,6 +329,8 @@ impl GraphBuilder {
         info!("{}", progress_bar);
         // start looping
         let mut node_idx = 0;
+        graph.node_ids.reserve_exact(self.proto_nodes.len());
+        graph.node_coords.reserve_exact(self.proto_nodes.len());
         // BTreeMap's iter returns sorted by key (asc)
         for (_id, proto_node) in self.proto_nodes.into_iter() {
             // add nodes only if they belong to an edge
@@ -387,11 +394,11 @@ impl GraphBuilder {
 
         // Work off proto-edges in chunks to keep memory-usage lower.
         // For example:
-        // To keep additional memory-needs below 1 MB, the the maximum amount of four u32-values per
+        // To keep additional memory-needs below 1 MB, the the maximum amount of four f32-values per
         // worked-off chunk has to be limited to 250_000.
-        // Because ids are more expensive than metrics, (2x i64 = 4x u32), the number is much lower.
+        // Because ids are more expensive than metrics, (2x i64 = 4x f32), the number is much lower.
         let bytes_per_edge =
-            2 * mem::size_of::<i64>() + graph.cfg().edges.metrics.count() * mem::size_of::<u32>();
+            2 * mem::size_of::<i64>() + graph.cfg().edges.metrics.count() * mem::size_of::<f32>();
         let max_byte = 200 * 1_000_000;
         let max_chunk_size = max_byte / bytes_per_edge;
         log::debug!("max-chunk-size:                {}", max_chunk_size);

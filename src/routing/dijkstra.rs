@@ -1,513 +1,343 @@
-pub use super::astar::Astar;
 use super::paths::Path;
+use crate::{
+    configs::routing::Config,
+    defaults::DimVec,
+    helpers,
+    network::{EdgeIdx, Graph, MetricIdx, Node, NodeIdx},
+};
+use smallvec::smallvec;
+use std::{cmp::Reverse, collections::BinaryHeap};
 
-//------------------------------------------------------------------------------------------------//
+pub struct Preferences {
+    pub alphas: DimVec<f32>,
+    pub metric_indices: DimVec<MetricIdx>,
+}
 
-pub mod unidirectional {
-    use super::{Astar, Path};
-    use crate::{
-        network::{Graph, HalfEdge, Node, NodeIdx},
-        units::Metric,
-    };
-    use std::{collections::BinaryHeap, ops::Add};
+impl Preferences {
+    pub fn dim(&self) -> usize {
+        self.metric_indices.len()
+    }
+}
 
-    /// Cost-function, Estimation-function and Metric
-    pub struct GenericAstar<C, M>
-    where
-        C: Fn(&HalfEdge) -> M,
-        M: Metric,
-    {
-        cost_fn: C,
-        costs: Vec<M>,
-        predecessors: Vec<Option<NodeIdx>>,
-        queue: BinaryHeap<CostNode<M>>, // max-heap, but CostNode's natural order is reversed
+/// A bidirectional implementation of Dijkstra's algorithm.
+pub struct Dijkstra {
+    queue: BinaryHeap<Reverse<CostNode>>,
+    // fwd
+    fwd_costs: Vec<f32>,
+    predecessors: Vec<Option<EdgeIdx>>,
+    is_visited_by_src: Vec<bool>,
+    // bwd
+    bwd_costs: Vec<f32>,
+    successors: Vec<Option<EdgeIdx>>,
+    is_visited_by_dst: Vec<bool>,
+}
+
+impl Dijkstra {
+    pub fn new() -> Dijkstra {
+        Dijkstra {
+            queue: BinaryHeap::new(),
+            // fwd
+            fwd_costs: Vec::new(),
+            predecessors: Vec::new(),
+            is_visited_by_src: Vec::new(),
+            // bwd
+            bwd_costs: Vec::new(),
+            successors: Vec::new(),
+            is_visited_by_dst: Vec::new(),
+        }
     }
 
-    impl<C, M> GenericAstar<C, M>
-    where
-        C: Fn(&HalfEdge) -> M,
-        M: Metric + Ord,
-    {
-        pub fn new(cost_fn: C) -> GenericAstar<C, M> {
-            GenericAstar {
-                cost_fn,
-                costs: vec![M::inf(); 0],
-                predecessors: vec![None; 0],
-                queue: BinaryHeap::new(),
-            }
-        }
+    /// Resizes existing datastructures storing routing-data like costs saving re-allocations.
+    fn resize(&mut self, new_len: usize) {
+        // fwd
+        self.fwd_costs.splice(.., vec![std::f32::INFINITY; new_len]);
+        self.predecessors.splice(.., vec![None; new_len]);
+        self.is_visited_by_src.splice(.., vec![false; new_len]);
+        // bwd
+        self.bwd_costs.splice(.., vec![std::f32::INFINITY; new_len]);
+        self.successors.splice(.., vec![None; new_len]);
+        self.is_visited_by_dst.splice(.., vec![false; new_len]);
 
-        /// Resizes existing datastructures storing routing-data like costs saving re-allocations.
-        fn resize(&mut self, new_len: usize) {
-            self.costs.splice(.., vec![M::inf(); new_len]);
-            self.predecessors.splice(.., vec![None; new_len]);
+        self.queue.clear();
+    }
 
-            self.queue.clear();
+    /// The given costnode is a meeting-costnode, if it is visited by both, the search starting in src and the search starting in dst.
+    fn is_meeting_costnode(&self, costnode: &CostNode) -> bool {
+        self.is_visited_by_src[*costnode.idx] && self.is_visited_by_dst[*costnode.idx]
+    }
+
+    fn visit(&mut self, costnode: &CostNode) {
+        match costnode.direction {
+            Direction::FWD => self.is_visited_by_src[*costnode.idx] = true,
+            Direction::BWD => self.is_visited_by_dst[*costnode.idx] = true,
         }
     }
 
-    impl<C, M> Astar<M> for GenericAstar<C, M>
-    where
-        C: Fn(&HalfEdge) -> M,
-        M: Metric + Ord + Add<M, Output = M>,
-    {
-        fn compute_best_path(&mut self, src: &Node, dst: &Node, graph: &Graph) -> Option<Path<M>> {
-            //----------------------------------------------------------------------------------------//
-            // initialization-stuff
+    fn total_cost(&self, costnode: &CostNode) -> f32 {
+        self.fwd_costs[*costnode.idx] + self.bwd_costs[*costnode.idx]
+    }
+}
 
-            let nodes = graph.nodes();
-            let fwd_edges = graph.fwd_edges();
-            self.resize(nodes.count());
+impl Dijkstra {
+    pub fn compute_best_path(
+        &mut self,
+        src: &Node,
+        dst: &Node,
+        graph: &Graph,
+        cfg: &Config,
+    ) -> Option<Path<DimVec<f32>>> {
+        if cfg.dim() <= 0 {
+            panic!("Best path should be computed, but no metric is specified.");
+        }
 
-            //----------------------------------------------------------------------------------------//
-            // prepare first iteration(s)
+        //------------------------------------------------------------------------------------//
+        // initialization-stuff
 
-            // push src-node
-            self.queue.push(CostNode {
-                idx: src.idx(),
-                cost: M::zero(),
-                pred_idx: None,
-            });
-            self.costs[*src.idx()] = M::zero();
+        self.resize(graph.nodes().count());
+        let mut best_meeting: Option<(NodeIdx, f32)> = None;
 
-            //----------------------------------------------------------------------------------------//
-            // search for shortest path
+        //------------------------------------------------------------------------------------//
+        // prepare first iteration(s)
 
-            while let Some(current) = self.queue.pop() {
-                //------------------------------------------------------------------------------------//
-                // if shortest path found
-                // -> create path
+        // push src-node
+        self.queue.push(Reverse(CostNode {
+            idx: src.idx(),
+            cost: 0.0,
+            direction: Direction::FWD,
+        }));
+        // push dst-node
+        self.queue.push(Reverse(CostNode {
+            idx: dst.idx(),
+            cost: 0.0,
+            direction: Direction::BWD,
+        }));
+        // update fwd-stats
+        self.fwd_costs[*src.idx()] = 0.0;
+        // update bwd-stats
+        self.bwd_costs[*dst.idx()] = 0.0;
 
-                if current.idx == dst.idx() {
-                    let mut cur_idx = current.idx;
+        //------------------------------------------------------------------------------------//
+        // search for shortest path
 
-                    let mut path = Path::with_capacity(src.idx(), dst.idx(), nodes.count());
-                    *(path.cost_mut()) = current.cost;
-                    while let Some(pred_idx) = self.predecessors[*cur_idx] {
-                        path.add_pred_succ(pred_idx, cur_idx);
-                        cur_idx = pred_idx;
+        while let Some(Reverse(current)) = self.queue.pop() {
+            // if path is found
+            // -> remember best meeting-node
+            self.visit(&current);
+            if self.is_meeting_costnode(&current) {
+                if let Some((_meeting_node, total_cost)) = best_meeting {
+                    // if meeting-node is already found
+                    // check if new meeting-node is better
+                    let new_total_cost = self.total_cost(&current);
+                    if new_total_cost < total_cost {
+                        best_meeting = Some((current.idx, new_total_cost));
                     }
-                    // predecessor of src is not set
-                    // successor of dst is not set
-                    return Some(path);
+                } else {
+                    let total_cost = self.total_cost(&current);
+                    best_meeting = Some((current.idx, total_cost));
                 }
+            }
 
-                //------------------------------------------------------------------------------------//
-                // first occurrence has lowest cost
-                // -> check if current has already been visited
+            // distinguish between fwd and bwd
+            let (xwd_costs, xwd_edges, xwd_predecessors) = match current.direction {
+                Direction::FWD => (
+                    &mut self.fwd_costs,
+                    graph.fwd_edges(),
+                    &mut self.predecessors,
+                ),
+                Direction::BWD => (&mut self.bwd_costs, graph.bwd_edges(), &mut self.successors),
+            };
 
-                if current.cost > self.costs[*current.idx] {
-                    continue;
-                }
+            // first occurrence has lowest cost
+            // -> check if current has already been expanded
+            if current.cost > xwd_costs[*current.idx] {
+                continue;
+            }
 
-                //------------------------------------------------------------------------------------//
-                // update costs and add predecessors
-                // of nodes, which are dst of current's leaving edges
+            // update costs and add predecessors
+            // of nodes, which are dst of current's leaving edges
+            let leaving_edges = match xwd_edges.starting_from(current.idx) {
+                Some(e) => e,
+                None => continue,
+            };
+            for leaving_edge in leaving_edges {
+                let new_cost = current.cost
+                    + helpers::scalar_product(&cfg.alphas(), &leaving_edge.metric(&cfg.indices()));
+                if new_cost < xwd_costs[*leaving_edge.dst_idx()] {
+                    xwd_predecessors[*leaving_edge.dst_idx()] = Some(leaving_edge.idx());
+                    xwd_costs[*leaving_edge.dst_idx()] = new_cost;
 
-                let leaving_edges = match fwd_edges.starting_from(current.idx) {
-                    Some(e) => e,
-                    None => continue,
-                };
-                for leaving_edge in leaving_edges {
-                    let new_cost = current.cost + (self.cost_fn)(&leaving_edge);
-                    if new_cost < self.costs[*leaving_edge.dst_idx()] {
-                        self.predecessors[*leaving_edge.dst_idx()] = Some(current.idx);
-                        self.costs[*leaving_edge.dst_idx()] = new_cost;
-
-                        self.queue.push(CostNode {
+                    // if path is found
+                    // -> Run until queue is empty
+                    //    since the shortest path could have longer hop-distance
+                    //    with shorter weight-distance than currently found node.
+                    if best_meeting.is_none() {
+                        self.queue.push(Reverse(CostNode {
                             idx: leaving_edge.dst_idx(),
                             cost: new_cost,
-                            pred_idx: Some(current.idx),
-                        });
+                            direction: current.direction,
+                        }));
                     }
                 }
             }
+        }
 
+        //------------------------------------------------------------------------------------//
+        // create path if found
+
+        if let Some((meeting_node_idx, _total_cost)) = best_meeting {
+            let mut path = Path::with_capacity(
+                src.idx(),
+                dst.idx(),
+                smallvec![0.0; cfg.dim()],
+                graph.nodes().count(),
+            );
+
+            // iterate backwards over fwd-path
+            let mut cur_idx = meeting_node_idx;
+            while let Some(incoming_idx) = self.predecessors[*cur_idx] {
+                // get incoming edge, but reversed to get the forward's src-node
+                let bwd_edges = graph.bwd_edges();
+                let reverse_incoming_edge = bwd_edges.half_edge(incoming_idx);
+
+                // update real path-costs
+                helpers::add_to(
+                    path.cost_mut(),
+                    &reverse_incoming_edge.metric(&cfg.indices()),
+                );
+
+                // add predecessor/successor and prepare next loop-run
+                let pred_idx = reverse_incoming_edge.dst_idx();
+                path.add_pred_succ(pred_idx, cur_idx);
+                cur_idx = pred_idx;
+            }
+
+            // iterate backwards over bwd-path
+            let mut cur_idx = meeting_node_idx;
+            while let Some(leaving_idx) = self.successors[*cur_idx] {
+                // get leaving edge, but reversed to get the backward's src-node
+                let fwd_edges = graph.fwd_edges();
+                let reverse_leaving_edge = fwd_edges.half_edge(leaving_idx);
+
+                // update real path-costs
+                helpers::add_to(
+                    path.cost_mut(),
+                    &reverse_leaving_edge.metric(&cfg.indices()),
+                );
+
+                // add predecessor/successor and prepare next loop-run
+                let succ_idx = reverse_leaving_edge.dst_idx();
+                path.add_pred_succ(cur_idx, succ_idx);
+                cur_idx = succ_idx;
+            }
+
+            // predecessor of src is not set
+            // successor of dst is not set
+            Some(path)
+        } else {
             None
-        }
-    }
-
-    //--------------------------------------------------------------------------------------------//
-
-    #[derive(Copy, Clone)]
-    struct CostNode<M>
-    where
-        M: Metric,
-    {
-        idx: NodeIdx,
-        cost: M,
-        pred_idx: Option<NodeIdx>,
-    }
-
-    mod costnode {
-        use super::CostNode;
-        use crate::units::Metric;
-        use std::cmp::Ordering;
-
-        impl<M> Ord for CostNode<M>
-        where
-            M: Metric + Ord,
-        {
-            fn cmp(&self, other: &CostNode<M>) -> Ordering {
-                // (1) cost in float, but cmp uses only m, which is ok
-                // (2) inverse order since BinaryHeap is max-heap, but min-heap is needed
-                other
-                    .cost
-                    .cmp(&(self.cost))
-                    .then_with(|| other.idx.cmp(&self.idx))
-            }
-        }
-
-        impl<M> PartialOrd for CostNode<M>
-        where
-            M: Metric + PartialOrd,
-        {
-            fn partial_cmp(&self, other: &CostNode<M>) -> Option<Ordering> {
-                let order = other.cost.partial_cmp(&(self.cost))?;
-                if order == Ordering::Equal {
-                    other.idx.partial_cmp(&self.idx)
-                } else {
-                    Some(order)
-                }
-            }
-        }
-
-        impl<M> Eq for CostNode<M> where M: Metric + Eq {}
-
-        impl<M> PartialEq for CostNode<M>
-        where
-            M: Metric + PartialEq,
-        {
-            fn eq(&self, other: &CostNode<M>) -> bool {
-                self.idx == other.idx && self.cost == other.cost
-            }
         }
     }
 }
 
-//------------------------------------------------------------------------------------------------//
+#[derive(Copy, Clone, Debug)]
+enum Direction {
+    FWD,
+    BWD,
+}
 
-pub mod bidirectional {
-    use super::{Astar, Path};
-    use crate::{
-        network::{Graph, HalfEdge, Node, NodeIdx},
-        units::Metric,
+#[derive(Clone)]
+struct CostNode {
+    idx: NodeIdx,
+    cost: f32,
+    direction: Direction,
+}
+
+mod costnode {
+    use super::{CostNode, Direction};
+    use crate::helpers::{ApproxCmp, ApproxEq};
+    use std::{
+        cmp::Ordering,
+        fmt::{self, Display},
     };
-    use std::{collections::BinaryHeap, ops::Add};
 
-    /// Cost-function, Estimation-function and Metric
-    pub struct GenericAstar<C, M>
-    where
-        C: Fn(&HalfEdge) -> M,
-        M: Metric,
-    {
-        cost_fn: C,
-        queue: BinaryHeap<CostNode<M>>, // max-heap, but CostNode's natural order is reversed
-        // fwd
-        fwd_costs: Vec<M>,
-        predecessors: Vec<Option<NodeIdx>>,
-        is_visited_by_src: Vec<bool>,
-        // bwd
-        bwd_costs: Vec<M>,
-        successors: Vec<Option<NodeIdx>>,
-        is_visited_by_dst: Vec<bool>,
-    }
-
-    impl<C, M> GenericAstar<C, M>
-    where
-        C: Fn(&HalfEdge) -> M,
-        M: Metric + Ord + Add<M, Output = M>,
-    {
-        pub fn new(cost_fn: C) -> GenericAstar<C, M> {
-            GenericAstar {
-                cost_fn,
-                queue: BinaryHeap::new(),
-                // fwd
-                fwd_costs: vec![M::inf(); 0],
-                predecessors: vec![None; 0],
-                is_visited_by_src: vec![false; 0],
-                // bwd
-                bwd_costs: vec![M::inf(); 0],
-                successors: vec![None; 0],
-                is_visited_by_dst: vec![false; 0],
-            }
-        }
-
-        /// Resizes existing datastructures storing routing-data like costs saving re-allocations.
-        fn resize(&mut self, new_len: usize) {
-            // fwd
-            self.fwd_costs.splice(.., vec![M::inf(); new_len]);
-            self.predecessors.splice(.., vec![None; new_len]);
-            self.is_visited_by_src.splice(.., vec![false; new_len]);
-            // bwd
-            self.bwd_costs.splice(.., vec![M::inf(); new_len]);
-            self.successors.splice(.., vec![None; new_len]);
-            self.is_visited_by_dst.splice(.., vec![false; new_len]);
-
-            self.queue.clear();
-        }
-
-        /// The given costnode is a meeting-costnode, if it is visited by both, the search starting in src and the search starting in dst.
-        fn is_meeting_costnode(&self, costnode: &CostNode<M>) -> bool {
-            self.is_visited_by_src[*costnode.idx] && self.is_visited_by_dst[*costnode.idx]
-        }
-
-        fn visit(&mut self, costnode: &CostNode<M>) {
-            match costnode.direction {
-                Direction::FWD => self.is_visited_by_src[*costnode.idx] = true,
-                Direction::BWD => self.is_visited_by_dst[*costnode.idx] = true,
-            }
-        }
-
-        fn total_cost(&self, costnode: &CostNode<M>) -> M {
-            self.fwd_costs[*costnode.idx] + self.bwd_costs[*costnode.idx]
+    impl Display for CostNode {
+        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+            write!(
+                f,
+                "{{ idx: {}, cost: {}, {} }}",
+                self.idx, self.cost, self.direction
+            )
         }
     }
 
-    impl<C, M> Astar<M> for GenericAstar<C, M>
-    where
-        C: Fn(&HalfEdge) -> M,
-        M: Metric + Ord + Add<M, Output = M>,
-    {
-        fn compute_best_path(&mut self, src: &Node, dst: &Node, graph: &Graph) -> Option<Path<M>> {
-            //------------------------------------------------------------------------------------//
-            // initialization-stuff
-
-            let nodes = graph.nodes();
-            let fwd_edges = graph.fwd_edges();
-            let bwd_edges = graph.bwd_edges();
-            self.resize(nodes.count());
-            let mut best_meeting: Option<(CostNode<M>, M)> = None;
-
-            //------------------------------------------------------------------------------------//
-            // prepare first iteration(s)
-
-            // push src-node
-            self.queue.push(CostNode {
-                idx: src.idx(),
-                cost: M::zero(),
-                pred_idx: None,
-                direction: Direction::FWD,
-            });
-            // push dst-node
-            self.queue.push(CostNode {
-                idx: dst.idx(),
-                cost: M::zero(),
-                pred_idx: None,
-                direction: Direction::BWD,
-            });
-            // update fwd-stats
-            self.fwd_costs[*src.idx()] = M::zero();
-            // update bwd-stats
-            self.bwd_costs[*dst.idx()] = M::zero();
-
-            //------------------------------------------------------------------------------------//
-            // search for shortest path
-
-            while let Some(current) = self.queue.pop() {
-                // if path is found
-                // -> remember best meeting-node
-                self.visit(&current);
-                if self.is_meeting_costnode(&current) {
-                    if let Some((_meeting_node, total_cost)) = best_meeting {
-                        // if meeting-node is already found
-                        // check if new meeting-node is better
-                        let new_total_cost = self.total_cost(&current);
-                        if new_total_cost < total_cost {
-                            best_meeting = Some((current, new_total_cost));
-                        }
-                    } else {
-                        best_meeting = Some((current, self.total_cost(&current)));
-                    }
-                }
-
-                // distinguish between fwd and bwd
-                let (xwd_costs, xwd_edges, xwd_predecessors) = match current.direction {
-                    Direction::FWD => (&mut self.fwd_costs, &fwd_edges, &mut self.predecessors),
-                    Direction::BWD => (&mut self.bwd_costs, &bwd_edges, &mut self.successors),
-                };
-
-                // first occurrence has lowest cost
-                // -> check if current has already been expanded
-                if current.cost > xwd_costs[*current.idx] {
-                    continue;
-                }
-
-                // update costs and add predecessors
-                // of nodes, which are dst of current's leaving edges
-                let leaving_edges = match xwd_edges.starting_from(current.idx) {
-                    Some(e) => e,
-                    None => continue,
-                };
-                for leaving_edge in leaving_edges {
-                    let new_cost = current.cost + (self.cost_fn)(&leaving_edge);
-                    if new_cost < xwd_costs[*leaving_edge.dst_idx()] {
-                        xwd_predecessors[*leaving_edge.dst_idx()] = Some(current.idx);
-                        xwd_costs[*leaving_edge.dst_idx()] = new_cost;
-
-                        // if path is found
-                        // -> Run until queue is empty
-                        //    since the shortest path could have longer hop-distance
-                        //    with shorter weight-distance than currently found node.
-                        if best_meeting.is_none() {
-                            self.queue.push(CostNode {
-                                idx: leaving_edge.dst_idx(),
-                                cost: new_cost,
-                                pred_idx: Some(current.idx),
-                                direction: current.direction,
-                            });
-                        }
-                    }
-                }
-            }
-
-            //------------------------------------------------------------------------------------//
-            // create path if found
-
-            if let Some((meeting_node, total_cost)) = best_meeting {
-                let mut path = Path::with_capacity(src.idx(), dst.idx(), nodes.count());
-                *(path.cost_mut()) = total_cost;
-
-                // iterate backwards over fwd-path
-                let mut cur_idx = meeting_node.idx;
-                while let Some(pred_idx) = self.predecessors[*cur_idx] {
-                    path.add_pred_succ(pred_idx, cur_idx);
-                    cur_idx = pred_idx;
-                }
-
-                // iterate backwards over bwd-path
-                let mut cur_idx = meeting_node.idx;
-                while let Some(succ_idx) = self.successors[*cur_idx] {
-                    path.add_pred_succ(cur_idx, succ_idx);
-                    cur_idx = succ_idx;
-                }
-
-                // predecessor of src is not set
-                // successor of dst is not set
-                Some(path)
-            } else {
-                None
-            }
+    impl Ord for CostNode {
+        fn cmp(&self, other: &CostNode) -> Ordering {
+            self.cost
+                .approx_cmp(&other.cost)
+                .then_with(|| self.idx.cmp(&other.idx))
+                .then_with(|| self.direction.cmp(&other.direction))
         }
     }
 
-    //--------------------------------------------------------------------------------------------//
-
-    #[derive(Copy, Clone)]
-    struct CostNode<M>
-    where
-        M: Metric,
-    {
-        idx: NodeIdx,
-        cost: M,
-        pred_idx: Option<NodeIdx>,
-        direction: Direction,
+    impl PartialOrd for CostNode {
+        fn partial_cmp(&self, other: &CostNode) -> Option<Ordering> {
+            Some(
+                self.cost
+                    .approx_partial_cmp(&other.cost)?
+                    .then_with(|| self.idx.cmp(&other.idx))
+                    .then_with(|| self.direction.cmp(&other.direction)),
+            )
+        }
     }
 
-    #[derive(Copy, Clone, Debug)]
-    enum Direction {
-        FWD,
-        BWD,
+    impl Eq for CostNode {}
+
+    impl PartialEq for CostNode {
+        fn eq(&self, other: &CostNode) -> bool {
+            self.idx == other.idx
+                && self.direction == other.direction
+                && self.cost.approx_eq(&other.cost)
+        }
     }
 
-    mod costnode {
-        use super::{CostNode, Direction};
-        use crate::units::Metric;
-        use std::{cmp::Ordering, fmt, fmt::Display};
-
-        impl<M> Display for CostNode<M>
-        where
-            M: Metric,
-        {
-            fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-                write!(
-                    f,
-                    "{{ idx: {}, cost: {}, pred-idx: {}, {} }}",
-                    self.idx,
-                    self.cost,
-                    match self.pred_idx {
-                        Some(idx) => format!("{}", idx),
-                        None => String::from("None"),
-                    },
-                    self.direction
-                )
-            }
+    impl Display for Direction {
+        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+            write!(
+                f,
+                "{}",
+                match self {
+                    Direction::FWD => "forward",
+                    Direction::BWD => "backward",
+                }
+            )
         }
+    }
 
-        impl<M> Ord for CostNode<M>
-        where
-            M: Metric + Ord,
-        {
-            fn cmp(&self, other: &CostNode<M>) -> Ordering {
-                // (1) cost in float, but cmp uses only m, which is ok
-                // (2) inverse order since BinaryHeap is max-heap, but min-heap is needed
-                other
-                    .cost
-                    .cmp(&(self.cost))
-                    .then_with(|| other.idx.cmp(&self.idx))
-                    .then_with(|| other.direction.cmp(&self.direction))
-            }
+    impl Ord for Direction {
+        fn cmp(&self, other: &Direction) -> Ordering {
+            let self_value = match self {
+                Direction::FWD => 1,
+                Direction::BWD => -1,
+            };
+            let other_value = match other {
+                Direction::FWD => 1,
+                Direction::BWD => -1,
+            };
+            self_value.cmp(&other_value)
         }
+    }
 
-        impl<M> PartialOrd for CostNode<M>
-        where
-            M: Metric + Ord,
-        {
-            fn partial_cmp(&self, other: &CostNode<M>) -> Option<Ordering> {
-                Some(self.cmp(other))
-            }
+    impl PartialOrd for Direction {
+        fn partial_cmp(&self, other: &Direction) -> Option<Ordering> {
+            Some(self.cmp(other))
         }
+    }
 
-        impl<M> Eq for CostNode<M> where M: Metric + Ord {}
+    impl Eq for Direction {}
 
-        impl<M> PartialEq for CostNode<M>
-        where
-            M: Metric + Ord,
-        {
-            fn eq(&self, other: &CostNode<M>) -> bool {
-                self.cmp(other) == Ordering::Equal
-            }
-        }
-
-        impl Display for Direction {
-            fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-                write!(
-                    f,
-                    "{}",
-                    match self {
-                        Direction::FWD => "forward",
-                        Direction::BWD => "backward",
-                    }
-                )
-            }
-        }
-
-        impl Ord for Direction {
-            fn cmp(&self, other: &Direction) -> Ordering {
-                let self_value = match self {
-                    Direction::FWD => 1,
-                    Direction::BWD => -1,
-                };
-                let other_value = match other {
-                    Direction::FWD => 1,
-                    Direction::BWD => -1,
-                };
-                self_value.cmp(&other_value)
-            }
-        }
-
-        impl PartialOrd for Direction {
-            fn partial_cmp(&self, other: &Direction) -> Option<Ordering> {
-                Some(self.cmp(other))
-            }
-        }
-
-        impl Eq for Direction {}
-
-        impl PartialEq for Direction {
-            fn eq(&self, other: &Direction) -> bool {
-                self.cmp(other) == Ordering::Equal
-            }
+    impl PartialEq for Direction {
+        fn eq(&self, other: &Direction) -> bool {
+            self.cmp(other) == Ordering::Equal
         }
     }
 }

@@ -15,7 +15,7 @@ jobs:
     - name: Run tests
       run: |
         cargo test --verbose
-        cargo run --example astar
+        cargo run --example dijkstra
         cargo run --example parser
         cargo fmt -- --check
     - name: Build docs
@@ -33,7 +33,7 @@ jobs:
     - name: Run tests
       run: |
         cargo test --verbose
-        cargo run --example astar
+        cargo run --example dijkstra
         cargo run --example parser
         cargo fmt -- --check
   nightly:
@@ -52,7 +52,7 @@ jobs:
     - name: Run tests
       run: |
         cargo test --verbose
-        cargo run --example astar
+        cargo run --example dijkstra
         cargo run --example parser
         cargo fmt -- --check
       continue-on-error: true

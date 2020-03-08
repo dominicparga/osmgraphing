@@ -1,109 +1,66 @@
-//------------------------------------------------------------------------------------------------//
-// own modules
-
-//------------------------------------------------------------------------------------------------//
-// other modules
-
-use super::{length::Meters, speed::KilometersPerHour, Metric};
+use super::{length::Kilometers, speed::KilometersPerHour};
 use std::{
     fmt,
     fmt::Display,
-    ops::{Add, AddAssign, Deref, DerefMut, Mul, MulAssign},
+    ops::{Add, AddAssign, Deref, DerefMut, Mul, Sub, SubAssign},
 };
 
-//------------------------------------------------------------------------------------------------//
+#[derive(Debug, Default, Clone, Copy, PartialOrd, PartialEq)]
+pub struct Seconds(pub f32);
 
-#[derive(Debug, Default, Clone, Copy, Ord, PartialOrd, Eq, PartialEq)]
-pub struct Milliseconds(pub u32);
-
-impl Display for Milliseconds {
+impl Display for Seconds {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{} ms", self.0)
+        write!(f, "{} s", self.0)
     }
 }
 
-impl Metric for Milliseconds {
-    fn zero() -> Milliseconds {
-        Milliseconds(0)
-    }
+impl Deref for Seconds {
+    type Target = f32;
 
-    fn neg_inf() -> Milliseconds {
-        Milliseconds(std::u32::MIN)
-    }
-
-    fn inf() -> Milliseconds {
-        Milliseconds(std::u32::MAX)
-    }
-}
-
-impl Deref for Milliseconds {
-    type Target = u32;
-
-    fn deref(&self) -> &u32 {
+    fn deref(&self) -> &f32 {
         &self.0
     }
 }
 
-impl DerefMut for Milliseconds {
-    fn deref_mut(&mut self) -> &mut u32 {
+impl DerefMut for Seconds {
+    fn deref_mut(&mut self) -> &mut f32 {
         &mut self.0
     }
 }
 
-//--------------------------------------------------------------------------------------------//
-// arithmetic operations
+impl Add<Seconds> for Seconds {
+    type Output = Seconds;
 
-impl Add<Milliseconds> for Milliseconds {
-    type Output = Milliseconds;
-
-    fn add(self, other: Milliseconds) -> Milliseconds {
-        Milliseconds(self.0 + other.0)
+    fn add(self, other: Seconds) -> Seconds {
+        Seconds(self.0 + other.0)
     }
 }
 
-impl AddAssign<Milliseconds> for Milliseconds {
-    fn add_assign(&mut self, other: Milliseconds) {
+impl AddAssign<Seconds> for Seconds {
+    fn add_assign(&mut self, other: Seconds) {
         self.0 += other.0;
     }
 }
 
-impl Mul<u32> for Milliseconds {
-    type Output = Milliseconds;
+impl Sub<Seconds> for Seconds {
+    type Output = Seconds;
 
-    fn mul(self, scale: u32) -> Milliseconds {
-        Milliseconds(self.0 * scale)
+    fn sub(self, other: Seconds) -> Seconds {
+        Seconds(self.0 - other.0)
     }
 }
 
-impl MulAssign<u32> for Milliseconds {
-    fn mul_assign(&mut self, scale: u32) {
-        self.0 *= scale;
-    }
-}
-
-impl Mul<f64> for Milliseconds {
-    type Output = Milliseconds;
-
-    fn mul(self, scale: f64) -> Milliseconds {
-        let new_value = scale * (self.0 as f64) * scale;
-        Milliseconds(new_value as u32)
-    }
-}
-
-impl MulAssign<f64> for Milliseconds {
-    fn mul_assign(&mut self, scale: f64) {
-        let new_value = scale * (self.0 as f64);
-        self.0 = new_value as u32;
+impl SubAssign<Seconds> for Seconds {
+    fn sub_assign(&mut self, other: Seconds) {
+        self.0 -= other.0;
     }
 }
 
 /// s = v * t
-impl Mul<KilometersPerHour> for Milliseconds {
-    type Output = Meters;
+impl Mul<KilometersPerHour> for Seconds {
+    type Output = Kilometers;
 
-    fn mul(self, rhs: KilometersPerHour) -> Meters {
-        let time = self.0;
-        let speed = *rhs;
-        Meters(speed * time / 3_600)
+    fn mul(self, speed: KilometersPerHour) -> Kilometers {
+        Kilometers((*speed) * self.0 / 3_600.0)
     }
 }

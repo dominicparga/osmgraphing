@@ -71,7 +71,7 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 
 - Implement `zero()` for `geo::Coordinate`.
 - Implement trait `Metric` for `u32`.
-- Add __format-check__ to github-action.
+- Add __format-check__ to github-action (`cargo fmt -- --check`).
 - Support __mulitple metrics__, where the number is only known during runtime.
 - __Parse graph__ with config instead of map-file, which can be provided as `yaml`-file.
   - Let __metrics__ have __ids__.
@@ -285,126 +285,126 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 
 ## [v0.6.1][github/self/v0.6.1] <a name="v0.6.1"></a>
 
-### Deprecated <a name="0.6.1/deprecated"></a>
+### Deprecated <a name="v0.6.1/deprecated"></a>
 
 - todo
 
 
 ## [v0.6.0][github/self/v0.6.0] <a name="v0.6.0"></a>
 
-### Deprecated <a name="0.6.0/deprecated"></a>
+### Deprecated <a name="v0.6.0/deprecated"></a>
 
 - todo
 
 
 ## [v0.5.0][github/self/v0.5.0] <a name="v0.5.0"></a>
 
-### Deprecated <a name="0.5.0/deprecated"></a>
+### Deprecated <a name="v0.5.0/deprecated"></a>
 
 - todo
 
 
 ## [v0.4.1][github/self/v0.4.1] <a name="v0.4.1"></a>
 
-### Deprecated <a name="0.4.1/deprecated"></a>
+### Deprecated <a name="v0.4.1/deprecated"></a>
 
 - todo
 
 
 ## [v0.4.0][github/self/v0.4.0] <a name="v0.4.0"></a>
 
-### Deprecated <a name="0.4.0/deprecated"></a>
+### Deprecated <a name="v0.4.0/deprecated"></a>
 
 - todo
 
 
 ## [v0.3.1][github/self/v0.3.1] <a name="v0.3.1"></a>
 
-### Deprecated <a name="0.3.1/deprecated"></a>
+### Deprecated <a name="v0.3.1/deprecated"></a>
 
 - todo
 
 
 ## [v0.3.0][github/self/v0.3.0] <a name="v0.3.0"></a>
 
-### Deprecated <a name="0.3.0/deprecated"></a>
+### Deprecated <a name="v0.3.0/deprecated"></a>
 
 - todo
 
 
 ## [v0.2.4][github/self/v0.2.4] <a name="v0.2.4"></a>
 
-### Deprecated <a name="0.2.4/deprecated"></a>
+### Deprecated <a name="v0.2.4/deprecated"></a>
 
 - todo
 
 
 ## [v0.2.3][github/self/v0.2.3] <a name="v0.2.3"></a>
 
-### Deprecated <a name="0.2.3/deprecated"></a>
+### Deprecated <a name="v0.2.3/deprecated"></a>
 
 - todo
 
 
 ## [v0.2.2][github/self/v0.2.2] <a name="v0.2.2"></a>
 
-### Deprecated <a name="0.2.2/deprecated"></a>
+### Deprecated <a name="v0.2.2/deprecated"></a>
 
 - todo
 
 
 ## [v0.2.1][github/self/v0.2.1] <a name="v0.2.1"></a>
 
-### Deprecated <a name="0.2.1/deprecated"></a>
+### Deprecated <a name="v0.2.1/deprecated"></a>
 
 - todo
 
 
 ## [v0.2.0][github/self/v0.2.0] <a name="v0.2.0"></a>
 
-### Deprecated <a name="0.2.0/deprecated"></a>
+### Deprecated <a name="v0.2.0/deprecated"></a>
 
 - todo
 
 
 ## [v0.1.5][github/self/v0.1.5] <a name="v0.1.5"></a>
 
-### Deprecated <a name="0.1.5/deprecated"></a>
+### Deprecated <a name="v0.1.5/deprecated"></a>
 
 - todo
 
 
 ## [v0.1.4][github/self/v0.1.4] <a name="v0.1.4"></a>
 
-### Deprecated <a name="0.1.4/deprecated"></a>
+### Deprecated <a name="v0.1.4/deprecated"></a>
 
 - todo
 
 
 ## [v0.1.3][github/self/v0.1.3] <a name="v0.1.3"></a>
 
-### Deprecated <a name="0.1.3/deprecated"></a>
+### Deprecated <a name="v0.1.3/deprecated"></a>
 
 - todo
 
 
 ## [v0.1.2][github/self/v0.1.2] <a name="v0.1.2"></a>
 
-### Deprecated <a name="0.1.2/deprecated"></a>
+### Deprecated <a name="v0.1.2/deprecated"></a>
 
 - todo
 
 
 ## [v0.1.1][github/self/v0.1.1] <a name="v0.1.1"></a>
 
-### Deprecated <a name="0.1.1/deprecated"></a>
+### Deprecated <a name="v0.1.1/deprecated"></a>
 
 - todo
 
 
 ## [v0.1.0][github/self/v0.1.0] <a name="v0.1.0"></a>
 
-### Deprecated <a name="0.1.0/deprecated"></a>
+### Deprecated <a name="v0.1.0/deprecated"></a>
 
 - todo
 

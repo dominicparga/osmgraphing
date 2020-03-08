@@ -5,13 +5,16 @@ graph:
     are-drivers-picky: false
   edges:
     metrics:
-    - category: 'Id'
-      id: 'src-id'
-    - category: 'Id'
-      id: 'dst-id'
-    - category: 'Length'
-    - category: 'Ignore'
-    - category: 'Maxspeed'
-    - category: 'Duration'
-      is-provided: false
-      calc-rules: ['Length', 'Maxspeed']
+      - category: 'Id'
+        id: 'src-id'
+      - category: 'Id'
+        id: 'dst-id'
+      - category: 'Meters'
+      - category: 'Ignore'
+      - category: 'KilometersPerHour'
+      - category: 'Seconds'
+        is-provided: false
+        calc-rules: ['Meters', 'KilometersPerHour']
+
+routing:
+  - id: 'Meters'

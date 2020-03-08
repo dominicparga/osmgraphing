@@ -1,7 +1,15 @@
 use log::{error, info};
-use osmgraphing::{configs::Config, helpers, network::NodeIdx, routing, Parser};
-use rand::distributions::{Distribution, Uniform};
-use rand::SeedableRng;
+use osmgraphing::{
+    configs::Config,
+    helpers,
+    network::NodeIdx,
+    routing::{self},
+    Parser,
+};
+use rand::{
+    distributions::{Distribution, Uniform},
+    SeedableRng,
+};
 use std::{path::PathBuf, time::Instant};
 
 //------------------------------------------------------------------------------------------------//
@@ -25,7 +33,7 @@ use std::{path::PathBuf, time::Instant};
 //------------------------------------------------------------------------------------------------//
 
 fn main() {
-    helpers::init_logging("INFO", vec!["astar"]).expect("LogLevel 'INFO' does exist.");
+    helpers::init_logging("INFO", vec!["dijkstra"]).expect("LogLevel 'INFO' does exist.");
     info!("Executing example: A*");
 
     // get config by provided map-file
@@ -42,6 +50,10 @@ fn main() {
             }
         }
     };
+    if cfg.routing.dim() <= 0 {
+        error!("The provided config does not specify routing-parameters.");
+        return;
+    }
 
     // measure parsing-time
     let now = Instant::now();
@@ -62,12 +74,10 @@ fn main() {
     info!("{}", graph);
 
     //--------------------------------------------------------------------------------------------//
-    // astar
+    // dijkstra
 
     let nodes = graph.nodes();
-    let mut astar = routing::factory::astar::unidirectional::shortest(
-        graph.cfg().edges.metrics.idx(&"Length".into()),
-    );
+    let mut dijkstra = routing::Dijkstra::new();
 
     // generate random route-pairs
     let route_count = 100;
@@ -103,14 +113,13 @@ fn main() {
         info!("");
 
         let now = Instant::now();
-        let option_path = astar.compute_best_path(&src, &dst, &graph);
+        let option_path = dijkstra.compute_best_path(&src, &dst, &graph, &cfg.routing);
         info!(
-            "Ran A* in {} µs a.k.a {} seconds",
-            now.elapsed().as_micros(),
-            now.elapsed().as_secs()
+            "Ran Dijkstra-query in {} ms",
+            now.elapsed().as_micros() as f32 / 1_000.0,
         );
         if let Some(path) = option_path {
-            info!("Distance {} from ({}) to ({}).", path.cost(), src, dst);
+            info!("Cost {:?} from ({}) to ({}).", path.cost(), src, dst);
         } else {
             info!("No path from ({}) to ({}).", src, dst);
         }

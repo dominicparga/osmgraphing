@@ -1,20 +1,12 @@
-//------------------------------------------------------------------------------------------------//
-// own modules
-
-//------------------------------------------------------------------------------------------------//
-// other modules
-
-use super::{length::Meters, time::Milliseconds, Metric};
+use super::{length::Kilometers, time::Seconds};
 use std::{
     fmt,
     fmt::Display,
-    ops::{Add, AddAssign, Deref, DerefMut, Div, DivAssign, Mul, MulAssign},
+    ops::{Add, AddAssign, Deref, DerefMut, Mul, Sub, SubAssign},
 };
 
-//------------------------------------------------------------------------------------------------//
-
-#[derive(Debug, Default, Clone, Copy, Ord, PartialOrd, Eq, PartialEq)]
-pub struct KilometersPerHour(pub u32);
+#[derive(Debug, Default, Clone, Copy, PartialOrd, PartialEq)]
+pub struct KilometersPerHour(pub f32);
 
 impl Display for KilometersPerHour {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -22,36 +14,19 @@ impl Display for KilometersPerHour {
     }
 }
 
-impl Metric for KilometersPerHour {
-    fn zero() -> KilometersPerHour {
-        KilometersPerHour(0)
-    }
-
-    fn neg_inf() -> KilometersPerHour {
-        KilometersPerHour(std::u32::MIN)
-    }
-
-    fn inf() -> KilometersPerHour {
-        KilometersPerHour(std::u32::MAX)
-    }
-}
-
 impl Deref for KilometersPerHour {
-    type Target = u32;
+    type Target = f32;
 
-    fn deref(&self) -> &u32 {
+    fn deref(&self) -> &f32 {
         &self.0
     }
 }
 
 impl DerefMut for KilometersPerHour {
-    fn deref_mut(&mut self) -> &mut u32 {
+    fn deref_mut(&mut self) -> &mut f32 {
         &mut self.0
     }
 }
-
-//--------------------------------------------------------------------------------------------//
-// arithmetic operations
 
 impl Add<KilometersPerHour> for KilometersPerHour {
     type Output = KilometersPerHour;
@@ -67,57 +42,25 @@ impl AddAssign<KilometersPerHour> for KilometersPerHour {
     }
 }
 
-impl Mul<u32> for KilometersPerHour {
+impl Sub<KilometersPerHour> for KilometersPerHour {
     type Output = KilometersPerHour;
 
-    fn mul(self, scale: u32) -> KilometersPerHour {
-        KilometersPerHour(scale * self.0)
+    fn sub(self, other: KilometersPerHour) -> KilometersPerHour {
+        KilometersPerHour(self.0 - other.0)
     }
 }
 
-impl MulAssign<u32> for KilometersPerHour {
-    fn mul_assign(&mut self, scale: u32) {
-        self.0 *= scale;
+impl SubAssign<KilometersPerHour> for KilometersPerHour {
+    fn sub_assign(&mut self, other: KilometersPerHour) {
+        self.0 -= other.0;
     }
 }
 
 /// s = v * t
-impl Mul<Milliseconds> for KilometersPerHour {
-    type Output = Meters;
+impl Mul<Seconds> for KilometersPerHour {
+    type Output = Kilometers;
 
-    fn mul(self, rhs: Milliseconds) -> Meters {
-        let speed = self.0 as u32;
-        let time = *rhs;
-        Meters(speed * time / 3_600)
-    }
-}
-
-impl Div<u32> for KilometersPerHour {
-    type Output = KilometersPerHour;
-
-    fn div(self, rhs: u32) -> KilometersPerHour {
-        KilometersPerHour(self.0 / rhs)
-    }
-}
-
-impl DivAssign<u32> for KilometersPerHour {
-    fn div_assign(&mut self, rhs: u32) {
-        self.0 /= rhs;
-    }
-}
-
-impl Mul<f64> for KilometersPerHour {
-    type Output = KilometersPerHour;
-
-    fn mul(self, scale: f64) -> KilometersPerHour {
-        let new_value = scale * (self.0 as f64) * scale;
-        KilometersPerHour(new_value as u32)
-    }
-}
-
-impl MulAssign<f64> for KilometersPerHour {
-    fn mul_assign(&mut self, scale: f64) {
-        let new_value = scale * (self.0 as f64);
-        self.0 = new_value as u32;
+    fn mul(self, duration: Seconds) -> Kilometers {
+        Kilometers(self.0 * (*duration) / 3_600.0)
     }
 }

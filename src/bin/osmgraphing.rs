@@ -1,4 +1,3 @@
-use log::error;
 use osmgraphing::helpers;
 
 fn main() {
@@ -6,8 +5,7 @@ fn main() {
     match helpers::init_logging(matches.value_of("log").unwrap(), vec![]) {
         Ok(_) => (),
         Err(msg) => {
-            error!("{}", msg);
-            std::process::exit(1);
+            panic!("{}", msg);
         }
     };
 
@@ -40,7 +38,7 @@ fn parse_cmdline<'a>() -> clap::ArgMatches<'a> {
             (&[
                 "",
                 "You can set up the logger by setting RUST_LOG, e.g. to",
-                "    export RUST_LOG='warn,osmgraphing=info,parser=info,astar=info'",
+                "    export RUST_LOG='warn,osmgraphing=info,parser=info,dijkstra=info'",
                 "for getting 'warn's per default, but 'info' about the others (e.g. 'parser').",
                 "RUST_LOG is set up automatically, setting RUST_LOG to 'info'",
                 "for relevant parts of the software, but consider the flag '--logging'.",
