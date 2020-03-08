@@ -37,27 +37,37 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 
 ### Added <a name="unreleased/added"></a>
 
-\-
+- Add __routing-config-support__.
 
 
 ### Changed <a name="unreleased/changed"></a>
 
-\-
+- Rename __container-structs__ in graph to accessors, since they are only accessing, not owning the graph's data.
+- Refactor __`notes.md`__.
+- Rename __metric-categories__ in configs as the expected unit (like `Length` -> `Meters`), because explicit is better than implicit.
+- Format config-files.
+- Make __logging-level__ 
 
 
 ### Deprecated <a name="unreleased/deprecated"></a>
 
-\-
+- Documentation is missing, though comments are very well.
+- `CHANGELOG.md` contains empty version-descriptions.
+  - Replace existing tags with ones referring to `CHANGELOG.md` and add old tag-texts to the `CHANGELOG.md`
+  - Inconsistent `semver` in old tags -> probably `cargo yank VERSION` needed
+- The link to `doc.rs` is hardcoded to `major.minor.patch=0.y.z` because `docs.rs` chooses version `1.0.0` though it's yanked..
 
 
 ### Removed <a name="unreleased/removed"></a>
 
-\-
+- Remove __`Astar`__ completely, since this project will be used with multiple (custom) metrics and a graph contracted via contraction hierarchies.
+  The old implementation is kept in a `kutgw`-branch.
+- Remove __`unidirectional Dijkstra`__ since the `bidirectional Dijkstra` uses only one priority-queue, so overhead for short routes is, if existent, very small.
 
 
 ### Fixed <a name="unreleased/fixed"></a>
 
-\-
+- Fix markdown-references in old headings in __`CHANGELOG.md`__.
 
 
 ### Security <a name="unreleased/security"></a>
@@ -117,6 +127,7 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
   - Replace existing tags with ones referring to `CHANGELOG.md` and add old tag-texts to the `CHANGELOG.md`
   - Inconsistent `semver` in old tags -> probably `cargo yank VERSION` needed
 - The link to `doc.rs` is hardcoded to `major.minor.patch=0.y.z` because `docs.rs` chooses version `1.0.0` though it's yanked..
+- `CHANGELOG.md` has wrong markdown-references in old headings.
 
 
 ### Removed <a name="v0.9.0/removed"></a>
