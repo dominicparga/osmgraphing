@@ -107,7 +107,7 @@ impl super::Parsing for Parser {
                             ));
                         }
                     }
-                    MetricCategory::Id | MetricCategory::Ignore => (),
+                    MetricCategory::NodeId | MetricCategory::Ignore => (),
                 }
             }
 

@@ -56,7 +56,7 @@ fn main() {
     };
     if cfg.routing.dim() > 0 {
         info!(
-            "EXECUTE Parse graph, then do routing with {} metrics.",
+            "EXECUTE Parse graph, then do routing with {} metric(s).",
             cfg.routing.dim()
         );
     } else {

@@ -233,7 +233,7 @@ mod intern {
                 )?;
 
                 match metric_type {
-                    MetricCategory::Id => {
+                    MetricCategory::NodeId => {
                         // get src-id and dst-id to create unfinished-edge afterwards
                         if src_id.is_none() {
                             src_id = Some(param.parse::<i64>().ok().ok_or(format!(

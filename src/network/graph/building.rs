@@ -11,22 +11,18 @@ use progressing;
 use progressing::Bar;
 use std::{cmp::Reverse, collections::BTreeMap, mem};
 
-//------------------------------------------------------------------------------------------------//
-
 #[derive(Debug)]
 pub struct ProtoNode {
     id: i64,
     coord: Option<Coordinate>,
-    edge_count: u16,
+    is_in_edge: bool,
 }
 
 impl ProtoNode {
     fn is_in_edge(&self) -> bool {
-        self.edge_count > 0
+        self.is_in_edge
     }
 }
-
-//------------------------------------------------------------------------------------------------//
 
 #[derive(Debug)]
 pub struct ProtoEdge {
@@ -42,9 +38,6 @@ struct MiniProtoEdge {
     dst_id: i64,
     idx: usize,
 }
-
-//------------------------------------------------------------------------------------------------//
-// graphbuilding
 
 /// private stuff for graph-building
 impl Graph {
@@ -191,7 +184,7 @@ impl Graph {
                     }
                     MetricCategory::LaneCount
                     | MetricCategory::Custom
-                    | MetricCategory::Id
+                    | MetricCategory::NodeId
                     | MetricCategory::Ignore => {
                         // Should be set to false here, but being here needs the metric to be none.
                         // This would be bad anyways, because these metrics should be provided, not
@@ -256,7 +249,7 @@ impl GraphBuilder {
                 ProtoNode {
                     id,
                     coord: Some(coord),
-                    edge_count: 0,
+                    is_in_edge: false,
                 },
             );
         }
@@ -275,14 +268,14 @@ impl GraphBuilder {
         // add or update src-node
         let src_id = proto_edge.src_id;
         if let Some(proto_node) = self.proto_nodes.get_mut(&src_id) {
-            proto_node.edge_count += 1;
+            proto_node.is_in_edge = true;
         } else {
             self.proto_nodes.insert(
                 src_id,
                 ProtoNode {
                     id: src_id,
                     coord: None,
-                    edge_count: 1,
+                    is_in_edge: true,
                 },
             );
         }
@@ -290,14 +283,14 @@ impl GraphBuilder {
         // add or update dst-node
         let dst_id = proto_edge.dst_id;
         if let Some(proto_node) = self.proto_nodes.get_mut(&dst_id) {
-            proto_node.edge_count += 1;
+            proto_node.is_in_edge = true;
         } else {
             self.proto_nodes.insert(
                 dst_id,
                 ProtoNode {
                     id: dst_id,
                     coord: None,
-                    edge_count: 1,
+                    is_in_edge: true,
                 },
             );
         }

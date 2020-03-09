@@ -140,7 +140,7 @@ pub enum MetricCategory {
     Seconds,
     LaneCount,
     Custom,
-    Id,
+    NodeId,
     Ignore,
 }
 
@@ -157,13 +157,13 @@ impl MetricCategory {
             | MetricCategory::KilometersPerHour
             | MetricCategory::Seconds
             | MetricCategory::LaneCount => true,
-            MetricCategory::Custom | MetricCategory::Id | MetricCategory::Ignore => false,
+            MetricCategory::Custom | MetricCategory::NodeId | MetricCategory::Ignore => false,
         }
     }
 
     pub fn is_ignored(&self) -> bool {
         match self {
-            MetricCategory::Id | MetricCategory::Ignore => true,
+            MetricCategory::NodeId | MetricCategory::Ignore => true,
             MetricCategory::Meters
             | MetricCategory::KilometersPerHour
             | MetricCategory::Seconds
@@ -183,7 +183,7 @@ impl MetricCategory {
             MetricCategory::Meters
             | MetricCategory::LaneCount
             | MetricCategory::Custom
-            | MetricCategory::Id
+            | MetricCategory::NodeId
             | MetricCategory::Ignore => vec![],
         }
     }

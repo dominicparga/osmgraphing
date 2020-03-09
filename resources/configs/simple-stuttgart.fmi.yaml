@@ -5,9 +5,9 @@ graph:
     are-drivers-picky: false
   edges:
     metrics:
-    - category: 'Id'
+    - category: 'NodeId'
       id: 'src-id'
-    - category: 'Id'
+    - category: 'NodeId'
       id: 'dst-id'
     - category: 'Meters'
     - category: 'Ignore'
