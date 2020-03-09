@@ -1,6 +1,6 @@
 use super::{EdgeIdx, Graph, NodeIdx};
 use crate::{
-    configs::{graph::Config, MetricCategory},
+    configs::{graph::Config, EdgeCategory},
     defaults::DimVec,
     helpers::ApproxEq,
     network::MetricIdx,
@@ -118,13 +118,13 @@ impl Graph {
 
                 // calculate metric dependent on category
                 match category {
-                    MetricCategory::Meters => {
+                    EdgeCategory::Meters => {
                         let src_coord = self.node_coords[*src_idx];
                         let dst_coord = self.node_coords[*dst_idx];
                         proto_edge.metrics[*metric_idx] =
                             Some(*geo::haversine_distance_km(&src_coord, &dst_coord));
                     }
-                    MetricCategory::Seconds => {
+                    EdgeCategory::Seconds => {
                         // get length and maxspeed to calculate duration
                         let mut length = None;
                         let mut maxspeed = None;
@@ -132,8 +132,8 @@ impl Graph {
                         for &(other_type, other_idx) in cfg.calc_rules(metric_idx) {
                             // get values from edge dependent of calculation-rules
                             match other_type {
-                                MetricCategory::Meters => length = proto_edge.metrics[*other_idx],
-                                MetricCategory::KilometersPerHour => {
+                                EdgeCategory::Meters => length = proto_edge.metrics[*other_idx],
+                                EdgeCategory::KilometersPerHour => {
                                     maxspeed = proto_edge.metrics[*other_idx];
                                 }
                                 _ => {
@@ -153,7 +153,7 @@ impl Graph {
                             are_all_metrics_some = false;
                         }
                     }
-                    MetricCategory::KilometersPerHour => {
+                    EdgeCategory::KilometersPerHour => {
                         // get length and duration to calculate maxspeed
                         let mut length = None;
                         let mut duration = None;
@@ -161,8 +161,8 @@ impl Graph {
                         for &(other_type, other_idx) in cfg.calc_rules(metric_idx) {
                             // get values from edge dependent of calculation-rules
                             match other_type {
-                                MetricCategory::Meters => length = proto_edge.metrics[*other_idx],
-                                MetricCategory::Seconds => {
+                                EdgeCategory::Meters => length = proto_edge.metrics[*other_idx],
+                                EdgeCategory::Seconds => {
                                     duration = proto_edge.metrics[*other_idx];
                                 }
                                 _ => {
@@ -182,10 +182,10 @@ impl Graph {
                             are_all_metrics_some = false;
                         }
                     }
-                    MetricCategory::LaneCount
-                    | MetricCategory::Custom
-                    | MetricCategory::NodeId
-                    | MetricCategory::Ignore => {
+                    EdgeCategory::LaneCount
+                    | EdgeCategory::Custom
+                    | EdgeCategory::NodeId
+                    | EdgeCategory::Ignore => {
                         // Should be set to false here, but being here needs the metric to be none.
                         // This would be bad anyways, because these metrics should be provided, not
                         // calculated.

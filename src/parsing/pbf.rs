@@ -1,5 +1,5 @@
 use crate::{
-    configs::{graph, MetricCategory},
+    configs::{graph, EdgeCategory},
     defaults::DimVec,
     helpers,
     network::{GraphBuilder, MetricIdx, ProtoEdge, StreetCategory},
@@ -74,7 +74,7 @@ impl super::Parsing for Parser {
                 let is_provided = cfg.is_provided(metric_idx);
 
                 match category {
-                    MetricCategory::Meters | MetricCategory::Seconds | MetricCategory::Custom => {
+                    EdgeCategory::Meters | EdgeCategory::Seconds | EdgeCategory::Custom => {
                         if is_provided {
                             return Err(format!(
                                 "The {} of an edge in a pbf-file has to be calculated, \
@@ -83,7 +83,7 @@ impl super::Parsing for Parser {
                             ));
                         }
                     }
-                    MetricCategory::KilometersPerHour => {
+                    EdgeCategory::KilometersPerHour => {
                         if is_provided {
                             let maxspeed = highway_tag.parse_maxspeed(&way);
                             metrics[*metric_idx] = Some(maxspeed as f32);
@@ -95,7 +95,7 @@ impl super::Parsing for Parser {
                             ));
                         }
                     }
-                    MetricCategory::LaneCount => {
+                    EdgeCategory::LaneCount => {
                         if is_provided {
                             let lane_count = highway_tag.parse_lane_count(&way);
                             metrics[*metric_idx] = Some(lane_count as f32);
@@ -107,7 +107,7 @@ impl super::Parsing for Parser {
                             ));
                         }
                     }
-                    MetricCategory::NodeId | MetricCategory::Ignore => (),
+                    EdgeCategory::NodeId | EdgeCategory::Ignore => (),
                 }
             }
 

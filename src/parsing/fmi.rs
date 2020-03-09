@@ -147,7 +147,7 @@ impl super::Parsing for Parser {
 
 mod intern {
     use crate::{
-        configs::{graph::edges::Config, MetricCategory},
+        configs::{graph::edges::Config, EdgeCategory},
         defaults::DimVec,
         network::{MetricIdx, ProtoEdge},
         units::geo,
@@ -231,7 +231,7 @@ mod intern {
                 )?;
 
                 match metric_type {
-                    MetricCategory::NodeId => {
+                    EdgeCategory::NodeId => {
                         // get src-id and dst-id to create unfinished-edge afterwards
                         if src_id.is_none() {
                             src_id = Some(param.parse::<i64>().ok().ok_or(format!(
@@ -251,7 +251,7 @@ mod intern {
                             ));
                         }
                     }
-                    MetricCategory::Meters => {
+                    EdgeCategory::Meters => {
                         let metric_idx = MetricIdx(metric_values.len());
                         let is_provided = cfg.metrics.is_provided(metric_idx);
 
@@ -268,10 +268,10 @@ mod intern {
                             metric_values.push(None);
                         }
                     }
-                    MetricCategory::KilometersPerHour
-                    | MetricCategory::Seconds
-                    | MetricCategory::LaneCount
-                    | MetricCategory::Custom => {
+                    EdgeCategory::KilometersPerHour
+                    | EdgeCategory::Seconds
+                    | EdgeCategory::LaneCount
+                    | EdgeCategory::Custom => {
                         let metric_idx = MetricIdx(metric_values.len());
                         let is_provided = cfg.metrics.is_provided(metric_idx);
 
@@ -288,7 +288,7 @@ mod intern {
                             metric_values.push(None);
                         }
                     }
-                    MetricCategory::Ignore => (),
+                    EdgeCategory::Ignore => (),
                 }
             }
 

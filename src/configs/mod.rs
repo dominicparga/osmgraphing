@@ -15,7 +15,7 @@ pub mod routing;
 /// With this `yaml`-config, the parser can be adjusted to parse (edge-)metrics in the order as provided by the config-file.
 /// This can help especially with map-files in `fmi`-format, since the metrics are read sequentially.
 /// But since `pbf`-files does not provide a column-based metric-list, but intrinsically by parsing `osm`-data, you can distinguish between default-metrics and custom-metrics via the key `category`.
-/// Default-categories are described in `MetricCategory`.
+/// Default-categories are described in `EdgeCategory`.
 ///
 /// Internally, a default-metric uses provided calculation-rules to be calculated by other default-categories as well (like the duration from length and maxspeed).
 ///
@@ -134,7 +134,7 @@ impl Display for MetricId {
 /// - `custom`, which is just the plain f32-value
 /// - `ignore`, which is used in `csv`-like `fmi`-maps to jump over columns
 #[derive(Copy, Clone, Debug, Deserialize, Eq, PartialEq)]
-pub enum MetricCategory {
+pub enum EdgeCategory {
     Meters,
     KilometersPerHour,
     Seconds,
@@ -144,47 +144,47 @@ pub enum MetricCategory {
     Ignore,
 }
 
-impl Display for MetricCategory {
+impl Display for EdgeCategory {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         fmt::Debug::fmt(self, f)
     }
 }
 
-impl MetricCategory {
+impl EdgeCategory {
     pub fn must_be_positive(&self) -> bool {
         match self {
-            MetricCategory::Meters
-            | MetricCategory::KilometersPerHour
-            | MetricCategory::Seconds
-            | MetricCategory::LaneCount => true,
-            MetricCategory::Custom | MetricCategory::NodeId | MetricCategory::Ignore => false,
+            EdgeCategory::Meters
+            | EdgeCategory::KilometersPerHour
+            | EdgeCategory::Seconds
+            | EdgeCategory::LaneCount => true,
+            EdgeCategory::Custom | EdgeCategory::NodeId | EdgeCategory::Ignore => false,
         }
     }
 
     pub fn is_ignored(&self) -> bool {
         match self {
-            MetricCategory::NodeId | MetricCategory::Ignore => true,
-            MetricCategory::Meters
-            | MetricCategory::KilometersPerHour
-            | MetricCategory::Seconds
-            | MetricCategory::LaneCount
-            | MetricCategory::Custom => false,
+            EdgeCategory::NodeId | EdgeCategory::Ignore => true,
+            EdgeCategory::Meters
+            | EdgeCategory::KilometersPerHour
+            | EdgeCategory::Seconds
+            | EdgeCategory::LaneCount
+            | EdgeCategory::Custom => false,
         }
     }
 
-    fn expected_calc_rules(&self) -> Vec<MetricCategory> {
+    fn expected_calc_rules(&self) -> Vec<EdgeCategory> {
         match self {
-            MetricCategory::KilometersPerHour => {
-                vec![MetricCategory::Meters, MetricCategory::Seconds]
+            EdgeCategory::KilometersPerHour => {
+                vec![EdgeCategory::Meters, EdgeCategory::Seconds]
             }
-            MetricCategory::Seconds => {
-                vec![MetricCategory::Meters, MetricCategory::KilometersPerHour]
+            EdgeCategory::Seconds => {
+                vec![EdgeCategory::Meters, EdgeCategory::KilometersPerHour]
             }
-            MetricCategory::Meters
-            | MetricCategory::LaneCount
-            | MetricCategory::Custom
-            | MetricCategory::NodeId
-            | MetricCategory::Ignore => vec![],
+            EdgeCategory::Meters
+            | EdgeCategory::LaneCount
+            | EdgeCategory::Custom
+            | EdgeCategory::NodeId
+            | EdgeCategory::Ignore => vec![],
         }
     }
 }

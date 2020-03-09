@@ -21,6 +21,9 @@ pub mod vehicles {
     }
 }
 
+pub mod nodes {
+}
+
 pub mod edges {
     use serde::Deserialize;
 
@@ -31,7 +34,7 @@ pub mod edges {
 
     pub mod metrics {
         use crate::{
-            configs::{MetricCategory, MetricId},
+            configs::{EdgeCategory, MetricId},
             network::MetricIdx,
         };
         use serde::Deserialize;
@@ -40,14 +43,14 @@ pub mod edges {
         #[derive(Debug, Deserialize)]
         #[serde(rename_all = "kebab-case")]
         pub struct Entry {
-            pub category: MetricCategory,
+            pub category: EdgeCategory,
             pub id: Option<MetricId>,
             pub is_provided: Option<bool>,
             pub calc_rules: Option<Vec<MetricId>>,
         }
 
-        impl From<(MetricCategory, MetricId, bool)> for Entry {
-            fn from((category, id, is_provided): (MetricCategory, MetricId, bool)) -> Entry {
+        impl From<(EdgeCategory, MetricId, bool)> for Entry {
+            fn from((category, id, is_provided): (EdgeCategory, MetricId, bool)) -> Entry {
                 Entry {
                     category,
                     id: Some(id),
@@ -57,10 +60,10 @@ pub mod edges {
             }
         }
 
-        impl From<(MetricCategory, MetricId, bool, Vec<MetricId>)> for Entry {
+        impl From<(EdgeCategory, MetricId, bool, Vec<MetricId>)> for Entry {
             fn from(
                 (category, id, is_provided, calc_rules): (
-                    MetricCategory,
+                    EdgeCategory,
                     MetricId,
                     bool,
                     Vec<MetricId>,
@@ -79,21 +82,21 @@ pub mod edges {
         #[serde(from = "Vec<Entry>")]
         pub struct Config {
             // store for order
-            all_categories: Vec<MetricCategory>,
+            all_categories: Vec<EdgeCategory>,
             // store for quick access
-            categories: Vec<MetricCategory>,
+            categories: Vec<EdgeCategory>,
             are_provided: Vec<bool>,
             indices: BTreeMap<MetricId, MetricIdx>,
             ids: Vec<MetricId>,
-            calc_rules: Vec<Vec<(MetricCategory, MetricIdx)>>,
+            calc_rules: Vec<Vec<(EdgeCategory, MetricIdx)>>,
         }
 
         impl Config {
-            pub fn all_categories(&self) -> &Vec<MetricCategory> {
+            pub fn all_categories(&self) -> &Vec<EdgeCategory> {
                 &self.all_categories
             }
 
-            pub fn category(&self, idx: MetricIdx) -> MetricCategory {
+            pub fn category(&self, idx: MetricIdx) -> EdgeCategory {
                 match self.categories.get(*idx) {
                     Some(category) => *category,
                     None => {
@@ -133,7 +136,7 @@ pub mod edges {
                 }
             }
 
-            pub fn calc_rules(&self, idx: MetricIdx) -> &Vec<(MetricCategory, MetricIdx)> {
+            pub fn calc_rules(&self, idx: MetricIdx) -> &Vec<(EdgeCategory, MetricIdx)> {
                 match self.calc_rules.get(*idx) {
                     Some(calc_rule) => calc_rule,
                     None => {
