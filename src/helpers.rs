@@ -17,7 +17,7 @@ pub fn add_to(a: &mut DimVec<f32>, b: &DimVec<f32>) {
 pub fn dot_product(a: &DimVec<f32>, b: &DimVec<f32>) -> f32 {
     a.iter()
         .zip(b)
-        .fold(0.0, |start, (aa, &bb)| aa.mul_add(bb, start))
+        .fold(0.0, |start, (aa, &bb)| start + aa * bb)
 }
 
 pub trait ApproxEq {
