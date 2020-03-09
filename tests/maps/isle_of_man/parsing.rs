@@ -32,7 +32,8 @@ fn pbf() {
         nodes.count()
     );
     let fwd_edges = graph.fwd_edges();
-    let expected = 103_920;
+    // let expected = 103_920; // before removing duplicates
+    let expected = 103_916; // after removing duplicates
     assert_eq!(
         fwd_edges.count(),
         expected,

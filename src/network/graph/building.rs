@@ -9,7 +9,7 @@ use crate::{
 use log::{debug, info};
 use progressing;
 use progressing::Bar;
-use std::{collections::BTreeMap, mem};
+use std::{cmp::Reverse, collections::BTreeMap, mem};
 
 //------------------------------------------------------------------------------------------------//
 
@@ -375,11 +375,31 @@ impl GraphBuilder {
         // memory-peak is here when sorting
 
         // sort reversed to make splice efficient
-        self.proto_edges.sort_unstable_by(|e1, e0| {
-            e0.src_id
-                .cmp(&e1.src_id)
-                .then_with(|| e0.dst_id.cmp(&e1.dst_id))
+        self.proto_edges
+            .sort_unstable_by_key(|edge| Reverse((edge.src_id, edge.dst_id)));
+        info!("FINISHED");
+
+        //----------------------------------------------------------------------------------------//
+        // remove duplicates
+
+        info!("START Remove duplicated proto-edges and flatten ch-shortcuts");
+        let edge_count = self.proto_edges.len();
+        // e.g. edge
+        // node-id 314074041 -> node-id 283494218
+        // which is part of two ways
+        //
+        // The metrics contain f32, which is not comparable exactly.
+        // This is okay for here, because if two edges of identical src/dst have different
+        // metrics, than they are created differently and thus are indeed different.
+        self.proto_edges.dedup_by(|e0, e1| {
+            (e0.src_id, e0.dst_id, &e0.metrics) == (e1.src_id, e1.dst_id, &e1.metrics)
         });
+        if self.proto_edges.len() != edge_count {
+            info!(
+                "Removed {} duplicates.",
+                (edge_count - self.proto_edges.len())
+            );
+        }
         info!("FINISHED");
 
         //----------------------------------------------------------------------------------------//
@@ -538,11 +558,7 @@ impl GraphBuilder {
         // sort backward-edges by ascending dst-id, then by ascending src-id -> offset-array
 
         info!("START Sort proto-backward-edges by their dst/src-IDs.");
-        new_proto_edges.sort_unstable_by(|e0, e1| {
-            e0.dst_id
-                .cmp(&e1.dst_id)
-                .then_with(|| e0.src_id.cmp(&e1.src_id))
-        });
+        new_proto_edges.sort_unstable_by_key(|edge| (edge.dst_id, edge.src_id));
         info!("FINISHED");
 
         //----------------------------------------------------------------------------------------//
