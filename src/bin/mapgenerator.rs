@@ -9,7 +9,7 @@ use std::{path::PathBuf, time::Instant};
 fn main() {
     // process user-input
     let matches = parse_cmdline();
-    match helpers::init_logging(matches.value_of("log").unwrap(), vec!["fmigenerator"]) {
+    match helpers::init_logging(matches.value_of("log").unwrap(), vec!["mapgenerator"]) {
         Ok(_) => (),
         Err(msg) => {
             error!("{}", msg);
@@ -18,7 +18,7 @@ fn main() {
     };
 
     // execute
-    info!("EXECUTE {}", env!("CARGO_PKG_NAME"));
+    info!("EXECUTE mapgenerator");
 
     //--------------------------------------------------------------------------------------------//
     // parsing config

@@ -38,6 +38,8 @@ pub mod fmi {
         helpers,
         network::{EdgeIdx, Graph, NodeIdx},
     };
+    use log::info;
+    use progressing::{self, Bar};
     use std::io::{BufWriter, Write};
 
     pub struct Generator;
@@ -75,13 +77,18 @@ pub mod fmi {
                 //--------------------------------------------------------------------------------//
                 // write counts
 
-                writeln!(writer, "{}", graph.nodes().count())?;
-                writeln!(writer, "{}", graph.fwd_edges().count())?;
+                let node_count = graph.nodes().count();
+                let edge_count = graph.fwd_edges().count();
+                writeln!(writer, "{}", node_count)?;
+                writeln!(writer, "{}", edge_count)?;
 
                 //--------------------------------------------------------------------------------//
                 // write nodes
 
-                for node_idx in (0..graph.nodes().count()).into_iter().map(NodeIdx) {
+                let mut progress_bar =
+                    progressing::BernoulliBar::from_goal((node_count + edge_count) as u32);
+                info!("{}", progress_bar);
+                for node_idx in (0..node_count).into_iter().map(NodeIdx) {
                     let node = graph.nodes().create(node_idx);
 
                     for (idx, category) in cfg.nodes.iter().enumerate() {
@@ -101,12 +108,18 @@ pub mod fmi {
                     }
                     // write end of line
                     writeln!(writer, "")?;
+
+                    // print progress
+                    progress_bar.add((1, 1));
+                    if progress_bar.progress().successes % (1 + (progress_bar.end() / 10)) == 0 {
+                        info!("{}", progress_bar);
+                    }
                 }
 
                 //--------------------------------------------------------------------------------//
                 // write edges
 
-                for edge_idx in (0..graph.fwd_edges().count()).into_iter().map(EdgeIdx) {
+                for edge_idx in (0..edge_count).into_iter().map(EdgeIdx) {
                     // src-id
                     let src_idx = graph.bwd_edges().dst_idx(edge_idx);
                     let src_id = graph.nodes().id(src_idx);
@@ -138,7 +151,14 @@ pub mod fmi {
                     }
                     // write end of line
                     writeln!(writer, "")?;
+
+                    // print progress
+                    progress_bar.add((1, 1));
+                    if progress_bar.progress().successes % (1 + (progress_bar.end() / 10)) == 0 {
+                        info!("{}", progress_bar);
+                    }
                 }
+                info!("{}", progress_bar);
 
                 //--------------------------------------------------------------------------------//
 

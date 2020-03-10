@@ -21,7 +21,7 @@ generator:
   map-file: 'resources/maps/isle-of-man_2019-09-05.fmi'
   nodes:
   - category: 'NodeId'
-  - category: 'Ignore' # osm-id
+  - category: 'NodeId'
   - category: 'Latitude'
   - category: 'Longitude'
   - category: 'Ignore' # height

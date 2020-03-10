@@ -29,7 +29,7 @@ name = 'osmgraphing' # bin/osmgraphing.rs
 required-features = ["osmgraphing"]
 
 [[bin]]
-name = 'fmigenerator' # bin/fmigenerator.rs
+name = 'mapgenerator' # bin/mapgenerator.rs
 
 
 [[example]]
