@@ -3,6 +3,7 @@ use crate::{
     defaults::DimVec,
     network::MetricIdx,
 };
+use log::warn;
 use serde::Deserialize;
 use smallvec::smallvec;
 use std::collections::BTreeMap;
@@ -167,6 +168,13 @@ impl From<Config> for super::Config {
                     .map(|entry| entry.category)
                     .collect(),
             );
+            if nodes.categories().contains(&super::NodeCategory::NodeIdx) {
+                warn!(
+                    "The config for parser::nodes contains the node-category {:?}, \
+                     which is ignored.",
+                    super::NodeCategory::NodeIdx
+                );
+            }
 
             // build super::parser::edges::Config
             let edges = {

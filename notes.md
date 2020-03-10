@@ -8,8 +8,6 @@ Maybe, it is concept for later documentation, or just keep-up-the-good-work (`ku
 
 ### General
 
-- Update README (`"Memory-usage and performance have been better, but now, the graph supports multiple metrics."` -> it's great again)
-- Use log::debug by flag
 - Implement graph as server, which can execute queries from clients (e.g. via channels).
 
 
@@ -25,9 +23,6 @@ Maybe, it is concept for later documentation, or just keep-up-the-good-work (`ku
 - Write down alternative implementation-approaches
   - Implement shortcut-edges more memory-efficient storing list of costs per src-dst-pair instead of per edge.
   - Routing from src-node to dst-node where dst-node has at least the city-level of the src-node.
-- extend configs
-  - flag: keep metric or not -> save memory
-    NO because graph is a static thing.
 
 
 ### Extend tests
@@ -41,7 +36,7 @@ Maybe, it is concept for later documentation, or just keep-up-the-good-work (`ku
 
 ### Extend configs
 
-- Implement `config-settings` for nodes (e.g. coordinates in float vs unsigned integral)
+\-
 
 
 ### Extend parsing
