@@ -51,7 +51,13 @@ fn main() {
     let dst = nodes.create(NodeIdx(5));
 
     let now = Instant::now();
-    let option_path = dijkstra.compute_best_path(&src, &dst, &graph, &cfg.routing.unwrap());
+    let option_path = dijkstra.compute_best_path(
+        &src,
+        &dst,
+        &graph,
+        &cfg.routing
+            .expect("Config-file should contain routing-settings."),
+    );
 
     info!("");
     info!(

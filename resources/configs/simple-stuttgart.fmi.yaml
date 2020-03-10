@@ -17,3 +17,7 @@ parser:
   - category: 'Seconds'
     is-provided: false
     calc-rules: ['Meters', 'KilometersPerHour']
+
+# needed for examples/dijkstra
+routing:
+- id: 'Meters'
