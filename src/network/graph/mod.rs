@@ -277,6 +277,10 @@ impl Node {
     pub fn coord(&self) -> Coordinate {
         self.coord
     }
+
+    pub fn level(&self) -> usize {
+        0
+    }
 }
 
 impl Eq for Node {}
@@ -315,8 +319,12 @@ impl<'a> HalfEdge<'a> {
         self.edge_dsts[*self.idx]
     }
 
-    pub fn metric(&self, metric_indices: &DimVec<MetricIdx>) -> DimVec<f32> {
-        self.metrics.get(metric_indices, self.idx)
+    pub fn metric(&self, metric_idx: MetricIdx) -> f32 {
+        self.metrics.get(metric_idx, self.idx)
+    }
+
+    pub fn metrics(&self, metric_indices: &[MetricIdx]) -> DimVec<f32> {
+        self.metrics.get_more(metric_indices, self.idx)
     }
 }
 
@@ -492,7 +500,11 @@ impl<'a> Display for MetricAccessor<'a> {
 }
 
 impl<'a> MetricAccessor<'a> {
-    pub fn get(&self, metric_indices: &DimVec<MetricIdx>, edge_idx: EdgeIdx) -> DimVec<f32> {
+    pub fn get(&self, metric_idx: MetricIdx, edge_idx: EdgeIdx) -> f32 {
+        self.metrics[*metric_idx][*edge_idx]
+    }
+
+    pub fn get_more(&self, metric_indices: &[MetricIdx], edge_idx: EdgeIdx) -> DimVec<f32> {
         metric_indices
             .iter()
             .map(|&midx| self.metrics[*midx][*edge_idx])

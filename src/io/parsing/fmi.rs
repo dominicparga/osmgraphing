@@ -215,7 +215,7 @@ mod intern {
                             }
                         };
                     }
-                    NodeCategory::Ignore => (),
+                    NodeCategory::NodeIdx | NodeCategory::Ignore => (),
                 }
             }
 

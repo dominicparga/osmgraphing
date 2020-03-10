@@ -91,6 +91,7 @@ pub mod parser {
         #[derive(Copy, Clone, Debug, Deserialize, Eq, PartialEq)]
         pub enum NodeCategory {
             NodeId,
+            NodeIdx,
             Latitude,
             Longitude,
             Level,
@@ -286,11 +287,14 @@ pub mod parser {
 }
 
 pub mod generator {
+    use super::{NodeCategory, SimpleId};
     use std::path::PathBuf;
 
     #[derive(Debug)]
     pub struct Config {
         pub map_file: PathBuf,
+        pub nodes: Vec<NodeCategory>,
+        pub edges: Vec<SimpleId>,
     }
 }
 

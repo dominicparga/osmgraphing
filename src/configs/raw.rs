@@ -286,6 +286,16 @@ impl From<Config> for super::Config {
         let cfg_generator = match raw_cfg.generator {
             Some(raw_cfg_generator) => Some(super::generator::Config {
                 map_file: raw_cfg_generator.map_file,
+                nodes: raw_cfg_generator
+                    .nodes
+                    .into_iter()
+                    .map(|entry| entry.category)
+                    .collect(),
+                edges: raw_cfg_generator
+                    .edges
+                    .into_iter()
+                    .map(|entry| entry.id)
+                    .collect(),
             }),
             None => None,
         };

@@ -152,7 +152,7 @@ impl Dijkstra {
                 let new_cost = current.cost
                     + helpers::dot_product(
                         &cfg.alphas(),
-                        &leaving_edge.metric(&cfg.metric_indices()),
+                        &leaving_edge.metrics(&cfg.metric_indices()),
                     );
                 if new_cost < xwd_costs[*leaving_edge.dst_idx()] {
                     xwd_predecessors[*leaving_edge.dst_idx()] = Some(leaving_edge.idx());
@@ -194,7 +194,7 @@ impl Dijkstra {
                 // update real path-costs
                 helpers::add_to(
                     path.cost_mut(),
-                    &reverse_incoming_edge.metric(&cfg.metric_indices()),
+                    &reverse_incoming_edge.metrics(&cfg.metric_indices()),
                 );
 
                 // add predecessor/successor and prepare next loop-run
@@ -213,7 +213,7 @@ impl Dijkstra {
                 // update real path-costs
                 helpers::add_to(
                     path.cost_mut(),
-                    &reverse_leaving_edge.metric(&cfg.metric_indices()),
+                    &reverse_leaving_edge.metrics(&cfg.metric_indices()),
                 );
 
                 // add predecessor/successor and prepare next loop-run

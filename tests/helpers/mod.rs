@@ -271,8 +271,8 @@ impl TestEdge {
             self.name
         );
 
-        let metric_indices = smallvec![MetricIdx(0), MetricIdx(1), MetricIdx(2)];
-        let value = edge.metric(&metric_indices);
+        let metric_indices = &[MetricIdx(0), MetricIdx(1), MetricIdx(2)];
+        let value = edge.metrics(metric_indices);
         let expected = SmallVec::from_slice(&self.metrics);
         assert!(
             value.approx_eq(&expected),
