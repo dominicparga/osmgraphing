@@ -29,7 +29,9 @@ Problems will be the size-limit when downloading from [openstreetmap][osm], but 
 
 For testing, some simple text-based format `fmi` is used.
 Since they are created manually for certain tasks, parsing them - generally speaking - is unstable.
-Tools creating `fmi`-files are [pbfextractor][github/lesstat/pbfextractor] and [multi-ch-constructor][github/lesstat/multi-ch-constructor] (working with contraction-hierarchies).
+However, this repository has a generator, which can create such `fmi`-files from `pbf`- or other `fmi`-files (for different metric-order).
+The binary `mapgenerator` (binaries are in `target/release` after release-building) helps with generating proper config-files, but have a look at `resources/configs/blueprint` to get further explanations.
+A tool for creating `fmi`-map-files, which contain graphs contracted via contraction-hierarchies, is [multi-ch-constructor][github/lesstat/multi-ch-constructor].
 
 
 ## Requirements for large maps
@@ -78,7 +80,6 @@ He has implemented the first (and running) approach of the `A*`-algorithm.
 [github/jenasat]: https://github.com/JenaSat
 [github/lesstat]: https://github.com/lesstat
 [github/lesstat/multi-ch-constructor]: https://github.com/Lesstat/multi-ch-constructor
-[github/lesstat/pbfextractor]: https://github.com/Lesstat/pbfextractor
 [github/self/actions]: https://github.com/dominicparga/osmgraphing/actions
 [github/self/actions/badge]: https://img.shields.io/github/workflow/status/dominicparga/osmgraphing/Rust?label=nightly-build&style=for-the-badge
 [github/self/blob/changelog]: https://github.com/dominicparga/osmgraphing/blob/nightly/CHANGELOG.md
