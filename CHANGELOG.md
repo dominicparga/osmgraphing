@@ -128,10 +128,6 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 - Let graphbuilder remove __edge-duplicates__ (same src, same dst and exactly, not approximately, same metric).
   This will also be efficient for shortcuts wrt contraction-hierarchies.
 
-### Security <a name="v0.11.0/security"></a>
-
-\-
-
 
 ## [v0.10.0][github/self/v0.10.0] <a name="v0.10.0"></a>
 
