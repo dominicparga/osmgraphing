@@ -2,7 +2,7 @@ pub mod building;
 mod indexing;
 pub use indexing::{EdgeIdx, MetricIdx, NodeIdx};
 
-use crate::{configs::graph::Config, defaults::DimVec, units::geo::Coordinate};
+use crate::{configs::parser::Config, defaults::DimVec, units::geo::Coordinate};
 use std::{fmt, fmt::Display};
 
 /// Stores graph-data as offset-graph in arrays and provides methods and shallow structs for accessing them.
@@ -200,7 +200,7 @@ impl Display for Graph {
                     let edge_idx = EdgeIdx(j);
                     let src_idx = bwd_dsts.dst_idx(edge_idx);
                     let half_edge = fwd_dsts.half_edge(edge_idx);
-                    let metrics: Vec<f32> = (0..self.cfg.edges.metrics.count())
+                    let metrics: Vec<f32> = (0..self.cfg.edges.dim())
                         .map(|i| self.metrics[i][*edge_idx])
                         .collect();
                     writeln!(
@@ -277,6 +277,10 @@ impl Node {
     pub fn coord(&self) -> Coordinate {
         self.coord
     }
+
+    pub fn level(&self) -> usize {
+        0
+    }
 }
 
 impl Eq for Node {}
@@ -315,8 +319,12 @@ impl<'a> HalfEdge<'a> {
         self.edge_dsts[*self.idx]
     }
 
-    pub fn metric(&self, metric_indices: &DimVec<MetricIdx>) -> DimVec<f32> {
-        self.metrics.get(metric_indices, self.idx)
+    pub fn metric(&self, metric_idx: MetricIdx) -> f32 {
+        self.metrics.get(metric_idx, self.idx)
+    }
+
+    pub fn metrics(&self, metric_indices: &[MetricIdx]) -> DimVec<f32> {
+        self.metrics.get_more(metric_indices, self.idx)
     }
 }
 
@@ -492,7 +500,11 @@ impl<'a> Display for MetricAccessor<'a> {
 }
 
 impl<'a> MetricAccessor<'a> {
-    pub fn get(&self, metric_indices: &DimVec<MetricIdx>, edge_idx: EdgeIdx) -> DimVec<f32> {
+    pub fn get(&self, metric_idx: MetricIdx, edge_idx: EdgeIdx) -> f32 {
+        self.metrics[*metric_idx][*edge_idx]
+    }
+
+    pub fn get_more(&self, metric_indices: &[MetricIdx], edge_idx: EdgeIdx) -> DimVec<f32> {
         metric_indices
             .iter()
             .map(|&midx| self.metrics[*midx][*edge_idx])

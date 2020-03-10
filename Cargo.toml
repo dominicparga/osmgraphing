@@ -28,6 +28,9 @@ osmgraphing = ["rand", "rand_pcg"]
 name = 'osmgraphing' # bin/osmgraphing.rs
 required-features = ["osmgraphing"]
 
+[[bin]]
+name = 'mapgenerator' # bin/mapgenerator.rs
+
 
 [[example]]
 name = "parser"

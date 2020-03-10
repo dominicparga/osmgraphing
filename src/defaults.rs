@@ -1,6 +1,6 @@
 // For optimal performance and memory-usage:
 // Change this value before compiling, dependent of your number of stored metrics in the graph.
-pub const SMALL_VEC_INLINE_SIZE: usize = 5;
+pub const SMALL_VEC_INLINE_SIZE: usize = 4;
 pub type DimVec<T> = smallvec::SmallVec<[T; SMALL_VEC_INLINE_SIZE]>;
 
 pub mod speed {

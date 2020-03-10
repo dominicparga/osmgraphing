@@ -36,11 +36,12 @@ Tools creating `fmi`-files are [pbfextractor][github/lesstat/pbfextractor] and [
 
 In general, the requirements depend on the size of the parsed map and your machine.
 Following numbers base on an __8-core-CPU__ and the `pbf`-map `Germany` running on `archlinux`.
-Further, they base on the assumption, that you don't use more than 5 metrics (besides ignore and ids), because up to 5 metrics are inlined with `SmallVec`.
-You should change the number of inlined metrics according to your needs in the module `defaults`.
+Further, they base on the assumption, that you don't use more than 4 metrics (besides ignore and ids), because up to 4 metrics are inlined with `SmallVec`.
+You should change the number of inlined metrics according to your needs in the module `defaults`, because, during build-phase, the memory is allocated anyways.
 
-- Parsing `Germany` (~50 million nodes, ~103 million edges) needs around __10 GB of RAM__.
-  After parsing, the memory-needs are less (up to few `GB`s) due to the optimized graph-structure.
+- Parsing `Germany` (~50 million nodes, ~103 million edges, pbf-file) needs around __10 GB of RAM__.
+  (Using only one metric, inlined, the memory-peak is slightly over __8 GB__.)
+  After parsing, the memory-needs are lower due to the optimized graph-structure.
 - Preprocessing `Germany` (including parsing) needs around __4 minutes__.
   This highly depends on the number of cores.
 - A __routing query__ on `Germany` of length `620 km` takes around __16 seconds__ with `bidirectional Dijkstra`.

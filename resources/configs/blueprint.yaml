@@ -1,0 +1,88 @@
+parser:
+  # relative to user, not to script
+  map-file: 'relative-path-to-map-file'
+  vehicles:
+    category: 'Car' # | 'Bicycle' | 'Pedestrian'
+    # Value `false` leads to more edges,
+    # because edges are added, which are okay,
+    # but not suitable for this vehicle-category.
+    are-drivers-picky: false
+  # Order matters, if the map-file has a order, like `fmi`-files.
+  # Multiple occurences overwrites previous ones.
+  nodes:
+  - category: 'NodeId'
+  - category: 'Ignore'
+  - category: 'Latitude'
+  - category: 'Longitude'
+  - category: 'Level'
+  - category: 'Ignore'
+  # Here, the order matters, if the map-file has a metric-order, like
+  # `fmi`-files. Each metric below will be stored in the graph. Metrics below,
+  # which have `provided=false`, will be calculated by other metrics and the
+  # result is being stored.
+  #
+  # Default-Ids are the category-name.
+  #
+  #
+  # ATTENTION!!!
+  # In module 'defaults', set the inline-size accordingly for best performance
+  # and memory-usage.
+  edges:
+  - category: 'SrcId' # this category is allowed only once
+  - category: 'DstId' # this category is allowed only once
+  # Following categories can be used twice, but must have unique ids.
+  - category: 'Meters'
+    id: 'to-the-moon-and-back'
+    # Value `false` leads to calculate the value via coordinates and haversine.
+    is-provided: false
+  - category: 'Meters'
+    is-provided: true
+  - category: 'KilometersPerHour'
+    id: 'faster-than-light'
+    # Value `false` leads to calculate the value via length and duration.
+    is-provided: true
+    calc-rules: ['to-the-moon-and-back', 'Seconds']
+  - category: 'Seconds'
+    # Value `false` leads to calculate the value via length and maxspeed.
+    is-provided: false
+    calc-rules: ['to-the-moon-and-back', 'faster-than-light']
+  - category: 'LaneCount'
+    is-provided: true
+  - category: 'Custom'
+    id: 'my-custom-value'
+    is-provided: true
+
+  # only category, which is allowed to have duplicated ids
+  - category: 'Ignore'
+    id: 'unnecessary'
+  - category: 'Ignore'
+    id: 'unnecessary'
+
+generator:
+  nodes:
+  - category: 'NodeId'
+  - category: 'Ignore'
+  - category: 'Latitude'
+  - category: 'Longitude'
+  - category: 'Ignore'
+  - category: 'Level'
+  # mandatory convention: first node-id is src-id
+  edges:
+  # mandatory convention: first node-id is src-id
+  - id: 'src-id'
+  - id: 'dst-id'
+  - id: 'to-the-moon-and-back'
+  - id: 'unnecessary'
+  - id: 'faster-than-light'
+
+# The metrics, which should be considered in routing, are listed here.
+# The given alphas are used as scale.
+#
+# Optional, but will panic as soon as routing will try to use it
+routing:
+- id: 'to-the-moon-and-back',
+  # optional; default is 1.0
+  alpha: 169.0
+- id: 'Seconds',
+  # optional; default is 1.0
+  alpha: 331.0
