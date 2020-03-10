@@ -1,9 +1,8 @@
-graph:
+parser:
   map-file: 'resources/maps/simple-stuttgart.fmi'
   vehicles:
     category: 'Car'
     are-drivers-picky: false
-    blub: 'asdf'
   nodes:
   - category: 'NodeId'
   - category: 'Ignore' # osm-id

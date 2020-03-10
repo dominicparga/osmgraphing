@@ -8,25 +8,25 @@ use std::path::PathBuf;
 #[test]
 fn yaml() {
     let mut cfg = Config::from_yaml("resources/configs/simple-stuttgart.fmi.yaml").unwrap();
-    cfg.graph.map_file = PathBuf::from("resources/maps/small.fmi");
+    cfg.parser.map_file = PathBuf::from("resources/maps/small.fmi");
 }
 
 #[test]
 fn yaml_str() {
     let mut cfg = Config::from_yaml("resources/configs/simple-stuttgart.fmi.yaml").unwrap();
-    cfg.graph.map_file = PathBuf::from("resources/maps/small.fmi");
+    cfg.parser.map_file = PathBuf::from("resources/maps/small.fmi");
 
     let yaml_str = &format!("routing: [{{ id: '{}' }}]", defaults::DURATION_ID);
-    configs::routing::Config::from_str(yaml_str, &cfg.graph).unwrap();
+    configs::routing::Config::from_str(yaml_str, &cfg.parser).unwrap();
 
     let yaml_str = &format!("routing: [{{ id: '{}' }}]", defaults::LENGTH_ID);
-    configs::routing::Config::from_str(yaml_str, &cfg.graph).unwrap();
+    configs::routing::Config::from_str(yaml_str, &cfg.parser).unwrap();
 }
 
 #[test]
 fn fmi() {
     let cfg = create_config(TestType::Small, None);
-    let graph = parse(cfg.graph);
+    let graph = parse(cfg.parser);
 
     //--------------------------------------------------------------------------------------------//
     // setup correct data

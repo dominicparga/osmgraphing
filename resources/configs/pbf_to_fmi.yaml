@@ -18,4 +18,19 @@ parser:
   - category: 'Seconds'
     is-provided: false
     calc-rules: ['Meters', 'KilometersPerHour']
-  - category: 'LaneCount'
+
+generator:
+  map-file: 'resources/maps/isle-of-man_2019-09-05.fmi'
+  nodes:
+  - category: 'NodeId'
+  - category: 'Ignore' # osm-id
+  - category: 'Latitude'
+  - category: 'Longitude'
+  - category: 'Ignore' # height
+  - category: 'Level'
+  edges:
+  - id: 'src-id'
+  - id: 'dst-id'
+  - id: 'Meters'
+  - id: 'KilometersPerHour'
+  - id: 'Seconds'

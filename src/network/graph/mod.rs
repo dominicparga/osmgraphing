@@ -2,7 +2,7 @@ pub mod building;
 mod indexing;
 pub use indexing::{EdgeIdx, MetricIdx, NodeIdx};
 
-use crate::{configs::graph::Config, defaults::DimVec, units::geo::Coordinate};
+use crate::{configs::parser::Config, defaults::DimVec, units::geo::Coordinate};
 use std::{fmt, fmt::Display};
 
 /// Stores graph-data as offset-graph in arrays and provides methods and shallow structs for accessing them.

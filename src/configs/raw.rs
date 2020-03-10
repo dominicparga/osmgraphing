@@ -5,13 +5,13 @@ use std::collections::BTreeMap;
 
 #[derive(Debug, Deserialize)]
 pub struct Config {
-    pub graph: graph::Config,
-    // pub export: export::Config,
+    pub parser: parser::Config,
+    pub generator: Option<generator::Config>,
     #[serde(flatten)]
     pub routing: Option<routing::Config>,
 }
 
-pub mod graph {
+pub mod parser {
     use serde::Deserialize;
     use std::path::PathBuf;
 
@@ -38,7 +38,7 @@ pub mod graph {
     }
 
     pub mod nodes {
-        use crate::configs::graph::nodes::NodeCategory;
+        use crate::configs::parser::nodes::NodeCategory;
         use serde::Deserialize;
 
         #[derive(Debug, Deserialize)]
@@ -54,7 +54,7 @@ pub mod graph {
     }
 
     pub mod edges {
-        use crate::configs::{graph::edges::EdgeCategory, SimpleId};
+        use crate::configs::{parser::edges::EdgeCategory, SimpleId};
         use serde::Deserialize;
 
         #[derive(Debug, Deserialize)]
@@ -68,23 +68,25 @@ pub mod graph {
     }
 }
 
-pub mod export {
+pub mod generator {
     use serde::Deserialize;
+    use std::path::PathBuf;
 
     #[derive(Debug, Deserialize)]
-    #[serde(deny_unknown_fields)]
+    #[serde(rename_all = "kebab-case")]
     pub struct Config {
+        pub map_file: PathBuf,
         pub nodes: Vec<nodes::Entry>,
         pub edges: Vec<edges::Entry>,
     }
 
     pub mod nodes {
-        use crate::configs::SimpleId;
+        use crate::configs::parser::nodes::NodeCategory;
         use serde::Deserialize;
 
         #[derive(Debug, Deserialize)]
         pub struct Entry {
-            pub id: SimpleId,
+            pub category: NodeCategory,
         }
     }
 
@@ -142,19 +144,19 @@ pub mod routing {
 impl From<Config> for super::Config {
     fn from(raw_cfg: Config) -> super::Config {
         //----------------------------------------------------------------------------------------//
-        // build super::graph::Config
+        // build super::parser::Config
 
-        let graph = {
-            // build super::graph::vehicles::Config
-            let vehicles = super::graph::vehicles::Config {
-                category: raw_cfg.graph.vehicles.category,
-                are_drivers_picky: raw_cfg.graph.vehicles.are_drivers_picky,
+        let cfg_parser = {
+            // build super::parser::vehicles::Config
+            let vehicles = super::parser::vehicles::Config {
+                category: raw_cfg.parser.vehicles.category,
+                are_drivers_picky: raw_cfg.parser.vehicles.are_drivers_picky,
             };
 
-            // build super::graph::nodes::Config
-            let nodes = super::graph::nodes::Config::new(
+            // build super::parser::nodes::Config
+            let nodes = super::parser::nodes::Config::new(
                 raw_cfg
-                    .graph
+                    .parser
                     .nodes
                     .categories
                     .into_iter()
@@ -162,11 +164,11 @@ impl From<Config> for super::Config {
                     .collect(),
             );
 
-            // build super::graph::edges::Config
+            // build super::parser::edges::Config
             let edges = {
                 // init datastructures
-                let mut edge_categories = Vec::with_capacity(raw_cfg.graph.edges.len());
-                let mut edge_ids = Vec::with_capacity(raw_cfg.graph.edges.len());
+                let mut edge_categories = Vec::with_capacity(raw_cfg.parser.edges.len());
+                let mut edge_ids = Vec::with_capacity(raw_cfg.parser.edges.len());
                 let mut metric_categories = DimVec::new();
                 let mut metric_ids = DimVec::new();
                 let mut are_metrics_provided = DimVec::new();
@@ -175,7 +177,7 @@ impl From<Config> for super::Config {
 
                 // Fill categories, ids and whether type is provided.
                 // Further, create mapping: id -> idx.
-                for entry in raw_cfg.graph.edges.into_iter() {
+                for entry in raw_cfg.parser.edges.into_iter() {
                     edge_categories.push(entry.category);
                     let entry_id = match entry.id {
                         Some(entry_id) => entry_id,
@@ -259,7 +261,7 @@ impl From<Config> for super::Config {
                     }
                 }
 
-                super::graph::edges::Config::new(
+                super::parser::edges::Config::new(
                     edge_categories,
                     edge_ids,
                     metric_categories,
@@ -270,8 +272,8 @@ impl From<Config> for super::Config {
                 )
             };
 
-            super::graph::Config {
-                map_file: raw_cfg.graph.map_file,
+            super::parser::Config {
+                map_file: raw_cfg.parser.map_file,
                 vehicles: vehicles,
                 nodes: nodes,
                 edges: edges,
@@ -281,13 +283,21 @@ impl From<Config> for super::Config {
         //----------------------------------------------------------------------------------------//
         // build super::export::Config
 
-        let export = Some(super::export::Config {});
+        let cfg_generator = match raw_cfg.generator {
+            Some(raw_cfg_generator) => Some(super::generator::Config {
+                map_file: raw_cfg_generator.map_file,
+            }),
+            None => None,
+        };
 
         //----------------------------------------------------------------------------------------//
         // build super::routing::Config
 
-        let routing = match raw_cfg.routing {
-            Some(routing) => Some(super::routing::Config::from_raw(routing, &graph)),
+        let cfg_routing = match raw_cfg.routing {
+            Some(raw_cfg_routing) => Some(super::routing::Config::from_raw(
+                raw_cfg_routing,
+                &cfg_parser,
+            )),
             None => None,
         };
 
@@ -295,9 +305,9 @@ impl From<Config> for super::Config {
         // return finished config
 
         super::Config {
-            graph,
-            export,
-            routing,
+            parser: cfg_parser,
+            generator: cfg_generator,
+            routing: cfg_routing,
         }
     }
 }

@@ -1,6 +1,6 @@
 use super::{EdgeIdx, Graph, NodeIdx};
 use crate::{
-    configs::{graph::Config, EdgeCategory},
+    configs::{parser::Config, EdgeCategory},
     defaults::DimVec,
     helpers::ApproxEq,
     network::MetricIdx,

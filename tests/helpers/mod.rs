@@ -4,11 +4,11 @@
 use osmgraphing::{
     configs::{self as configs, Config},
     defaults::DimVec,
-    helpers::{ApproxEq, MapFileExt},
+    helpers::ApproxEq,
+    io::{MapFileExt, Parser, SupportingMapFileExts},
     network::{EdgeIdx, Graph, MetricIdx, Node, NodeAccessor, NodeIdx},
     routing::{self},
     units::geo::Coordinate,
-    Parser,
 };
 use smallvec::{smallvec, SmallVec};
 use std::{
@@ -31,29 +31,29 @@ pub enum TestType {
 }
 
 pub fn create_config(test_type: TestType, routing_cfg: Option<&str>) -> Config {
-    // cfg.graph
+    // cfg.parser
     let map_file = match test_type {
         TestType::BidirectionalBait => "resources/maps/bidirectional-bait.fmi",
         TestType::IsleOfMan => "resources/maps/isle-of-man_2019-09-05.osm.pbf",
         TestType::SimpleStuttgart => "resources/maps/simple-stuttgart.fmi",
         TestType::Small => "resources/maps/small.fmi",
     };
-    let cfg = match MapFileExt::from_path(map_file).expect("Map-file should exist.") {
+    let cfg = match Parser::from_path(map_file).expect("Map-file should exist.") {
         MapFileExt::PBF => Config::from_yaml("resources/configs/isle-of-man.pbf.yaml"),
         MapFileExt::FMI => Config::from_yaml("resources/configs/simple-stuttgart.fmi.yaml"),
     };
     let mut cfg = match cfg {
         Ok(cfg) => cfg,
-        e => panic!("{:?}", e),
+        Err(msg) => panic!("{}", msg),
     };
 
-    cfg.graph.map_file = PathBuf::from(map_file);
+    cfg.parser.map_file = PathBuf::from(map_file);
 
     // cfg.routing
     if let Some(yaml_str) = routing_cfg {
-        cfg.routing = match configs::routing::Config::from_str(yaml_str, &cfg.graph) {
+        cfg.routing = match configs::routing::Config::from_str(yaml_str, &cfg.parser) {
             Ok(routing_cfg) => Some(routing_cfg),
-            e => panic!("{:?}", e),
+            Err(msg) => panic!("{}", msg),
         };
     }
 
@@ -62,7 +62,7 @@ pub fn create_config(test_type: TestType, routing_cfg: Option<&str>) -> Config {
 }
 
 #[allow(dead_code)]
-pub fn parse(cfg: configs::graph::Config) -> Graph {
+pub fn parse(cfg: configs::parser::Config) -> Graph {
     let map_file = cfg.map_file.clone();
     match Parser::parse_and_finalize(cfg) {
         Ok(graph) => graph,
@@ -92,7 +92,7 @@ pub fn assert_path(
     expected_paths: Vec<(TestNode, TestNode, Option<(f32, Vec<Vec<TestNode>>)>)>,
     cfg: Config,
 ) {
-    let graph = parse(cfg.graph);
+    let graph = parse(cfg.parser);
     for (src, dst, option_specs) in expected_paths {
         let nodes = graph.nodes();
         let graph_src = nodes.create(src.idx);

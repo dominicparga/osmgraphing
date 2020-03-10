@@ -1,4 +1,4 @@
-graph:
+parser:
   # relative to user, not to script
   map-file: 'relative-path-to-map-file'
   vehicles:
@@ -56,14 +56,14 @@ graph:
   - category: 'Ignore'
     id: 'unnecessary'
 
-export:
+generator:
   nodes:
-    - category: 'NodeId'
-    - category: 'Ignore'
-    - category: 'Latitude'
-    - category: 'Longitude'
-    - category: 'Ignore'
-    - category: 'Level'
+  - category: 'NodeId'
+  - category: 'Ignore'
+  - category: 'Latitude'
+  - category: 'Longitude'
+  - category: 'Ignore'
+  - category: 'Level'
   # mandatory convention: first node-id is src-id
   edges:
   # mandatory convention: first node-id is src-id

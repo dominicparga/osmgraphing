@@ -1,5 +1,5 @@
-use crate::helpers;
-pub use graph::{edges::EdgeCategory, nodes::NodeCategory};
+use crate::{helpers, io::SupportingFileExts};
+pub use parser::{edges::EdgeCategory, nodes::NodeCategory};
 use serde::Deserialize;
 use std::{fmt, fmt::Display, path::Path};
 
@@ -40,25 +40,31 @@ mod raw;
 #[derive(Debug, Deserialize)]
 #[serde(from = "raw::Config")]
 pub struct Config {
-    pub graph: graph::Config,
-    pub export: Option<export::Config>,
+    pub parser: parser::Config,
+    pub generator: Option<generator::Config>,
     pub routing: Option<routing::Config>,
+}
+
+impl SupportingFileExts for Config {
+    fn supported_exts<'a>() -> &'a [&'a str] {
+        &["yaml"]
+    }
 }
 
 impl Config {
     pub fn from_yaml<P: AsRef<Path> + ?Sized>(path: &P) -> Result<Config, String> {
         let file = {
-            helpers::is_file_ext_supported(path, &["yaml"])?;
+            Config::find_supported_ext(path)?;
             helpers::open_file(path)?
         };
         match serde_yaml::from_reader(file) {
             Ok(cfg) => Ok(cfg),
-            Err(e) => Err(format!("{}", e)),
+            Err(msg) => Err(format!("{}", msg)),
         }
     }
 }
 
-pub mod graph {
+pub mod parser {
     use std::path::PathBuf;
 
     #[derive(Debug)]
@@ -279,10 +285,12 @@ pub mod graph {
     }
 }
 
-pub mod export {
+pub mod generator {
+    use std::path::PathBuf;
+
     #[derive(Debug)]
     pub struct Config {
-        // TODO implement export:150:Config
+        pub map_file: PathBuf,
     }
 }
 
@@ -332,22 +340,22 @@ pub mod routing {
 
         pub fn from_str(
             yaml_str: &str,
-            graph_cfg: &super::graph::Config,
+            cfg_graph: &super::parser::Config,
         ) -> Result<Config, String> {
             let raw_cfg = super::raw::routing::Config::from_str(yaml_str)?;
-            Ok(Config::from_raw(raw_cfg, graph_cfg))
+            Ok(Config::from_raw(raw_cfg, cfg_graph))
         }
 
         pub fn from_raw(
             raw_cfg: super::raw::routing::Config,
-            graph: &super::graph::Config,
+            cfg_parser: &super::parser::Config,
         ) -> Config {
             let (metric_indices, alphas) = raw_cfg
                 .entries
                 .into_iter()
                 .map(|entry| {
                     (
-                        graph.edges.metric_idx(&entry.id),
+                        cfg_parser.edges.metric_idx(&entry.id),
                         entry.alpha.unwrap_or(1.0),
                     )
                 })

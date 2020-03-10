@@ -2,9 +2,9 @@ use log::{error, info};
 use osmgraphing::{
     configs::Config,
     helpers,
+    io::Parser,
     network::NodeIdx,
     routing::{self},
-    Parser,
 };
 use std::{path::PathBuf, time::Instant};
 
@@ -27,7 +27,7 @@ fn main() {
     // measure parsing-time
     let now = Instant::now();
     // parse and create graph
-    let graph = match Parser::parse_and_finalize(cfg.graph) {
+    let graph = match Parser::parse_and_finalize(cfg.parser) {
         Ok(graph) => graph,
         Err(msg) => {
             error!("{}", msg);

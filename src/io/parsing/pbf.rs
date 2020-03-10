@@ -1,5 +1,5 @@
 use crate::{
-    configs::{graph, EdgeCategory, NodeCategory},
+    configs::{parser, EdgeCategory, NodeCategory},
     defaults::DimVec,
     helpers,
     network::{GraphBuilder, MetricIdx, ProtoEdge, ProtoNode, StreetCategory},
@@ -18,7 +18,7 @@ impl Parser {
 }
 
 impl super::Parsing for Parser {
-    fn preprocess(&mut self, cfg: &graph::Config) -> Result<(), String> {
+    fn preprocess(&mut self, cfg: &parser::Config) -> Result<(), String> {
         // check if yaml-config is correct
         if !cfg.nodes.categories().contains(&NodeCategory::NodeId) {
             Err(String::from(
@@ -39,7 +39,7 @@ impl super::Parsing for Parser {
 
     fn parse_ways(
         &self,
-        cfg: &graph::Config,
+        cfg: &parser::Config,
         graph_builder: &mut GraphBuilder,
     ) -> Result<(), String> {
         info!("START Create edges from input-file.");
@@ -146,7 +146,7 @@ impl super::Parsing for Parser {
 
     fn parse_nodes(
         &self,
-        cfg: &graph::Config,
+        cfg: &parser::Config,
         graph_builder: &mut GraphBuilder,
     ) -> Result<(), String> {
         info!("START Create nodes from input-file.");

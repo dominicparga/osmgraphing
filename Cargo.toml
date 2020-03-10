@@ -28,6 +28,9 @@ osmgraphing = ["rand", "rand_pcg"]
 name = 'osmgraphing' # bin/osmgraphing.rs
 required-features = ["osmgraphing"]
 
+[[bin]]
+name = 'fmigenerator' # bin/fmigenerator.rs
+
 
 [[example]]
 name = "parser"

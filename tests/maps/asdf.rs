@@ -1,14 +1,14 @@
 pub mod parsing {
     use crate::helpers::{create_config, TestType};
-    use osmgraphing::{configs, Parser};
+    use osmgraphing::{configs, io::Parser};
     use std::path::PathBuf;
 
     #[test]
     fn wrong_extension() {
         let mut cfg = create_config(TestType::Small, None);
-        cfg.graph.map_file = PathBuf::from("foo.asdf");
+        cfg.parser.map_file = PathBuf::from("foo.asdf");
         assert!(
-            Parser::parse(&cfg.graph).is_err(),
+            Parser::parse(&cfg.parser).is_err(),
             "File-extension 'asdf' should not be supported."
         );
     }
@@ -18,7 +18,7 @@ pub mod parsing {
         let cfg = create_config(TestType::Small, None);
         configs::routing::Config::from_str(
             "routing: [{ id: 'Meters' }, { id: 'Seconds' }]",
-            &cfg.graph,
+            &cfg.parser,
         )
         .expect("MetricIds should be provided");
     }

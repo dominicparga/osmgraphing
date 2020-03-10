@@ -2,8 +2,8 @@ pub mod fmi;
 pub mod pbf;
 
 use crate::{
-    configs::graph,
-    helpers::MapFileExt,
+    configs::parser,
+    io::{MapFileExt, SupportingFileExts, SupportingMapFileExts},
     network::{Graph, GraphBuilder},
 };
 use log::info;
@@ -43,27 +43,34 @@ use std::path::Path;
 pub struct Parser;
 
 impl Parser {
-    pub fn parse(cfg: &graph::Config) -> Result<GraphBuilder, String> {
-        match MapFileExt::from_path(&cfg.map_file)? {
+    pub fn parse(cfg: &parser::Config) -> Result<GraphBuilder, String> {
+        match Parser::from_path(&cfg.map_file)? {
             MapFileExt::PBF => pbf::Parser::new().parse(cfg),
             MapFileExt::FMI => fmi::Parser::new().parse(cfg),
         }
     }
 
-    pub fn parse_and_finalize(cfg: graph::Config) -> Result<Graph, String> {
-        match MapFileExt::from_path(&cfg.map_file)? {
+    pub fn parse_and_finalize(cfg: parser::Config) -> Result<Graph, String> {
+        match Parser::from_path(&cfg.map_file)? {
             MapFileExt::PBF => pbf::Parser::new().parse_and_finalize(cfg),
             MapFileExt::FMI => fmi::Parser::new().parse_and_finalize(cfg),
         }
     }
 }
 
+impl SupportingMapFileExts for Parser {}
+impl SupportingFileExts for Parser {
+    fn supported_exts<'a>() -> &'a [&'a str] {
+        &["pbf", "fmi"]
+    }
+}
+
 trait Parsing {
-    fn preprocess(&mut self, _cfg: &graph::Config) -> Result<(), String> {
+    fn preprocess(&mut self, _cfg: &parser::Config) -> Result<(), String> {
         Ok(())
     }
 
-    fn parse(&mut self, cfg: &graph::Config) -> Result<GraphBuilder, String> {
+    fn parse(&mut self, cfg: &parser::Config) -> Result<GraphBuilder, String> {
         let mut graph_builder = GraphBuilder::new();
 
         info!("START Process given file");
@@ -77,17 +84,17 @@ trait Parsing {
 
     fn parse_ways(
         &self,
-        cfg: &graph::Config,
+        cfg: &parser::Config,
         graph_builder: &mut GraphBuilder,
     ) -> Result<(), String>;
 
     fn parse_nodes(
         &self,
-        cfg: &graph::Config,
+        cfg: &parser::Config,
         graph_builder: &mut GraphBuilder,
     ) -> Result<(), String>;
 
-    fn parse_and_finalize(&mut self, cfg: graph::Config) -> Result<Graph, String> {
+    fn parse_and_finalize(&mut self, cfg: parser::Config) -> Result<Graph, String> {
         let path = Path::new(&cfg.map_file);
         info!("START Parse from given path {}", path.display());
 

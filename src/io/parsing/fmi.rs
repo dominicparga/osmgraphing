@@ -1,5 +1,5 @@
 use crate::{
-    configs::graph,
+    configs::parser,
     helpers,
     network::{GraphBuilder, ProtoEdge, ProtoNode},
 };
@@ -26,7 +26,7 @@ impl Parser {
 
 impl super::Parsing for Parser {
     /// Remembers range of edge-lines and node-lines
-    fn preprocess(&mut self, cfg: &graph::Config) -> Result<(), String> {
+    fn preprocess(&mut self, cfg: &parser::Config) -> Result<(), String> {
         info!("START Start preprocessing fmi-parser.");
         // only functional-lines are counted
         let mut line_number = 0;
@@ -86,7 +86,7 @@ impl super::Parsing for Parser {
 
     fn parse_ways(
         &self,
-        cfg: &graph::Config,
+        cfg: &parser::Config,
         graph_builder: &mut GraphBuilder,
     ) -> Result<(), String> {
         info!("START Create edges from input-file.");
@@ -115,7 +115,7 @@ impl super::Parsing for Parser {
 
     fn parse_nodes(
         &self,
-        cfg: &graph::Config,
+        cfg: &parser::Config,
         graph_builder: &mut GraphBuilder,
     ) -> Result<(), String> {
         info!("START Create nodes from input-file.");
@@ -147,7 +147,7 @@ impl super::Parsing for Parser {
 
 mod intern {
     use crate::{
-        configs::{graph, EdgeCategory, NodeCategory},
+        configs::{parser, EdgeCategory, NodeCategory},
         defaults::DimVec,
         network::{MetricIdx, ProtoEdge, ProtoNode},
         units::geo,
@@ -155,7 +155,7 @@ mod intern {
     pub use std::{io::BufReader as Reader, str};
 
     impl ProtoNode {
-        pub fn from_str(line: &str, cfg: &graph::nodes::Config) -> Result<ProtoNode, String> {
+        pub fn from_str(line: &str, cfg: &parser::nodes::Config) -> Result<ProtoNode, String> {
             let mut node_id = None;
             let mut lat = None;
             let mut lon = None;
@@ -235,7 +235,7 @@ mod intern {
         /// Parse a line of metrics into an edge.
         ///
         /// - When NodeIds are parsed, the first one is interpreted as src-id and the second one as dst-id.
-        pub fn from_str(line: &str, cfg: &graph::edges::Config) -> Result<ProtoEdge, String> {
+        pub fn from_str(line: &str, cfg: &parser::edges::Config) -> Result<ProtoEdge, String> {
             let mut metric_values = DimVec::<_>::with_capacity(cfg.dim());
             let mut src_id = None;
             let mut dst_id = None;
