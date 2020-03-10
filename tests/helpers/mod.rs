@@ -38,19 +38,23 @@ pub fn create_config(test_type: TestType, routing_cfg: Option<&str>) -> Config {
         TestType::SimpleStuttgart => "resources/maps/simple-stuttgart.fmi",
         TestType::Small => "resources/maps/small.fmi",
     };
-    let mut cfg = match MapFileExt::from_path(map_file).expect("Map-file should exist.") {
+    let cfg = match MapFileExt::from_path(map_file).expect("Map-file should exist.") {
         MapFileExt::PBF => Config::from_yaml("resources/configs/isle-of-man.pbf.yaml"),
         MapFileExt::FMI => Config::from_yaml("resources/configs/simple-stuttgart.fmi.yaml"),
-    }
-    .expect("Config is tested separatedly.");
+    };
+    let mut cfg = match cfg {
+        Ok(cfg) => cfg,
+        e => panic!("{:?}", e),
+    };
+
     cfg.graph.map_file = PathBuf::from(map_file);
 
     // cfg.routing
     if let Some(yaml_str) = routing_cfg {
-        cfg.routing = Some(
-            configs::routing::Config::from_str(yaml_str, &cfg.graph)
-                .expect("Config is tested separatedly"),
-        );
+        cfg.routing = match configs::routing::Config::from_str(yaml_str, &cfg.graph) {
+            Ok(routing_cfg) => Some(routing_cfg),
+            e => panic!("{:?}", e),
+        };
     }
 
     // return

@@ -20,7 +20,8 @@ pub mod graph {
     pub struct Config {
         pub map_file: PathBuf,
         pub vehicles: vehicles::Config,
-        // pub nodes: Vec<nodes::Entry>,
+        #[serde(flatten)]
+        pub nodes: nodes::Config,
         pub edges: Vec<edges::Entry>,
     }
 
@@ -40,10 +41,15 @@ pub mod graph {
         use crate::configs::graph::nodes::NodeCategory;
         use serde::Deserialize;
 
-        // TODO single attribute -> remove Entry
+        #[derive(Debug, Deserialize)]
+        pub struct Config {
+            #[serde(rename = "nodes")]
+            pub categories: Vec<Entry>,
+        }
+
         #[derive(Debug, Deserialize)]
         pub struct Entry {
-            category: NodeCategory,
+            pub category: NodeCategory,
         }
     }
 
@@ -145,7 +151,15 @@ impl From<Config> for super::Config {
             };
 
             // build super::graph::nodes::Config
-            let nodes = super::graph::nodes::Config {};
+            let nodes = super::graph::nodes::Config::new(
+                raw_cfg
+                    .graph
+                    .nodes
+                    .categories
+                    .into_iter()
+                    .map(|entry| entry.category)
+                    .collect(),
+            );
 
             // build super::graph::edges::Config
             let edges = {

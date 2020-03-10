@@ -1,7 +1,7 @@
 use crate::{
     configs::graph,
     helpers,
-    network::{GraphBuilder, ProtoEdge},
+    network::{GraphBuilder, ProtoEdge, ProtoNode},
 };
 use log::info;
 use std::{io::BufRead, ops::Range};
@@ -134,9 +134,9 @@ impl super::Parsing for Parser {
             line_number += 1;
 
             // create node and add it
-            let proto_node = line.parse::<intern::ProtoNode>()?;
+            let proto_node = ProtoNode::from_str(&line, &cfg.nodes)?;
             if graph_builder.is_node_in_edge(proto_node.id) {
-                graph_builder.push_node(proto_node.id, proto_node.coord);
+                graph_builder.push_node(proto_node);
             }
         }
         info!("FINISHED");
@@ -147,65 +147,87 @@ impl super::Parsing for Parser {
 
 mod intern {
     use crate::{
-        configs::{graph::edges::Config, EdgeCategory},
+        configs::{graph, EdgeCategory, NodeCategory},
         defaults::DimVec,
-        network::{MetricIdx, ProtoEdge},
+        network::{MetricIdx, ProtoEdge, ProtoNode},
         units::geo,
     };
     pub use std::{io::BufReader as Reader, str};
 
-    pub struct ProtoNode {
-        pub id: i64,
-        pub coord: geo::Coordinate,
-    }
+    impl ProtoNode {
+        pub fn from_str(line: &str, cfg: &graph::nodes::Config) -> Result<ProtoNode, String> {
+            let mut node_id = None;
+            let mut lat = None;
+            let mut lon = None;
+            let mut level = None;
 
-    impl str::FromStr for ProtoNode {
-        type Err = String;
-
-        fn from_str(line: &str) -> Result<Self, Self::Err> {
+            // Loop over node-categories and parse params accordingly.
             let params: Vec<&str> = line.split_whitespace().collect();
 
-            let n = 4;
-            if params.len() < n {
-                return Err(format!(
-                    "Not enough params for a node ({}, but should be {}).",
-                    params.len(),
-                    n
-                ));
+            for (param_idx, category) in cfg.categories().iter().enumerate() {
+                let param = *params.get(param_idx).ok_or(
+                    "The fmi-map-file is expected to have more node-params \
+                     than actually has.",
+                )?;
+
+                match category {
+                    NodeCategory::NodeId => {
+                        node_id = match param.parse::<i64>() {
+                            Ok(id) => Some(id),
+                            Err(_) => {
+                                return Err(format!(
+                                    "Parsing id '{:?}' from fmi-file, which is not i64.",
+                                    param
+                                ))
+                            }
+                        };
+                    }
+                    NodeCategory::Latitude => {
+                        lat = match param.parse::<f32>() {
+                            Ok(lat) => Some(lat),
+                            Err(_) => {
+                                return Err(format!(
+                                    "Parsing lat '{:?}' from fmi-file, which is not f32.",
+                                    params[2]
+                                ))
+                            }
+                        };
+                    }
+                    NodeCategory::Longitude => {
+                        lon = match param.parse::<f32>() {
+                            Ok(lon) => Some(lon),
+                            Err(_) => {
+                                return Err(format!(
+                                    "Parsing lon '{:?}' from fmi-file, which is not f32.",
+                                    params[3]
+                                ))
+                            }
+                        };
+                    }
+                    NodeCategory::Level => {
+                        level = match param.parse::<usize>() {
+                            Ok(level) => Some(level),
+                            Err(_) => {
+                                return Err(format!(
+                                    "Parsing level '{:?}' from fmi-file, which is not usize.",
+                                    param
+                                ))
+                            }
+                        };
+                    }
+                    NodeCategory::Ignore => (),
+                }
             }
 
-            let id = match params[0].parse::<i64>() {
-                Ok(id) => id,
-                Err(_) => {
-                    return Err(format!(
-                        "Parsing id '{:?}' from fmi-file, which is not i64.",
-                        params[0]
-                    ))
-                }
-            };
-            let lat = match params[2].parse::<f32>() {
-                Ok(lat) => lat,
-                Err(_) => {
-                    return Err(format!(
-                        "Parsing lat '{:?}' from fmi-file, which is not f64.",
-                        params[2]
-                    ))
-                }
-            };
-            let lon = match params[3].parse::<f32>() {
-                Ok(lon) => lon,
-                Err(_) => {
-                    return Err(format!(
-                        "Parsing lon '{:?}' from fmi-file, which is not f64.",
-                        params[3]
-                    ))
-                }
-            };
-
-            Ok(ProtoNode {
-                id,
-                coord: geo::Coordinate { lat, lon },
-            })
+            let node_id = node_id.ok_or("Proto-node should have an id, but doesn't.".to_owned())?;
+            let lat = lat.ok_or("Proto-node should have a coordinate, but latitude is misisng.")?;
+            let lon =
+                lon.ok_or("Proto-node should have a coordinate, but longitude is misisng.")?;
+            Ok(ProtoNode::new(
+                node_id,
+                Some(geo::Coordinate { lat, lon }),
+                level,
+            ))
         }
     }
 
@@ -213,12 +235,12 @@ mod intern {
         /// Parse a line of metrics into an edge.
         ///
         /// - When NodeIds are parsed, the first one is interpreted as src-id and the second one as dst-id.
-        pub fn from_str(line: &str, cfg: &Config) -> Result<ProtoEdge, String> {
+        pub fn from_str(line: &str, cfg: &graph::edges::Config) -> Result<ProtoEdge, String> {
             let mut metric_values = DimVec::<_>::with_capacity(cfg.dim());
             let mut src_id = None;
             let mut dst_id = None;
 
-            // Loop over metric-types and parse params accordingly.
+            // Loop over edge-categories and parse params accordingly.
             let params: Vec<&str> = line.split_whitespace().collect();
 
             // metric-idx has to be counted separatedly.

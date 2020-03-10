@@ -9,10 +9,8 @@ graph:
     are-drivers-picky: false
   nodes:
   - category: 'NodeId'
-  - category: 'OsmId'
   - category: 'Latitude'
   - category: 'Longitude'
-  - category: 'Height'
   - category: 'Level'
   - category: 'Ignore'
   # Here, the order matters, if the map-file has a metric-order, like

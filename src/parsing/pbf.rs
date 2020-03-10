@@ -1,8 +1,8 @@
 use crate::{
-    configs::{graph, EdgeCategory},
+    configs::{graph, EdgeCategory, NodeCategory},
     defaults::DimVec,
     helpers,
-    network::{GraphBuilder, MetricIdx, ProtoEdge, StreetCategory},
+    network::{GraphBuilder, MetricIdx, ProtoEdge, ProtoNode, StreetCategory},
     units::geo::Coordinate,
 };
 use log::info;
@@ -18,6 +18,25 @@ impl Parser {
 }
 
 impl super::Parsing for Parser {
+    fn preprocess(&mut self, cfg: &graph::Config) -> Result<(), String> {
+        // check if yaml-config is correct
+        if !cfg.nodes.categories().contains(&NodeCategory::NodeId) {
+            Err(String::from(
+                "The provided config-file doesn't contain a NodeId, but needs to.",
+            ))
+        } else if !cfg.nodes.categories().contains(&NodeCategory::Latitude) {
+            Err(String::from(
+                "The provided config-file doesn't contain a latitude, but needs to.",
+            ))
+        } else if !cfg.nodes.categories().contains(&NodeCategory::Longitude) {
+            Err(String::from(
+                "The provided config-file doesn't contain a longitude, but needs to.",
+            ))
+        } else {
+            Ok(())
+        }
+    }
+
     fn parse_ways(
         &self,
         cfg: &graph::Config,
@@ -142,10 +161,14 @@ impl super::Parsing for Parser {
         {
             // add node to graph if it's part of an edge
             if graph_builder.is_node_in_edge(node.id.0) {
-                graph_builder.push_node(
+                graph_builder.push_node(ProtoNode::new(
                     node.id.0,
-                    Coordinate::from_decimicro(node.decimicro_lat, node.decimicro_lon),
-                );
+                    Some(Coordinate::from_decimicro(
+                        node.decimicro_lat,
+                        node.decimicro_lon,
+                    )),
+                    None,
+                ));
             }
         }
         info!("FINISHED");

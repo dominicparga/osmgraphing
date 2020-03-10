@@ -13,12 +13,22 @@ use std::{cmp::Reverse, collections::BTreeMap, mem};
 
 #[derive(Debug)]
 pub struct ProtoNode {
-    id: i64,
-    coord: Option<Coordinate>,
+    pub id: i64,
+    pub coord: Option<Coordinate>,
+    pub level: Option<usize>,
     is_in_edge: bool,
 }
 
 impl ProtoNode {
+    pub fn new(id: i64, coord: Option<Coordinate>, level: Option<usize>) -> ProtoNode {
+        ProtoNode {
+            id,
+            coord,
+            level,
+            is_in_edge: false,
+        }
+    }
+
     fn is_in_edge(&self) -> bool {
         self.is_in_edge
     }
@@ -237,20 +247,13 @@ impl GraphBuilder {
         }
     }
 
-    pub fn push_node(&mut self, id: i64, coord: geo::Coordinate) -> &mut Self {
+    pub fn push_node(&mut self, new_proto_node: ProtoNode) -> &mut Self {
         // if already added -> update coord
         // if not -> add new node
-        if let Some(proto_node) = self.proto_nodes.get_mut(&id) {
-            proto_node.coord = Some(coord);
+        if let Some(proto_node) = self.proto_nodes.get_mut(&new_proto_node.id) {
+            proto_node.coord = new_proto_node.coord;
         } else {
-            self.proto_nodes.insert(
-                id,
-                ProtoNode {
-                    id,
-                    coord: Some(coord),
-                    is_in_edge: false,
-                },
-            );
+            self.proto_nodes.insert(new_proto_node.id, new_proto_node);
         }
         self
     }
@@ -274,6 +277,7 @@ impl GraphBuilder {
                 ProtoNode {
                     id: src_id,
                     coord: None,
+                    level: None,
                     is_in_edge: true,
                 },
             );
@@ -289,6 +293,7 @@ impl GraphBuilder {
                 ProtoNode {
                     id: dst_id,
                     coord: None,
+                    level: None,
                     is_in_edge: true,
                 },
             );

@@ -3,6 +3,14 @@ graph:
   vehicles:
     category: 'Car'
     are-drivers-picky: false
+  nodes:
+  - category: 'NodeId'
+  - category: 'Ignore' # osm-id
+  - category: 'Latitude'
+  - category: 'Longitude'
+  # coming soon:
+  # - category: 'Ignore' # height
+  # - category: 'Level'
   edges:
   - category: 'NodeId'
     id: 'src-id'

@@ -82,12 +82,28 @@ pub mod graph {
     pub mod nodes {
         use serde::Deserialize;
 
-        #[derive(Debug, Deserialize)]
-        pub enum NodeCategory {}
+        #[derive(Copy, Clone, Debug, Deserialize, Eq, PartialEq)]
+        pub enum NodeCategory {
+            NodeId,
+            Latitude,
+            Longitude,
+            Level,
+            Ignore,
+        }
 
         #[derive(Debug)]
         pub struct Config {
-            // TODO implement nodes::Config
+            categories: Vec<NodeCategory>,
+        }
+
+        impl Config {
+            pub fn new(categories: Vec<NodeCategory>) -> Config {
+                Config { categories }
+            }
+
+            pub fn categories(&self) -> &Vec<NodeCategory> {
+                &self.categories
+            }
         }
     }
 

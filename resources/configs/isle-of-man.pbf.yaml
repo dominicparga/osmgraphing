@@ -3,6 +3,10 @@ graph:
   vehicles:
     category: 'Car'
     are-drivers-picky: false
+  nodes:
+  - category: 'NodeId'
+  - category: 'Latitude'
+  - category: 'Longitude'
   edges:
   - category: 'Meters'
     is-provided: false
