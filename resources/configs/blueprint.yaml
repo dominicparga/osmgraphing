@@ -27,6 +27,7 @@ graph:
   # In module 'defaults', set the inline-size accordingly for best performance
   # and memory-usage.
   edges:
+  # mandatory convention: first node-id is src-id
   - category: 'NodeId'
     id: 'src-id'
   - category: 'NodeId'
@@ -57,15 +58,20 @@ graph:
 
 export:
   nodes:
-  - id: 'NodeId'
-  - id: 'OsmId'
-  - id: 'Latitude'
-  - id: 'Longitude'
-  - id: 'Height'
-  - id: 'Level'
+    - category: 'NodeId'
+    - category: 'Ignore'
+    - category: 'Latitude'
+    - category: 'Longitude'
+    - category: 'Ignore'
+    - category: 'Level'
+  # mandatory convention: first node-id is src-id
   edges:
+  # mandatory convention: first node-id is src-id
   - id: 'src-id'
   - id: 'dst-id'
+  - id: 'to-the-moon-and-back'
+  - id: 'unnecessary'
+  - id: 'faster-than-light'
 
 # The metrics, which should be considered in routing, are listed here.
 # The given alphas are used as scale.

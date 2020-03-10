@@ -253,23 +253,29 @@ mod intern {
                 )?;
 
                 match metric_type {
-                    EdgeCategory::NodeId => {
-                        // get src-id and dst-id to create unfinished-edge afterwards
+                    EdgeCategory::SrcId => {
                         if src_id.is_none() {
                             src_id = Some(param.parse::<i64>().ok().ok_or(format!(
                                 "Parsing {} (for edge-src) '{:?}' from fmi-file, which is not i64.",
                                 metric_type, param
                             ))?);
-                        } else if dst_id.is_none() {
+                        } else {
+                            return Err(format!(
+                                "Src-id is already set, but another src-id {} should be parsed.",
+                                param
+                            ));
+                        }
+                    }
+                    EdgeCategory::DstId => {
+                        if dst_id.is_none() {
                             dst_id = Some(param.parse::<i64>().ok().ok_or(format!(
-                                "Parsing {} (for edge-dst) '{:?}' from fmi-file, which is not i64.",
+                                "Parsing {} (for edge-src) '{:?}' from fmi-file, which is not i64.",
                                 metric_type, param
                             ))?);
                         } else {
                             return Err(format!(
-                                "Both src-id and dst-id are already set, \
-                                 but another {} should be parsed.",
-                                metric_type
+                                "Dst-id is already set, but another dst-id {} should be parsed.",
+                                param
                             ));
                         }
                     }

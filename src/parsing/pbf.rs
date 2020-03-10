@@ -126,7 +126,7 @@ impl super::Parsing for Parser {
                             ));
                         }
                     }
-                    EdgeCategory::NodeId | EdgeCategory::Ignore => (),
+                    EdgeCategory::SrcId | EdgeCategory::DstId | EdgeCategory::Ignore => (),
                 }
             }
 

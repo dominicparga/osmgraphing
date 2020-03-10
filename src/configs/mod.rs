@@ -120,29 +120,32 @@ pub mod graph {
         pub struct Config {
             // store for order
             edge_categories: Vec<EdgeCategory>,
+            edge_ids: Vec<SimpleId>,
             // store for quick access
             metric_categories: DimVec<EdgeCategory>,
             are_metrics_provided: DimVec<bool>,
-            ids: DimVec<SimpleId>,
-            indices: BTreeMap<SimpleId, MetricIdx>,
+            metric_ids: DimVec<SimpleId>,
+            metric_indices: BTreeMap<SimpleId, MetricIdx>,
             calc_rules: DimVec<DimVec<(EdgeCategory, MetricIdx)>>,
         }
 
         impl Config {
             pub fn new(
                 edge_categories: Vec<EdgeCategory>,
+                edge_ids: Vec<SimpleId>,
                 metric_categories: DimVec<EdgeCategory>,
                 are_metrics_provided: DimVec<bool>,
-                ids: DimVec<SimpleId>,
-                indices: BTreeMap<SimpleId, MetricIdx>,
+                metric_ids: DimVec<SimpleId>,
+                metric_indices: BTreeMap<SimpleId, MetricIdx>,
                 calc_rules: DimVec<DimVec<(EdgeCategory, MetricIdx)>>,
             ) -> Config {
                 Config {
                     edge_categories,
+                    edge_ids,
                     metric_categories,
                     are_metrics_provided,
-                    ids,
-                    indices,
+                    metric_ids,
+                    metric_indices,
                     calc_rules,
                 }
             }
@@ -151,6 +154,16 @@ pub mod graph {
         impl Config {
             pub fn edge_categories(&self) -> &Vec<EdgeCategory> {
                 &self.edge_categories
+            }
+
+            /// For metrics, use `metric_category(idx)`, since it is faster.
+            pub fn edge_category(&self, id: &SimpleId) -> &EdgeCategory {
+                match self.edge_ids.iter().position(|i| i == id) {
+                    Some(idx) => &self.edge_categories[idx],
+                    None => {
+                        panic!("Id {} not found in config.", id);
+                    }
+                }
             }
 
             pub fn metric_category(&self, idx: MetricIdx) -> EdgeCategory {
@@ -176,7 +189,7 @@ pub mod graph {
             }
 
             pub fn metric_idx(&self, id: &SimpleId) -> MetricIdx {
-                match self.indices.get(id) {
+                match self.metric_indices.get(id) {
                     Some(idx) => *idx,
                     None => {
                         panic!("Id {} not found in config.", id);
@@ -210,7 +223,8 @@ pub mod graph {
             Seconds,
             LaneCount,
             Custom,
-            NodeId,
+            SrcId,
+            DstId,
             Ignore,
         }
 
@@ -227,13 +241,16 @@ pub mod graph {
                     | EdgeCategory::KilometersPerHour
                     | EdgeCategory::Seconds
                     | EdgeCategory::LaneCount => true,
-                    EdgeCategory::Custom | EdgeCategory::NodeId | EdgeCategory::Ignore => false,
+                    EdgeCategory::Custom
+                    | EdgeCategory::SrcId
+                    | EdgeCategory::DstId
+                    | EdgeCategory::Ignore => false,
                 }
             }
 
             pub fn is_ignored(&self) -> bool {
                 match self {
-                    EdgeCategory::NodeId | EdgeCategory::Ignore => true,
+                    EdgeCategory::SrcId | EdgeCategory::DstId | EdgeCategory::Ignore => true,
                     EdgeCategory::Meters
                     | EdgeCategory::KilometersPerHour
                     | EdgeCategory::Seconds
@@ -253,7 +270,8 @@ pub mod graph {
                     EdgeCategory::Meters
                     | EdgeCategory::LaneCount
                     | EdgeCategory::Custom
-                    | EdgeCategory::NodeId
+                    | EdgeCategory::SrcId
+                    | EdgeCategory::DstId
                     | EdgeCategory::Ignore => smallvec![],
                 }
             }
@@ -273,22 +291,25 @@ pub mod routing {
 
     #[derive(Debug)]
     pub struct Config {
-        indices: DimVec<MetricIdx>,
+        metric_indices: DimVec<MetricIdx>,
         alphas: DimVec<f32>,
     }
 
     impl Config {
-        pub fn new(indices: DimVec<MetricIdx>, alphas: DimVec<f32>) -> Config {
-            Config { indices, alphas }
+        pub fn new(metric_indices: DimVec<MetricIdx>, alphas: DimVec<f32>) -> Config {
+            Config {
+                metric_indices,
+                alphas,
+            }
         }
 
         fn _push(&mut self, idx: MetricIdx, alpha: f32) {
-            self.indices.push(idx);
+            self.metric_indices.push(idx);
             self.alphas.push(alpha);
         }
 
         pub fn alpha(&self, metric_idx: MetricIdx) -> f32 {
-            let idx = match self.indices.iter().position(|i| i == &metric_idx) {
+            let idx = match self.metric_indices.iter().position(|i| i == &metric_idx) {
                 Some(idx) => idx,
                 None => {
                     panic!("Idx {} not found in config.", metric_idx);
@@ -301,12 +322,12 @@ pub mod routing {
             &self.alphas
         }
 
-        pub fn indices(&self) -> &DimVec<MetricIdx> {
-            &self.indices
+        pub fn metric_indices(&self) -> &DimVec<MetricIdx> {
+            &self.metric_indices
         }
 
         pub fn dim(&self) -> usize {
-            self.indices.len()
+            self.metric_indices.len()
         }
 
         pub fn from_str(
@@ -321,7 +342,7 @@ pub mod routing {
             raw_cfg: super::raw::routing::Config,
             graph: &super::graph::Config,
         ) -> Config {
-            let (indices, alphas) = raw_cfg
+            let (metric_indices, alphas) = raw_cfg
                 .entries
                 .into_iter()
                 .map(|entry| {
@@ -332,7 +353,7 @@ pub mod routing {
                 })
                 .unzip();
 
-            Config::new(indices, alphas)
+            Config::new(metric_indices, alphas)
         }
     }
 }

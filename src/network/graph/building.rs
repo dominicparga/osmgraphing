@@ -193,7 +193,8 @@ impl Graph {
                     }
                     EdgeCategory::LaneCount
                     | EdgeCategory::Custom
-                    | EdgeCategory::NodeId
+                    | EdgeCategory::SrcId
+                    | EdgeCategory::DstId
                     | EdgeCategory::Ignore => {
                         // Should be set to false here, but being here needs the metric to be none.
                         // This would be bad anyways, because these metrics should be provided, not

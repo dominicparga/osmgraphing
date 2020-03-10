@@ -3,6 +3,7 @@ graph:
   vehicles:
     category: 'Car'
     are-drivers-picky: false
+    blub: 'asdf'
   nodes:
   - category: 'NodeId'
   - category: 'Ignore' # osm-id
@@ -12,9 +13,9 @@ graph:
   # - category: 'Ignore' # height
   # - category: 'Level'
   edges:
-  - category: 'NodeId'
+  - category: 'SrcId'
     id: 'src-id'
-  - category: 'NodeId'
+  - category: 'DstId'
     id: 'dst-id'
   - category: 'Meters'
   - category: 'Ignore'

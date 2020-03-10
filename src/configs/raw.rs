@@ -72,6 +72,7 @@ pub mod export {
     use serde::Deserialize;
 
     #[derive(Debug, Deserialize)]
+    #[serde(deny_unknown_fields)]
     pub struct Config {
         pub nodes: Vec<nodes::Entry>,
         pub edges: Vec<edges::Entry>,
@@ -164,17 +165,23 @@ impl From<Config> for super::Config {
             // build super::graph::edges::Config
             let edges = {
                 // init datastructures
-                let mut all_categories = Vec::with_capacity(raw_cfg.graph.edges.len());
-                let mut categories = DimVec::new();
-                let mut ids = DimVec::new();
-                let mut are_provided = DimVec::new();
-                let mut indices = BTreeMap::new();
+                let mut edge_categories = Vec::with_capacity(raw_cfg.graph.edges.len());
+                let mut edge_ids = Vec::with_capacity(raw_cfg.graph.edges.len());
+                let mut metric_categories = DimVec::new();
+                let mut metric_ids = DimVec::new();
+                let mut are_metrics_provided = DimVec::new();
+                let mut metric_indices = BTreeMap::new();
                 let mut proto_calc_rules = DimVec::new();
 
                 // Fill categories, ids and whether type is provided.
                 // Further, create mapping: id -> idx.
                 for entry in raw_cfg.graph.edges.into_iter() {
-                    all_categories.push(entry.category);
+                    edge_categories.push(entry.category);
+                    let entry_id = match entry.id {
+                        Some(entry_id) => entry_id,
+                        None => SimpleId(format!("{}", entry.category)),
+                    };
+                    edge_ids.push(entry_id.clone());
 
                     if entry.category.is_ignored() {
                         if entry.calc_rules.is_some() {
@@ -185,16 +192,15 @@ impl From<Config> for super::Config {
                             );
                         }
                     } else {
-                        let entry_id = match entry.id {
-                            Some(entry_id) => entry_id,
-                            None => SimpleId(format!("{}", entry.category)),
-                        };
-                        ids.push(entry_id.clone());
-                        categories.push(entry.category);
-                        are_provided.push(entry.is_provided.unwrap_or(true));
+                        metric_ids.push(entry_id.clone());
+                        metric_categories.push(entry.category);
+                        are_metrics_provided.push(entry.is_provided.unwrap_or(true));
 
-                        let metric_idx = MetricIdx(indices.len());
-                        if indices.insert(entry_id.clone(), metric_idx).is_some() {
+                        let metric_idx = MetricIdx(metric_indices.len());
+                        if metric_indices
+                            .insert(entry_id.clone(), metric_idx)
+                            .is_some()
+                        {
                             panic!("Config has duplicate id: {}", entry_id);
                         }
                         proto_calc_rules.push(entry.calc_rules);
@@ -202,31 +208,31 @@ impl From<Config> for super::Config {
                 }
 
                 // add calculation-rules after everything else is already finished
-                let mut calc_rules: DimVec<_> = smallvec![DimVec::new(); categories.len()];
+                let mut calc_rules: DimVec<_> = smallvec![DimVec::new(); metric_categories.len()];
                 for (metric_idx, opt_calc_rule) in proto_calc_rules.into_iter().enumerate() {
                     if let Some(calc_rule) = opt_calc_rule {
                         // implement as given
                         for other_id in calc_rule.into_iter() {
-                            let other_idx = match indices.get(&other_id) {
+                            let other_idx = match metric_indices.get(&other_id) {
                                 Some(idx) => *idx,
                                 None => {
                                     panic!(
                                         "Calc-rule for metric of id {} has an unknown id {}.",
-                                        ids[metric_idx], other_id
+                                        metric_ids[metric_idx], other_id
                                     );
                                 }
                             };
-                            let other_type = categories[*other_idx];
+                            let other_type = metric_categories[*other_idx];
                             calc_rules[metric_idx].push((other_type, other_idx));
                         }
                     }
 
                     // check calc-rules for correctness
-                    let category = categories[metric_idx];
+                    let category = metric_categories[metric_idx];
                     let expected_categories = category.expected_calc_rules();
                     // if no rules are provided -> error
                     // but if the value itself is provided -> no error
-                    if calc_rules[metric_idx].len() == 0 && are_provided[metric_idx] {
+                    if calc_rules[metric_idx].len() == 0 && are_metrics_provided[metric_idx] {
                         continue;
                     }
                     if calc_rules[metric_idx].len() != expected_categories.len() {
@@ -244,17 +250,22 @@ impl From<Config> for super::Config {
                             .find(|c| c == expected_category)
                             .is_none()
                         {
-                            panic!("Calculation-rules of metric-category {} should contain {:?}, but doesn't.", category, expected_categories);
+                            panic!(
+                                "Calculation-rules of metric-category {} \
+                                 should contain {:?}, but doesn't.",
+                                category, expected_categories
+                            );
                         }
                     }
                 }
 
                 super::graph::edges::Config::new(
-                    all_categories,
-                    categories,
-                    are_provided,
-                    ids,
-                    indices,
+                    edge_categories,
+                    edge_ids,
+                    metric_categories,
+                    are_metrics_provided,
+                    metric_ids,
+                    metric_indices,
                     calc_rules,
                 )
             };
