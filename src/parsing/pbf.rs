@@ -67,9 +67,9 @@ impl super::Parsing for Parser {
 
             // Collect metrics as expected by user-config
             // ATTENTION: A way contains multiple edges, thus be careful when adding new metrics.
-            let cfg = &cfg.edges.metrics;
-            let mut metrics: DimVec<_> = smallvec![None; cfg.count()];
-            for metric_idx in (0..cfg.count()).map(MetricIdx) {
+            let cfg = &cfg.edges;
+            let mut metrics: DimVec<_> = smallvec![None; cfg.dim()];
+            for metric_idx in (0..cfg.dim()).map(MetricIdx) {
                 let category = cfg.category(metric_idx);
                 let is_provided = cfg.is_provided(metric_idx);
 

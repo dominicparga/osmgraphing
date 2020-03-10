@@ -200,7 +200,7 @@ impl Display for Graph {
                     let edge_idx = EdgeIdx(j);
                     let src_idx = bwd_dsts.dst_idx(edge_idx);
                     let half_edge = fwd_dsts.half_edge(edge_idx);
-                    let metrics: Vec<f32> = (0..self.cfg.edges.metrics.count())
+                    let metrics: Vec<f32> = (0..self.cfg.edges.dim())
                         .map(|i| self.metrics[i][*edge_idx])
                         .collect();
                     writeln!(

@@ -1,5 +1,5 @@
 use crate::helpers::{create_config, defaults, parse, TestType};
-use osmgraphing::configs::{self, Config};
+use osmgraphing::configs::{self as configs, Config};
 
 #[test]
 fn yaml() {

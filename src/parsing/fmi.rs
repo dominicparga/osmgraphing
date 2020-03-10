@@ -214,7 +214,7 @@ mod intern {
         ///
         /// - When NodeIds are parsed, the first one is interpreted as src-id and the second one as dst-id.
         pub fn from_str(line: &str, cfg: &Config) -> Result<ProtoEdge, String> {
-            let mut metric_values = DimVec::<_>::with_capacity(cfg.metrics.count());
+            let mut metric_values = DimVec::<_>::with_capacity(cfg.dim());
             let mut src_id = None;
             let mut dst_id = None;
 
@@ -222,8 +222,8 @@ mod intern {
             let params: Vec<&str> = line.split_whitespace().collect();
 
             // metric-idx has to be counted separatedly.
-            for param_idx in 0..cfg.metrics.all_categories().len() {
-                let metric_type = cfg.metrics.all_categories()[param_idx];
+            for param_idx in 0..cfg.all_categories().len() {
+                let metric_type = cfg.all_categories()[param_idx];
 
                 let param = *params.get(param_idx).ok_or(
                     "The fmi-map-file is expected to have more edge-params \
@@ -253,7 +253,7 @@ mod intern {
                     }
                     EdgeCategory::Meters => {
                         let metric_idx = MetricIdx(metric_values.len());
-                        let is_provided = cfg.metrics.is_provided(metric_idx);
+                        let is_provided = cfg.is_provided(metric_idx);
 
                         if is_provided {
                             if let Ok(meters) = param.parse::<f32>() {
@@ -273,7 +273,7 @@ mod intern {
                     | EdgeCategory::LaneCount
                     | EdgeCategory::Custom => {
                         let metric_idx = MetricIdx(metric_values.len());
-                        let is_provided = cfg.metrics.is_provided(metric_idx);
+                        let is_provided = cfg.is_provided(metric_idx);
 
                         if is_provided {
                             if let Ok(value) = param.parse::<f32>() {
@@ -293,11 +293,11 @@ mod intern {
             }
 
             debug_assert_eq!(
-                cfg.metrics.count(),
+                cfg.dim(),
                 metric_values.len(),
                 "Metric-vec of proto-edge has {} elements, but should have {}.",
                 metric_values.len(),
-                cfg.metrics.count()
+                cfg.dim()
             );
             Ok(ProtoEdge {
                 src_id: src_id.ok_or("Proto-edge should have a src-id, but doesn't.".to_owned())?,

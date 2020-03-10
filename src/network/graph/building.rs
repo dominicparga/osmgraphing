@@ -78,7 +78,7 @@ impl Graph {
     /// Metric-dependencies between each other are considered by looping enough times
     /// over the calculation-loop.
     fn add_metrics(&mut self, proto_edge: &mut ProtoEdge) -> Result<(), String> {
-        let cfg = &self.cfg.edges.metrics;
+        let cfg = &self.cfg;
 
         let (src_idx, dst_idx) = {
             let nodes = self.nodes();
@@ -90,17 +90,17 @@ impl Graph {
         // - finalize proto-edge -
         // Repeat the calculations n times.
         // In worst case, no metric is provided and all have to be calculated sequentially.
-        for _ in 0..cfg.count() {
+        for _ in 0..cfg.edges.dim() {
             // just a quick, coarse way of breaking earlier
             let mut are_all_metrics_some = true;
-            for metric_idx in (0..cfg.count()).map(MetricIdx) {
+            for metric_idx in (0..cfg.edges.dim()).map(MetricIdx) {
                 // if value should be provided, it is already in the proto-edge from parsing
-                let is_provided = cfg.is_provided(metric_idx);
+                let is_provided = cfg.edges.is_provided(metric_idx);
                 if is_provided {
                     continue;
                 }
 
-                let category = cfg.category(metric_idx);
+                let category = cfg.edges.category(metric_idx);
 
                 // Jump if proto-edge has its value.
                 if let Some(value) = &mut proto_edge.metrics[*metric_idx] {
@@ -129,7 +129,7 @@ impl Graph {
                         let mut length = None;
                         let mut maxspeed = None;
                         // get calculation-rules
-                        for &(other_type, other_idx) in cfg.calc_rules(metric_idx) {
+                        for &(other_type, other_idx) in cfg.edges.calc_rules(metric_idx) {
                             // get values from edge dependent of calculation-rules
                             match other_type {
                                 EdgeCategory::Meters => length = proto_edge.metrics[*other_idx],
@@ -158,7 +158,7 @@ impl Graph {
                         let mut length = None;
                         let mut duration = None;
                         // get calculation-rules
-                        for &(other_type, other_idx) in cfg.calc_rules(metric_idx) {
+                        for &(other_type, other_idx) in cfg.edges.calc_rules(metric_idx) {
                             // get values from edge dependent of calculation-rules
                             match other_type {
                                 EdgeCategory::Meters => length = proto_edge.metrics[*other_idx],
@@ -207,16 +207,16 @@ impl Graph {
             if let &Some(value) = value {
                 self.metrics[*metric_idx].push(value);
             } else {
-                if cfg.is_provided(metric_idx) {
+                if cfg.edges.is_provided(metric_idx) {
                     return Err(format!(
                         "Metric {} should be provided, but is not.",
-                        cfg.category(metric_idx)
+                        cfg.edges.category(metric_idx)
                     ));
                 }
                 return Err(format!(
                     "Metric {} couldn't be calculated \
                      since not enough calculation rules were given.",
-                    cfg.category(metric_idx)
+                    cfg.edges.category(metric_idx)
                 ));
             }
         }
@@ -410,12 +410,12 @@ impl GraphBuilder {
         // worked-off chunk has to be limited to 250_000.
         // Because ids are more expensive than metrics, (2x i64 = 4x f32), the number is much lower.
         let bytes_per_edge =
-            2 * mem::size_of::<i64>() + graph.cfg().edges.metrics.count() * mem::size_of::<f32>();
+            2 * mem::size_of::<i64>() + graph.cfg().edges.dim() * mem::size_of::<f32>();
         let max_byte = 200 * 1_000_000;
         let max_chunk_size = max_byte / bytes_per_edge;
         log::debug!("max-chunk-size:                {}", max_chunk_size);
         // init metrics
-        graph.metrics = vec![vec![]; graph.cfg().edges.metrics.count()];
+        graph.metrics = vec![vec![]; graph.cfg().edges.dim()];
         let mut new_proto_edges = vec![];
         log::debug!(
             "initial graph-metric-capacity: {}",

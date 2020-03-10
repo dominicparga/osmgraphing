@@ -1,9 +1,9 @@
 use crate::helpers;
+pub use graph::{edges::EdgeCategory, nodes::NodeCategory};
 use serde::Deserialize;
 use std::{fmt, fmt::Display, path::Path};
 
-pub mod graph;
-pub mod routing;
+mod raw;
 
 /// Storing (default) settings for parsing the graph.
 ///
@@ -37,13 +37,12 @@ pub mod routing;
 // Every metric (!= every category) will be stored in the graph, if mentioned in this `yaml`-file.
 /// If a metric is mentioned, but `provided` is false, it will be calculated (e.g. edge-length from node-coordinates and haversine).
 /// Please note, that metrics being calculated (like the duration from length and maxspeed) need the respective metrics to be calculated.
-///
 #[derive(Debug, Deserialize)]
-#[serde(from = "ProtoConfig")]
+#[serde(from = "raw::Config")]
 pub struct Config {
     pub graph: graph::Config,
-    #[serde(skip)] // thanks to ProtoConfig
-    pub routing: routing::Config,
+    pub export: export::Config,
+    pub routing: Option<routing::Config>,
 }
 
 impl Config {
@@ -59,132 +58,282 @@ impl Config {
     }
 }
 
-impl From<ProtoConfig> for Config {
-    fn from(proto_cfg: ProtoConfig) -> Config {
-        let routing_cfg = routing::Config::from_entries(proto_cfg.routing, &proto_cfg.graph);
-        Config {
-            graph: proto_cfg.graph,
-            routing: routing_cfg,
+pub mod graph {
+    use std::path::PathBuf;
+
+    #[derive(Debug)]
+    pub struct Config {
+        pub map_file: PathBuf,
+        pub vehicles: vehicles::Config,
+        pub nodes: nodes::Config,
+        pub edges: edges::Config,
+    }
+
+    pub mod vehicles {
+        use crate::network::VehicleCategory;
+
+        #[derive(Debug)]
+        pub struct Config {
+            pub category: VehicleCategory,
+            pub are_drivers_picky: bool,
+        }
+    }
+
+    pub mod nodes {
+        use serde::Deserialize;
+
+        #[derive(Debug, Deserialize)]
+        pub enum NodeCategory {}
+
+        #[derive(Debug)]
+        pub struct Config {
+            // TODO implement nodes::Config
+        }
+    }
+
+    pub mod edges {
+        use crate::{configs::SimpleId, defaults::DimVec, network::MetricIdx};
+        use serde::Deserialize;
+        use smallvec::smallvec;
+        use std::{
+            collections::BTreeMap,
+            fmt::{self, Display},
+        };
+
+        #[derive(Debug)]
+        pub struct Config {
+            // store for order
+            all_categories: Vec<EdgeCategory>,
+            // store for quick access
+            categories: DimVec<EdgeCategory>,
+            are_provided: DimVec<bool>,
+            ids: DimVec<SimpleId>,
+            indices: BTreeMap<SimpleId, MetricIdx>,
+            calc_rules: DimVec<DimVec<(EdgeCategory, MetricIdx)>>,
+        }
+
+        impl Config {
+            pub fn new(
+                all_categories: Vec<EdgeCategory>,
+                categories: DimVec<EdgeCategory>,
+                are_provided: DimVec<bool>,
+                ids: DimVec<SimpleId>,
+                indices: BTreeMap<SimpleId, MetricIdx>,
+                calc_rules: DimVec<DimVec<(EdgeCategory, MetricIdx)>>,
+            ) -> Config {
+                Config {
+                    all_categories,
+                    categories,
+                    are_provided,
+                    ids,
+                    indices,
+                    calc_rules,
+                }
+            }
+        }
+
+        impl Config {
+            pub fn all_categories(&self) -> &Vec<EdgeCategory> {
+                &self.all_categories
+            }
+
+            pub fn category(&self, idx: MetricIdx) -> EdgeCategory {
+                match self.categories.get(*idx) {
+                    Some(category) => *category,
+                    None => {
+                        panic!("Idx {} for category not found in config.", idx);
+                    }
+                }
+            }
+
+            pub fn dim(&self) -> usize {
+                self.categories.len()
+            }
+
+            pub fn is_provided(&self, idx: MetricIdx) -> bool {
+                match self.are_provided.get(*idx) {
+                    Some(is_provided) => *is_provided,
+                    None => {
+                        panic!("Idx {} for info 'is-provided' not found in config.", idx);
+                    }
+                }
+            }
+
+            pub fn idx(&self, id: &SimpleId) -> MetricIdx {
+                match self.indices.get(id) {
+                    Some(idx) => *idx,
+                    None => {
+                        panic!("Id {} not found in config.", id);
+                    }
+                }
+            }
+
+            pub fn calc_rules(&self, idx: MetricIdx) -> &DimVec<(EdgeCategory, MetricIdx)> {
+                match self.calc_rules.get(*idx) {
+                    Some(calc_rule) => calc_rule,
+                    None => {
+                        panic!("Idx {} for calc-rule not found in config.", idx);
+                    }
+                }
+            }
+        }
+
+        /// Types of metrics to consider when parsing a map.
+        ///
+        /// - `NodeId`, which is not a metric per se and stored differently, but needed for `csv`-like `fmi`-format
+        /// - `Meters` provided in meters, but internally stored as kilometers
+        /// - `KilometersPerHour` in km/h
+        /// - `Seconds`
+        /// - `LaneCount`
+        /// - `Custom`, which is just the plain f32-value
+        /// - `Ignore`, which is used in `csv`-like `fmi`-maps to jump over columns
+        #[derive(Copy, Clone, Debug, Deserialize, Eq, PartialEq)]
+        pub enum EdgeCategory {
+            Meters,
+            KilometersPerHour,
+            Seconds,
+            LaneCount,
+            Custom,
+            NodeId,
+            Ignore,
+        }
+
+        impl Display for EdgeCategory {
+            fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+                fmt::Debug::fmt(self, f)
+            }
+        }
+
+        impl EdgeCategory {
+            pub fn must_be_positive(&self) -> bool {
+                match self {
+                    EdgeCategory::Meters
+                    | EdgeCategory::KilometersPerHour
+                    | EdgeCategory::Seconds
+                    | EdgeCategory::LaneCount => true,
+                    EdgeCategory::Custom | EdgeCategory::NodeId | EdgeCategory::Ignore => false,
+                }
+            }
+
+            pub fn is_ignored(&self) -> bool {
+                match self {
+                    EdgeCategory::NodeId | EdgeCategory::Ignore => true,
+                    EdgeCategory::Meters
+                    | EdgeCategory::KilometersPerHour
+                    | EdgeCategory::Seconds
+                    | EdgeCategory::LaneCount
+                    | EdgeCategory::Custom => false,
+                }
+            }
+
+            pub fn expected_calc_rules(&self) -> DimVec<EdgeCategory> {
+                match self {
+                    EdgeCategory::KilometersPerHour => {
+                        smallvec![EdgeCategory::Meters, EdgeCategory::Seconds]
+                    }
+                    EdgeCategory::Seconds => {
+                        smallvec![EdgeCategory::Meters, EdgeCategory::KilometersPerHour]
+                    }
+                    EdgeCategory::Meters
+                    | EdgeCategory::LaneCount
+                    | EdgeCategory::Custom
+                    | EdgeCategory::NodeId
+                    | EdgeCategory::Ignore => smallvec![],
+                }
+            }
         }
     }
 }
 
-#[derive(Debug, Deserialize)]
-pub struct ProtoConfig {
-    graph: graph::Config,
-    #[serde(default)]
-    routing: Vec<Entry>,
+pub mod export {
+    #[derive(Debug)]
+    pub struct Config {
+        // TODO implement export:150:Config
+    }
 }
 
-#[derive(Debug, Deserialize)]
-struct Entry {
-    id: MetricId,
-    alpha: Option<f32>,
-}
+pub mod routing {
+    use crate::{defaults::DimVec, network::MetricIdx};
 
-impl routing::Config {
-    fn from_entries(entries: Vec<Entry>, graph_cfg: &graph::Config) -> routing::Config {
-        // create super-config's structures
-        let mut routing = routing::Config::with_capacity(graph_cfg.edges.metrics.count());
+    #[derive(Debug)]
+    pub struct Config {
+        indices: DimVec<MetricIdx>,
+        alphas: DimVec<f32>,
+    }
 
-        // translate ids into indices
-        for Entry {
-            id: metric_id,
-            alpha,
-        } in entries.iter()
-        {
-            let metric_idx = graph_cfg.edges.metrics.idx(metric_id);
-            routing.push(metric_idx, alpha.unwrap_or(1.0));
+    impl Config {
+        pub fn new(indices: DimVec<MetricIdx>, alphas: DimVec<f32>) -> Config {
+            Config { indices, alphas }
         }
 
-        // return
-        routing
+        fn _push(&mut self, idx: MetricIdx, alpha: f32) {
+            self.indices.push(idx);
+            self.alphas.push(alpha);
+        }
+
+        pub fn alpha(&self, metric_idx: MetricIdx) -> f32 {
+            let idx = match self.indices.iter().position(|i| i == &metric_idx) {
+                Some(idx) => idx,
+                None => {
+                    panic!("Idx {} not found in config.", metric_idx);
+                }
+            };
+            self.alphas[idx]
+        }
+
+        pub fn alphas(&self) -> &DimVec<f32> {
+            &self.alphas
+        }
+
+        pub fn indices(&self) -> &DimVec<MetricIdx> {
+            &self.indices
+        }
+
+        pub fn dim(&self) -> usize {
+            self.indices.len()
+        }
+
+        pub fn from_str(
+            yaml_str: &str,
+            graph_cfg: &super::graph::Config,
+        ) -> Result<Config, String> {
+            let raw_cfg = super::raw::routing::Config::from_str(yaml_str)?;
+            Ok(Config::from_raw(raw_cfg, graph_cfg))
+        }
+
+        pub fn from_raw(
+            raw_cfg: super::raw::routing::Config,
+            graph: &super::graph::Config,
+        ) -> Config {
+            let (indices, alphas) = raw_cfg
+                .entries
+                .into_iter()
+                .map(|entry| (graph.edges.idx(&entry.id), entry.alpha.unwrap_or(1.0)))
+                .unzip();
+
+            Config::new(indices, alphas)
+        }
     }
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Ord, PartialOrd)]
 #[serde(from = "String")]
-pub struct MetricId(pub String);
+pub struct SimpleId(pub String);
 
-impl From<String> for MetricId {
-    fn from(id: String) -> MetricId {
-        MetricId(id)
+impl From<String> for SimpleId {
+    fn from(id: String) -> SimpleId {
+        SimpleId(id)
     }
 }
 
-impl From<&str> for MetricId {
-    fn from(id: &str) -> MetricId {
-        MetricId(id.to_owned())
+impl From<&str> for SimpleId {
+    fn from(id: &str) -> SimpleId {
+        SimpleId(id.to_owned())
     }
 }
 
-impl Display for MetricId {
+impl Display for SimpleId {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", self.0)
-    }
-}
-
-/// Types of metrics to consider when parsing a map.
-///
-/// - `id`, which is not a metric per se and stored differently, but needed for `csv`-like `fmi`-format
-/// - `length` in meters
-/// - `maxspeed` in km/h
-/// - `duration` in milliseconds
-/// - `lane-count`
-/// - `custom`, which is just the plain f32-value
-/// - `ignore`, which is used in `csv`-like `fmi`-maps to jump over columns
-#[derive(Copy, Clone, Debug, Deserialize, Eq, PartialEq)]
-pub enum EdgeCategory {
-    Meters,
-    KilometersPerHour,
-    Seconds,
-    LaneCount,
-    Custom,
-    NodeId,
-    Ignore,
-}
-
-impl Display for EdgeCategory {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        fmt::Debug::fmt(self, f)
-    }
-}
-
-impl EdgeCategory {
-    pub fn must_be_positive(&self) -> bool {
-        match self {
-            EdgeCategory::Meters
-            | EdgeCategory::KilometersPerHour
-            | EdgeCategory::Seconds
-            | EdgeCategory::LaneCount => true,
-            EdgeCategory::Custom | EdgeCategory::NodeId | EdgeCategory::Ignore => false,
-        }
-    }
-
-    pub fn is_ignored(&self) -> bool {
-        match self {
-            EdgeCategory::NodeId | EdgeCategory::Ignore => true,
-            EdgeCategory::Meters
-            | EdgeCategory::KilometersPerHour
-            | EdgeCategory::Seconds
-            | EdgeCategory::LaneCount
-            | EdgeCategory::Custom => false,
-        }
-    }
-
-    fn expected_calc_rules(&self) -> Vec<EdgeCategory> {
-        match self {
-            EdgeCategory::KilometersPerHour => {
-                vec![EdgeCategory::Meters, EdgeCategory::Seconds]
-            }
-            EdgeCategory::Seconds => {
-                vec![EdgeCategory::Meters, EdgeCategory::KilometersPerHour]
-            }
-            EdgeCategory::Meters
-            | EdgeCategory::LaneCount
-            | EdgeCategory::Custom
-            | EdgeCategory::NodeId
-            | EdgeCategory::Ignore => vec![],
-        }
     }
 }

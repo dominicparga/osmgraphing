@@ -54,10 +54,10 @@ fn main() {
             }
         }
     };
-    if cfg.routing.dim() > 0 {
+    if let Some(cfg_routing) = &cfg.routing {
         info!(
             "EXECUTE Parse graph, then do routing with {} metric(s).",
-            cfg.routing.dim()
+            cfg_routing.dim()
         );
     } else {
         info!("EXECUTE Parse graph without routing.");
@@ -85,9 +85,10 @@ fn main() {
     info!("{}", graph);
 
     // if no routing specified -> exit
-    if cfg.routing.dim() <= 0 {
-        return;
-    }
+    let cfg_routing = match cfg.routing {
+        Some(cfg_routing) => cfg_routing,
+        None => return,
+    };
 
     //--------------------------------------------------------------------------------------------//
     // executing dijkstra-queries
@@ -129,7 +130,7 @@ fn main() {
         info!("");
 
         let now = Instant::now();
-        let option_path = dijkstra.compute_best_path(&src, &dst, &graph, &cfg.routing);
+        let option_path = dijkstra.compute_best_path(&src, &dst, &graph, &cfg_routing);
         info!(
             "Ran Dijkstra-query in {} ms",
             now.elapsed().as_micros() as f32 / 1_000.0,

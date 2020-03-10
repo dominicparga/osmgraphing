@@ -10,6 +10,7 @@ Maybe, it is concept for later documentation, or just keep-up-the-good-work (`ku
 
 - Update README (`"Memory-usage and performance have been better, but now, the graph supports multiple metrics."` -> it's great again)
 - Use log::debug by flag
+- Implement graph as server, which can execute queries from clients (e.g. via channels).
 
 
 ### Build-script
@@ -35,6 +36,7 @@ Maybe, it is concept for later documentation, or just keep-up-the-good-work (`ku
   - implement tests comparing upcoming ch-dijkstra with normal dijkstra on isle-of-man
   - implement routing-tests for parsed pbf-files (just comparing src-id, dst-id and length)
 - Take results from actions of commit f28d88a for parsing-tests (fmi).
+- Test personalized routing explicitly using certain alpha-values and new expected paths.
 
 
 ### Extend configs

@@ -2,7 +2,7 @@
 // March 6th, 2020
 
 use osmgraphing::{
-    configs::{self, Config},
+    configs::{self as configs, Config},
     defaults::DimVec,
     helpers::{ApproxEq, MapFileExt},
     network::{EdgeIdx, Graph, MetricIdx, Node, NodeAccessor, NodeIdx},
@@ -47,8 +47,10 @@ pub fn create_config(test_type: TestType, routing_cfg: Option<&str>) -> Config {
 
     // cfg.routing
     if let Some(yaml_str) = routing_cfg {
-        cfg.routing = configs::routing::Config::from_str(yaml_str, &cfg.graph)
-            .expect("Config is tested separatedly");
+        cfg.routing = Some(
+            configs::routing::Config::from_str(yaml_str, &cfg.graph)
+                .expect("Config is tested separatedly"),
+        );
     }
 
     // return
@@ -91,7 +93,14 @@ pub fn assert_path(
         let nodes = graph.nodes();
         let graph_src = nodes.create(src.idx);
         let graph_dst = nodes.create(dst.idx);
-        let option_path = dijkstra.compute_best_path(&graph_src, &graph_dst, &graph, &cfg.routing);
+        let option_path = dijkstra.compute_best_path(
+            &graph_src,
+            &graph_dst,
+            &graph,
+            &cfg.routing
+                .as_ref()
+                .expect("Routing-config should be existent"),
+        );
         assert_eq!(
             option_path.is_some(),
             option_specs.is_some(),

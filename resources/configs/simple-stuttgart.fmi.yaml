@@ -4,17 +4,16 @@ graph:
     category: 'Car'
     are-drivers-picky: false
   edges:
-    metrics:
-    - category: 'NodeId'
-      id: 'src-id'
-    - category: 'NodeId'
-      id: 'dst-id'
-    - category: 'Meters'
-    - category: 'Ignore'
-    - category: 'KilometersPerHour'
-    - category: 'Seconds'
-      is-provided: false
-      calc-rules: ['Meters', 'KilometersPerHour']
+  - category: 'NodeId'
+    id: 'src-id'
+  - category: 'NodeId'
+    id: 'dst-id'
+  - category: 'Meters'
+  - category: 'Ignore'
+  - category: 'KilometersPerHour'
+  - category: 'Seconds'
+    is-provided: false
+    calc-rules: ['Meters', 'KilometersPerHour']
 
 routing:
 - id: 'Meters'
