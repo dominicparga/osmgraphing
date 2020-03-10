@@ -40,6 +40,7 @@ pub mod graph {
         use crate::configs::graph::nodes::NodeCategory;
         use serde::Deserialize;
 
+        // TODO single attribute -> remove Entry
         #[derive(Debug, Deserialize)]
         pub struct Entry {
             category: NodeCategory,
@@ -255,7 +256,7 @@ impl From<Config> for super::Config {
         //----------------------------------------------------------------------------------------//
         // build super::export::Config
 
-        let export = super::export::Config {};
+        let export = Some(super::export::Config {});
 
         //----------------------------------------------------------------------------------------//
         // build super::routing::Config

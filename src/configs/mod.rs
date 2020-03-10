@@ -41,7 +41,7 @@ mod raw;
 #[serde(from = "raw::Config")]
 pub struct Config {
     pub graph: graph::Config,
-    pub export: export::Config,
+    pub export: Option<export::Config>,
     pub routing: Option<routing::Config>,
 }
 
@@ -103,10 +103,10 @@ pub mod graph {
         #[derive(Debug)]
         pub struct Config {
             // store for order
-            all_categories: Vec<EdgeCategory>,
+            edge_categories: Vec<EdgeCategory>,
             // store for quick access
-            categories: DimVec<EdgeCategory>,
-            are_provided: DimVec<bool>,
+            metric_categories: DimVec<EdgeCategory>,
+            are_metrics_provided: DimVec<bool>,
             ids: DimVec<SimpleId>,
             indices: BTreeMap<SimpleId, MetricIdx>,
             calc_rules: DimVec<DimVec<(EdgeCategory, MetricIdx)>>,
@@ -114,17 +114,17 @@ pub mod graph {
 
         impl Config {
             pub fn new(
-                all_categories: Vec<EdgeCategory>,
-                categories: DimVec<EdgeCategory>,
-                are_provided: DimVec<bool>,
+                edge_categories: Vec<EdgeCategory>,
+                metric_categories: DimVec<EdgeCategory>,
+                are_metrics_provided: DimVec<bool>,
                 ids: DimVec<SimpleId>,
                 indices: BTreeMap<SimpleId, MetricIdx>,
                 calc_rules: DimVec<DimVec<(EdgeCategory, MetricIdx)>>,
             ) -> Config {
                 Config {
-                    all_categories,
-                    categories,
-                    are_provided,
+                    edge_categories,
+                    metric_categories,
+                    are_metrics_provided,
                     ids,
                     indices,
                     calc_rules,
@@ -133,25 +133,25 @@ pub mod graph {
         }
 
         impl Config {
-            pub fn all_categories(&self) -> &Vec<EdgeCategory> {
-                &self.all_categories
+            pub fn edge_categories(&self) -> &Vec<EdgeCategory> {
+                &self.edge_categories
             }
 
-            pub fn category(&self, idx: MetricIdx) -> EdgeCategory {
-                match self.categories.get(*idx) {
-                    Some(category) => *category,
+            pub fn metric_category(&self, idx: MetricIdx) -> EdgeCategory {
+                match self.metric_categories.get(*idx) {
+                    Some(metric_category) => *metric_category,
                     None => {
-                        panic!("Idx {} for category not found in config.", idx);
+                        panic!("Idx {} for metric-category not found in config.", idx);
                     }
                 }
             }
 
             pub fn dim(&self) -> usize {
-                self.categories.len()
+                self.metric_categories.len()
             }
 
-            pub fn is_provided(&self, idx: MetricIdx) -> bool {
-                match self.are_provided.get(*idx) {
+            pub fn is_metric_provided(&self, idx: MetricIdx) -> bool {
+                match self.are_metrics_provided.get(*idx) {
                     Some(is_provided) => *is_provided,
                     None => {
                         panic!("Idx {} for info 'is-provided' not found in config.", idx);
@@ -159,7 +159,7 @@ pub mod graph {
                 }
             }
 
-            pub fn idx(&self, id: &SimpleId) -> MetricIdx {
+            pub fn metric_idx(&self, id: &SimpleId) -> MetricIdx {
                 match self.indices.get(id) {
                     Some(idx) => *idx,
                     None => {
@@ -308,7 +308,12 @@ pub mod routing {
             let (indices, alphas) = raw_cfg
                 .entries
                 .into_iter()
-                .map(|entry| (graph.edges.idx(&entry.id), entry.alpha.unwrap_or(1.0)))
+                .map(|entry| {
+                    (
+                        graph.edges.metric_idx(&entry.id),
+                        entry.alpha.unwrap_or(1.0),
+                    )
+                })
                 .unzip();
 
             Config::new(indices, alphas)

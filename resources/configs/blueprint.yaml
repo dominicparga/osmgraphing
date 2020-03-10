@@ -1,16 +1,13 @@
 graph:
   # relative to user, not to script
   map-file: 'relative-path-to-map-file'
-
   vehicles:
     category: 'Car' # | 'Bicycle' | 'Pedestrian'
     # Value `false` leads to more edges,
     # because edges are added, which are okay,
     # but not suitable for this vehicle-category.
     are-drivers-picky: false
-
   nodes:
-
   - category: 'NodeId'
   - category: 'OsmId'
   - category: 'Latitude'
@@ -18,7 +15,6 @@ graph:
   - category: 'Height'
   - category: 'Level'
   - category: 'Ignore'
-
   # Here, the order matters, if the map-file has a metric-order, like
   # `fmi`-files. Each metric below will be stored in the graph. Metrics below,
   # which have `provided=false`, will be calculated by other metrics and the
@@ -35,53 +31,41 @@ graph:
   edges:
   - category: 'NodeId'
     id: 'src-id'
-
   - category: 'NodeId'
     id: 'dst-id'
-
   - category: 'Meters'
     id: 'to-the-moon-and-back'
     # Value `false` leads to calculate the value via coordinates and haversine.
     is-provided: false
-
   # categories can be used twice
   - category: 'Meters'
     is-provided: true
-
   - category: 'KilometersPerHour'
     id: 'faster-than-light'
     # Value `false` leads to calculate the value via length and duration.
     is-provided: true
     calc-rules: ['to-the-moon-and-back', 'Seconds']
-
   - category: 'Seconds'
     # Value `false` leads to calculate the value via length and maxspeed.
     is-provided: false
     calc-rules: ['to-the-moon-and-back', 'faster-than-light']
-
   - category: 'LaneCount'
     is-provided: true
-
   - category: 'Custom'
     id: 'my-custom-value'
     is-provided: true
-
   - category: 'Ignore'
     id: 'unnecessary'
 
 export:
-
   nodes:
-
   - id: 'NodeId'
   - id: 'OsmId'
   - id: 'Latitude'
   - id: 'Longitude'
   - id: 'Height'
   - id: 'Level'
-
   edges:
-
   - id: 'src-id'
   - id: 'dst-id'
 

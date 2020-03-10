@@ -70,8 +70,8 @@ impl super::Parsing for Parser {
             let cfg = &cfg.edges;
             let mut metrics: DimVec<_> = smallvec![None; cfg.dim()];
             for metric_idx in (0..cfg.dim()).map(MetricIdx) {
-                let category = cfg.category(metric_idx);
-                let is_provided = cfg.is_provided(metric_idx);
+                let category = cfg.metric_category(metric_idx);
+                let is_provided = cfg.is_metric_provided(metric_idx);
 
                 match category {
                     EdgeCategory::Meters | EdgeCategory::Seconds | EdgeCategory::Custom => {

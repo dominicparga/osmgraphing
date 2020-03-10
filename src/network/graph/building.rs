@@ -95,12 +95,11 @@ impl Graph {
             let mut are_all_metrics_some = true;
             for metric_idx in (0..cfg.edges.dim()).map(MetricIdx) {
                 // if value should be provided, it is already in the proto-edge from parsing
-                let is_provided = cfg.edges.is_provided(metric_idx);
-                if is_provided {
+                if cfg.edges.is_metric_provided(metric_idx) {
                     continue;
                 }
 
-                let category = cfg.edges.category(metric_idx);
+                let category = cfg.edges.metric_category(metric_idx);
 
                 // Jump if proto-edge has its value.
                 if let Some(value) = &mut proto_edge.metrics[*metric_idx] {
@@ -207,16 +206,16 @@ impl Graph {
             if let &Some(value) = value {
                 self.metrics[*metric_idx].push(value);
             } else {
-                if cfg.edges.is_provided(metric_idx) {
+                if cfg.edges.is_metric_provided(metric_idx) {
                     return Err(format!(
                         "Metric {} should be provided, but is not.",
-                        cfg.edges.category(metric_idx)
+                        cfg.edges.metric_category(metric_idx)
                     ));
                 }
                 return Err(format!(
                     "Metric {} couldn't be calculated \
                      since not enough calculation rules were given.",
-                    cfg.edges.category(metric_idx)
+                    cfg.edges.metric_category(metric_idx)
                 ));
             }
         }

@@ -222,8 +222,8 @@ mod intern {
             let params: Vec<&str> = line.split_whitespace().collect();
 
             // metric-idx has to be counted separatedly.
-            for param_idx in 0..cfg.all_categories().len() {
-                let metric_type = cfg.all_categories()[param_idx];
+            for param_idx in 0..cfg.edge_categories().len() {
+                let metric_type = cfg.edge_categories()[param_idx];
 
                 let param = *params.get(param_idx).ok_or(
                     "The fmi-map-file is expected to have more edge-params \
@@ -253,9 +253,8 @@ mod intern {
                     }
                     EdgeCategory::Meters => {
                         let metric_idx = MetricIdx(metric_values.len());
-                        let is_provided = cfg.is_provided(metric_idx);
 
-                        if is_provided {
+                        if cfg.is_metric_provided(metric_idx) {
                             if let Ok(meters) = param.parse::<f32>() {
                                 metric_values.push(Some(meters / 1_000.0));
                             } else {
@@ -273,9 +272,8 @@ mod intern {
                     | EdgeCategory::LaneCount
                     | EdgeCategory::Custom => {
                         let metric_idx = MetricIdx(metric_values.len());
-                        let is_provided = cfg.is_provided(metric_idx);
 
-                        if is_provided {
+                        if cfg.is_metric_provided(metric_idx) {
                             if let Ok(value) = param.parse::<f32>() {
                                 metric_values.push(Some(value));
                             } else {
