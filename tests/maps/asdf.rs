@@ -1,11 +1,14 @@
 pub mod parsing {
-    use crate::helpers::{create_config, TestType};
-    use osmgraphing::{configs, io::Parser};
+    use crate::helpers::defaults;
+    use osmgraphing::{
+        configs::{self, Config},
+        io::Parser,
+    };
     use std::path::PathBuf;
 
     #[test]
     fn wrong_extension() {
-        let mut cfg = create_config(TestType::Small, None);
+        let mut cfg = Config::from_yaml(defaults::paths::resources::configs::SMALL_FMI).unwrap();
         cfg.parser.map_file = PathBuf::from("foo.asdf");
         assert!(
             Parser::parse(&cfg.parser).is_err(),
@@ -15,7 +18,7 @@ pub mod parsing {
 
     #[test]
     fn routing_config_from_str() {
-        let cfg = create_config(TestType::Small, None);
+        let cfg = Config::from_yaml(defaults::paths::resources::configs::SMALL_FMI).unwrap();
         configs::routing::Config::from_str(
             "routing: [{ id: 'Meters' }, { id: 'Seconds' }]",
             &cfg.parser,

@@ -1,5 +1,5 @@
 use crate::{
-    configs::{parser, EdgeCategory, NodeCategory},
+    configs::{parser, EdgeCategory},
     defaults::DimVec,
     helpers,
     network::{GraphBuilder, MetricIdx, ProtoEdge, ProtoNode, StreetCategory},
@@ -19,22 +19,10 @@ impl Parser {
 
 impl super::Parsing for Parser {
     fn preprocess(&mut self, cfg: &parser::Config) -> Result<(), String> {
-        // check if yaml-config is correct
-        if !cfg.nodes.categories().contains(&NodeCategory::NodeId) {
-            Err(String::from(
-                "The provided config-file doesn't contain a NodeId, but needs to.",
-            ))
-        } else if !cfg.nodes.categories().contains(&NodeCategory::Latitude) {
-            Err(String::from(
-                "The provided config-file doesn't contain a latitude, but needs to.",
-            ))
-        } else if !cfg.nodes.categories().contains(&NodeCategory::Longitude) {
-            Err(String::from(
-                "The provided config-file doesn't contain a longitude, but needs to.",
-            ))
-        } else {
-            Ok(())
-        }
+        info!("START Start preprocessing pbf-parser.");
+        super::check_parser_config(cfg)?;
+        info!("FINISHED");
+        Ok(())
     }
 
     fn parse_ways(

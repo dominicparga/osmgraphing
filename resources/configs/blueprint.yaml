@@ -7,8 +7,11 @@ parser:
     # because edges are added, which are okay,
     # but not suitable for this vehicle-category.
     are-drivers-picky: false
+  # Order matters, if the map-file has a order, like `fmi`-files.
+  # Multiple occurences overwrites previous ones.
   nodes:
   - category: 'NodeId'
+  - category: 'Ignore'
   - category: 'Latitude'
   - category: 'Longitude'
   - category: 'Level'
@@ -18,25 +21,20 @@ parser:
   # which have `provided=false`, will be calculated by other metrics and the
   # result is being stored.
   #
-  # Default-Ids are the category-name, hence calc-rules are using
-  # category-names, which are actually ids.
+  # Default-Ids are the category-name.
   #
   #
   # ATTENTION!!!
-  #
   # In module 'defaults', set the inline-size accordingly for best performance
   # and memory-usage.
   edges:
-  # mandatory convention: first node-id is src-id
-  - category: 'NodeId'
-    id: 'src-id'
-  - category: 'NodeId'
-    id: 'dst-id'
+  - category: 'SrcId' # this category is allowed only once
+  - category: 'DstId' # this category is allowed only once
+  # Following categories can be used twice, but must have unique ids.
   - category: 'Meters'
     id: 'to-the-moon-and-back'
     # Value `false` leads to calculate the value via coordinates and haversine.
     is-provided: false
-  # categories can be used twice
   - category: 'Meters'
     is-provided: true
   - category: 'KilometersPerHour'
@@ -53,6 +51,10 @@ parser:
   - category: 'Custom'
     id: 'my-custom-value'
     is-provided: true
+
+  # only category, which is allowed to have duplicated ids
+  - category: 'Ignore'
+    id: 'unnecessary'
   - category: 'Ignore'
     id: 'unnecessary'
 

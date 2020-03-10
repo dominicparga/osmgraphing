@@ -9,9 +9,7 @@ parser:
   - category: 'Longitude'
   edges:
   - category: 'SrcId'
-    id: 'src-id'
   - category: 'DstId'
-    id: 'dst-id'
   - category: 'Meters'
     is-provided: false
   - category: 'KilometersPerHour'

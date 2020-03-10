@@ -5,23 +5,15 @@ parser:
     are-drivers-picky: false
   nodes:
   - category: 'NodeId'
-  - category: 'Ignore' # osm-id
+  - category: 'Ignore'
   - category: 'Latitude'
   - category: 'Longitude'
-  # coming soon:
-  # - category: 'Ignore' # height
-  # - category: 'Level'
   edges:
   - category: 'SrcId'
-    id: 'src-id'
   - category: 'DstId'
-    id: 'dst-id'
   - category: 'Meters'
   - category: 'Ignore'
   - category: 'KilometersPerHour'
   - category: 'Seconds'
     is-provided: false
     calc-rules: ['Meters', 'KilometersPerHour']
-
-routing:
-- id: 'Meters'

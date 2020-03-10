@@ -1,12 +1,19 @@
-use crate::helpers::{assert_path, create_config, defaults, TestNode, TestType};
-use osmgraphing::{network::NodeIdx, routing, units::geo::Coordinate};
+use crate::helpers::{assert_path, defaults, TestNode};
+use osmgraphing::{
+    configs::{self, Config},
+    network::NodeIdx,
+    routing,
+    units::geo::Coordinate,
+};
 
 #[test]
-fn bidirectional_dijkstra() {
-    let cfg = create_config(
-        TestType::Small,
-        Some(&format!("routing: [{{ id: '{}' }}]", defaults::DURATION_ID)),
-    );
+fn dijkstra() {
+    let mut cfg = Config::from_yaml(defaults::paths::resources::configs::SMALL_FMI).unwrap();
+    cfg.routing = configs::routing::Config::from_str(
+        &format!("routing: [{{ id: '{}' }}]", defaults::DURATION_ID),
+        &cfg.parser,
+    )
+    .ok();
 
     let mut dijkstra = routing::Dijkstra::new();
     let expected_paths = expected_paths();

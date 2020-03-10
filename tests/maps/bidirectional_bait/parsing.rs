@@ -1,20 +1,18 @@
-use crate::helpers::{assert_nodes, create_config, defaults, parse, TestEdge, TestNode, TestType};
+use crate::helpers::{assert_nodes, defaults, parse, TestEdge, TestNode};
 use osmgraphing::{
     configs::{self, Config},
     network::NodeIdx,
 };
-use std::path::PathBuf;
 
 #[test]
-fn yaml() {
-    let mut cfg = Config::from_yaml("resources/configs/simple-stuttgart.fmi.yaml").unwrap();
-    cfg.parser.map_file = PathBuf::from("resources/maps/bidirectional-bait.fmi");
+fn fmi_yaml() {
+    Config::from_yaml(defaults::paths::resources::configs::BIDIRECTIONAL_BAIT_FMI).unwrap();
 }
 
 #[test]
 fn yaml_str() {
-    let mut cfg = Config::from_yaml("resources/configs/simple-stuttgart.fmi.yaml").unwrap();
-    cfg.parser.map_file = PathBuf::from("resources/maps/bidirectional-bait.fmi");
+    let cfg =
+        Config::from_yaml(defaults::paths::resources::configs::BIDIRECTIONAL_BAIT_FMI).unwrap();
 
     let yaml_str = &format!("routing: [{{ id: '{}' }}]", defaults::DURATION_ID);
     configs::routing::Config::from_str(yaml_str, &cfg.parser).unwrap();
@@ -24,8 +22,9 @@ fn yaml_str() {
 }
 
 #[test]
-fn fmi() {
-    let cfg = create_config(TestType::BidirectionalBait, None);
+fn fmi_graph() {
+    let cfg =
+        Config::from_yaml(defaults::paths::resources::configs::BIDIRECTIONAL_BAIT_FMI).unwrap();
     let graph = parse(cfg.parser);
 
     //--------------------------------------------------------------------------------------------//

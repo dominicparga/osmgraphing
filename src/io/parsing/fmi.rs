@@ -28,6 +28,8 @@ impl super::Parsing for Parser {
     /// Remembers range of edge-lines and node-lines
     fn preprocess(&mut self, cfg: &parser::Config) -> Result<(), String> {
         info!("START Start preprocessing fmi-parser.");
+        super::check_parser_config(cfg)?;
+
         // only functional-lines are counted
         let mut line_number = 0;
         let mut is_taking_counts = false;
@@ -154,83 +156,6 @@ mod intern {
     };
     pub use std::{io::BufReader as Reader, str};
 
-    impl ProtoNode {
-        pub fn from_str(line: &str, cfg: &parser::nodes::Config) -> Result<ProtoNode, String> {
-            let mut node_id = None;
-            let mut lat = None;
-            let mut lon = None;
-            let mut level = None;
-
-            // Loop over node-categories and parse params accordingly.
-            let params: Vec<&str> = line.split_whitespace().collect();
-
-            for (param_idx, category) in cfg.categories().iter().enumerate() {
-                let param = *params.get(param_idx).ok_or(
-                    "The fmi-map-file is expected to have more node-params \
-                     than actually has.",
-                )?;
-
-                match category {
-                    NodeCategory::NodeId => {
-                        node_id = match param.parse::<i64>() {
-                            Ok(id) => Some(id),
-                            Err(_) => {
-                                return Err(format!(
-                                    "Parsing id '{:?}' from fmi-file, which is not i64.",
-                                    param
-                                ))
-                            }
-                        };
-                    }
-                    NodeCategory::Latitude => {
-                        lat = match param.parse::<f32>() {
-                            Ok(lat) => Some(lat),
-                            Err(_) => {
-                                return Err(format!(
-                                    "Parsing lat '{:?}' from fmi-file, which is not f32.",
-                                    params[2]
-                                ))
-                            }
-                        };
-                    }
-                    NodeCategory::Longitude => {
-                        lon = match param.parse::<f32>() {
-                            Ok(lon) => Some(lon),
-                            Err(_) => {
-                                return Err(format!(
-                                    "Parsing lon '{:?}' from fmi-file, which is not f32.",
-                                    params[3]
-                                ))
-                            }
-                        };
-                    }
-                    NodeCategory::Level => {
-                        level = match param.parse::<usize>() {
-                            Ok(level) => Some(level),
-                            Err(_) => {
-                                return Err(format!(
-                                    "Parsing level '{:?}' from fmi-file, which is not usize.",
-                                    param
-                                ))
-                            }
-                        };
-                    }
-                    NodeCategory::NodeIdx | NodeCategory::Ignore => (),
-                }
-            }
-
-            let node_id = node_id.ok_or("Proto-node should have an id, but doesn't.".to_owned())?;
-            let lat = lat.ok_or("Proto-node should have a coordinate, but latitude is misisng.")?;
-            let lon =
-                lon.ok_or("Proto-node should have a coordinate, but longitude is misisng.")?;
-            Ok(ProtoNode::new(
-                node_id,
-                Some(geo::Coordinate { lat, lon }),
-                level,
-            ))
-        }
-    }
-
     impl ProtoEdge {
         /// Parse a line of metrics into an edge.
         ///
@@ -330,6 +255,83 @@ mod intern {
                 dst_id: dst_id.ok_or("Proto-edge should have a dst-id, but doesn't.".to_owned())?,
                 metrics: metric_values,
             })
+        }
+    }
+
+    impl ProtoNode {
+        pub fn from_str(line: &str, cfg: &parser::nodes::Config) -> Result<ProtoNode, String> {
+            let mut node_id = None;
+            let mut lat = None;
+            let mut lon = None;
+            let mut level = None;
+
+            // Loop over node-categories and parse params accordingly.
+            let params: Vec<&str> = line.split_whitespace().collect();
+
+            for (param_idx, category) in cfg.categories().iter().enumerate() {
+                let param = *params.get(param_idx).ok_or(
+                    "The fmi-map-file is expected to have more node-params \
+                     than actually has.",
+                )?;
+
+                match category {
+                    NodeCategory::NodeId => {
+                        node_id = match param.parse::<i64>() {
+                            Ok(id) => Some(id),
+                            Err(_) => {
+                                return Err(format!(
+                                    "Parsing id '{:?}' from fmi-file, which is not i64.",
+                                    param
+                                ))
+                            }
+                        };
+                    }
+                    NodeCategory::Latitude => {
+                        lat = match param.parse::<f32>() {
+                            Ok(lat) => Some(lat),
+                            Err(_) => {
+                                return Err(format!(
+                                    "Parsing lat '{:?}' from fmi-file, which is not f32.",
+                                    params[2]
+                                ))
+                            }
+                        };
+                    }
+                    NodeCategory::Longitude => {
+                        lon = match param.parse::<f32>() {
+                            Ok(lon) => Some(lon),
+                            Err(_) => {
+                                return Err(format!(
+                                    "Parsing lon '{:?}' from fmi-file, which is not f32.",
+                                    params[3]
+                                ))
+                            }
+                        };
+                    }
+                    NodeCategory::Level => {
+                        level = match param.parse::<usize>() {
+                            Ok(level) => Some(level),
+                            Err(_) => {
+                                return Err(format!(
+                                    "Parsing level '{:?}' from fmi-file, which is not usize.",
+                                    param
+                                ))
+                            }
+                        };
+                    }
+                    NodeCategory::NodeIdx | NodeCategory::Ignore => (),
+                }
+            }
+
+            let node_id = node_id.ok_or("Proto-node should have an id, but doesn't.".to_owned())?;
+            let lat = lat.ok_or("Proto-node should have a coordinate, but latitude is misisng.")?;
+            let lon =
+                lon.ok_or("Proto-node should have a coordinate, but longitude is misisng.")?;
+            Ok(ProtoNode::new(
+                node_id,
+                Some(geo::Coordinate { lat, lon }),
+                level,
+            ))
         }
     }
 }

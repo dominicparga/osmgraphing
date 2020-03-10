@@ -1,13 +1,18 @@
-use crate::helpers::{assert_path, create_config, defaults, TestNode, TestType};
-use osmgraphing::routing;
+use crate::helpers::{assert_path, defaults, TestNode};
+use osmgraphing::{
+    configs::{self, Config},
+    routing,
+};
 
 #[test]
 #[ignore]
-fn bidirectional_dijkstra() {
-    let cfg = create_config(
-        TestType::IsleOfMan,
-        Some(&format!("routing: [{{ id: '{}' }}]", defaults::DURATION_ID)),
-    );
+fn dijkstra() {
+    let mut cfg = Config::from_yaml(defaults::paths::resources::configs::ISLE_OF_MAN_PBF).unwrap();
+    cfg.routing = configs::routing::Config::from_str(
+        &format!("routing: [{{ id: '{}' }}]", defaults::DURATION_ID),
+        &cfg.parser,
+    )
+    .ok();
 
     let mut dijkstra = routing::Dijkstra::new();
     let expected_paths = expected_paths();

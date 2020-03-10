@@ -2,7 +2,7 @@ pub mod fmi;
 pub mod pbf;
 
 use crate::{
-    configs::parser,
+    configs::{parser, NodeCategory},
     io::{MapFileExt, SupportingFileExts, SupportingMapFileExts},
     network::{Graph, GraphBuilder},
 };
@@ -66,8 +66,8 @@ impl SupportingFileExts for Parser {
 }
 
 trait Parsing {
-    fn preprocess(&mut self, _cfg: &parser::Config) -> Result<(), String> {
-        Ok(())
+    fn preprocess(&mut self, cfg: &parser::Config) -> Result<(), String> {
+        check_parser_config(cfg)
     }
 
     fn parse(&mut self, cfg: &parser::Config) -> Result<GraphBuilder, String> {
@@ -104,5 +104,24 @@ trait Parsing {
         let result = self.parse(&cfg)?.finalize(cfg);
         info!("FINISHED");
         result
+    }
+}
+
+fn check_parser_config(cfg: &parser::Config) -> Result<(), String> {
+    // check if yaml-config is correct
+    if !cfg.nodes.categories().contains(&NodeCategory::NodeId) {
+        Err(String::from(
+            "The provided config-file doesn't contain a NodeId, but needs to.",
+        ))
+    } else if !cfg.nodes.categories().contains(&NodeCategory::Latitude) {
+        Err(String::from(
+            "The provided config-file doesn't contain a latitude, but needs to.",
+        ))
+    } else if !cfg.nodes.categories().contains(&NodeCategory::Longitude) {
+        Err(String::from(
+            "The provided config-file doesn't contain a longitude, but needs to.",
+        ))
+    } else {
+        Ok(())
     }
 }

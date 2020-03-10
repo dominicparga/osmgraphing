@@ -1,4 +1,8 @@
-use crate::{configs::SimpleId, defaults::DimVec, network::MetricIdx};
+use crate::{
+    configs::{EdgeCategory, SimpleId},
+    defaults::DimVec,
+    network::MetricIdx,
+};
 use serde::Deserialize;
 use smallvec::smallvec;
 use std::collections::BTreeMap;
@@ -179,13 +183,27 @@ impl From<Config> for super::Config {
                 // Further, create mapping: id -> idx.
                 for entry in raw_cfg.parser.edges.into_iter() {
                     edge_categories.push(entry.category);
+                    // add id if no duplicate
                     let entry_id = match entry.id {
                         Some(entry_id) => entry_id,
                         None => SimpleId(format!("{}", entry.category)),
                     };
+                    // check whether id is duplicate, but ids of ignore are ignored :3
+                    if entry.category != EdgeCategory::Ignore && edge_ids.contains(&entry_id) {
+                        panic!("Config has duplicate id: {}", entry_id);
+                    }
                     edge_ids.push(entry_id.clone());
 
-                    if entry.category.is_ignored() {
+                    // add metrics separatedly for better access-performance through metric-indices
+                    if entry.category.is_metric() {
+                        metric_ids.push(entry_id.clone());
+                        metric_categories.push(entry.category);
+                        are_metrics_provided.push(entry.is_provided.unwrap_or(true));
+
+                        let metric_idx = MetricIdx(metric_indices.len());
+                        metric_indices.insert(entry_id.clone(), metric_idx);
+                        proto_calc_rules.push(entry.calc_rules);
+                    } else {
                         if entry.calc_rules.is_some() {
                             panic!(
                                 "Metric-category {} has calculation-rules given, \
@@ -193,19 +211,6 @@ impl From<Config> for super::Config {
                                 entry.category
                             );
                         }
-                    } else {
-                        metric_ids.push(entry_id.clone());
-                        metric_categories.push(entry.category);
-                        are_metrics_provided.push(entry.is_provided.unwrap_or(true));
-
-                        let metric_idx = MetricIdx(metric_indices.len());
-                        if metric_indices
-                            .insert(entry_id.clone(), metric_idx)
-                            .is_some()
-                        {
-                            panic!("Config has duplicate id: {}", entry_id);
-                        }
-                        proto_calc_rules.push(entry.calc_rules);
                     }
                 }
 

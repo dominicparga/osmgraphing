@@ -255,14 +255,14 @@ pub mod parser {
                 }
             }
 
-            pub fn is_ignored(&self) -> bool {
+            pub fn is_metric(&self) -> bool {
                 match self {
-                    EdgeCategory::SrcId | EdgeCategory::DstId | EdgeCategory::Ignore => true,
+                    EdgeCategory::SrcId | EdgeCategory::DstId | EdgeCategory::Ignore => false,
                     EdgeCategory::Meters
                     | EdgeCategory::KilometersPerHour
                     | EdgeCategory::Seconds
                     | EdgeCategory::LaneCount
-                    | EdgeCategory::Custom => false,
+                    | EdgeCategory::Custom => true,
                 }
             }
 
