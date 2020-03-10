@@ -9,29 +9,29 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 
 1. [Unreleased](#unreleased)
 1. [v0.10.0](#v0.10.0)
-    1. [v0.9.0](#v0.9.0)
-    1. [v0.8.0](#v0.8.0)
-    1. [v0.7.1](#v0.7.1)
-        1. [v0.7.0](#v0.7.0)
+1. [v0.9.0](#v0.9.0)
+1. [v0.8.0](#v0.8.0)
+1. [v0.7.1](#v0.7.1)
+    1. [v0.7.0](#v0.7.0)
 1. [v1.0.0-yanked](#v1.0.0)
 1. [v0.6.1](#v0.6.1)
     1. [v0.6.0](#v0.6.0)
-    1. [v0.5.0](#v0.5.0)
-    1. [v0.4.1](#v0.4.1)
-        1. [v0.4.0](#v0.4.0)
-    1. [v0.3.1](#v0.3.1)
-        1. [v0.3.0](#v0.3.0)
-    1. [v0.2.4](#v0.2.4)
-        1. [v0.2.3](#v0.2.3)
-        1. [v0.2.2](#v0.2.2)
-        1. [v0.2.1](#v0.2.1)
-        1. [v0.2.0](#v0.2.0)
-    1. [v0.1.5](#v0.1.5)
-        1. [v0.1.4](#v0.1.4)
-        1. [v0.1.3](#v0.1.3)
-        1. [v0.1.2](#v0.1.2)
-        1. [v0.1.1](#v0.1.1)
-        1. [v0.1.0](#v0.1.0)
+1. [v0.5.0](#v0.5.0)
+1. [v0.4.1](#v0.4.1)
+    1. [v0.4.0](#v0.4.0)
+1. [v0.3.1](#v0.3.1)
+    1. [v0.3.0](#v0.3.0)
+1. [v0.2.4](#v0.2.4)
+    1. [v0.2.3](#v0.2.3)
+    1. [v0.2.2](#v0.2.2)
+    1. [v0.2.1](#v0.2.1)
+    1. [v0.2.0](#v0.2.0)
+1. [v0.1.5](#v0.1.5)
+    1. [v0.1.4](#v0.1.4)
+    1. [v0.1.3](#v0.1.3)
+    1. [v0.1.2](#v0.1.2)
+    1. [v0.1.1](#v0.1.1)
+    1. [v0.1.0](#v0.1.0)
 
 
 ## [Unreleased][github/self/unreleased] <a name="unreleased"></a>
@@ -66,6 +66,69 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 
 
 ### Security <a name="unreleased/security"></a>
+
+\-
+
+
+## [v0.11.0][github/self/v0.11.0] <a name="v0.11.0"></a>
+
+### Added <a name="v0.11.0/added"></a>
+
+- Implement a __`mapgenerator`__ generating `fmi`-map-files by converting from one format to another via config-files.
+  - Implement a module `generating`.
+  - Generate and test __`isle-of-man.fmi`__ out of `isle-of-man.pbf`.
+  - Implement a config for __pbf-to-fmi-conversion__.
+- Make __config__ cleaner and more flexible.
+  - Add __configs__ for every map, that is being __tested__.
+  - Add respective __test-cases__.
+  - Add support for `NodeCategory`s and add variants to `EdgeCategory`s.
+- Implement a nice trait for __supporting file-extensions__ in a general way.
+
+
+### Changed <a name="v0.11.0/changed"></a>
+
+- Bring sense to __TOC in `CHANGELOG.md`__.
+- Update __`README.md`__.
+- Reduce default-inline-size of `SmallVec` from 5 to 4 (`pub const SMALL_VEC_INLINE_SIZE: usize = 4`).
+- Move existing module `parsing` and new module `generating` into one module called __`io`__.
+- Extend parser's preprocessing by checking config.
+- Make __config__ cleaner and more flexible.
+  - Refactor config completely by separating strictly between __`raw-config`__ (direct result of deserialization) and the final config-version.
+  - Rename __config-attributes__ and __config-methods__.
+  - Use `Option<...>` for large config-parts (`parser` vs `generator` vs `routing`).
+  - Rename config `schema.yaml` to __`blueprint.yaml`__ to keep the keyword `schema` free.
+  - Split __`EdgeCategory::NodeId`__ to `EdgeCategory::SrcId` and `EdgeCategory::DstId`.
+  - Let config remember every id (expect for ignore).
+- Update `notes.md`.
+- Update `ProtoNode`
+  - Make graphbuilder's __`ProtoNode`__ public.
+  - Let `ProtoNode` remember a `bool` instead of an `edge-count` for the info, whether it is part of an edge.
+- Simplify __metric-access__ in graph.
+
+
+### Deprecated <a name="v0.11.0/deprecated"></a>
+
+- Documentation is missing, though comments are very well.
+- `CHANGELOG.md` contains empty version-descriptions.
+  - Replace existing tags with ones referring to `CHANGELOG.md` and add old tag-texts to the `CHANGELOG.md`
+  - Inconsistent `semver` in old tags -> probably `cargo yank VERSION` needed
+- The link to `doc.rs` is hardcoded to `major.minor.patch=0.y.z` because `docs.rs` chooses version `1.0.0` though it's yanked..
+
+
+### Removed <a name="v0.11.0/removed"></a>
+
+- Make __config__ cleaner and more flexible.
+  - __Simplify tests__ by creating configs directly (instead of using enum `TestType`).
+
+
+### Fixed <a name="v0.11.0/fixed"></a>
+
+- Let little __build-script__ stop when error occurs.
+- Remove use of `mul_add` to allow compiler to optimize loop (`SIMD`).
+- Let graphbuilder remove __edge-duplicates__ (same src, same dst and exactly, not approximately, same metric).
+  This will also be efficient for shortcuts wrt contraction-hierarchies.
+
+### Security <a name="v0.11.0/security"></a>
 
 \-
 
@@ -491,7 +554,8 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 [keepachangelog]: https://keepachangelog.com/en/
 [semver]: https://semver.org/
 
-[github/self/unreleased]: https://github.com/dominicparga/osmgraphing/compare/v0.10.0...HEAD
+[github/self/unreleased]: https://github.com/dominicparga/osmgraphing/compare/v0.11.0...HEAD
+[github/self/v0.11.0]: https://github.com/dominicparga/osmgraphing/compare/v0.10.0...v0.11.0
 [github/self/v0.10.0]: https://github.com/dominicparga/osmgraphing/compare/v0.9.0...v0.10.0
 [github/self/v0.9.0]: https://github.com/dominicparga/osmgraphing/compare/v0.8.0...v0.9.0
 [github/self/v0.8.0]: https://github.com/dominicparga/osmgraphing/compare/v0.7.1...v0.8.0

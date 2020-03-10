@@ -1,6 +1,6 @@
 use super::{EdgeIdx, Graph, NodeIdx};
 use crate::{
-    configs::{graph::Config, MetricCategory},
+    configs::{parser::Config, EdgeCategory},
     defaults::DimVec,
     helpers::ApproxEq,
     network::MetricIdx,
@@ -9,24 +9,30 @@ use crate::{
 use log::{debug, info};
 use progressing;
 use progressing::Bar;
-use std::{collections::BTreeMap, mem};
-
-//------------------------------------------------------------------------------------------------//
+use std::{cmp::Reverse, collections::BTreeMap, mem};
 
 #[derive(Debug)]
 pub struct ProtoNode {
-    id: i64,
-    coord: Option<Coordinate>,
-    edge_count: u16,
+    pub id: i64,
+    pub coord: Option<Coordinate>,
+    pub level: Option<usize>,
+    is_in_edge: bool,
 }
 
 impl ProtoNode {
+    pub fn new(id: i64, coord: Option<Coordinate>, level: Option<usize>) -> ProtoNode {
+        ProtoNode {
+            id,
+            coord,
+            level,
+            is_in_edge: false,
+        }
+    }
+
     fn is_in_edge(&self) -> bool {
-        self.edge_count > 0
+        self.is_in_edge
     }
 }
-
-//------------------------------------------------------------------------------------------------//
 
 #[derive(Debug)]
 pub struct ProtoEdge {
@@ -42,9 +48,6 @@ struct MiniProtoEdge {
     dst_id: i64,
     idx: usize,
 }
-
-//------------------------------------------------------------------------------------------------//
-// graphbuilding
 
 /// private stuff for graph-building
 impl Graph {
@@ -85,7 +88,7 @@ impl Graph {
     /// Metric-dependencies between each other are considered by looping enough times
     /// over the calculation-loop.
     fn add_metrics(&mut self, proto_edge: &mut ProtoEdge) -> Result<(), String> {
-        let cfg = &self.cfg.edges.metrics;
+        let cfg = &self.cfg;
 
         let (src_idx, dst_idx) = {
             let nodes = self.nodes();
@@ -97,17 +100,16 @@ impl Graph {
         // - finalize proto-edge -
         // Repeat the calculations n times.
         // In worst case, no metric is provided and all have to be calculated sequentially.
-        for _ in 0..cfg.count() {
+        for _ in 0..cfg.edges.dim() {
             // just a quick, coarse way of breaking earlier
             let mut are_all_metrics_some = true;
-            for metric_idx in (0..cfg.count()).map(MetricIdx) {
+            for metric_idx in (0..cfg.edges.dim()).map(MetricIdx) {
                 // if value should be provided, it is already in the proto-edge from parsing
-                let is_provided = cfg.is_provided(metric_idx);
-                if is_provided {
+                if cfg.edges.is_metric_provided(metric_idx) {
                     continue;
                 }
 
-                let category = cfg.category(metric_idx);
+                let category = cfg.edges.metric_category(metric_idx);
 
                 // Jump if proto-edge has its value.
                 if let Some(value) = &mut proto_edge.metrics[*metric_idx] {
@@ -125,22 +127,22 @@ impl Graph {
 
                 // calculate metric dependent on category
                 match category {
-                    MetricCategory::Meters => {
+                    EdgeCategory::Meters => {
                         let src_coord = self.node_coords[*src_idx];
                         let dst_coord = self.node_coords[*dst_idx];
                         proto_edge.metrics[*metric_idx] =
                             Some(*geo::haversine_distance_km(&src_coord, &dst_coord));
                     }
-                    MetricCategory::Seconds => {
+                    EdgeCategory::Seconds => {
                         // get length and maxspeed to calculate duration
                         let mut length = None;
                         let mut maxspeed = None;
                         // get calculation-rules
-                        for &(other_type, other_idx) in cfg.calc_rules(metric_idx) {
+                        for &(other_type, other_idx) in cfg.edges.calc_rules(metric_idx) {
                             // get values from edge dependent of calculation-rules
                             match other_type {
-                                MetricCategory::Meters => length = proto_edge.metrics[*other_idx],
-                                MetricCategory::KilometersPerHour => {
+                                EdgeCategory::Meters => length = proto_edge.metrics[*other_idx],
+                                EdgeCategory::KilometersPerHour => {
                                     maxspeed = proto_edge.metrics[*other_idx];
                                 }
                                 _ => {
@@ -160,16 +162,16 @@ impl Graph {
                             are_all_metrics_some = false;
                         }
                     }
-                    MetricCategory::KilometersPerHour => {
+                    EdgeCategory::KilometersPerHour => {
                         // get length and duration to calculate maxspeed
                         let mut length = None;
                         let mut duration = None;
                         // get calculation-rules
-                        for &(other_type, other_idx) in cfg.calc_rules(metric_idx) {
+                        for &(other_type, other_idx) in cfg.edges.calc_rules(metric_idx) {
                             // get values from edge dependent of calculation-rules
                             match other_type {
-                                MetricCategory::Meters => length = proto_edge.metrics[*other_idx],
-                                MetricCategory::Seconds => {
+                                EdgeCategory::Meters => length = proto_edge.metrics[*other_idx],
+                                EdgeCategory::Seconds => {
                                     duration = proto_edge.metrics[*other_idx];
                                 }
                                 _ => {
@@ -189,10 +191,11 @@ impl Graph {
                             are_all_metrics_some = false;
                         }
                     }
-                    MetricCategory::LaneCount
-                    | MetricCategory::Custom
-                    | MetricCategory::Id
-                    | MetricCategory::Ignore => {
+                    EdgeCategory::LaneCount
+                    | EdgeCategory::Custom
+                    | EdgeCategory::SrcId
+                    | EdgeCategory::DstId
+                    | EdgeCategory::Ignore => {
                         // Should be set to false here, but being here needs the metric to be none.
                         // This would be bad anyways, because these metrics should be provided, not
                         // calculated.
@@ -214,16 +217,16 @@ impl Graph {
             if let &Some(value) = value {
                 self.metrics[*metric_idx].push(value);
             } else {
-                if cfg.is_provided(metric_idx) {
+                if cfg.edges.is_metric_provided(metric_idx) {
                     return Err(format!(
                         "Metric {} should be provided, but is not.",
-                        cfg.category(metric_idx)
+                        cfg.edges.metric_category(metric_idx)
                     ));
                 }
                 return Err(format!(
                     "Metric {} couldn't be calculated \
                      since not enough calculation rules were given.",
-                    cfg.category(metric_idx)
+                    cfg.edges.metric_category(metric_idx)
                 ));
             }
         }
@@ -245,20 +248,13 @@ impl GraphBuilder {
         }
     }
 
-    pub fn push_node(&mut self, id: i64, coord: geo::Coordinate) -> &mut Self {
+    pub fn push_node(&mut self, new_proto_node: ProtoNode) -> &mut Self {
         // if already added -> update coord
         // if not -> add new node
-        if let Some(proto_node) = self.proto_nodes.get_mut(&id) {
-            proto_node.coord = Some(coord);
+        if let Some(proto_node) = self.proto_nodes.get_mut(&new_proto_node.id) {
+            proto_node.coord = new_proto_node.coord;
         } else {
-            self.proto_nodes.insert(
-                id,
-                ProtoNode {
-                    id,
-                    coord: Some(coord),
-                    edge_count: 0,
-                },
-            );
+            self.proto_nodes.insert(new_proto_node.id, new_proto_node);
         }
         self
     }
@@ -275,14 +271,15 @@ impl GraphBuilder {
         // add or update src-node
         let src_id = proto_edge.src_id;
         if let Some(proto_node) = self.proto_nodes.get_mut(&src_id) {
-            proto_node.edge_count += 1;
+            proto_node.is_in_edge = true;
         } else {
             self.proto_nodes.insert(
                 src_id,
                 ProtoNode {
                     id: src_id,
                     coord: None,
-                    edge_count: 1,
+                    level: None,
+                    is_in_edge: true,
                 },
             );
         }
@@ -290,14 +287,15 @@ impl GraphBuilder {
         // add or update dst-node
         let dst_id = proto_edge.dst_id;
         if let Some(proto_node) = self.proto_nodes.get_mut(&dst_id) {
-            proto_node.edge_count += 1;
+            proto_node.is_in_edge = true;
         } else {
             self.proto_nodes.insert(
                 dst_id,
                 ProtoNode {
                     id: dst_id,
                     coord: None,
-                    edge_count: 1,
+                    level: None,
+                    is_in_edge: true,
                 },
             );
         }
@@ -375,11 +373,31 @@ impl GraphBuilder {
         // memory-peak is here when sorting
 
         // sort reversed to make splice efficient
-        self.proto_edges.sort_unstable_by(|e1, e0| {
-            e0.src_id
-                .cmp(&e1.src_id)
-                .then_with(|| e0.dst_id.cmp(&e1.dst_id))
+        self.proto_edges
+            .sort_unstable_by_key(|edge| Reverse((edge.src_id, edge.dst_id)));
+        info!("FINISHED");
+
+        //----------------------------------------------------------------------------------------//
+        // remove duplicates
+
+        info!("START Remove duplicated proto-edges and flatten ch-shortcuts");
+        let edge_count = self.proto_edges.len();
+        // e.g. edge
+        // node-id 314074041 -> node-id 283494218
+        // which is part of two ways
+        //
+        // The metrics contain f32, which is not comparable exactly.
+        // This is okay for here, because if two edges of identical src/dst have different
+        // metrics, than they are created differently and thus are indeed different.
+        self.proto_edges.dedup_by(|e0, e1| {
+            (e0.src_id, e0.dst_id, &e0.metrics) == (e1.src_id, e1.dst_id, &e1.metrics)
         });
+        if self.proto_edges.len() != edge_count {
+            info!(
+                "Removed {} duplicates.",
+                (edge_count - self.proto_edges.len())
+            );
+        }
         info!("FINISHED");
 
         //----------------------------------------------------------------------------------------//
@@ -397,12 +415,12 @@ impl GraphBuilder {
         // worked-off chunk has to be limited to 250_000.
         // Because ids are more expensive than metrics, (2x i64 = 4x f32), the number is much lower.
         let bytes_per_edge =
-            2 * mem::size_of::<i64>() + graph.cfg().edges.metrics.count() * mem::size_of::<f32>();
+            2 * mem::size_of::<i64>() + graph.cfg().edges.dim() * mem::size_of::<f32>();
         let max_byte = 200 * 1_000_000;
         let max_chunk_size = max_byte / bytes_per_edge;
         log::debug!("max-chunk-size:                {}", max_chunk_size);
         // init metrics
-        graph.metrics = vec![vec![]; graph.cfg().edges.metrics.count()];
+        graph.metrics = vec![vec![]; graph.cfg().edges.dim()];
         let mut new_proto_edges = vec![];
         log::debug!(
             "initial graph-metric-capacity: {}",
@@ -538,11 +556,7 @@ impl GraphBuilder {
         // sort backward-edges by ascending dst-id, then by ascending src-id -> offset-array
 
         info!("START Sort proto-backward-edges by their dst/src-IDs.");
-        new_proto_edges.sort_unstable_by(|e0, e1| {
-            e0.dst_id
-                .cmp(&e1.dst_id)
-                .then_with(|| e0.src_id.cmp(&e1.src_id))
-        });
+        new_proto_edges.sort_unstable_by_key(|edge| (edge.dst_id, edge.src_id));
         info!("FINISHED");
 
         //----------------------------------------------------------------------------------------//

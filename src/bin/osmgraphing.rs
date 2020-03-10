@@ -1,5 +1,5 @@
 use log::{error, info};
-use osmgraphing::{configs::Config, helpers, network::NodeIdx, routing, Parser};
+use osmgraphing::{configs::Config, helpers, io::Parser, network::NodeIdx, routing};
 use rand::{
     distributions::{Distribution, Uniform},
     SeedableRng,
@@ -54,10 +54,10 @@ fn main() {
             }
         }
     };
-    if cfg.routing.dim() > 0 {
+    if let Some(cfg_routing) = &cfg.routing {
         info!(
-            "EXECUTE Parse graph, then do routing with {} metrics.",
-            cfg.routing.dim()
+            "EXECUTE Parse graph, then do routing with {} metric(s).",
+            cfg_routing.dim()
         );
     } else {
         info!("EXECUTE Parse graph without routing.");
@@ -69,7 +69,7 @@ fn main() {
     // measure parsing-time
     let now = Instant::now();
     // parse and create graph
-    let graph = match Parser::parse_and_finalize(cfg.graph) {
+    let graph = match Parser::parse_and_finalize(cfg.parser) {
         Ok(graph) => graph,
         Err(msg) => {
             error!("{}", msg);
@@ -85,9 +85,10 @@ fn main() {
     info!("{}", graph);
 
     // if no routing specified -> exit
-    if cfg.routing.dim() <= 0 {
-        return;
-    }
+    let cfg_routing = match cfg.routing {
+        Some(cfg_routing) => cfg_routing,
+        None => return,
+    };
 
     //--------------------------------------------------------------------------------------------//
     // executing dijkstra-queries
@@ -129,7 +130,7 @@ fn main() {
         info!("");
 
         let now = Instant::now();
-        let option_path = dijkstra.compute_best_path(&src, &dst, &graph, &cfg.routing);
+        let option_path = dijkstra.compute_best_path(&src, &dst, &graph, &cfg_routing);
         info!(
             "Ran Dijkstra-query in {} ms",
             now.elapsed().as_micros() as f32 / 1_000.0,
@@ -145,8 +146,11 @@ fn main() {
 fn parse_cmdline<'a>() -> clap::ArgMatches<'a> {
     // arg: quiet
     let tmp = &[
-        "Sets the logging-level.",
+        "Sets the logging-level by setting environment-variable 'RUST_LOG'.",
         "The env-variable 'RUST_LOG' has precedence.",
+        "It takes values of modules, e.g.",
+        "export RUST_LOG='warn,osmgraphing=info'",
+        "for getting warn's by default, but 'info' about the others",
     ]
     .join("\n");
     let arg_log_level = clap::Arg::with_name("log")
@@ -174,13 +178,8 @@ fn parse_cmdline<'a>() -> clap::ArgMatches<'a> {
         .about(env!("CARGO_PKG_DESCRIPTION"))
         .long_about(
             (&[
-                "LOGGING",
-                "",
-                "You can set up the logger by setting RUST_LOG, e.g. to",
-                "    export RUST_LOG='warn,osmgraphing=info,parser=info,dijkstra=info'",
-                "for getting 'warn's per default, but 'info' about the others (e.g. 'parser').",
-                "RUST_LOG is set up automatically, setting RUST_LOG to 'info'",
-                "for relevant parts of the software, but consider the flag '--logging'.",
+                "This tool takes a config-file, parses the chosen graph with specified",
+                "settings, and executes some routing-queries.",
                 "",
                 "",
                 "EXAMPLES",

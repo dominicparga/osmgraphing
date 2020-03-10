@@ -3,8 +3,9 @@ use log::error;
 use osmgraphing::{
     configs::{self, Config},
     helpers,
+    io::Parser,
     network::{Graph, NodeIdx},
-    routing, Parser,
+    routing,
 };
 
 fn criterion_benchmark(c: &mut Criterion) {
@@ -14,7 +15,7 @@ fn criterion_benchmark(c: &mut Criterion) {
     let cfg = Config::from_yaml("resources/configs/isle-of-man.pbf.yaml").unwrap();
 
     // create graph
-    let graph = match Parser::parse_and_finalize(cfg.graph) {
+    let graph = match Parser::parse_and_finalize(cfg.parser) {
         Ok(graph) => graph,
         Err(msg) => {
             error!("{}", msg);

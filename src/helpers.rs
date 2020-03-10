@@ -17,7 +17,7 @@ pub fn add_to(a: &mut DimVec<f32>, b: &DimVec<f32>) {
 pub fn dot_product(a: &DimVec<f32>, b: &DimVec<f32>) -> f32 {
     a.iter()
         .zip(b)
-        .fold(0.0, |start, (aa, &bb)| aa.mul_add(bb, start))
+        .fold(0.0, |start, (aa, &bb)| start + aa * bb)
 }
 
 pub trait ApproxEq {
@@ -69,71 +69,18 @@ pub fn open_file<P: AsRef<Path> + ?Sized>(path: &P) -> Result<File, String> {
     }
 }
 
-pub fn is_file_ext_supported<P: AsRef<Path> + ?Sized>(
-    path: &P,
-    supported_exts: &[&str],
-) -> Result<(), String> {
+pub fn open_new_file<P: AsRef<Path> + ?Sized>(path: &P) -> Result<File, String> {
     let path = path.as_ref();
-
-    // if file has extension
-    if let Some(os_str) = path.extension() {
-        // if filename is valid unicode
-        if let Some(extension) = os_str.to_str() {
-            // check if extension is supported
-            for supported_ext in supported_exts {
-                if supported_ext == &extension.to_ascii_lowercase() {
-                    return Ok(());
-                }
-            }
-            // extension is not supported
-            Err(format!(
-                "Unsupported extension `{}` was given. Supported extensions are {:?}",
-                extension, supported_exts
-            ))
-        } else {
-            Err(String::from("Filename is invalid Unicode."))
-        }
-    } else {
-        Err(format!(
-            "The file {:?} has no extension. Supported extensions are {:?}",
-            &path, supported_exts
-        ))
+    if path.exists() {
+        return Err(format!(
+            "Provided file {} does already exist. Please remove it.",
+            path.display()
+        ));
     }
-}
 
-pub enum MapFileExt {
-    PBF,
-    FMI,
-}
-
-impl MapFileExt {
-    pub fn from_path<P: AsRef<Path> + ?Sized>(path: &P) -> Result<Self, String> {
-        let supported_exts = &["pbf", "fmi"];
-        let path = path.as_ref();
-
-        // if file has extension
-        if let Some(os_str) = path.extension() {
-            // if filename is valid unicode
-            if let Some(extension) = os_str.to_str() {
-                // check if parser supports extension
-                match extension.to_ascii_lowercase().as_ref() {
-                    "pbf" => Ok(MapFileExt::PBF),
-                    "fmi" => Ok(MapFileExt::FMI),
-                    // parser doesn't support this extension
-                    unsupported_ext => Err(format!(
-                        "Unsupported extension `{}` was given. Supported extensions are {:?}",
-                        unsupported_ext, supported_exts
-                    )),
-                }
-            } else {
-                Err(String::from("Filename is invalid Unicode."))
-            }
-        } else {
-            Err(format!(
-                "The file {:?} has no extension. Supported extensions are {:?}",
-                &path, supported_exts
-            ))
-        }
+    match File::create(path) {
+        Ok(file) => Ok(file),
+        Err(e) => Err(format!("{}", e)),
     }
 }
 

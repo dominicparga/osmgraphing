@@ -4,59 +4,36 @@
 use osmgraphing::{
     configs::{self, Config},
     defaults::DimVec,
-    helpers::{ApproxEq, MapFileExt},
+    helpers::ApproxEq,
+    io::Parser,
     network::{EdgeIdx, Graph, MetricIdx, Node, NodeAccessor, NodeIdx},
     routing::{self},
     units::geo::Coordinate,
-    Parser,
 };
 use smallvec::{smallvec, SmallVec};
-use std::{
-    fmt::{self, Display},
-    path::PathBuf,
-};
+use std::fmt::{self, Display};
 
 #[allow(dead_code)]
 pub mod defaults {
     pub const LENGTH_ID: &str = "Meters";
     pub const DURATION_ID: &str = "Seconds";
-}
 
-#[allow(dead_code)]
-pub enum TestType {
-    BidirectionalBait,
-    IsleOfMan,
-    SimpleStuttgart,
-    Small,
-}
-
-pub fn create_config(test_type: TestType, routing_cfg: Option<&str>) -> Config {
-    // cfg.graph
-    let map_file = match test_type {
-        TestType::BidirectionalBait => "resources/maps/bidirectional-bait.fmi",
-        TestType::IsleOfMan => "resources/maps/isle-of-man_2019-09-05.osm.pbf",
-        TestType::SimpleStuttgart => "resources/maps/simple-stuttgart.fmi",
-        TestType::Small => "resources/maps/small.fmi",
-    };
-    let mut cfg = match MapFileExt::from_path(map_file).expect("Map-file should exist.") {
-        MapFileExt::PBF => Config::from_yaml("resources/configs/isle-of-man.pbf.yaml"),
-        MapFileExt::FMI => Config::from_yaml("resources/configs/simple-stuttgart.fmi.yaml"),
+    pub mod paths {
+        pub mod resources {
+            pub mod configs {
+                pub const SIMPLE_STUTTGART_FMI: &str =
+                    "resources/configs/simple-stuttgart.fmi.yaml";
+                pub const SMALL_FMI: &str = "resources/configs/small.fmi.yaml";
+                pub const BIDIRECTIONAL_BAIT_FMI: &str =
+                    "resources/configs/bidirectional-bait.fmi.yaml";
+                pub const ISLE_OF_MAN_FMI: &str = "resources/configs/isle-of-man.fmi.yaml";
+                pub const ISLE_OF_MAN_PBF: &str = "resources/configs/isle-of-man.pbf.yaml";
+            }
+        }
     }
-    .expect("Config is tested separatedly.");
-    cfg.graph.map_file = PathBuf::from(map_file);
-
-    // cfg.routing
-    if let Some(yaml_str) = routing_cfg {
-        cfg.routing = configs::routing::Config::from_str(yaml_str, &cfg.graph)
-            .expect("Config is tested separatedly");
-    }
-
-    // return
-    cfg
 }
 
-#[allow(dead_code)]
-pub fn parse(cfg: configs::graph::Config) -> Graph {
+pub fn parse(cfg: configs::parser::Config) -> Graph {
     let map_file = cfg.map_file.clone();
     match Parser::parse_and_finalize(cfg) {
         Ok(graph) => graph,
@@ -86,12 +63,19 @@ pub fn assert_path(
     expected_paths: Vec<(TestNode, TestNode, Option<(f32, Vec<Vec<TestNode>>)>)>,
     cfg: Config,
 ) {
-    let graph = parse(cfg.graph);
+    let graph = parse(cfg.parser);
     for (src, dst, option_specs) in expected_paths {
         let nodes = graph.nodes();
         let graph_src = nodes.create(src.idx);
         let graph_dst = nodes.create(dst.idx);
-        let option_path = dijkstra.compute_best_path(&graph_src, &graph_dst, &graph, &cfg.routing);
+        let option_path = dijkstra.compute_best_path(
+            &graph_src,
+            &graph_dst,
+            &graph,
+            &cfg.routing
+                .as_ref()
+                .expect("Routing-config should be existent"),
+        );
         assert_eq!(
             option_path.is_some(),
             option_specs.is_some(),
@@ -258,8 +242,8 @@ impl TestEdge {
             self.name
         );
 
-        let metric_indices = smallvec![MetricIdx(0), MetricIdx(1), MetricIdx(2)];
-        let value = edge.metric(&metric_indices);
+        let metric_indices = &[MetricIdx(0), MetricIdx(1), MetricIdx(2)];
+        let value = edge.metrics(metric_indices);
         let expected = SmallVec::from_slice(&self.metrics);
         assert!(
             value.approx_eq(&expected),
