@@ -250,11 +250,11 @@ mod intern {
                 metric_values.len(),
                 cfg.dim()
             );
-            Ok(ProtoEdge {
-                src_id: src_id.ok_or("Proto-edge should have a src-id, but doesn't.".to_owned())?,
-                dst_id: dst_id.ok_or("Proto-edge should have a dst-id, but doesn't.".to_owned())?,
-                metrics: metric_values,
-            })
+            Ok(ProtoEdge::new(
+                src_id.ok_or("Proto-edge should have a src-id, but doesn't.".to_owned())?,
+                dst_id.ok_or("Proto-edge should have a dst-id, but doesn't.".to_owned())?,
+                metric_values,
+            ))
         }
     }
 

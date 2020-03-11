@@ -40,9 +40,19 @@ impl ProtoNode {
 
 #[derive(Debug)]
 pub struct ProtoEdge {
-    pub src_id: i64,
-    pub dst_id: i64,
-    pub metrics: DimVec<Option<f32>>,
+    src_id: i64,
+    dst_id: i64,
+    metrics: DimVec<Option<f32>>,
+}
+
+impl ProtoEdge {
+    pub fn new(src_id: i64, dst_id: i64, metrics: DimVec<Option<f32>>) -> ProtoEdge {
+        ProtoEdge {
+            src_id,
+            dst_id,
+            metrics,
+        }
+    }
 }
 
 /// handy for remembering indices after sorting backwards

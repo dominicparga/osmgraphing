@@ -121,11 +121,11 @@ impl super::Parsing for Parser {
             // for n nodes in a way, you can create (n-1) edges
             for node_idx in 0..(nodes.len() - 1) {
                 // add proto-edge to graph
-                graph_builder.push_edge(ProtoEdge {
-                    src_id: nodes[node_idx],
-                    dst_id: nodes[node_idx + 1],
-                    metrics: metrics.clone(),
-                });
+                graph_builder.push_edge(ProtoEdge::new(
+                    nodes[node_idx],
+                    nodes[node_idx + 1],
+                    metrics.clone(),
+                ));
             }
         }
         info!("FINISHED");
