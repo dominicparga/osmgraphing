@@ -13,9 +13,9 @@ use std::{cmp::Reverse, collections::BTreeMap, mem};
 
 #[derive(Debug)]
 pub struct ProtoNode {
-    pub id: i64,
-    pub coord: Option<Coordinate>,
-    pub level: Option<usize>,
+    id: i64,
+    coord: Option<Coordinate>,
+    level: Option<usize>,
     is_in_edge: bool,
 }
 
@@ -27,6 +27,10 @@ impl ProtoNode {
             level,
             is_in_edge: false,
         }
+    }
+
+    pub fn id(&self) -> i64 {
+        self.id
     }
 
     fn is_in_edge(&self) -> bool {

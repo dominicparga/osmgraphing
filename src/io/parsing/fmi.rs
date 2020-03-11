@@ -137,7 +137,7 @@ impl super::Parsing for Parser {
 
             // create node and add it
             let proto_node = ProtoNode::from_str(&line, &cfg.nodes)?;
-            if graph_builder.is_node_in_edge(proto_node.id) {
+            if graph_builder.is_node_in_edge(proto_node.id()) {
                 graph_builder.push_node(proto_node);
             }
         }
