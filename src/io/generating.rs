@@ -62,6 +62,7 @@ pub mod fmi {
                 //--------------------------------------------------------------------------------//
                 // write header
 
+                writeln!(writer, "# edge-metric-count")?;
                 writeln!(writer, "# node-count")?;
                 writeln!(writer, "# edge-count")?;
                 writeln!(writer, "# nodes: {:?}", cfg.nodes)?;
@@ -77,8 +78,10 @@ pub mod fmi {
                 //--------------------------------------------------------------------------------//
                 // write counts
 
+                let dim = graph.cfg().edges.dim();
                 let node_count = graph.nodes().count();
                 let edge_count = graph.fwd_edges().count();
+                writeln!(writer, "{}", dim)?;
                 writeln!(writer, "{}", node_count)?;
                 writeln!(writer, "{}", edge_count)?;
 
