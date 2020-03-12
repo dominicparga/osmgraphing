@@ -8,7 +8,8 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 ## Table of contents
 
 1. [Unreleased](#unreleased)
-1. [v0.11.0](#v0.11.0)
+1. [v0.11.1](#v0.11.1)
+    1. [v0.11.0](#v0.11.0)
 1. [v0.10.0](#v0.10.0)
 1. [v0.9.0](#v0.9.0)
 1. [v0.8.0](#v0.8.0)
@@ -39,7 +40,7 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 
 ### Added <a name="unreleased/added"></a>
 
-- Let __generator__ add the `edge-metric-count`/`dim` to a `fmi`-map-file.
+\-
 
 
 ### Changed <a name="unreleased/changed"></a>
@@ -63,13 +64,39 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 
 ### Fixed <a name="unreleased/fixed"></a>
 
-- Let __generator convert metrics from kilometers in meters__, because parser does read it in meters.
-- Count __param-indices__ correctly in `fmi`-parser by moving `param_idx` out of the loop-head to a mutable variable.
+\-
 
 
 ### Security <a name="unreleased/security"></a>
 
 \-
+
+
+## [v0.11.1][github/self/v0.11.1] <a name="v0.11.1"></a>
+
+### Added <a name="v0.11.1/added"></a>
+
+- Let __generator__ add the `edge-metric-count`/`dim` to a `fmi`-map-file.
+
+
+### Changed <a name="v0.11.1/changed"></a>
+
+- Make __example-maps and -configs__ prettier.
+
+
+### Deprecated <a name="v0.11.1/deprecated"></a>
+
+- Documentation is missing, though comments are very well.
+- `CHANGELOG.md` contains empty version-descriptions.
+  - Replace existing tags with ones referring to `CHANGELOG.md` and add old tag-texts to the `CHANGELOG.md`
+  - Inconsistent `semver` in old tags -> probably `cargo yank VERSION` needed
+- The link to `doc.rs` is hardcoded to `major.minor.patch=0.y.z` because `docs.rs` chooses version `1.0.0` though it's yanked..
+
+
+### Fixed <a name="v0.11.1/fixed"></a>
+
+- Let __generator convert metrics from kilometers in meters__, because parser does read it in meters.
+- Count __param-indices__ correctly in `fmi`-parser by moving `param_idx` out of the loop-head to a mutable variable.
 
 
 ## [v0.11.0][github/self/v0.11.0] <a name="v0.11.0"></a>
@@ -556,7 +583,8 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 [keepachangelog]: https://keepachangelog.com/en/
 [semver]: https://semver.org/
 
-[github/self/unreleased]: https://github.com/dominicparga/osmgraphing/compare/v0.11.0...HEAD
+[github/self/unreleased]: https://github.com/dominicparga/osmgraphing/compare/v0.11.1...HEAD
+[github/self/v0.11.1]: https://github.com/dominicparga/osmgraphing/compare/v0.11.0...v0.11.1
 [github/self/v0.11.0]: https://github.com/dominicparga/osmgraphing/compare/v0.10.0...v0.11.0
 [github/self/v0.10.0]: https://github.com/dominicparga/osmgraphing/compare/v0.9.0...v0.10.0
 [github/self/v0.9.0]: https://github.com/dominicparga/osmgraphing/compare/v0.8.0...v0.9.0
