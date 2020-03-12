@@ -168,22 +168,24 @@ mod intern {
             // Loop over edge-categories and parse params accordingly.
             let params: Vec<&str> = line.split_whitespace().collect();
 
-            // metric-idx has to be counted separatedly.
-            for param_idx in 0..cfg.edge_categories().len() {
-                let metric_type = cfg.edge_categories()[param_idx];
+            // Param-idx has to be counted separatedly because some metrics could be calculated.
+            let mut param_idx = 0;
+            for category in cfg.edge_categories().iter() {
+                let param = *params.get(param_idx).ok_or(&format!(
+                    "The fmi-map-file is expected to have more edge-params (> {}) \
+                     than actually has ({}).",
+                    param_idx,
+                    params.len()
+                ))?;
 
-                let param = *params.get(param_idx).ok_or(
-                    "The fmi-map-file is expected to have more edge-params \
-                     than actually has.",
-                )?;
-
-                match metric_type {
+                match category {
                     EdgeCategory::SrcId => {
                         if src_id.is_none() {
                             src_id = Some(param.parse::<i64>().ok().ok_or(format!(
                                 "Parsing {} (for edge-src) '{:?}' from fmi-file, which is not i64.",
-                                metric_type, param
+                                category, param
                             ))?);
+                            param_idx += 1;
                         } else {
                             return Err(format!(
                                 "Src-id is already set, but another src-id {} should be parsed.",
@@ -195,8 +197,9 @@ mod intern {
                         if dst_id.is_none() {
                             dst_id = Some(param.parse::<i64>().ok().ok_or(format!(
                                 "Parsing {} (for edge-src) '{:?}' from fmi-file, which is not i64.",
-                                metric_type, param
+                                category, param
                             ))?);
+                            param_idx += 1;
                         } else {
                             return Err(format!(
                                 "Dst-id is already set, but another dst-id {} should be parsed.",
@@ -213,9 +216,10 @@ mod intern {
                             } else {
                                 return Err(format!(
                                     "Parsing {} '{}' of edge-param #{} didn't work.",
-                                    metric_type, param, param_idx
+                                    category, param, param_idx
                                 ));
                             };
+                            param_idx += 1;
                         } else {
                             metric_values.push(None);
                         }
@@ -232,9 +236,10 @@ mod intern {
                             } else {
                                 return Err(format!(
                                     "Parsing {} '{}' of edge-param #{} didn't work.",
-                                    metric_type, param, param_idx
+                                    category, param, param_idx
                                 ));
                             };
+                            param_idx += 1;
                         } else {
                             metric_values.push(None);
                         }

@@ -54,10 +54,6 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
   - Replace existing tags with ones referring to `CHANGELOG.md` and add old tag-texts to the `CHANGELOG.md`
   - Inconsistent `semver` in old tags -> probably `cargo yank VERSION` needed
 - The link to `doc.rs` is hardcoded to `major.minor.patch=0.y.z` because `docs.rs` chooses version `1.0.0` though it's yanked..
-- Problem: The generator doesn't convert metrics from kilometers in meters, but parser reads only meters.
-- Problem: The `fmi`-parser is not checking `is_metric_provided(...)`.
-  If the number of `EdgeCategory`s in a config-file for `fmi`-files is higher than the number of elements provided by the `fmi`-parser, the file cannot be parsed.
-  This case is relevant since `EdgeCategory`s don't have to be provided by the map-file, but could be calculated.
 
 
 ### Removed <a name="unreleased/removed"></a>
@@ -119,7 +115,7 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
   - Inconsistent `semver` in old tags -> probably `cargo yank VERSION` needed
 - The link to `doc.rs` is hardcoded to `major.minor.patch=0.y.z` because `docs.rs` chooses version `1.0.0` though it's yanked..
 - Problem: The generator doesn't convert metrics from kilometers in meters, but parser reads only meters.
-- Problem: The `fmi`-parser is not checking `is_metric_provided(...)`.
+- Problem: The `fmi`-parser is not counting the __param-indices__ correctly.
   If the number of `EdgeCategory`s in a config-file for `fmi`-files is higher than the number of elements provided by the `fmi`-parser, the file cannot be parsed.
   This case is relevant since `EdgeCategory`s don't have to be provided by the map-file, but could be calculated.
 
