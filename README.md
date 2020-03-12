@@ -54,6 +54,52 @@ You should change the number of inlined metrics according to your needs in the m
 Small maps like `Isle of Man` run on every machine and are parsed in less than a second.
 
 
+## Contraction-Hierarchies
+
+For speedup, this repository supports graphs contracted via contraction-hierarchies.
+The repository [`lesstat/multi-ch-constructor`][github/lesstat/multi-ch-constructor] generates contracted graphs from `fmi`-files of a certain format.
+This repository, `osmgraphing`, uses the `lesstat/multi-ch-constructor/master`-branch (commit `bec548c1a1ebeae7ac19d3250d5473199336d6fe`) for its ch-graphs.
+For reproducability, the used steps are listed below.
+
+First of all, the tool `multi-ch` needs a `fmi`-map-file as input.
+To generate such a `fmi`-map-file in the right format, the `mapgenerator` of `osmgraphing` can be used with the `generator-config` shown below, following the [defined requirements][github/lesstat/cyclops/blob/README].
+
+```yaml
+generator:
+  map-file: 'resources/maps/isle-of-man_2019-09-05.ch.fmi'
+  nodes:
+  - category: 'NodeIdx'
+    id: 'internal id'
+  - category: 'NodeId'
+    id: 'osmid'
+  - category: 'Latitude'
+  - category: 'Longitude'
+  - category: 'Ignore' # height
+  - category: 'Level' # for contraction-hierarchies
+  edges:
+  - id: 'SrcId'
+  - id: 'DstId'
+  - id: 'Meters'
+  - id: 'KilometersPerHour'
+  - id: 'Seconds'
+```
+
+The `multi-ch`-tool needs 3 counts at the file-beginning: metric-count, node-count, edge-count.
+
+Before the `multi-ch`-tool can be used, it has to be built.
+For the sake of optimization, you have to set the metric-count as dimension in [multi-ch-constructor/src/multi_lib/graph.hpp, line 49][github/lesstat/multi-ch-constructor/change-dim].
+
+```zsh
+git clone --recursive https://github.com/lesstat/multi-ch-constructor
+cd multi-ch-constructor
+
+cmake -Bbuild
+cmake --build build
+
+./build/multi-ch --text path/to/fmi/graph --percent 99.85 --stats --write path/to/new/fmi/graph
+```
+
+
 ## Credits
 
 The project started in the mid of 2019 as a student project.
@@ -79,7 +125,9 @@ He has implemented the first (and running) approach of the `A*`-algorithm.
 [github/dominicparga]: https://github.com/dominicparga
 [github/jenasat]: https://github.com/JenaSat
 [github/lesstat]: https://github.com/lesstat
+[github/lesstat/cyclops/blob/README]: https://github.com/Lesstat/cyclops/blob/master/README.md#graph-data
 [github/lesstat/multi-ch-constructor]: https://github.com/Lesstat/multi-ch-constructor
+[github/lesstat/multi-ch-constructor/change-dim]: https://github.com/Lesstat/multi-ch-constructor/blob/bec548c1a1ebeae7ac19d3250d5473199336d6fe/src/multi_lib/graph.hpp#L49
 [github/self/actions]: https://github.com/dominicparga/osmgraphing/actions
 [github/self/actions/badge]: https://img.shields.io/github/workflow/status/dominicparga/osmgraphing/Rust?label=nightly-build&style=for-the-badge
 [github/self/blob/changelog]: https://github.com/dominicparga/osmgraphing/blob/nightly/CHANGELOG.md
