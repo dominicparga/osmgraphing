@@ -5,17 +5,13 @@ parser:
     are-drivers-picky: false
   nodes:
   - category: 'NodeId'
-  - category: 'Ignore'
   - category: 'Latitude'
   - category: 'Longitude'
-  - category: 'Ignore'
   edges:
   - category: 'SrcId'
   - category: 'DstId'
   - category: 'Meters'
-  - category: 'Ignore'
   - category: 'KilometersPerHour'
   - category: 'Seconds'
     is-provided: false
     calc-rules: ['Meters', 'KilometersPerHour']
-  - category: 'Ignore'
