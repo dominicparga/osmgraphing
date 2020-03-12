@@ -12,6 +12,11 @@ fn fmi_yaml() {
 }
 
 #[test]
+fn ch_fmi_yaml() {
+    Config::from_yaml(defaults::paths::resources::configs::ISLE_OF_MAN_CH_FMI).unwrap();
+}
+
+#[test]
 fn yaml_str() {
     let cfg = Config::from_yaml(defaults::paths::resources::configs::ISLE_OF_MAN_PBF).unwrap();
 
@@ -72,4 +77,10 @@ fn fmi_graph() {
         expected,
         fwd_edges.count()
     );
+}
+
+#[test]
+fn ch_fmi_graph() {
+    let cfg = Config::from_yaml(defaults::paths::resources::configs::ISLE_OF_MAN_CH_FMI).unwrap();
+    let _graph = parse(cfg.parser);
 }

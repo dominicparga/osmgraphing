@@ -29,12 +29,12 @@ generator:
   - category: 'Latitude'
   - category: 'Longitude'
   - category: 'Ignore' # height
-  - category: 'Level'
+  - category: 'Ignore' # level for contraction-hierarchies
   edges:
   - id: 'SrcIdx'
   - id: 'DstIdx'
   - id: 'Meters'
   - id: 'KilometersPerHour'
   - id: 'Seconds'
-  - id: 'Ignore'
-  - id: 'Ignore'
+  - id: 'Ignore' # shortcut-edge-0
+  - id: 'Ignore' # shortcut-edge-1

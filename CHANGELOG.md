@@ -42,6 +42,8 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 
 - Support for generating `fmi`-files with __`src`-__ and __`dst`-indices__ as column.
 - Implement __config-parser's categories__ separate from __config-generator's categories__ to guarantee ideal support.
+- Add __`isle-of-man.ch.fmi`__ and update `pbf-to-fmi.yaml` respectively.
+  Add very basic parsing-tests.
 
 
 ### Changed <a name="unreleased/changed"></a>
@@ -50,6 +52,7 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
   For this, no other config-parser-category is allowed to have an id `Ignore`.
   It's not hardcoded but named after the enum-variant.
 - Let generator print ids of the provided config-edge-categories, not their categories.
+- Let generator print `Ignore`-column as `_`.
 
 
 ### Deprecated <a name="unreleased/deprecated"></a>

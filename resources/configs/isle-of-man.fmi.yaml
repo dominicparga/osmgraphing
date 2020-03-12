@@ -8,8 +8,6 @@ parser:
   - category: 'Ignore'
   - category: 'Latitude'
   - category: 'Longitude'
-  - category: 'Ignore' # height
-  - category: 'Level'
   edges:
   - category: 'SrcId'
   - category: 'DstId'

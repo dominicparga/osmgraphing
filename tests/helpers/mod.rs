@@ -27,6 +27,7 @@ pub mod defaults {
                 pub const BIDIRECTIONAL_BAIT_FMI: &str =
                     "resources/configs/bidirectional-bait.fmi.yaml";
                 pub const ISLE_OF_MAN_FMI: &str = "resources/configs/isle-of-man.fmi.yaml";
+                pub const ISLE_OF_MAN_CH_FMI: &str = "resources/configs/isle-of-man.ch.fmi.yaml";
                 pub const ISLE_OF_MAN_PBF: &str = "resources/configs/isle-of-man.pbf.yaml";
             }
         }

@@ -61,6 +61,7 @@ pub mod fmi {
             ) -> Result<(), Box<dyn std::error::Error>> {
                 let output_file = helpers::open_new_file(&cfg_generator.map_file)?;
                 let mut writer = BufWriter::new(output_file);
+                let ignore_str = "_";
 
                 //--------------------------------------------------------------------------------//
                 // write header
@@ -106,7 +107,7 @@ pub mod fmi {
                             NodeCategory::Latitude => write!(writer, "{}", node.coord().lat)?,
                             NodeCategory::Longitude => write!(writer, "{}", node.coord().lon)?,
                             NodeCategory::Level => write!(writer, "{}", node.level())?,
-                            NodeCategory::Ignore => write!(writer, "0")?,
+                            NodeCategory::Ignore => write!(writer, "{}", ignore_str)?,
                         }
                         // write space if needed
                         if idx < cfg_generator.nodes.len() - 1 {
@@ -182,7 +183,7 @@ pub mod fmi {
                                 let dst_idx = graph.fwd_edges().dst_idx(edge_idx);
                                 write!(writer, "{}", dst_idx)?;
                             }
-                            EdgeCategory::Ignore => write!(writer, "-1")?,
+                            EdgeCategory::Ignore => write!(writer, "{}", ignore_str)?,
                         }
                         // write space if needed
                         if idx < cfg_generator.edges.len() - 1 {

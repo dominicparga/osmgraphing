@@ -19,6 +19,12 @@ All calculations should be done effectively on a single desktop instead of an ex
 
 ## Setup and usage
 
+Long story short:
+
+```zsh
+cargo
+```
+
 `cargo` is the build-tool of Rust and can be used to run everything except scripts in `scripts/`.
 `cargo run` will give you help, e.g. it tells you to use `cargo run --example`.
 Running this command will print names of runnable examples.
@@ -61,33 +67,62 @@ The repository [`lesstat/multi-ch-constructor`][github/lesstat/multi-ch-construc
 This repository, `osmgraphing`, uses the `lesstat/multi-ch-constructor/master`-branch (commit `bec548c1a1ebeae7ac19d3250d5473199336d6fe`) for its ch-graphs.
 For reproducability, the used steps are listed below.
 
-First of all, the tool `multi-ch` needs a `fmi`-map-file as input.
-To generate such a `fmi`-map-file in the right format, the `mapgenerator` of `osmgraphing` can be used with the `generator-config` shown below, following the [defined requirements][github/lesstat/cyclops/blob/README].
+First of all, the tool `multi-ch` needs a `fmi`-map-file of specific format as input.
+To generate such a `fmi`-map-file in the correct format, the `mapgenerator` of `osmgraphing` can be used with the `generator-config` shown below, following the [defined requirements][github/lesstat/cyclops/blob/README].
+
+The `Ignore`s are important, because the `multi-ch-constructor` needs the placeholders.
+Besides that, the `multi-ch-constructor` uses node-indices as ids, leading to errors when the mapping `node -> indices [0; n]` is not surjective.
 
 ```yaml
+parser:
+  map-file: 'resources/maps/isle-of-man_2019-09-05.osm.pbf'
+  vehicles:
+    category: 'Car'
+    are-drivers-picky: false
+  nodes:
+  - category: 'NodeId'
+  - category: 'Latitude'
+  - category: 'Longitude'
+  edges:
+  - category: 'SrcId'
+  - category: 'DstId'
+  - category: 'Meters'
+    is-provided: false
+  - category: 'KilometersPerHour'
+  - category: 'Seconds'
+    is-provided: false
+    calc-rules: ['Meters', 'KilometersPerHour']
+  - category: 'Ignore - SrcIdx'
+    id: 'SrcIdx'
+  - category: 'Ignore - DstIdx'
+    id: 'DstIdx'
+
 generator:
-  map-file: 'resources/maps/isle-of-man_2019-09-05.ch.fmi'
+  map-file: 'resources/maps/isle-of-man_2019-09-05.fmi'
   nodes:
   - category: 'NodeIdx'
-    id: 'internal id'
   - category: 'NodeId'
-    id: 'osmid'
   - category: 'Latitude'
   - category: 'Longitude'
   - category: 'Ignore' # height
-  - category: 'Level' # for contraction-hierarchies
+  - category: 'Ignore' # level for contraction-hierarchies
   edges:
-  - id: 'SrcId'
-  - id: 'DstId'
+  - id: 'SrcIdx'
+  - id: 'DstIdx'
   - id: 'Meters'
   - id: 'KilometersPerHour'
   - id: 'Seconds'
+  - id: 'Ignore' # shortcut-edge-0
+  - id: 'Ignore' # shortcut-edge-1
+
 ```
 
-The `multi-ch`-tool needs 3 counts at the file-beginning: metric-count, node-count, edge-count.
+The `multi-ch`-tool needs 3 counts at the file-beginning: metric-count (dimension), node-count, edge-count.
+The `mapgenerator` does add these counts in this order.
 
 Before the `multi-ch`-tool can be used, it has to be built.
 For the sake of optimization, you have to set the metric-count as dimension in [multi-ch-constructor/src/multi_lib/graph.hpp, line 49][github/lesstat/multi-ch-constructor/change-dim].
+Set this dimension according to the dimension in the previously generated `fmi`-file.
 
 ```zsh
 git clone --recursive https://github.com/lesstat/multi-ch-constructor
@@ -98,6 +133,9 @@ cmake --build build
 
 ./build/multi-ch --text path/to/fmi/graph --percent 99.85 --stats --write path/to/new/fmi/graph
 ```
+
+> Note that the multi-ch-constructor is not deterministic (March 12th, 2020).
+> Using it does only speedup your queries, but due to a different resulting order in the priority or rounding-errors, it could lead to different paths of "same" length.
 
 
 ## Credits
