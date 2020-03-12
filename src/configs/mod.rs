@@ -1,5 +1,4 @@
 use crate::{helpers, io::SupportingFileExts};
-pub use parser::{edges::EdgeCategory, nodes::NodeCategory};
 use serde::Deserialize;
 use std::{fmt, fmt::Display, path::Path};
 
@@ -65,6 +64,8 @@ impl Config {
 }
 
 pub mod parser {
+    pub use edges::Category as EdgeCategory;
+    pub use nodes::Category as NodeCategory;
     use std::path::PathBuf;
 
     #[derive(Debug)]
@@ -89,9 +90,8 @@ pub mod parser {
         use serde::Deserialize;
 
         #[derive(Copy, Clone, Debug, Deserialize, Eq, PartialEq)]
-        pub enum NodeCategory {
+        pub enum Category {
             NodeId,
-            NodeIdx,
             Latitude,
             Longitude,
             Level,
@@ -100,15 +100,15 @@ pub mod parser {
 
         #[derive(Debug)]
         pub struct Config {
-            categories: Vec<NodeCategory>,
+            categories: Vec<Category>,
         }
 
         impl Config {
-            pub fn new(categories: Vec<NodeCategory>) -> Config {
+            pub fn new(categories: Vec<Category>) -> Config {
                 Config { categories }
             }
 
-            pub fn categories(&self) -> &Vec<NodeCategory> {
+            pub fn categories(&self) -> &Vec<Category> {
                 &self.categories
             }
         }
@@ -125,26 +125,26 @@ pub mod parser {
 
         #[derive(Debug)]
         pub struct Config {
-            // store for order
-            edge_categories: Vec<EdgeCategory>,
+            // store all for order
+            edge_categories: Vec<Category>,
             edge_ids: Vec<SimpleId>,
-            // store for quick access
-            metric_categories: DimVec<EdgeCategory>,
+            // store only metrics for quick access
+            metric_categories: DimVec<Category>,
             are_metrics_provided: DimVec<bool>,
             metric_ids: DimVec<SimpleId>,
             metric_indices: BTreeMap<SimpleId, MetricIdx>,
-            calc_rules: DimVec<DimVec<(EdgeCategory, MetricIdx)>>,
+            calc_rules: DimVec<DimVec<(Category, MetricIdx)>>,
         }
 
         impl Config {
             pub fn new(
-                edge_categories: Vec<EdgeCategory>,
+                edge_categories: Vec<Category>,
                 edge_ids: Vec<SimpleId>,
-                metric_categories: DimVec<EdgeCategory>,
+                metric_categories: DimVec<Category>,
                 are_metrics_provided: DimVec<bool>,
                 metric_ids: DimVec<SimpleId>,
                 metric_indices: BTreeMap<SimpleId, MetricIdx>,
-                calc_rules: DimVec<DimVec<(EdgeCategory, MetricIdx)>>,
+                calc_rules: DimVec<DimVec<(Category, MetricIdx)>>,
             ) -> Config {
                 Config {
                     edge_categories,
@@ -159,21 +159,26 @@ pub mod parser {
         }
 
         impl Config {
-            pub fn edge_categories(&self) -> &Vec<EdgeCategory> {
+            pub fn edge_categories(&self) -> &Vec<Category> {
                 &self.edge_categories
             }
 
             /// For metrics, use `metric_category(idx)`, since it is faster.
-            pub fn edge_category(&self, id: &SimpleId) -> &EdgeCategory {
+            pub fn edge_category(&self, id: &SimpleId) -> &Category {
                 match self.edge_ids.iter().position(|i| i == id) {
                     Some(idx) => &self.edge_categories[idx],
                     None => {
-                        panic!("Id {} not found in config.", id);
+                        // if no id exists, it could be an ignored one, e.g. asked by the generator
+                        if id == &SimpleId(format!("{}", Category::Ignore)) {
+                            &Category::Ignore
+                        } else {
+                            panic!("Id {} not found in config.", id);
+                        }
                     }
                 }
             }
 
-            pub fn metric_category(&self, idx: MetricIdx) -> EdgeCategory {
+            pub fn metric_category(&self, idx: MetricIdx) -> Category {
                 match self.metric_categories.get(*idx) {
                     Some(metric_category) => *metric_category,
                     None => {
@@ -204,7 +209,7 @@ pub mod parser {
                 }
             }
 
-            pub fn calc_rules(&self, idx: MetricIdx) -> &DimVec<(EdgeCategory, MetricIdx)> {
+            pub fn calc_rules(&self, idx: MetricIdx) -> &DimVec<(Category, MetricIdx)> {
                 match self.calc_rules.get(*idx) {
                     Some(calc_rule) => calc_rule,
                     None => {
@@ -216,7 +221,8 @@ pub mod parser {
 
         /// Types of metrics to consider when parsing a map.
         ///
-        /// - `NodeId`, which is not a metric per se and stored differently, but needed for `csv`-like `fmi`-format
+        /// - `SrcId`/`DstId`, which is not a metric per se and stored differently, but needed for `csv`-like `fmi`-format.
+        /// - `Ignore - SrcIdx`/`Ignore - DstIdx`, which are needed to be defined here for using their id in a generator afterwards.
         /// - `Meters` provided in meters, but internally stored as kilometers
         /// - `KilometersPerHour` in km/h
         /// - `Seconds`
@@ -224,62 +230,70 @@ pub mod parser {
         /// - `Custom`, which is just the plain f32-value
         /// - `Ignore`, which is used in `csv`-like `fmi`-maps to jump over columns
         #[derive(Copy, Clone, Debug, Deserialize, Eq, PartialEq)]
-        pub enum EdgeCategory {
+        pub enum Category {
             Meters,
             KilometersPerHour,
             Seconds,
             LaneCount,
             Custom,
             SrcId,
+            #[serde(rename = "Ignore - SrcIdx")]
+            IgnoredSrcIdx,
             DstId,
+            #[serde(rename = "Ignore - DstIdx")]
+            IgnoredDstIdx,
             Ignore,
         }
 
-        impl Display for EdgeCategory {
+        impl Display for Category {
             fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
                 fmt::Debug::fmt(self, f)
             }
         }
 
-        impl EdgeCategory {
+        impl Category {
             pub fn must_be_positive(&self) -> bool {
                 match self {
-                    EdgeCategory::Meters
-                    | EdgeCategory::KilometersPerHour
-                    | EdgeCategory::Seconds
-                    | EdgeCategory::LaneCount => true,
-                    EdgeCategory::Custom
-                    | EdgeCategory::SrcId
-                    | EdgeCategory::DstId
-                    | EdgeCategory::Ignore => false,
+                    Category::Meters
+                    | Category::KilometersPerHour
+                    | Category::Seconds
+                    | Category::LaneCount => true,
+                    Category::Custom
+                    | Category::SrcId
+                    | Category::IgnoredSrcIdx
+                    | Category::DstId
+                    | Category::IgnoredDstIdx
+                    | Category::Ignore => false,
                 }
             }
 
             pub fn is_metric(&self) -> bool {
                 match self {
-                    EdgeCategory::SrcId | EdgeCategory::DstId | EdgeCategory::Ignore => false,
-                    EdgeCategory::Meters
-                    | EdgeCategory::KilometersPerHour
-                    | EdgeCategory::Seconds
-                    | EdgeCategory::LaneCount
-                    | EdgeCategory::Custom => true,
+                    Category::SrcId
+                    | Category::DstId
+                    | Category::IgnoredSrcIdx
+                    | Category::IgnoredDstIdx
+                    | Category::Ignore => false,
+                    Category::Meters
+                    | Category::KilometersPerHour
+                    | Category::Seconds
+                    | Category::LaneCount
+                    | Category::Custom => true,
                 }
             }
 
-            pub fn expected_calc_rules(&self) -> DimVec<EdgeCategory> {
+            pub fn expected_calc_rules(&self) -> DimVec<Category> {
                 match self {
-                    EdgeCategory::KilometersPerHour => {
-                        smallvec![EdgeCategory::Meters, EdgeCategory::Seconds]
-                    }
-                    EdgeCategory::Seconds => {
-                        smallvec![EdgeCategory::Meters, EdgeCategory::KilometersPerHour]
-                    }
-                    EdgeCategory::Meters
-                    | EdgeCategory::LaneCount
-                    | EdgeCategory::Custom
-                    | EdgeCategory::SrcId
-                    | EdgeCategory::DstId
-                    | EdgeCategory::Ignore => smallvec![],
+                    Category::KilometersPerHour => smallvec![Category::Meters, Category::Seconds],
+                    Category::Seconds => smallvec![Category::Meters, Category::KilometersPerHour],
+                    Category::Meters
+                    | Category::LaneCount
+                    | Category::Custom
+                    | Category::SrcId
+                    | Category::IgnoredSrcIdx
+                    | Category::DstId
+                    | Category::IgnoredDstIdx
+                    | Category::Ignore => smallvec![],
                 }
             }
         }
@@ -287,8 +301,42 @@ pub mod parser {
 }
 
 pub mod generator {
-    use super::{NodeCategory, SimpleId};
+    use super::SimpleId;
+    pub use edges::Category as EdgeCategory;
+    pub use nodes::Category as NodeCategory;
     use std::path::PathBuf;
+
+    pub mod nodes {
+        use serde::Deserialize;
+
+        #[derive(Copy, Clone, Debug, Deserialize, Eq, PartialEq)]
+        pub enum Category {
+            NodeId,
+            NodeIdx,
+            Latitude,
+            Longitude,
+            Level,
+            Ignore,
+        }
+    }
+
+    pub mod edges {
+        use serde::Deserialize;
+
+        #[derive(Copy, Clone, Debug, Deserialize, Eq, PartialEq)]
+        pub enum Category {
+            Meters,
+            KilometersPerHour,
+            Seconds,
+            LaneCount,
+            Custom,
+            SrcId,
+            SrcIdx,
+            DstId,
+            DstIdx,
+            Ignore,
+        }
+    }
 
     #[derive(Debug)]
     pub struct Config {

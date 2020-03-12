@@ -1,6 +1,6 @@
 use super::{EdgeIdx, Graph, NodeIdx};
 use crate::{
-    configs::{parser::Config, EdgeCategory},
+    configs::parser::{Config, EdgeCategory},
     defaults::DimVec,
     helpers::ApproxEq,
     network::MetricIdx,
@@ -208,7 +208,9 @@ impl Graph {
                     EdgeCategory::LaneCount
                     | EdgeCategory::Custom
                     | EdgeCategory::SrcId
+                    | EdgeCategory::IgnoredSrcIdx
                     | EdgeCategory::DstId
+                    | EdgeCategory::IgnoredDstIdx
                     | EdgeCategory::Ignore => {
                         // Should be set to false here, but being here needs the metric to be none.
                         // This would be bad anyways, because these metrics should be provided, not

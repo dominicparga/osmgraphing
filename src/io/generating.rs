@@ -8,11 +8,11 @@ use log::info;
 pub struct Generator;
 
 impl Generator {
-    pub fn generate(graph: &Graph, cfg: &generator::Config) -> Result<(), String> {
+    pub fn generate(graph: &Graph, cfg_generator: &generator::Config) -> Result<(), String> {
         info!("START Generate file from graph");
-        match Generator::from_path(&cfg.map_file)? {
+        match Generator::from_path(&cfg_generator.map_file)? {
             MapFileExt::FMI => {
-                fmi::Generator::new().generate(graph, cfg)?;
+                fmi::Generator::new().generate(graph, cfg_generator)?;
                 info!("FINISHED");
                 Ok(())
             }
@@ -29,12 +29,15 @@ impl SupportingFileExts for Generator {
 }
 
 trait Generating {
-    fn generate(&self, graph: &Graph, cfg: &generator::Config) -> Result<(), String>;
+    fn generate(&self, graph: &Graph, cfg_generator: &generator::Config) -> Result<(), String>;
 }
 
 pub mod fmi {
     use crate::{
-        configs::{generator, EdgeCategory, NodeCategory},
+        configs::{
+            generator::{self, EdgeCategory, NodeCategory},
+            parser,
+        },
         helpers,
         network::{EdgeIdx, Graph, NodeIdx},
     };
@@ -51,12 +54,12 @@ pub mod fmi {
     }
 
     impl super::Generating for Generator {
-        fn generate(&self, graph: &Graph, cfg: &generator::Config) -> Result<(), String> {
+        fn generate(&self, graph: &Graph, cfg_generator: &generator::Config) -> Result<(), String> {
             fn inner_generate(
                 graph: &Graph,
-                cfg: &generator::Config,
+                cfg_generator: &generator::Config,
             ) -> Result<(), Box<dyn std::error::Error>> {
-                let output_file = helpers::open_new_file(&cfg.map_file)?;
+                let output_file = helpers::open_new_file(&cfg_generator.map_file)?;
                 let mut writer = BufWriter::new(output_file);
 
                 //--------------------------------------------------------------------------------//
@@ -65,11 +68,12 @@ pub mod fmi {
                 writeln!(writer, "# edge-metric-count")?;
                 writeln!(writer, "# node-count")?;
                 writeln!(writer, "# edge-count")?;
-                writeln!(writer, "# nodes: {:?}", cfg.nodes)?;
-                let edge_component_ids: Vec<_> = cfg
+                writeln!(writer, "# nodes: {:?}", cfg_generator.nodes)?;
+                let edge_component_ids: Vec<_> = cfg_generator
                     .edges
                     .iter()
-                    .map(|id| graph.cfg().edges.edge_category(id))
+                    // .map(|id| graph.cfg().edges.edge_category(id))
+                    .map(|id| &id.0)
                     .collect();
                 writeln!(writer, "# edges: {:?}", edge_component_ids)?;
 
@@ -94,7 +98,7 @@ pub mod fmi {
                 for node_idx in (0..node_count).into_iter().map(NodeIdx) {
                     let node = graph.nodes().create(node_idx);
 
-                    for (idx, category) in cfg.nodes.iter().enumerate() {
+                    for (idx, category) in cfg_generator.nodes.iter().enumerate() {
                         // write node-info
                         match category {
                             NodeCategory::NodeId => write!(writer, "{}", node.id())?,
@@ -105,7 +109,7 @@ pub mod fmi {
                             NodeCategory::Ignore => write!(writer, "0")?,
                         }
                         // write space if needed
-                        if idx < cfg.nodes.len() - 1 {
+                        if idx < cfg_generator.nodes.len() - 1 {
                             write!(writer, " ")?;
                         }
                     }
@@ -123,15 +127,27 @@ pub mod fmi {
                 // write edges
 
                 for edge_idx in (0..edge_count).into_iter().map(EdgeIdx) {
-                    // src-id
-                    let src_idx = graph.bwd_edges().dst_idx(edge_idx);
-                    let src_id = graph.nodes().id(src_idx);
-                    // dst-id
-                    let dst_idx = graph.fwd_edges().dst_idx(edge_idx);
-                    let dst_id = graph.nodes().id(dst_idx);
+                    for (idx, id) in cfg_generator.edges.iter().enumerate() {
+                        // get category from id, needing a conversion
+                        // from parser-category to generator-category
+                        let category = {
+                            let parser_category = graph.cfg().edges.edge_category(id);
 
-                    for (idx, id) in cfg.edges.iter().enumerate() {
-                        let category = graph.cfg().edges.edge_category(id);
+                            match parser_category {
+                                parser::EdgeCategory::Meters => EdgeCategory::Meters,
+                                parser::EdgeCategory::KilometersPerHour => {
+                                    EdgeCategory::KilometersPerHour
+                                }
+                                parser::EdgeCategory::Seconds => EdgeCategory::Seconds,
+                                parser::EdgeCategory::LaneCount => EdgeCategory::LaneCount,
+                                parser::EdgeCategory::Custom => EdgeCategory::Custom,
+                                parser::EdgeCategory::SrcId => EdgeCategory::SrcId,
+                                parser::EdgeCategory::IgnoredSrcIdx => EdgeCategory::SrcIdx,
+                                parser::EdgeCategory::DstId => EdgeCategory::DstId,
+                                parser::EdgeCategory::IgnoredDstIdx => EdgeCategory::DstIdx,
+                                parser::EdgeCategory::Ignore => EdgeCategory::Ignore,
+                            }
+                        };
 
                         // write edge-info
                         match category {
@@ -148,12 +164,28 @@ pub mod fmi {
                                 let metric_idx = graph.cfg().edges.metric_idx(id);
                                 write!(writer, "{}", graph.metrics().get(metric_idx, edge_idx))?
                             }
-                            EdgeCategory::SrcId => write!(writer, "{}", src_id)?,
-                            EdgeCategory::DstId => write!(writer, "{}", dst_id)?,
-                            EdgeCategory::Ignore => write!(writer, "0")?,
+                            EdgeCategory::SrcId => {
+                                let src_idx = graph.bwd_edges().dst_idx(edge_idx);
+                                let src_id = graph.nodes().id(src_idx);
+                                write!(writer, "{}", src_id)?;
+                            }
+                            EdgeCategory::SrcIdx => {
+                                let src_idx = graph.bwd_edges().dst_idx(edge_idx);
+                                write!(writer, "{}", src_idx)?;
+                            }
+                            EdgeCategory::DstId => {
+                                let dst_idx = graph.fwd_edges().dst_idx(edge_idx);
+                                let dst_id = graph.nodes().id(dst_idx);
+                                write!(writer, "{}", dst_id)?;
+                            }
+                            EdgeCategory::DstIdx => {
+                                let dst_idx = graph.fwd_edges().dst_idx(edge_idx);
+                                write!(writer, "{}", dst_idx)?;
+                            }
+                            EdgeCategory::Ignore => write!(writer, "-1")?,
                         }
                         // write space if needed
-                        if idx < cfg.edges.len() - 1 {
+                        if idx < cfg_generator.edges.len() - 1 {
                             write!(writer, " ")?;
                         }
                     }
@@ -176,7 +208,7 @@ pub mod fmi {
             //------------------------------------------------------------------------------------//
             // return result
 
-            if let Err(e) = inner_generate(graph, cfg) {
+            if let Err(e) = inner_generate(graph, cfg_generator) {
                 Err(format!("{}", e))
             } else {
                 Ok(())

@@ -16,19 +16,25 @@ parser:
   - category: 'Seconds'
     is-provided: false
     calc-rules: ['Meters', 'KilometersPerHour']
+  - category: 'Ignore - SrcIdx'
+    id: 'SrcIdx'
+  - category: 'Ignore - DstIdx'
+    id: 'DstIdx'
 
 generator:
   map-file: 'resources/maps/isle-of-man_2019-09-05.fmi'
   nodes:
-  - category: 'NodeId'
+  - category: 'NodeIdx'
   - category: 'NodeId'
   - category: 'Latitude'
   - category: 'Longitude'
   - category: 'Ignore' # height
   - category: 'Level'
   edges:
-  - id: 'SrcId'
-  - id: 'DstId'
+  - id: 'SrcIdx'
+  - id: 'DstIdx'
   - id: 'Meters'
   - id: 'KilometersPerHour'
   - id: 'Seconds'
+  - id: 'Ignore'
+  - id: 'Ignore'

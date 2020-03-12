@@ -40,12 +40,16 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 
 ### Added <a name="unreleased/added"></a>
 
-\-
+- Support for generating `fmi`-files with __`src`-__ and __`dst`-indices__ as column.
+- Implement __config-parser's categories__ separate from __config-generator's categories__ to guarantee ideal support.
 
 
 ### Changed <a name="unreleased/changed"></a>
 
-\-
+- __Config-parser-category `Ignore`__ is allowed to have the id `Ignore`, which may occur multiple times.
+  For this, no other config-parser-category is allowed to have an id `Ignore`.
+  It's not hardcoded but named after the enum-variant.
+- Let generator print ids of the provided config-edge-categories, not their categories.
 
 
 ### Deprecated <a name="unreleased/deprecated"></a>

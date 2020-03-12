@@ -1,5 +1,5 @@
 use crate::{
-    configs::{parser, EdgeCategory},
+    configs::parser::{self, EdgeCategory},
     defaults::DimVec,
     helpers,
     network::{GraphBuilder, MetricIdx, ProtoEdge, ProtoNode, StreetCategory},
@@ -114,7 +114,11 @@ impl super::Parsing for Parser {
                             ));
                         }
                     }
-                    EdgeCategory::SrcId | EdgeCategory::DstId | EdgeCategory::Ignore => (),
+                    EdgeCategory::SrcId
+                    | EdgeCategory::IgnoredSrcIdx
+                    | EdgeCategory::DstId
+                    | EdgeCategory::IgnoredDstIdx
+                    | EdgeCategory::Ignore => (),
                 }
             }
 

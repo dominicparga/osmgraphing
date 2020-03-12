@@ -149,7 +149,7 @@ impl super::Parsing for Parser {
 
 mod intern {
     use crate::{
-        configs::{parser, EdgeCategory, NodeCategory},
+        configs::parser::{self, EdgeCategory, NodeCategory},
         defaults::DimVec,
         network::{MetricIdx, ProtoEdge, ProtoNode},
         units::geo,
@@ -244,7 +244,9 @@ mod intern {
                             metric_values.push(None);
                         }
                     }
-                    EdgeCategory::Ignore => param_idx += 1,
+                    EdgeCategory::IgnoredSrcIdx
+                    | EdgeCategory::IgnoredDstIdx
+                    | EdgeCategory::Ignore => param_idx += 1,
                 }
             }
 
@@ -324,7 +326,7 @@ mod intern {
                             }
                         };
                     }
-                    NodeCategory::NodeIdx | NodeCategory::Ignore => (),
+                    NodeCategory::Ignore => (),
                 }
             }
 

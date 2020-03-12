@@ -2,7 +2,7 @@ pub mod fmi;
 pub mod pbf;
 
 use crate::{
-    configs::{parser, NodeCategory},
+    configs::parser::{self, NodeCategory},
     io::{MapFileExt, SupportingFileExts, SupportingMapFileExts},
     network::{Graph, GraphBuilder},
 };
