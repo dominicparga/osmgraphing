@@ -244,7 +244,7 @@ mod intern {
                             metric_values.push(None);
                         }
                     }
-                    EdgeCategory::Ignore => (),
+                    EdgeCategory::Ignore => param_idx += 1,
                 }
             }
 
