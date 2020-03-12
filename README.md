@@ -87,7 +87,7 @@ He has implemented the first (and running) approach of the `A*`-algorithm.
 [github/self/last-commit]: https://github.com/dominicparga/osmgraphing/commits
 [github/self/last-commit/badge]: https://img.shields.io/github/last-commit/dominicparga/osmgraphing?style=for-the-badge
 [github/self/license]: https://github.com/dominicparga/osmgraphing/blob/nightly/LICENSE
-[github/self/license/badge]: https://img.shields.io/github/license/dominicparga/osmgraphing?style=for-the-badge
+[github/self/license/badge]: https://img.shields.io/badge/license-Apache--2.0-green?style=for-the-badge
 [github/self/tags]: https://github.com/dominicparga/osmgraphing/tags
 [github/self/tags/badge]: https://img.shields.io/github/v/tag/dominicparga/osmgraphing?sort=semver&style=for-the-badge
 [github/self/tree/examples]: https://github.com/dominicparga/osmgraphing/tree/nightly/examples
