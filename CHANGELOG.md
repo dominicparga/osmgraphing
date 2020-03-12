@@ -39,7 +39,7 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 
 ### Added <a name="unreleased/added"></a>
 
-\-
+- Let __generator__ add the `edge-metric-count`/`dim` to a `fmi`-map-file.
 
 
 ### Changed <a name="unreleased/changed"></a>
@@ -63,7 +63,8 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 
 ### Fixed <a name="unreleased/fixed"></a>
 
-\-
+- Let __generator convert metrics from kilometers in meters__, because parser does read it in meters.
+- Count __param-indices__ correctly in `fmi`-parser by moving `param_idx` out of the loop-head to a mutable variable.
 
 
 ### Security <a name="unreleased/security"></a>
