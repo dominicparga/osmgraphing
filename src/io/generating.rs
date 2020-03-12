@@ -135,8 +135,13 @@ pub mod fmi {
 
                         // write edge-info
                         match category {
-                            EdgeCategory::Meters
-                            | EdgeCategory::KilometersPerHour
+                            EdgeCategory::Meters => {
+                                let metric_idx = graph.cfg().edges.metric_idx(id);
+                                let km = graph.metrics().get(metric_idx, edge_idx);
+                                let m = km * 1_000.0;
+                                write!(writer, "{}", m)?
+                            }
+                            EdgeCategory::KilometersPerHour
                             | EdgeCategory::Seconds
                             | EdgeCategory::LaneCount
                             | EdgeCategory::Custom => {
