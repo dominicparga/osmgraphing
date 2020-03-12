@@ -1,34 +1,34 @@
-# node_count
+# node-count
 6
 
-# edge_count
+# edge-count
 13
 
-# nodes
-#       id     osm-id        lat       lon
-  26033921   26033921 48.9840100 9.4589188 # Oppenweiler
-  26160028   26160028 48.9416023 9.4332023 # Backnang
-1621605361 1621605361 48.9396327 9.4188681 # Dead-end in Backnang
- 298249467  298249467 48.8108510 9.3679493 # Endersbach
- 252787940  252787940 48.8271096 9.3098661 # Waiblingen
-2933335353 2933335353 48.7701757 9.1565768 # Stuttgart (Schwabstraße)
+# nodes:
+# [ NodeId,    Latitude,  Longitude]
+  26033921   48.9840100   9.4589188    # Oppenweiler
+  26160028   48.9416023   9.4332023    # Backnang
+1621605361   48.9396327   9.4188681    # Dead-end in Backnang
+ 298249467   48.8108510   9.3679493    # Endersbach
+ 252787940   48.8271096   9.3098661    # Waiblingen
+2933335353   48.7701757   9.1565768    # Stuttgart (Schwabstrasse)
 
-# edges
-#   src-id     dst-id length(m) ?    maxspeed
-  26033921   26160028     8000  _       50 # Oppenweiler -> Backnang
+# edges:
+# [  SrcId,      DstId,   Meters, KilometersPerHour]
+  26033921    26160028      8000          50          # Oppenweiler -> Backnang
 
-  26160028 1621605361     1069  _       30 # Backnang -> Dead-end
-  26160028   26033921     8000  _       50 # Backnang -> Oppenweiler
-  26160028  298249467    22000  _       80 # Backnang -> Endersbach
-  26160028  252787940    23000  _      120 # Backnang -> Waiblingen
+  26160028    26033921      8000          50          # Backnang -> Oppenweiler
+  26160028   252787940     23000         120          # Backnang -> Waiblingen
+  26160028   298249467     22000          80          # Backnang -> Endersbach
+  26160028  1621605361      1069          30          # Backnang -> Dead-end
 
- 298249467   26160028    22000  _       80 # Endersbach -> Backnang
- 298249467  252787940     8000  _       50 # Endersbach -> Waiblingen
- 298249467 2933335353    21000  _       80 # Endersbach -> Stuttgart (Schwabstraße)
+ 298249467    26160028     22000          80          # Endersbach -> Backnang
+ 298249467   252787940      8000          50          # Endersbach -> Waiblingen
+ 298249467  2933335353     21000          80          # Endersbach -> Stuttgart (Schwabstrasse)
 
- 252787940   26160028    23000  _      120 # Waiblingen -> Backnang
- 252787940  298249467     8000  _       50 # Waiblingen -> Endersbach
- 252787940 2933335353    17000  _      100 # Waiblingen -> Stuttgart (Schwabstraße)
+ 252787940    26160028     23000         120          # Waiblingen -> Backnang
+ 252787940   298249467      8000          50          # Waiblingen -> Endersbach
+ 252787940  2933335353     17000         100          # Waiblingen -> Stuttgart (Schwabstrasse)
 
-2933335353  298249467    21000  _       80 # Stuttgart (Schwabstraße) -> Endersbach
-2933335353  252787940    17000  _      100 # Stuttgart (Schwabstraße) -> Waiblingen
+2933335353   252787940     17000         100          # Stuttgart (Schwabstrasse) -> Waiblingen
+2933335353   298249467     21000          80          # Stuttgart (Schwabstrasse) -> Endersbach
