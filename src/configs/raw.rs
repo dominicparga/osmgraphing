@@ -1,6 +1,6 @@
 use crate::{
     configs::{EdgeCategory, SimpleId},
-    defaults::DimVec,
+    defaults::capacity::DimVec,
     network::MetricIdx,
 };
 use log::warn;
@@ -142,7 +142,7 @@ pub mod routing {
     #[derive(Debug, Deserialize)]
     pub struct Entry {
         pub id: SimpleId,
-        pub alpha: Option<f32>,
+        pub alpha: Option<f64>,
     }
 }
 

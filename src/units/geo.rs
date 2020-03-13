@@ -4,8 +4,8 @@ use std::{fmt, fmt::Display};
 /// Coordinate storing `lat`/`lon` as `i32` with accuracy `1e-7`.
 #[derive(Copy, Clone, Debug)]
 pub struct Coordinate {
-    pub lat: f32,
-    pub lon: f32,
+    pub lat: f64,
+    pub lon: f64,
 }
 
 impl Coordinate {
@@ -15,8 +15,8 @@ impl Coordinate {
 
     pub fn from_decimicro(decimicro_lat: i32, decimicro_lon: i32) -> Coordinate {
         Coordinate {
-            lat: (decimicro_lat as f64 * 1e-7) as f32,
-            lon: (decimicro_lon as f64 * 1e-7) as f32,
+            lat: (decimicro_lat as f64 * 1e-7) as f64,
+            lon: (decimicro_lon as f64 * 1e-7) as f64,
         }
     }
 }
@@ -73,5 +73,5 @@ fn haversine_distance(from: &Coordinate, to: &Coordinate) -> f64 {
 /// - [detailled information](http://www.movable-type.co.uk/scripts/latlong.html)
 /// - [cpp](https://geographiclib.sourceforge.io/)
 pub fn haversine_distance_km(from: &Coordinate, to: &Coordinate) -> Kilometers {
-    Kilometers(haversine_distance(from, to) as f32)
+    Kilometers(haversine_distance(from, to) as f64)
 }

@@ -19,7 +19,7 @@ mod raw;
 ///
 /// Internally, a default-metric uses provided calculation-rules to be calculated by other default-categories as well (like the duration from length and maxspeed).
 ///
-/// Keep in mind, that metrics (except for id) are stored as `f32` for better maintainability and efficiency.
+/// Keep in mind, that metrics (except for id) are stored as `f64` for better maintainability and efficiency.
 ///
 ///
 /// ### Specifying routing (in the future)
@@ -115,7 +115,7 @@ pub mod parser {
     }
 
     pub mod edges {
-        use crate::{configs::SimpleId, defaults::DimVec, network::MetricIdx};
+        use crate::{configs::SimpleId, defaults::capacity::DimVec, network::MetricIdx};
         use serde::Deserialize;
         use smallvec::smallvec;
         use std::{
@@ -221,7 +221,7 @@ pub mod parser {
         /// - `KilometersPerHour` in km/h
         /// - `Seconds`
         /// - `LaneCount`
-        /// - `Custom`, which is just the plain f32-value
+        /// - `Custom`, which is just the plain f64-value
         /// - `Ignore`, which is used in `csv`-like `fmi`-maps to jump over columns
         #[derive(Copy, Clone, Debug, Deserialize, Eq, PartialEq)]
         pub enum EdgeCategory {
@@ -299,28 +299,28 @@ pub mod generator {
 }
 
 pub mod routing {
-    use crate::{defaults::DimVec, network::MetricIdx};
+    use crate::{defaults::capacity::DimVec, network::MetricIdx};
 
     #[derive(Debug)]
     pub struct Config {
         metric_indices: DimVec<MetricIdx>,
-        alphas: DimVec<f32>,
+        alphas: DimVec<f64>,
     }
 
     impl Config {
-        pub fn new(metric_indices: DimVec<MetricIdx>, alphas: DimVec<f32>) -> Config {
+        pub fn new(metric_indices: DimVec<MetricIdx>, alphas: DimVec<f64>) -> Config {
             Config {
                 metric_indices,
                 alphas,
             }
         }
 
-        fn _push(&mut self, idx: MetricIdx, alpha: f32) {
+        fn _push(&mut self, idx: MetricIdx, alpha: f64) {
             self.metric_indices.push(idx);
             self.alphas.push(alpha);
         }
 
-        pub fn alpha(&self, metric_idx: MetricIdx) -> f32 {
+        pub fn alpha(&self, metric_idx: MetricIdx) -> f64 {
             let idx = match self.metric_indices.iter().position(|i| i == &metric_idx) {
                 Some(idx) => idx,
                 None => {
@@ -330,7 +330,7 @@ pub mod routing {
             self.alphas[idx]
         }
 
-        pub fn alphas(&self) -> &DimVec<f32> {
+        pub fn alphas(&self) -> &DimVec<f64> {
             &self.alphas
         }
 

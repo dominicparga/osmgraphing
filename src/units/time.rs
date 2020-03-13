@@ -6,7 +6,7 @@ use std::{
 };
 
 #[derive(Debug, Default, Clone, Copy, PartialOrd, PartialEq)]
-pub struct Seconds(pub f32);
+pub struct Seconds(pub f64);
 
 impl Display for Seconds {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -15,15 +15,15 @@ impl Display for Seconds {
 }
 
 impl Deref for Seconds {
-    type Target = f32;
+    type Target = f64;
 
-    fn deref(&self) -> &f32 {
+    fn deref(&self) -> &f64 {
         &self.0
     }
 }
 
 impl DerefMut for Seconds {
-    fn deref_mut(&mut self) -> &mut f32 {
+    fn deref_mut(&mut self) -> &mut f64 {
         &mut self.0
     }
 }

@@ -4,7 +4,7 @@ pub mod pbf;
 use crate::{
     configs::{parser, NodeCategory},
     io::{MapFileExt, SupportingFileExts, SupportingMapFileExts},
-    network::{Graph, GraphBuilder},
+    network::{EdgeBuilder, Graph, GraphBuilder, NodeBuilder},
 };
 use log::info;
 use std::path::Path;
@@ -43,7 +43,7 @@ use std::path::Path;
 pub struct Parser;
 
 impl Parser {
-    pub fn parse(cfg: &parser::Config) -> Result<GraphBuilder, String> {
+    pub fn parse(cfg: parser::Config) -> Result<GraphBuilder, String> {
         match Parser::from_path(&cfg.map_file)? {
             MapFileExt::PBF => pbf::Parser::new().parse(cfg),
             MapFileExt::FMI => fmi::Parser::new().parse(cfg),
@@ -70,29 +70,23 @@ trait Parsing {
         check_parser_config(cfg)
     }
 
-    fn parse(&mut self, cfg: &parser::Config) -> Result<GraphBuilder, String> {
-        let mut graph_builder = GraphBuilder::new();
+    fn parse(&mut self, cfg: parser::Config) -> Result<GraphBuilder, String> {
+        let mut builder = GraphBuilder::new(cfg);
 
         info!("START Process given file");
-        self.preprocess(cfg)?;
-        self.parse_ways(cfg, &mut graph_builder)?;
-        self.parse_nodes(cfg, &mut graph_builder)?;
+        self.preprocess(builder.cfg())?;
+        self.parse_ways(&mut builder)?;
+        let mut builder = builder.next();
+        self.parse_nodes(&mut builder)?;
+        let builder = builder.next();
         info!("FINISHED");
 
-        Ok(graph_builder)
+        Ok(builder)
     }
 
-    fn parse_ways(
-        &self,
-        cfg: &parser::Config,
-        graph_builder: &mut GraphBuilder,
-    ) -> Result<(), String>;
+    fn parse_ways(&self, builder: &mut EdgeBuilder) -> Result<(), String>;
 
-    fn parse_nodes(
-        &self,
-        cfg: &parser::Config,
-        graph_builder: &mut GraphBuilder,
-    ) -> Result<(), String>;
+    fn parse_nodes(&self, builder: &mut NodeBuilder) -> Result<(), String>;
 
     fn parse_and_finalize(&mut self, cfg: parser::Config) -> Result<Graph, String> {
         let path = Path::new(&cfg.map_file);
@@ -101,7 +95,7 @@ trait Parsing {
         // TODO parse "cycleway" and others
         // see https://wiki.openstreetmap.org/wiki/Key:highway
 
-        let result = self.parse(&cfg)?.finalize(cfg);
+        let result = self.parse(cfg)?.finalize();
         info!("FINISHED");
         result
     }

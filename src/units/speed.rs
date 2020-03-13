@@ -6,7 +6,7 @@ use std::{
 };
 
 #[derive(Debug, Default, Clone, Copy, PartialOrd, PartialEq)]
-pub struct KilometersPerHour(pub f32);
+pub struct KilometersPerHour(pub f64);
 
 impl Display for KilometersPerHour {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -15,15 +15,15 @@ impl Display for KilometersPerHour {
 }
 
 impl Deref for KilometersPerHour {
-    type Target = f32;
+    type Target = f64;
 
-    fn deref(&self) -> &f32 {
+    fn deref(&self) -> &f64 {
         &self.0
     }
 }
 
 impl DerefMut for KilometersPerHour {
-    fn deref_mut(&mut self) -> &mut f32 {
+    fn deref_mut(&mut self) -> &mut f64 {
         &mut self.0
     }
 }

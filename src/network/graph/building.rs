@@ -1,44 +1,27 @@
 use super::{EdgeIdx, Graph, NodeIdx};
 use crate::{
     configs::{parser::Config, EdgeCategory},
-    defaults::DimVec,
+    defaults::capacity::DimVec,
     helpers::ApproxEq,
     network::MetricIdx,
     units::{geo, geo::Coordinate, length::Kilometers, speed::KilometersPerHour, time::Seconds},
 };
 use log::{debug, info};
-use progressing;
-use progressing::Bar;
-use std::{cmp::Reverse, collections::BTreeMap, mem};
+use progressing::{self, Bar};
+use std::{cmp::Reverse, mem};
 
 #[derive(Debug)]
 pub struct ProtoNode {
     pub id: i64,
-    pub coord: Option<Coordinate>,
+    pub coord: Coordinate,
     pub level: Option<usize>,
-    is_in_edge: bool,
-}
-
-impl ProtoNode {
-    pub fn new(id: i64, coord: Option<Coordinate>, level: Option<usize>) -> ProtoNode {
-        ProtoNode {
-            id,
-            coord,
-            level,
-            is_in_edge: false,
-        }
-    }
-
-    fn is_in_edge(&self) -> bool {
-        self.is_in_edge
-    }
 }
 
 #[derive(Debug)]
 pub struct ProtoEdge {
     pub src_id: i64,
     pub dst_id: i64,
-    pub metrics: DimVec<Option<f32>>,
+    pub metrics: DimVec<Option<f64>>,
 }
 
 /// handy for remembering indices after sorting backwards
@@ -119,7 +102,7 @@ impl Graph {
                             "Proto-edge (id:{}->id:{}) has {}=0, hence is corrected to epsilon.",
                             proto_edge.src_id, proto_edge.dst_id, category
                         );
-                        *value = std::f32::EPSILON;
+                        *value = std::f64::EPSILON;
                     }
                     continue;
                 }
@@ -235,135 +218,134 @@ impl Graph {
     }
 }
 
-pub struct GraphBuilder {
-    proto_nodes: BTreeMap<i64, ProtoNode>,
+pub struct EdgeBuilder {
+    cfg: Config,
+    node_ids: Vec<i64>,
     proto_edges: Vec<ProtoEdge>,
 }
 
-impl GraphBuilder {
-    pub fn new() -> Self {
-        Self {
-            proto_nodes: BTreeMap::new(),
-            proto_edges: Vec::new(),
-        }
+impl EdgeBuilder {
+    pub fn cfg(&self) -> &Config {
+        &self.cfg
     }
 
-    pub fn push_node(&mut self, new_proto_node: ProtoNode) -> &mut Self {
-        // if already added -> update coord
-        // if not -> add new node
-        if let Some(proto_node) = self.proto_nodes.get_mut(&new_proto_node.id) {
-            proto_node.coord = new_proto_node.coord;
+    pub fn insert(&mut self, proto_edge: ProtoEdge) {
+        // Most of the time, nodes are added for edges of one street,
+        // so duplicates are next to each other.
+        // -> check k neighbours
+        let n = self.node_ids.len();
+        let k = 2;
+        if n < k {
+            self.node_ids.push(proto_edge.src_id);
+            self.node_ids.push(proto_edge.dst_id);
         } else {
-            self.proto_nodes.insert(new_proto_node.id, new_proto_node);
+            for new_id in &[proto_edge.src_id, proto_edge.dst_id] {
+                if !self.node_ids[(n - k)..n].contains(new_id) {
+                    self.node_ids.push(*new_id);
+                }
+            }
         }
-        self
+
+        // add edges
+        self.proto_edges.push(proto_edge);
     }
 
-    pub fn is_node_in_edge(&self, id: i64) -> bool {
-        if let Some(proto_node) = self.proto_nodes.get(&id) {
-            proto_node.is_in_edge()
+    pub fn next(mut self) -> NodeBuilder {
+        self.proto_edges.shrink_to_fit();
+
+        // sort nodes, remove duplicates and shrink array since it can only shrink from now on
+        self.node_ids.sort_unstable();
+        self.node_ids.dedup();
+        self.node_ids.shrink_to_fit();
+
+        let node_coords = vec![None; self.node_ids.len()];
+        NodeBuilder {
+            cfg: self.cfg,
+            node_ids: self.node_ids,
+            node_coords,
+            proto_edges: self.proto_edges,
+        }
+    }
+}
+
+pub struct NodeBuilder {
+    cfg: Config,
+    node_ids: Vec<i64>,
+    node_coords: Vec<Option<Coordinate>>,
+    proto_edges: Vec<ProtoEdge>,
+}
+
+impl NodeBuilder {
+    pub fn cfg(&self) -> &Config {
+        &self.cfg
+    }
+
+    /// Returns true if node is part of edge and hence has been added.
+    pub fn insert(&mut self, proto_node: ProtoNode) -> bool {
+        if let Ok(idx) = self.node_ids.binary_search(&proto_node.id) {
+            self.node_coords[idx] = Some(proto_node.coord);
+            true
         } else {
             false
         }
     }
 
-    pub fn push_edge(&mut self, proto_edge: ProtoEdge) -> &mut Self {
-        // add or update src-node
-        let src_id = proto_edge.src_id;
-        if let Some(proto_node) = self.proto_nodes.get_mut(&src_id) {
-            proto_node.is_in_edge = true;
-        } else {
-            self.proto_nodes.insert(
-                src_id,
-                ProtoNode {
-                    id: src_id,
-                    coord: None,
-                    level: None,
-                    is_in_edge: true,
-                },
-            );
+    pub fn next(mut self) -> GraphBuilder {
+        self.node_coords.shrink_to_fit();
+
+        GraphBuilder {
+            cfg: self.cfg,
+            node_ids: self.node_ids,
+            node_coords: self.node_coords,
+            proto_edges: self.proto_edges,
         }
+    }
+}
 
-        // add or update dst-node
-        let dst_id = proto_edge.dst_id;
-        if let Some(proto_node) = self.proto_nodes.get_mut(&dst_id) {
-            proto_node.is_in_edge = true;
-        } else {
-            self.proto_nodes.insert(
-                dst_id,
-                ProtoNode {
-                    id: dst_id,
-                    coord: None,
-                    level: None,
-                    is_in_edge: true,
-                },
-            );
+pub struct GraphBuilder {
+    cfg: Config,
+    node_ids: Vec<i64>,
+    node_coords: Vec<Option<Coordinate>>,
+    proto_edges: Vec<ProtoEdge>,
+}
+
+impl GraphBuilder {
+    pub fn new(cfg: Config) -> EdgeBuilder {
+        EdgeBuilder {
+            cfg,
+            node_ids: Vec::new(),
+            proto_edges: Vec::new(),
         }
-
-        // add edge
-        self.proto_edges.push(proto_edge);
-
-        self
     }
 
-    pub fn finalize(mut self, cfg: Config) -> Result<Graph, String> {
+    pub fn finalize(mut self) -> Result<Graph, String> {
         //----------------------------------------------------------------------------------------//
         // init graph
 
         info!(
             "START Finalize graph with {} proto-nodes and {} proto-edges.",
-            self.proto_nodes.len(),
+            self.node_ids.len(),
             self.proto_edges.len()
         );
-        let mut graph = Graph::new(cfg);
+        let mut graph = Graph::new(self.cfg);
 
         //----------------------------------------------------------------------------------------//
         // add nodes to graph which belong to edges (sorted by asc id)
 
         // logging
         info!("START Add nodes (sorted) which belongs to an edge.");
-        let mut progress_bar = progressing::BernoulliBar::from_goal(self.proto_nodes.len() as u32);
-        info!("{}", progress_bar);
-        // start looping
-        let mut node_idx = 0;
-        graph.node_ids.reserve_exact(self.proto_nodes.len());
-        graph.node_coords.reserve_exact(self.proto_nodes.len());
-        // BTreeMap's iter returns sorted by key (asc)
-        for (_id, proto_node) in self.proto_nodes.into_iter() {
-            // add nodes only if they belong to an edge
-            if !proto_node.is_in_edge() {
-                progress_bar.add((0, 1));
-                continue;
-            }
-
-            // add new node
-            if let Some(coord) = proto_node.coord {
-                graph.node_ids.push(proto_node.id);
-                graph.node_coords.push(coord);
-                node_idx += 1;
-                progress_bar.add((1, 1));
-            } else {
+        // check if every node has a coordinate, since every node is part of an edge
+        for (idx, opt_coord) in self.node_coords.iter().enumerate() {
+            if opt_coord.is_none() {
                 // should not happen if file is okay
                 return Err(format!(
                     "Proto-node (id: {}) has no coordinates, but belongs to an edge.",
-                    proto_node.id
+                    self.node_ids[idx]
                 ));
             }
-
-            // print progress
-            if progress_bar.progress().successes % (1 + (progress_bar.end() / 10)) == 0 {
-                info!("{}", progress_bar);
-            }
         }
-        info!("{}", progress_bar);
-        // reduce and optimize memory-usage
-        // already dropped via iterator: drop(self.proto_nodes);
-        graph.shrink_to_fit();
-        assert_eq!(
-            graph.node_ids.len() == graph.node_coords.len(),
-            node_idx == graph.node_ids.len(),
-            "The (maximum index - 1) should not be more than the number of nodes in the graph."
-        );
+        graph.node_ids = self.node_ids;
+        graph.node_coords = self.node_coords.into_iter().map(Option::unwrap).collect();
         info!("FINISHED");
 
         //----------------------------------------------------------------------------------------//
@@ -386,7 +368,7 @@ impl GraphBuilder {
         // node-id 314074041 -> node-id 283494218
         // which is part of two ways
         //
-        // The metrics contain f32, which is not comparable exactly.
+        // The metrics contain f64, which is not comparable exactly.
         // This is okay for here, because if two edges of identical src/dst have different
         // metrics, than they are created differently and thus are indeed different.
         self.proto_edges.dedup_by(|e0, e1| {
@@ -411,14 +393,14 @@ impl GraphBuilder {
 
         // Work off proto-edges in chunks to keep memory-usage lower.
         // For example:
-        // To keep additional memory-needs below 1 MB, the the maximum amount of four f32-values per
+        // To keep additional memory-needs below 1 MB, the the maximum amount of four f64-values per
         // worked-off chunk has to be limited to 250_000.
-        // Because ids are more expensive than metrics, (2x i64 = 4x f32), the number is much lower.
+        // Because ids are more expensive than metrics, (2x i64 = 4x f64), the number is much lower.
         let bytes_per_edge =
-            2 * mem::size_of::<i64>() + graph.cfg().edges.dim() * mem::size_of::<f32>();
+            2 * mem::size_of::<i64>() + graph.cfg().edges.dim() * mem::size_of::<f64>();
         let max_byte = 200 * 1_000_000;
         let max_chunk_size = max_byte / bytes_per_edge;
-        log::debug!("max-chunk-size:                {}", max_chunk_size);
+        log::debug!("max-chunk-size: {}", max_chunk_size);
         // init metrics
         graph.metrics = vec![vec![]; graph.cfg().edges.dim()];
         let mut new_proto_edges = vec![];
@@ -448,7 +430,7 @@ impl GraphBuilder {
                 .iter_mut()
                 .for_each(|m| m.reserve_exact(chunk.len()));
             new_proto_edges.reserve_exact(chunk.len());
-            log::debug!("chunk-len:             {}", chunk.len());
+            log::debug!("chunk-len: {}", chunk.len());
             log::debug!("graph-metric-capacity: {}", graph.metrics[0].capacity());
 
             for mut proto_edge in chunk.into_iter() {

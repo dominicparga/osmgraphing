@@ -2,7 +2,7 @@ pub mod building;
 mod indexing;
 pub use indexing::{EdgeIdx, MetricIdx, NodeIdx};
 
-use crate::{configs::parser::Config, defaults::DimVec, units::geo::Coordinate};
+use crate::{configs::parser::Config, defaults::capacity::DimVec, units::geo::Coordinate};
 use std::{fmt, fmt::Display};
 
 /// Stores graph-data as offset-graph in arrays and provides methods and shallow structs for accessing them.
@@ -84,7 +84,7 @@ pub struct Graph {
     bwd_offsets: Vec<usize>,
     bwd_to_fwd_map: Vec<EdgeIdx>,
     // edge-metrics (sorted according to fwd_dsts)
-    metrics: Vec<Vec<f32>>,
+    metrics: Vec<Vec<f64>>,
 }
 
 /// public stuff for accessing the (static) graph
@@ -200,7 +200,7 @@ impl Display for Graph {
                     let edge_idx = EdgeIdx(j);
                     let src_idx = bwd_dsts.dst_idx(edge_idx);
                     let half_edge = fwd_dsts.half_edge(edge_idx);
-                    let metrics: Vec<f32> = (0..self.cfg.edges.dim())
+                    let metrics: Vec<f64> = (0..self.cfg.edges.dim())
                         .map(|i| self.metrics[i][*edge_idx])
                         .collect();
                     writeln!(
@@ -319,11 +319,11 @@ impl<'a> HalfEdge<'a> {
         self.edge_dsts[*self.idx]
     }
 
-    pub fn metric(&self, metric_idx: MetricIdx) -> f32 {
+    pub fn metric(&self, metric_idx: MetricIdx) -> f64 {
         self.metrics.get(metric_idx, self.idx)
     }
 
-    pub fn metrics(&self, metric_indices: &[MetricIdx]) -> DimVec<f32> {
+    pub fn metrics(&self, metric_indices: &[MetricIdx]) -> DimVec<f64> {
         self.metrics.get_more(metric_indices, self.idx)
     }
 }
@@ -490,7 +490,7 @@ impl<'a> EdgeAccessor<'a> {
 #[derive(Debug)]
 pub struct MetricAccessor<'a> {
     cfg: &'a Config,
-    metrics: &'a Vec<Vec<f32>>,
+    metrics: &'a Vec<Vec<f64>>,
 }
 
 impl<'a> Display for MetricAccessor<'a> {
@@ -500,11 +500,11 @@ impl<'a> Display for MetricAccessor<'a> {
 }
 
 impl<'a> MetricAccessor<'a> {
-    pub fn get(&self, metric_idx: MetricIdx, edge_idx: EdgeIdx) -> f32 {
+    pub fn get(&self, metric_idx: MetricIdx, edge_idx: EdgeIdx) -> f64 {
         self.metrics[*metric_idx][*edge_idx]
     }
 
-    pub fn get_more(&self, metric_indices: &[MetricIdx], edge_idx: EdgeIdx) -> DimVec<f32> {
+    pub fn get_more(&self, metric_indices: &[MetricIdx], edge_idx: EdgeIdx) -> DimVec<f64> {
         metric_indices
             .iter()
             .map(|&midx| self.metrics[*midx][*edge_idx])
