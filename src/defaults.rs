@@ -1,11 +1,26 @@
-// For optimal performance and memory-usage:
-// Change this value before compiling, dependent of your number of stored metrics in the graph.
-pub const SMALL_VEC_INLINE_SIZE: usize = 4;
-pub type DimVec<T> = smallvec::SmallVec<[T; SMALL_VEC_INLINE_SIZE]>;
+pub mod accuracy {
+    /// value is good because it refers to
+    /// - mm for km
+    /// - µs for s
+    /// - lat/lon
+    ///   - lat: 1/60 ~ 0.0167 degrees equals 1_852 m
+    ///     -> 1e-6 degrees equals around 0.11 m
+    ///   - lon: distance depends on latitude
+    ///     -> 1e-6 degrees equals <= 0.11 m (equator)
+    ///   -> 1e-6 degrees points to a person in a house, see https://xkcd.com/2170/
+    pub const F32_EQ: f64 = 1e-6;
+}
 
 pub mod speed {
     pub const MAX_KMH: u16 = 130;
     pub const MIN_KMH: u8 = 5;
+}
+
+pub mod capacity {
+    // For optimal performance and memory-usage:
+    // Change this value before compiling, dependent of your number of stored metrics in the graph.
+    pub const SMALL_VEC_INLINE_SIZE: usize = 1;
+    pub type DimVec<T> = smallvec::SmallVec<[T; SMALL_VEC_INLINE_SIZE]>;
 }
 
 pub mod network {

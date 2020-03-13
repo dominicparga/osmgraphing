@@ -1,4 +1,4 @@
-use crate::{configs::SimpleId, defaults::DimVec, network::MetricIdx};
+use crate::{configs::SimpleId, defaults::capacity::DimVec, network::MetricIdx};
 use serde::Deserialize;
 use smallvec::smallvec;
 use std::collections::BTreeMap;
@@ -137,7 +137,7 @@ pub mod routing {
     #[derive(Debug, Deserialize)]
     pub struct Entry {
         pub id: SimpleId,
-        pub alpha: Option<f32>,
+        pub alpha: Option<f64>,
     }
 }
 

@@ -133,7 +133,7 @@ fn main() {
         let option_path = dijkstra.compute_best_path(&src, &dst, &graph, &cfg_routing);
         info!(
             "Ran Dijkstra-query in {} ms",
-            now.elapsed().as_micros() as f32 / 1_000.0,
+            now.elapsed().as_micros() as f64 / 1_000.0,
         );
         if let Some(path) = option_path {
             info!("Cost {:?} from ({}) to ({}).", path.cost(), src, dst);

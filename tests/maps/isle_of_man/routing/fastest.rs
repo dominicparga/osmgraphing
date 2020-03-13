@@ -20,6 +20,6 @@ fn dijkstra() {
     assert_path(&mut dijkstra, expected_paths, cfg);
 }
 
-fn expected_paths() -> Vec<(TestNode, TestNode, Option<(f32, Vec<Vec<TestNode>>)>)> {
+fn expected_paths() -> Vec<(TestNode, TestNode, Option<(f64, Vec<Vec<TestNode>>)>)> {
     unimplemented!("Testing routing on isle-of-man is not supported yet.")
 }

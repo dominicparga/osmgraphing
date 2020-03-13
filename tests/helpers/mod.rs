@@ -3,7 +3,7 @@
 
 use osmgraphing::{
     configs::{self, Config},
-    defaults::DimVec,
+    defaults::capacity::DimVec,
     helpers::ApproxEq,
     io::Parser,
     network::{EdgeIdx, Graph, MetricIdx, Node, NodeAccessor, NodeIdx},
@@ -61,7 +61,7 @@ pub fn assert_nodes(test_nodes: &Vec<TestNode>, nodes: &NodeAccessor) {
 #[allow(dead_code)]
 pub fn assert_path(
     dijkstra: &mut routing::Dijkstra,
-    expected_paths: Vec<(TestNode, TestNode, Option<(f32, Vec<Vec<TestNode>>)>)>,
+    expected_paths: Vec<(TestNode, TestNode, Option<(f64, Vec<Vec<TestNode>>)>)>,
     cfg: Config,
 ) {
     let graph = parse(cfg.parser);
@@ -134,7 +134,7 @@ impl PartialEq for TestNode {
 
 impl TestNode {
     #[allow(dead_code)]
-    pub fn new(name: &str, id: i64, lat: f32, lon: f32, graph: &Graph) -> TestNode {
+    pub fn new(name: &str, id: i64, lat: f64, lon: f64, graph: &Graph) -> TestNode {
         let idx = graph
             .nodes()
             .idx_from(id)
@@ -155,7 +155,7 @@ pub struct TestEdge {
     is_fwd: bool,
     src_idx: NodeIdx,
     dst_idx: NodeIdx,
-    metrics: Vec<f32>,
+    metrics: Vec<f64>,
 }
 
 impl TestEdge {
@@ -165,9 +165,9 @@ impl TestEdge {
         edge_idx: usize,
         src: &TestNode,
         dst: &TestNode,
-        length: f32,
-        maxspeed: f32,
-        duration: f32,
+        length: f64,
+        maxspeed: f64,
+        duration: f64,
     ) -> TestEdge {
         TestEdge {
             name: (name.unwrap_or(&format!("{}->{}", src.name, dst.name))).to_owned(),
@@ -185,9 +185,9 @@ impl TestEdge {
         edge_idx: usize,
         src: &TestNode,
         dst: &TestNode,
-        length: f32,
-        maxspeed: f32,
-        duration: f32,
+        length: f64,
+        maxspeed: f64,
+        duration: f64,
     ) -> TestEdge {
         TestEdge {
             name: (name.unwrap_or(&format!("{}->{}", src.name, dst.name))).to_owned(),
@@ -260,7 +260,7 @@ impl TestEdge {
 pub struct TestPath {
     src: TestNode,
     dst: TestNode,
-    cost: DimVec<f32>,
+    cost: DimVec<f64>,
     alternative_nodes: Vec<Vec<TestNode>>,
 }
 
@@ -268,7 +268,7 @@ impl TestPath {
     pub fn from_alternatives(
         src: TestNode,
         dst: TestNode,
-        cost: DimVec<f32>,
+        cost: DimVec<f64>,
         alternative_nodes: Vec<Vec<TestNode>>,
     ) -> TestPath {
         TestPath {
@@ -279,7 +279,7 @@ impl TestPath {
         }
     }
 
-    pub fn assert_correct(&self, path: &routing::paths::Path<DimVec<f32>>, graph: &Graph) {
+    pub fn assert_correct(&self, path: &routing::paths::Path<DimVec<f64>>, graph: &Graph) {
         let node = |idx: NodeIdx| -> TestNode { TestNode::from(graph.nodes().create(idx)) };
 
         let path_src = node(path.src_idx());
