@@ -3,7 +3,7 @@
 
 use osmgraphing::{
     configs::{self, Config},
-    defaults::DimVec,
+    defaults::capacity::DimVec,
     helpers::ApproxEq,
     io::Parser,
     network::{EdgeIdx, Graph, MetricIdx, Node, NodeAccessor, NodeIdx},

@@ -1,4 +1,4 @@
-use crate::defaults::DimVec;
+use crate::defaults::capacity::DimVec;
 use std::{
     cmp::Ordering::{self, Equal, Greater, Less},
     fs::File,

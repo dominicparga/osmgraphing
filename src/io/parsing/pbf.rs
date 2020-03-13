@@ -1,6 +1,6 @@
 use crate::{
     configs::{parser, EdgeCategory},
-    defaults::DimVec,
+    defaults::capacity::DimVec,
     helpers,
     network::{EdgeBuilder, MetricIdx, NodeBuilder, ProtoEdge, ProtoNode, StreetCategory},
     units::geo::Coordinate,

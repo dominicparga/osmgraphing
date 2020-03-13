@@ -115,7 +115,7 @@ pub mod parser {
     }
 
     pub mod edges {
-        use crate::{configs::SimpleId, defaults::DimVec, network::MetricIdx};
+        use crate::{configs::SimpleId, defaults::capacity::DimVec, network::MetricIdx};
         use serde::Deserialize;
         use smallvec::smallvec;
         use std::{
@@ -299,7 +299,7 @@ pub mod generator {
 }
 
 pub mod routing {
-    use crate::{defaults::DimVec, network::MetricIdx};
+    use crate::{defaults::capacity::DimVec, network::MetricIdx};
 
     #[derive(Debug)]
     pub struct Config {

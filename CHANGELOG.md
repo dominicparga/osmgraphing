@@ -45,7 +45,7 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 
 ### Changed <a name="unreleased/changed"></a>
 
-\-
+- Move defaults for `SmallVec`-inline-size into a new submodule `capacity`.
 
 
 ### Deprecated <a name="unreleased/deprecated"></a>

@@ -1,6 +1,6 @@
 use crate::{
     configs::{EdgeCategory, SimpleId},
-    defaults::DimVec,
+    defaults::capacity::DimVec,
     network::MetricIdx,
 };
 use log::warn;

@@ -1,7 +1,7 @@
 use super::paths::Path;
 use crate::{
     configs::routing::Config,
-    defaults::DimVec,
+    defaults::capacity::DimVec,
     helpers,
     network::{EdgeIdx, Graph, Node, NodeIdx},
 };
