@@ -1,7 +1,7 @@
 use crate::{
     configs::parser,
     helpers,
-    network::{GraphBuilder, ProtoEdge, ProtoNode},
+    network::{EdgeBuilder, NodeBuilder, ProtoEdge, ProtoNode},
 };
 use log::info;
 use std::{io::BufRead, ops::Range};
@@ -86,14 +86,10 @@ impl super::Parsing for Parser {
         Ok(())
     }
 
-    fn parse_ways(
-        &self,
-        cfg: &parser::Config,
-        graph_builder: &mut GraphBuilder,
-    ) -> Result<(), String> {
+    fn parse_ways(&self, builder: &mut EdgeBuilder) -> Result<(), String> {
         info!("START Create edges from input-file.");
         let mut line_number = 0;
-        let file = helpers::open_file(&cfg.map_file)?;
+        let file = helpers::open_file(&builder.cfg().map_file)?;
         for line in intern::Reader::new(file)
             .lines()
             .map(Result::unwrap)
@@ -107,22 +103,18 @@ impl super::Parsing for Parser {
             line_number += 1;
 
             // create edge and add it
-            let proto_edge = ProtoEdge::from_str(&line, &cfg.edges)?;
-            graph_builder.push_edge(proto_edge);
+            let proto_edge = ProtoEdge::from_str(&line, &builder.cfg().edges)?;
+            builder.insert(proto_edge);
         }
         info!("FINISHED");
 
         Ok(())
     }
 
-    fn parse_nodes(
-        &self,
-        cfg: &parser::Config,
-        graph_builder: &mut GraphBuilder,
-    ) -> Result<(), String> {
+    fn parse_nodes(&self, builder: &mut NodeBuilder) -> Result<(), String> {
         info!("START Create nodes from input-file.");
         let mut line_number = 0;
-        let file = helpers::open_file(&cfg.map_file)?;
+        let file = helpers::open_file(&builder.cfg().map_file)?;
         for line in intern::Reader::new(file)
             .lines()
             .map(Result::unwrap)
@@ -136,10 +128,8 @@ impl super::Parsing for Parser {
             line_number += 1;
 
             // create node and add it
-            let proto_node = ProtoNode::from_str(&line, &cfg.nodes)?;
-            if graph_builder.is_node_in_edge(proto_node.id) {
-                graph_builder.push_node(proto_node);
-            }
+            let proto_node = ProtoNode::from_str(&line, &builder.cfg().nodes)?;
+            builder.insert(proto_node);
         }
         info!("FINISHED");
 
@@ -332,11 +322,11 @@ mod intern {
             let lat = lat.ok_or("Proto-node should have a coordinate, but latitude is misisng.")?;
             let lon =
                 lon.ok_or("Proto-node should have a coordinate, but longitude is misisng.")?;
-            Ok(ProtoNode::new(
-                node_id,
-                Some(geo::Coordinate { lat, lon }),
+            Ok(ProtoNode {
+                id: node_id,
+                coord: geo::Coordinate { lat, lon },
                 level,
-            ))
+            })
         }
     }
 }

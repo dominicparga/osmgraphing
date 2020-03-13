@@ -11,7 +11,7 @@ pub mod parsing {
         let mut cfg = Config::from_yaml(defaults::paths::resources::configs::SMALL_FMI).unwrap();
         cfg.parser.map_file = PathBuf::from("foo.asdf");
         assert!(
-            Parser::parse(&cfg.parser).is_err(),
+            Parser::parse(cfg.parser).is_err(),
             "File-extension 'asdf' should not be supported."
         );
     }
