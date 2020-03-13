@@ -21,7 +21,7 @@ pub struct ProtoNode {
 pub struct ProtoEdge {
     pub src_id: i64,
     pub dst_id: i64,
-    pub metrics: DimVec<Option<f32>>,
+    pub metrics: DimVec<Option<f64>>,
 }
 
 /// handy for remembering indices after sorting backwards
@@ -102,7 +102,7 @@ impl Graph {
                             "Proto-edge (id:{}->id:{}) has {}=0, hence is corrected to epsilon.",
                             proto_edge.src_id, proto_edge.dst_id, category
                         );
-                        *value = std::f32::EPSILON;
+                        *value = std::f64::EPSILON;
                     }
                     continue;
                 }
@@ -368,7 +368,7 @@ impl GraphBuilder {
         // node-id 314074041 -> node-id 283494218
         // which is part of two ways
         //
-        // The metrics contain f32, which is not comparable exactly.
+        // The metrics contain f64, which is not comparable exactly.
         // This is okay for here, because if two edges of identical src/dst have different
         // metrics, than they are created differently and thus are indeed different.
         self.proto_edges.dedup_by(|e0, e1| {
@@ -393,11 +393,11 @@ impl GraphBuilder {
 
         // Work off proto-edges in chunks to keep memory-usage lower.
         // For example:
-        // To keep additional memory-needs below 1 MB, the the maximum amount of four f32-values per
+        // To keep additional memory-needs below 1 MB, the the maximum amount of four f64-values per
         // worked-off chunk has to be limited to 250_000.
-        // Because ids are more expensive than metrics, (2x i64 = 4x f32), the number is much lower.
+        // Because ids are more expensive than metrics, (2x i64 = 4x f64), the number is much lower.
         let bytes_per_edge =
-            2 * mem::size_of::<i64>() + graph.cfg().edges.dim() * mem::size_of::<f32>();
+            2 * mem::size_of::<i64>() + graph.cfg().edges.dim() * mem::size_of::<f64>();
         let max_byte = 200 * 1_000_000;
         let max_chunk_size = max_byte / bytes_per_edge;
         log::debug!("max-chunk-size: {}", max_chunk_size);

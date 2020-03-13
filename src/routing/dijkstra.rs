@@ -12,11 +12,11 @@ use std::{cmp::Reverse, collections::BinaryHeap};
 pub struct Dijkstra {
     queue: BinaryHeap<Reverse<CostNode>>,
     // fwd
-    fwd_costs: Vec<f32>,
+    fwd_costs: Vec<f64>,
     predecessors: Vec<Option<EdgeIdx>>,
     is_visited_by_src: Vec<bool>,
     // bwd
-    bwd_costs: Vec<f32>,
+    bwd_costs: Vec<f64>,
     successors: Vec<Option<EdgeIdx>>,
     is_visited_by_dst: Vec<bool>,
 }
@@ -39,11 +39,11 @@ impl Dijkstra {
     /// Resizes existing datastructures storing routing-data like costs saving re-allocations.
     fn resize(&mut self, new_len: usize) {
         // fwd
-        self.fwd_costs.splice(.., vec![std::f32::INFINITY; new_len]);
+        self.fwd_costs.splice(.., vec![std::f64::INFINITY; new_len]);
         self.predecessors.splice(.., vec![None; new_len]);
         self.is_visited_by_src.splice(.., vec![false; new_len]);
         // bwd
-        self.bwd_costs.splice(.., vec![std::f32::INFINITY; new_len]);
+        self.bwd_costs.splice(.., vec![std::f64::INFINITY; new_len]);
         self.successors.splice(.., vec![None; new_len]);
         self.is_visited_by_dst.splice(.., vec![false; new_len]);
 
@@ -62,7 +62,7 @@ impl Dijkstra {
         }
     }
 
-    fn total_cost(&self, costnode: &CostNode) -> f32 {
+    fn total_cost(&self, costnode: &CostNode) -> f64 {
         self.fwd_costs[*costnode.idx] + self.bwd_costs[*costnode.idx]
     }
 }
@@ -74,7 +74,7 @@ impl Dijkstra {
         dst: &Node,
         graph: &Graph,
         cfg: &Config,
-    ) -> Option<Path<DimVec<f32>>> {
+    ) -> Option<Path<DimVec<f64>>> {
         if cfg.dim() <= 0 {
             panic!("Best path should be computed, but no metric is specified.");
         }
@@ -83,7 +83,7 @@ impl Dijkstra {
         // initialization-stuff
 
         self.resize(graph.nodes().count());
-        let mut best_meeting: Option<(NodeIdx, f32)> = None;
+        let mut best_meeting: Option<(NodeIdx, f64)> = None;
 
         //------------------------------------------------------------------------------------//
         // prepare first iteration(s)
@@ -240,7 +240,7 @@ enum Direction {
 #[derive(Clone)]
 struct CostNode {
     idx: NodeIdx,
-    cost: f32,
+    cost: f64,
     direction: Direction,
 }
 

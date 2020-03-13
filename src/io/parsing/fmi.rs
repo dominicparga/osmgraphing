@@ -197,7 +197,7 @@ impl ProtoEdge {
                     let metric_idx = MetricIdx(metric_values.len());
 
                     if cfg.is_metric_provided(metric_idx) {
-                        if let Ok(meters) = param.parse::<f32>() {
+                        if let Ok(meters) = param.parse::<f64>() {
                             metric_values.push(Some(meters / 1_000.0));
                         } else {
                             return Err(format!(
@@ -217,7 +217,7 @@ impl ProtoEdge {
                     let metric_idx = MetricIdx(metric_values.len());
 
                     if cfg.is_metric_provided(metric_idx) {
-                        if let Ok(value) = param.parse::<f32>() {
+                        if let Ok(value) = param.parse::<f64>() {
                             metric_values.push(Some(value));
                         } else {
                             return Err(format!(
@@ -278,22 +278,22 @@ impl ProtoNode {
                     };
                 }
                 NodeCategory::Latitude => {
-                    lat = match param.parse::<f32>() {
+                    lat = match param.parse::<f64>() {
                         Ok(lat) => Some(lat),
                         Err(_) => {
                             return Err(format!(
-                                "Parsing lat '{:?}' from fmi-file, which is not f32.",
+                                "Parsing lat '{:?}' from fmi-file, which is not f64.",
                                 params[2]
                             ))
                         }
                     };
                 }
                 NodeCategory::Longitude => {
-                    lon = match param.parse::<f32>() {
+                    lon = match param.parse::<f64>() {
                         Ok(lon) => Some(lon),
                         Err(_) => {
                             return Err(format!(
-                                "Parsing lon '{:?}' from fmi-file, which is not f32.",
+                                "Parsing lon '{:?}' from fmi-file, which is not f64.",
                                 params[3]
                             ))
                         }

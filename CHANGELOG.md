@@ -46,6 +46,10 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 ### Changed <a name="unreleased/changed"></a>
 
 - Move defaults for `SmallVec`-inline-size into a new submodule `capacity`.
+- Make __graphbuilder__ much more efficient in performance and memory (both around `25 %`).
+  - Replace `BTreeMap` of graphbuilder by `Vec` and a handy (forced) way of adding graph-components.
+  - __Replace `f32` by `f64`__ thanks to the new optimized graphbuilder.
+- Make __accuracy-limits__ more realistic (`1e-6` is way enough and `EPSILON` could easily fail due to rounding-errors).
 
 
 ### Deprecated <a name="unreleased/deprecated"></a>
@@ -91,6 +95,7 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
   - Replace existing tags with ones referring to `CHANGELOG.md` and add old tag-texts to the `CHANGELOG.md`
   - Inconsistent `semver` in old tags -> probably `cargo yank VERSION` needed
 - The link to `doc.rs` is hardcoded to `major.minor.patch=0.y.z` because `docs.rs` chooses version `1.0.0` though it's yanked..
+- Comparing `f32` could be wrong due to hard criterion `<= std::f32::EPSILON`.
 
 
 ### Fixed <a name="v0.11.1/fixed"></a>

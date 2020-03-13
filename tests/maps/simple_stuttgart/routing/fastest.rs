@@ -22,7 +22,7 @@ fn dijkstra() {
     assert_path(&mut dijkstra, expected_paths, cfg);
 }
 
-fn expected_paths() -> Vec<(TestNode, TestNode, Option<(f32, Vec<Vec<TestNode>>)>)> {
+fn expected_paths() -> Vec<(TestNode, TestNode, Option<(f64, Vec<Vec<TestNode>>)>)> {
     let opp: usize = 0;
     let bac: usize = 1;
     let wai: usize = 2;
@@ -98,7 +98,7 @@ fn expected_paths() -> Vec<(TestNode, TestNode, Option<(f32, Vec<Vec<TestNode>>)
         .map(|(src_idx, dst_idx, path_info)| {
             let src = nodes[src_idx].clone();
             let dst = nodes[dst_idx].clone();
-            let path_info: Option<(f32, Vec<Vec<TestNode>>)> = match path_info {
+            let path_info: Option<(f64, Vec<Vec<TestNode>>)> = match path_info {
                 Some((cost, paths)) => {
                     let paths = paths
                         .into_iter()

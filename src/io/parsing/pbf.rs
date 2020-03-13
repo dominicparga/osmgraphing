@@ -91,7 +91,7 @@ impl super::Parsing for Parser {
                     EdgeCategory::KilometersPerHour => {
                         if is_provided {
                             let maxspeed = highway_tag.parse_maxspeed(&way);
-                            metrics[*metric_idx] = Some(maxspeed as f32);
+                            metrics[*metric_idx] = Some(maxspeed as f64);
                         } else {
                             return Err(format!(
                                 "The {} of an edge in a pbf-file has to be provided, \
@@ -103,7 +103,7 @@ impl super::Parsing for Parser {
                     EdgeCategory::LaneCount => {
                         if is_provided {
                             let lane_count = highway_tag.parse_lane_count(&way);
-                            metrics[*metric_idx] = Some(lane_count as f32);
+                            metrics[*metric_idx] = Some(lane_count as f64);
                         } else {
                             return Err(format!(
                                 "The {} of an edge in a pbf-file has to be provided, \
