@@ -20,6 +20,10 @@ pub fn dot_product(a: &DimVec<f64>, b: &DimVec<f64>) -> f64 {
         .fold(0.0, |start, (aa, &bb)| start + aa * bb)
 }
 
+pub trait Approx {
+    fn approx(self) -> f64;
+}
+
 pub trait ApproxEq {
     fn approx_eq(&self, other: &Self) -> bool;
 }
@@ -29,9 +33,15 @@ pub trait ApproxCmp {
     fn approx_cmp(&self, other: &Self) -> Ordering;
 }
 
+impl Approx for f64 {
+    fn approx(self) -> f64 {
+        (self / accuracy::F64_ABS).round() * accuracy::F64_ABS
+    }
+}
+
 impl ApproxEq for f64 {
     fn approx_eq(&self, other: &f64) -> bool {
-        (self - other).abs() <= accuracy::F32_EQ
+        (self - other).abs() <= accuracy::F64_ABS
     }
 }
 

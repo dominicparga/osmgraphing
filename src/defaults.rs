@@ -8,7 +8,8 @@ pub mod accuracy {
     ///   - lon: distance depends on latitude
     ///     -> 1e-6 degrees equals <= 0.11 m (equator)
     ///   -> 1e-6 degrees points to a person in a house, see https://xkcd.com/2170/
-    pub const F32_EQ: f64 = 1e-6;
+    pub const F64_ABS: f64 = 0.000_001; // = 10^(-F64__FMT_DIGITS)
+    pub const F64_FMT_DIGITS: usize = 6;
 }
 
 pub mod speed {

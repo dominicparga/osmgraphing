@@ -38,7 +38,8 @@ pub mod fmi {
             generator::{self, EdgeCategory, NodeCategory},
             parser,
         },
-        helpers,
+        defaults::accuracy,
+        helpers::{self, Approx},
         network::{EdgeIdx, Graph, NodeIdx},
     };
     use log::info;
@@ -104,8 +105,18 @@ pub mod fmi {
                         match category {
                             NodeCategory::NodeId => write!(writer, "{}", node.id())?,
                             NodeCategory::NodeIdx => write!(writer, "{}", node.idx())?,
-                            NodeCategory::Latitude => write!(writer, "{}", node.coord().lat)?,
-                            NodeCategory::Longitude => write!(writer, "{}", node.coord().lon)?,
+                            NodeCategory::Latitude => write!(
+                                writer,
+                                "{:.digits$}",
+                                node.coord().lat.approx(),
+                                digits = accuracy::F64_FMT_DIGITS,
+                            )?,
+                            NodeCategory::Longitude => write!(
+                                writer,
+                                "{:.digits$}",
+                                node.coord().lon.approx(),
+                                digits = accuracy::F64_FMT_DIGITS,
+                            )?,
                             NodeCategory::Level => write!(writer, "{}", node.level())?,
                             NodeCategory::Ignore => write!(writer, "{}", ignore_str)?,
                         }
@@ -156,14 +167,19 @@ pub mod fmi {
                                 let metric_idx = graph.cfg().edges.metric_idx(id);
                                 let km = graph.metrics().get(metric_idx, edge_idx);
                                 let m = km * 1_000.0;
-                                write!(writer, "{}", m)?
+                                write!(writer, "{:.digits$}", m, digits = accuracy::F64_FMT_DIGITS,)?
                             }
                             EdgeCategory::KilometersPerHour
                             | EdgeCategory::Seconds
                             | EdgeCategory::LaneCount
                             | EdgeCategory::Custom => {
                                 let metric_idx = graph.cfg().edges.metric_idx(id);
-                                write!(writer, "{}", graph.metrics().get(metric_idx, edge_idx))?
+                                write!(
+                                    writer,
+                                    "{:.digits$}",
+                                    graph.metrics().get(metric_idx, edge_idx),
+                                    digits = accuracy::F64_FMT_DIGITS,
+                                )?
                             }
                             EdgeCategory::SrcId => {
                                 let src_idx = graph.bwd_edges().dst_idx(edge_idx);
