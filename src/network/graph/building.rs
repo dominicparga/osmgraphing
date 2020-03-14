@@ -22,6 +22,7 @@ pub struct ProtoEdge {
     pub src_id: i64,
     pub dst_id: i64,
     pub metrics: DimVec<Option<f64>>,
+    // pub sc_edges: Option<[EdgeIdx; 2]>,
 }
 
 /// handy for remembering indices after sorting backwards
@@ -51,6 +52,9 @@ impl Graph {
             bwd_to_fwd_map: Vec::new(),
             // edge-metrics
             metrics: Vec::new(),
+            // shortcuts (contraction-hierarchies)
+            sc_offsets: Vec::new(),
+            sc_edges: Vec::new(),
         }
     }
 
@@ -73,13 +77,6 @@ impl Graph {
     /// over the calculation-loop.
     fn add_metrics(&mut self, proto_edge: &mut ProtoEdge) -> Result<(), String> {
         let cfg = &self.cfg;
-
-        let (src_idx, dst_idx) = {
-            let nodes = self.nodes();
-            let src_idx = nodes.src_idx_from(proto_edge.src_id)?;
-            let dst_idx = nodes.dst_idx_from(proto_edge.dst_id)?;
-            (src_idx, dst_idx)
-        };
 
         // - finalize proto-edge -
         // Repeat the calculations n times.
@@ -112,6 +109,13 @@ impl Graph {
                 // calculate metric dependent on category
                 match category {
                     EdgeCategory::Meters => {
+                        let (src_idx, dst_idx) = {
+                            let nodes = self.nodes();
+                            let src_idx = nodes.src_idx_from(proto_edge.src_id)?;
+                            let dst_idx = nodes.dst_idx_from(proto_edge.dst_id)?;
+                            (src_idx, dst_idx)
+                        };
+
                         let src_coord = self.node_coords[*src_idx];
                         let dst_coord = self.node_coords[*dst_idx];
                         proto_edge.metrics[*metric_idx] =
@@ -224,7 +228,7 @@ impl Graph {
 pub struct EdgeBuilder {
     cfg: Config,
     node_ids: Vec<i64>,
-    proto_edges: Vec<ProtoEdge>,
+    proto_edges: Vec<(usize, ProtoEdge)>,
 }
 
 impl EdgeBuilder {
@@ -250,7 +254,8 @@ impl EdgeBuilder {
         }
 
         // add edges
-        self.proto_edges.push(proto_edge);
+        let idx = self.proto_edges.len();
+        self.proto_edges.push((idx, proto_edge));
     }
 
     pub fn next(mut self) -> NodeBuilder {
@@ -280,7 +285,7 @@ pub struct NodeBuilder {
     node_ids: Vec<i64>,
     node_coords: Vec<Option<Coordinate>>,
     node_levels: Vec<usize>,
-    proto_edges: Vec<ProtoEdge>,
+    proto_edges: Vec<(usize, ProtoEdge)>,
 }
 
 impl NodeBuilder {
@@ -317,7 +322,7 @@ pub struct GraphBuilder {
     node_ids: Vec<i64>,
     node_coords: Vec<Option<Coordinate>>,
     node_levels: Vec<usize>,
-    proto_edges: Vec<ProtoEdge>,
+    proto_edges: Vec<(usize, ProtoEdge)>,
 }
 
 impl GraphBuilder {
@@ -368,7 +373,7 @@ impl GraphBuilder {
 
         // sort reversed to make splice efficient
         self.proto_edges
-            .sort_unstable_by_key(|edge| Reverse((edge.src_id, edge.dst_id)));
+            .sort_unstable_by_key(|(_, edge)| Reverse((edge.src_id, edge.dst_id)));
         info!("FINISHED");
 
         //----------------------------------------------------------------------------------------//
@@ -376,15 +381,31 @@ impl GraphBuilder {
 
         info!("START Remove duplicated proto-edges and flatten ch-shortcuts");
         let edge_count = self.proto_edges.len();
-        // e.g. edge
+        // duplicate is e.g. the edge
         // node-id 314074041 -> node-id 283494218
         // which is part of two ways
-        //
-        // The metrics contain f64, which is not comparable exactly.
-        // This is okay for here, because if two edges of identical src/dst have different
-        // metrics, than they are created differently and thus are indeed different.
-        self.proto_edges.dedup_by(|e0, e1| {
-            (e0.src_id, e0.dst_id, &e0.metrics) == (e1.src_id, e1.dst_id, &e1.metrics)
+        self.proto_edges.dedup_by(|(_, e0), (_, e1)| {
+            // compare src-id and dst-id, then metrics approximately
+            if (e0.src_id, e0.dst_id) == (e1.src_id, e1.dst_id) {
+                for (e0_opt, e1_opt) in e0.metrics.iter().zip(e1.metrics.iter()) {
+                    if e0_opt.is_none() && e1_opt.is_none() {
+                        // both are none
+                        continue;
+                    } else {
+                        if let (Some(e0_metric), Some(e1_metric)) = (e0_opt, e1_opt) {
+                            // both are some
+                            if e0_metric.approx_eq(&e1_metric) {
+                                continue;
+                            }
+                        }
+                        // both are different
+                        return false;
+                    }
+                }
+                true
+            } else {
+                false
+            }
         });
         if self.proto_edges.len() != edge_count {
             info!(
@@ -445,8 +466,9 @@ impl GraphBuilder {
             log::debug!("chunk-len: {}", chunk.len());
             log::debug!("graph-metric-capacity: {}", graph.metrics[0].capacity());
 
-            for mut proto_edge in chunk.into_iter() {
+            for (_, mut proto_edge) in chunk.into_iter() {
                 // add to graph and remember ids
+                // -> nodes are needed to map NodeId -> NodeIdx
                 graph.add_metrics(&mut proto_edge)?;
                 new_proto_edges.push(MiniProtoEdge {
                     src_id: proto_edge.src_id,

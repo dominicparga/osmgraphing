@@ -86,6 +86,9 @@ pub struct Graph {
     bwd_to_fwd_map: Vec<EdgeIdx>,
     // edge-metrics (sorted according to fwd_dsts)
     metrics: Vec<Vec<f64>>,
+    // shortcuts (contraction-hierarchies)
+    sc_offsets: Vec<usize>,
+    sc_edges: Vec<[EdgeIdx; 2]>,
 }
 
 /// public stuff for accessing the (static) graph
