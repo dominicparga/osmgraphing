@@ -41,6 +41,7 @@ impl Graph {
             node_ids: Vec::new(),
             // node-metrics
             node_coords: Vec::new(),
+            node_levels: Vec::new(),
             // edges
             fwd_dsts: Vec::new(),
             fwd_offsets: Vec::new(),
@@ -261,10 +262,12 @@ impl EdgeBuilder {
         self.node_ids.shrink_to_fit();
 
         let node_coords = vec![None; self.node_ids.len()];
+        let node_levels = vec![0; self.node_ids.len()];
         NodeBuilder {
             cfg: self.cfg,
             node_ids: self.node_ids,
             node_coords,
+            node_levels,
             proto_edges: self.proto_edges,
         }
     }
@@ -274,6 +277,7 @@ pub struct NodeBuilder {
     cfg: Config,
     node_ids: Vec<i64>,
     node_coords: Vec<Option<Coordinate>>,
+    node_levels: Vec<usize>,
     proto_edges: Vec<ProtoEdge>,
 }
 
@@ -286,6 +290,9 @@ impl NodeBuilder {
     pub fn insert(&mut self, proto_node: ProtoNode) -> bool {
         if let Ok(idx) = self.node_ids.binary_search(&proto_node.id) {
             self.node_coords[idx] = Some(proto_node.coord);
+            if let Some(level) = proto_node.level {
+                self.node_levels[idx] = level;
+            }
             true
         } else {
             false
@@ -299,6 +306,7 @@ impl NodeBuilder {
             cfg: self.cfg,
             node_ids: self.node_ids,
             node_coords: self.node_coords,
+            node_levels: self.node_levels,
             proto_edges: self.proto_edges,
         }
     }
@@ -308,6 +316,7 @@ pub struct GraphBuilder {
     cfg: Config,
     node_ids: Vec<i64>,
     node_coords: Vec<Option<Coordinate>>,
+    node_levels: Vec<usize>,
     proto_edges: Vec<ProtoEdge>,
 }
 
@@ -348,6 +357,7 @@ impl GraphBuilder {
         }
         graph.node_ids = self.node_ids;
         graph.node_coords = self.node_coords.into_iter().map(Option::unwrap).collect();
+        graph.node_levels = self.node_levels;
         info!("FINISHED");
 
         //----------------------------------------------------------------------------------------//

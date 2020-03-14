@@ -76,6 +76,7 @@ pub struct Graph {
     node_ids: Vec<i64>,
     // node-metrics
     node_coords: Vec<Coordinate>,
+    node_levels: Vec<usize>,
     // edges: offset-graph and mappings, e.g. for metrics
     fwd_dsts: Vec<NodeIdx>,
     fwd_offsets: Vec<usize>,
@@ -97,6 +98,7 @@ impl Graph {
         NodeAccessor {
             node_ids: &self.node_ids,
             node_coords: &self.node_coords,
+            node_levels: &self.node_levels,
         }
     }
 
@@ -263,6 +265,7 @@ pub struct Node {
     idx: NodeIdx,
     id: i64,
     coord: Coordinate,
+    level: usize,
 }
 
 impl Node {
@@ -279,7 +282,7 @@ impl Node {
     }
 
     pub fn level(&self) -> usize {
-        0
+        self.level
     }
 }
 
@@ -348,6 +351,7 @@ impl<'a> Display for HalfEdge<'a> {
 pub struct NodeAccessor<'a> {
     node_ids: &'a Vec<i64>,
     node_coords: &'a Vec<Coordinate>,
+    node_levels: &'a Vec<usize>,
 }
 
 impl<'a> NodeAccessor<'a> {
@@ -361,6 +365,10 @@ impl<'a> NodeAccessor<'a> {
 
     pub fn coord(&self, idx: NodeIdx) -> Coordinate {
         self.node_coords[*idx]
+    }
+
+    pub fn level(&self, idx: NodeIdx) -> usize {
+        self.node_levels[*idx]
     }
 
     pub fn idx_from(&self, id: i64) -> Result<NodeIdx, NodeIdx> {
@@ -405,7 +413,8 @@ impl<'a> NodeAccessor<'a> {
     pub fn create(&self, idx: NodeIdx) -> Node {
         let id = self.id(idx);
         let coord = self.coord(idx);
-        Node { id, idx, coord }
+        let level = self.level(idx);
+        Node { id, idx, coord, level }
     }
 }
 
