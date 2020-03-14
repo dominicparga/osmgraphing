@@ -301,7 +301,7 @@ impl NodeBuilder {
         }
     }
 
-    pub fn next(mut self) -> GraphBuilder {
+    pub fn next(self) -> GraphBuilder {
         GraphBuilder {
             cfg: self.cfg,
             node_ids: self.node_ids,

@@ -42,9 +42,9 @@ Maybe, it is concept for later documentation, or just keep-up-the-good-work (`ku
 ### Extend parsing
 
 - Use __preprocessing-phase__ for `pbf`-parser to count edges and __allocate memory__ accordingly.
-- Store proto-edges in __graphbuilder__ in a `Vec` instead of `BTreeMap`
-  -> optimize memory and memory-allocation
 - Print __edit-link__ for weird osm-content (in addition to currently printed warnings).
+- Parse lanes (now: use default).
+  - tags: `lanes`, `lanes:backward` (`way-id: 33172848`)
 
 
 ### Extend routing
