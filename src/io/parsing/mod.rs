@@ -3,10 +3,11 @@ pub mod pbf;
 
 use crate::{
     configs::parser::{self, NodeCategory},
+    defaults::capacity,
     io::{MapFileExt, SupportingFileExts, SupportingMapFileExts},
     network::{EdgeBuilder, Graph, GraphBuilder, NodeBuilder},
 };
-use log::info;
+use log::{info, warn};
 use std::path::Path;
 
 /// The parser parsing `*.osm.pbf`- and `*.fmi`-files into a graphbuilder or a graph.
@@ -115,7 +116,24 @@ fn check_parser_config(cfg: &parser::Config) -> Result<(), String> {
         Err(String::from(
             "The provided config-file doesn't contain a longitude, but needs to.",
         ))
+    } else if cfg.edges.dim() > capacity::SMALL_VEC_INLINE_SIZE {
+        Err(format!(
+            "The provided config-file has more metrics for the graph ({}) \
+             than the parser has been compiled to ({}).",
+            cfg.edges.dim(),
+            capacity::SMALL_VEC_INLINE_SIZE
+        ))
     } else {
+        if cfg.edges.dim() < capacity::SMALL_VEC_INLINE_SIZE {
+            warn!(
+                "The provided config-file has less metrics for the graph ({}) \
+                 than the parser has been compiled to ({}). \
+                 Compiling accordingly saves memory.",
+                cfg.edges.dim(),
+                capacity::SMALL_VEC_INLINE_SIZE
+            );
+        }
+
         Ok(())
     }
 }

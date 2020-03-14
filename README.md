@@ -47,14 +47,12 @@ A tool for creating `fmi`-map-files, which contain graphs contracted via contrac
 In general, the requirements depend on the size of the parsed map (also same map of different dates) and your machine.
 Following numbers base on an __8-core-CPU__ and the `pbf`-map `Germany` from `March 14th, 2020` running on `archlinux`.
 You should change the number of inlined metrics (via [`SmallVec`][github/servo/rust-smallvec]) according to your needs in the module `defaults` (default is `4`).
-Several GB and hence performance could be saved by doing so.
+Several GB and performance are saved by doing so.
 
-- Parsing `Germany` (4 metrics, ~51 million nodes, ~106 million edges, pbf-file) needs around __11-13 GB of RAM__.
+- Parsing `Germany` (4 metrics, ~51 million nodes, ~106 million edges, pbf-file) needs less than __11 GB of RAM__.
   After parsing, the memory-needs are slightly lower due to the optimized graph-structure.
-- Preprocessing `Germany` (including parsing) needs around __3-7 minutes__.
-  This duration has this large range, because it highly depends on the number of cores and whether you have to use the swap-partition (for other programs).
-
-- A __routing query__ on `Germany` of length around `600 km` takes around __16-22 seconds__ with `bidirectional Dijkstra`, highly depending on the specific src-dst-pair.
+- Preprocessing `Germany` (including parsing) needs around __3 minutes__.
+- A __routing query__ on `Germany` of length around `600 km` takes around __21 seconds__ with `bidirectional Dijkstra`, highly depending on the specific src-dst-pair (and its search-space).
   This could be improved by removing intermediate nodes (like `b` in `a->b->c`), but they are kept for now.
   Maybe, they are needed for precise/realistic traffic-simulation.
   An `Astar` is not used anymore, because its only purpose is reducing the search-space, which can be reduced much more using [`Contraction Hierarchies`](#contraction-hierarchies).
