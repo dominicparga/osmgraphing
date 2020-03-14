@@ -21,8 +21,8 @@ Maybe, it is concept for later documentation, or just keep-up-the-good-work (`ku
 ### Documentation
 
 - Write down alternative implementation-approaches
-  - Implement shortcut-edges more memory-efficient storing list of costs per src-dst-pair instead of per edge.
   - Routing from src-node to dst-node where dst-node has at least the city-level of the src-node.
+  - Implement shortcuts with array `[edge: EdgeIdx -> is_sc: bool]` and array `[some_idx: usize -> (edge, sc0, sc1): (EdgeIdx, EdgeIdx, EdgeIdx)]`, latter sorted by edge to search logarithmically.
 
 
 ### Extend tests
