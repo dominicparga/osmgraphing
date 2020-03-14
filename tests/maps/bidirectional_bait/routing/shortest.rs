@@ -41,6 +41,7 @@ fn expected_paths() -> Vec<(TestNode, TestNode, Option<(f64, Vec<Vec<TestNode>>)
             idx: NodeIdx(idx),
             id: idx as i64,
             coord: Coordinate::zero(),
+            level: 0,
         })
         .collect();
 

@@ -30,12 +30,12 @@ fn fmi_graph() {
 
     // nodes sorted by id
     // name, id, decimicro_lat, decimicro_lon
-    let node_opp = TestNode::new("Oppenweiler", 26_033_921, 48.9840100, 9.4589188, &graph);
-    let node_bac = TestNode::new("Backnang", 26_160_028, 48.9416023, 9.4332023, &graph);
-    let node_wai = TestNode::new("Waiblingen", 252_787_940, 48.8271096, 9.3098661, &graph);
-    let node_end = TestNode::new("Endersbach", 298_249_467, 48.8108510, 9.3679493, &graph);
-    let node_dea = TestNode::new("Dead-end", 1_621_605_361, 48.9396327, 9.4188681, &graph);
-    let node_stu = TestNode::new("Stuttgart", 2_933_335_353, 48.7701757, 9.1565768, &graph);
+    let node_opp = TestNode::new("Oppenweiler", 26_033_921, 48.9840100, 9.4589188, 0, &graph);
+    let node_bac = TestNode::new("Backnang", 26_160_028, 48.9416023, 9.4332023, 0, &graph);
+    let node_wai = TestNode::new("Waiblingen", 252_787_940, 48.8271096, 9.3098661, 0, &graph);
+    let node_end = TestNode::new("Endersbach", 298_249_467, 48.8108510, 9.3679493, 0, &graph);
+    let node_dea = TestNode::new("Dead-end", 1_621_605_361, 48.9396327, 9.4188681, 0, &graph);
+    let node_stu = TestNode::new("Stuttgart", 2_933_335_353, 48.7701757, 9.1565768, 0, &graph);
 
     // Due to the offset-array, the fwd-edge-ids should match with sorting by src-id, then by dst-id.
     // name, idx, id, src, dst, length, maxspeed, duration

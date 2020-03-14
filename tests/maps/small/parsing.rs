@@ -30,14 +30,14 @@ fn fmi_graph() {
 
     // nodes sorted by id
     // name, id, decimicro_lat, decimicro_lon
-    let node_a = TestNode::new("a", 0, 0.0000000, 0.0000000, &graph);
-    let node_b = TestNode::new("b", 1, 0.0000000, 0.0000000, &graph);
-    let node_c = TestNode::new("c", 2, 0.0000000, 0.0000000, &graph);
-    let node_d = TestNode::new("d", 3, 0.0000000, 0.0000000, &graph);
-    let node_e = TestNode::new("e", 4, 0.0000000, 0.0000000, &graph);
-    let node_f = TestNode::new("f", 5, 0.0000000, 0.0000000, &graph);
-    let node_g = TestNode::new("g", 6, 0.0000000, 0.0000000, &graph);
-    let node_h = TestNode::new("h", 7, 0.0000000, 0.0000000, &graph);
+    let node_a = TestNode::new("a", 0, 0.0000000, 0.0000000, 0, &graph);
+    let node_b = TestNode::new("b", 1, 0.0000000, 0.0000000, 0, &graph);
+    let node_c = TestNode::new("c", 2, 0.0000000, 0.0000000, 0, &graph);
+    let node_d = TestNode::new("d", 3, 0.0000000, 0.0000000, 0, &graph);
+    let node_e = TestNode::new("e", 4, 0.0000000, 0.0000000, 0, &graph);
+    let node_f = TestNode::new("f", 5, 0.0000000, 0.0000000, 0, &graph);
+    let node_g = TestNode::new("g", 6, 0.0000000, 0.0000000, 0, &graph);
+    let node_h = TestNode::new("h", 7, 0.0000000, 0.0000000, 0, &graph);
 
     // Due to the offset-array, the fwd-edge-ids should match with sorting by src-id, then by dst-id.
     // name, idx, id, src, dst, length, maxspeed, duration

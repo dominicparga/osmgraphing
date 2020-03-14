@@ -103,6 +103,7 @@ pub struct TestNode {
     pub id: i64,
     pub idx: NodeIdx,
     pub coord: Coordinate,
+    pub level: usize,
 }
 
 impl From<Node> for TestNode {
@@ -112,6 +113,7 @@ impl From<Node> for TestNode {
             id: node.id(),
             idx: node.idx(),
             coord: node.coord(),
+            level: node.level(),
         }
     }
 }
@@ -120,21 +122,24 @@ impl Display for TestNode {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "{{ id: {}, idx: {}, coord: {:?} }}",
-            self.id, self.idx, self.coord,
+            "{{ id: {}, idx: {}, coord: {:?}, level: {} }}",
+            self.id, self.idx, self.coord, self.level
         )
     }
 }
 
 impl PartialEq for TestNode {
     fn eq(&self, other: &Self) -> bool {
-        self.id == other.id && self.idx == other.idx && self.coord == other.coord
+        self.id == other.id
+            && self.idx == other.idx
+            && self.coord == other.coord
+            && self.level == other.level
     }
 }
 
 impl TestNode {
     #[allow(dead_code)]
-    pub fn new(name: &str, id: i64, lat: f64, lon: f64, graph: &Graph) -> TestNode {
+    pub fn new(name: &str, id: i64, lat: f64, lon: f64, level: usize, graph: &Graph) -> TestNode {
         let idx = graph
             .nodes()
             .idx_from(id)
@@ -144,6 +149,7 @@ impl TestNode {
             id,
             idx,
             coord: Coordinate { lat, lon },
+            level,
         }
     }
 }

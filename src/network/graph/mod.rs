@@ -414,7 +414,12 @@ impl<'a> NodeAccessor<'a> {
         let id = self.id(idx);
         let coord = self.coord(idx);
         let level = self.level(idx);
-        Node { id, idx, coord, level }
+        Node {
+            id,
+            idx,
+            coord,
+            level,
+        }
     }
 }
 

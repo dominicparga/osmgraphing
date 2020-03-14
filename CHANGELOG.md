@@ -44,6 +44,7 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 - Implement __config-parser's categories__ separate from __config-generator's categories__ to guarantee ideal support.
 - Add __`isle-of-man.ch.fmi`__ and update `pbf-to-fmi.yaml` respectively.
   Add very basic parsing-tests.
+- Add __contraction-hierarchies-level__ to nodes.
 
 
 ### Changed <a name="unreleased/changed"></a>
