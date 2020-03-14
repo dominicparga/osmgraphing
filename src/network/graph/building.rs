@@ -261,8 +261,10 @@ impl EdgeBuilder {
         self.node_ids.dedup();
         self.node_ids.shrink_to_fit();
 
-        let node_coords = vec![None; self.node_ids.len()];
-        let node_levels = vec![0; self.node_ids.len()];
+        let mut node_coords = vec![None; self.node_ids.len()];
+        node_coords.shrink_to_fit();
+        let mut node_levels = vec![0; self.node_ids.len()];
+        node_levels.shrink_to_fit();
         NodeBuilder {
             cfg: self.cfg,
             node_ids: self.node_ids,
@@ -300,8 +302,6 @@ impl NodeBuilder {
     }
 
     pub fn next(mut self) -> GraphBuilder {
-        self.node_coords.shrink_to_fit();
-
         GraphBuilder {
             cfg: self.cfg,
             node_ids: self.node_ids,
