@@ -78,7 +78,7 @@ Besides that, the `multi-ch-constructor` uses node-indices as ids, leading to er
 
 ```yaml
 parser:
-  map-file: 'resources/maps/isle-of-man_2019-09-05.osm.pbf'
+  map-file: 'resources/maps/isle-of-man_2020-03-14.osm.pbf'
   vehicles:
     category: 'Car'
     are-drivers-picky: false
@@ -101,7 +101,7 @@ parser:
     id: 'DstIdx'
 
 generator:
-  map-file: 'resources/maps/isle-of-man_2019-09-05.fmi'
+  map-file: 'resources/maps/isle-of-man_2020-03-14.fmi'
   nodes:
   - category: 'NodeIdx'
   - category: 'NodeId'
@@ -117,7 +117,6 @@ generator:
   - id: 'Seconds'
   - id: 'Ignore' # shortcut-edge-0
   - id: 'Ignore' # shortcut-edge-1
-
 ```
 
 The `multi-ch`-tool needs 3 counts at the file-beginning: metric-count (dimension), node-count, edge-count.

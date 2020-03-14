@@ -33,7 +33,7 @@ fn pbf_graph() {
     let graph = parse(cfg.parser);
 
     let nodes = graph.nodes();
-    let expected = 51_310;
+    let expected = 52_803;
     assert_eq!(
         nodes.count(),
         expected,
@@ -42,8 +42,7 @@ fn pbf_graph() {
         nodes.count()
     );
     let fwd_edges = graph.fwd_edges();
-    // let expected = 103_920; // before removing duplicates
-    let expected = 103_916; // after removing duplicates
+    let expected = 107_031;
     assert_eq!(
         fwd_edges.count(),
         expected,
@@ -59,7 +58,7 @@ fn fmi_graph() {
     let graph = parse(cfg.parser);
 
     let nodes = graph.nodes();
-    let expected = 51_310;
+    let expected = 52_803;
     assert_eq!(
         nodes.count(),
         expected,
@@ -68,8 +67,7 @@ fn fmi_graph() {
         nodes.count()
     );
     let fwd_edges = graph.fwd_edges();
-    // let expected = 103_920; // before removing duplicates
-    let expected = 103_916; // after removing duplicates
+    let expected = 107_031;
     assert_eq!(
         fwd_edges.count(),
         expected,
@@ -82,5 +80,24 @@ fn fmi_graph() {
 #[test]
 fn ch_fmi_graph() {
     let cfg = Config::from_yaml(defaults::paths::resources::configs::ISLE_OF_MAN_CH_FMI).unwrap();
-    let _graph = parse(cfg.parser);
+    let graph = parse(cfg.parser);
+
+    let nodes = graph.nodes();
+    let expected = 52_803;
+    assert_eq!(
+        nodes.count(),
+        expected,
+        "Number of nodes in graph should be {} but is {}.",
+        expected,
+        nodes.count()
+    );
+    let fwd_edges = graph.fwd_edges();
+    let expected = 189_367;
+    assert_eq!(
+        fwd_edges.count(),
+        expected,
+        "Number of fwd-edges in graph should be {} but is {}.",
+        expected,
+        fwd_edges.count()
+    );
 }

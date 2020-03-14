@@ -1,5 +1,5 @@
 parser:
-  map-file: 'resources/maps/isle-of-man_2019-09-05.osm.pbf'
+  map-file: 'resources/maps/isle-of-man_2020-03-14.osm.pbf'
   vehicles:
     category: 'Car'
     are-drivers-picky: false
@@ -22,7 +22,7 @@ parser:
     id: 'DstIdx'
 
 generator:
-  map-file: 'resources/maps/isle-of-man_2019-09-05.fmi'
+  map-file: 'resources/maps/isle-of-man_2020-03-14.fmi'
   nodes:
   - category: 'NodeIdx'
   - category: 'NodeId'
