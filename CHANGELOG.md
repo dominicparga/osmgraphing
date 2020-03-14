@@ -106,6 +106,7 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
   - Inconsistent `semver` in old tags -> probably `cargo yank VERSION` needed
 - The link to `doc.rs` is hardcoded to `major.minor.patch=0.y.z` because `docs.rs` chooses version `1.0.0` though it's yanked..
 - Comparing `f32` could be wrong due to hard criterion `<= std::f32::EPSILON`.
+- When generating a map, only the parser-config's metrics are counted for setting the generated dimension, but it is possible to generate a map of less metrics.
 
 
 ### Fixed <a name="v0.11.1/fixed"></a>

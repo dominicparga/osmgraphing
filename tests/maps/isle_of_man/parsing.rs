@@ -92,7 +92,7 @@ fn ch_fmi_graph() {
         nodes.count()
     );
     let fwd_edges = graph.fwd_edges();
-    let expected = 189_367;
+    let expected = 183_366;
     assert_eq!(
         fwd_edges.count(),
         expected,

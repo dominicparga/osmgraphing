@@ -12,5 +12,4 @@ parser:
   - category: 'SrcId'
   - category: 'DstId'
   - category: 'Meters'
-  - category: 'KilometersPerHour'
   - category: 'Seconds'

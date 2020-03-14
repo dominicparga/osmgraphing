@@ -34,7 +34,7 @@ generator:
   - id: 'SrcIdx'
   - id: 'DstIdx'
   - id: 'Meters'
-  - id: 'KilometersPerHour'
+  # - id: 'KilometersPerHour' # nope because addition (in ch) makes no sense
   - id: 'Seconds'
   - id: 'Ignore' # shortcut-edge-0
   - id: 'Ignore' # shortcut-edge-1

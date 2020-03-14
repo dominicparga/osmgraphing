@@ -60,6 +60,9 @@ pub mod fmi {
                 graph: &Graph,
                 cfg_generator: &generator::Config,
             ) -> Result<(), Box<dyn std::error::Error>> {
+                //--------------------------------------------------------------------------------//
+                // prepare
+
                 let output_file = helpers::open_new_file(&cfg_generator.map_file)?;
                 let mut writer = BufWriter::new(output_file);
                 let ignore_str = "_";
@@ -84,7 +87,12 @@ pub mod fmi {
                 //--------------------------------------------------------------------------------//
                 // write counts
 
-                let dim = graph.cfg().edges.dim();
+                let dim = cfg_generator
+                    .edges
+                    .iter()
+                    .map(|id| graph.cfg().edges.edge_category(id))
+                    .filter(|parser_category| parser_category.is_metric())
+                    .count();
                 let node_count = graph.nodes().count();
                 let edge_count = graph.fwd_edges().count();
                 writeln!(writer, "{}", dim)?;
