@@ -178,22 +178,9 @@ fn parse_cmdline<'a>() -> clap::ArgMatches<'a> {
         .about(env!("CARGO_PKG_DESCRIPTION"))
         .long_about(
             (&[
+                "",
                 "This tool takes a config-file, parses the chosen graph with specified",
-                "settings, and executes some routing-queries.",
-                "",
-                "",
-                "EXAMPLES",
-                "",
-                "In case you're using cargo, please use",
-                "    cargo run --example",
-                "for all supported example files",
-                "",
-                "",
-                "BENCHMARKS",
-                "",
-                "In addition, you can execute benchmarks, e.g.",
-                "    cargo bench --bench routing -- --warm-up-time 10 --measurement-time 120",
-                "and view the results in ./target/criterion/<bench>/report/index.html",
+                "settings, and executes some routing-queries (if provided in config-file).",
             ]
             .join("\n"))
                 .as_ref(),
