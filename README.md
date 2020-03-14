@@ -19,55 +19,58 @@ All calculations should be done effectively on a single desktop instead of an ex
 
 ## Setup and usage
 
-Long story short:
+### Long story short
+
+Rust has a build-tool called `cargo`, which can be used to run everything except scripts in `scripts/`.
 
 ```zsh
-cargo
+# Just executing some easy cargo-build-commands
+./scripts/build.sh
+# Parse isle-of-man
+./target/release/osmgraphing --config resources/config/isle-of-man.pbf.yaml
 ```
 
-`cargo` is the build-tool of Rust and can be used to run everything except scripts in `scripts/`.
-`cargo run` will give you help, e.g. it tells you to use `cargo run --example`.
-Running this command will print names of runnable examples.
-Further, refer to the [examples][github/self/tree/examples] for more details, or to [cargo-docs][docs.rs/self] to get details about the repo's setup and implementation.
+### Download and generate maps
 
 Downloaded osm-data is provided in xml (`osm`) or binary (`pbf`), where nodes are related to location in latitude and longitude.
 Problems will be the size-limit when downloading from [openstreetmap][osm], but there are other osm data providers like [geofabrik][geofabrik] for instance.
 
 For testing, some simple text-based format `fmi` is used.
 Since they are created manually for certain tasks, parsing them - generally speaking - is unstable.
-However, this repository has a generator, which can create such `fmi`-files from `pbf`- or other `fmi`-files (for different metric-order).
+However, this repository has a generator, which can create such `fmi`-files from `pbf`- or other `fmi`-files (e.g. for different metric-order).
 The binary `mapgenerator` (binaries are in `target/release` after release-building) helps with generating proper config-files, but have a look at `resources/configs/blueprint` to get further explanations.
 A tool for creating `fmi`-map-files, which contain graphs contracted via contraction-hierarchies, is [multi-ch-constructor][github/lesstat/multi-ch-constructor].
 
 
-## Requirements for large maps
+## Requirements for large maps (e.g. states or countries)
 
-In general, the requirements depend on the size of the parsed map and your machine.
-Following numbers base on an __8-core-CPU__ and the `pbf`-map `Germany` running on `archlinux`.
-Further, they base on the assumption, that you don't use more than 4 metrics (besides ignore and ids), because up to 4 metrics are inlined with `SmallVec`.
-You should change the number of inlined metrics according to your needs in the module `defaults`, because, during build-phase, the memory is allocated anyways.
+In general, the requirements depend on the size of the parsed map (also same map of different dates) and your machine.
+Following numbers base on an __8-core-CPU__ and the `pbf`-map `Germany` from `March 14th, 2020` running on `archlinux`.
+You should change the number of inlined metrics (via [`SmallVec`][github/servo/rust-smallvec]) according to your needs in the module `defaults` (default is `4`).
+Several GB and hence performance could be saved by doing so.
 
-- Parsing `Germany` (~50 million nodes, ~103 million edges, pbf-file) needs around __11 GB of RAM__.
-  (Using only one metric and only one metric inlined, the memory-peak is around __6.5 GB__.)
-  After parsing, the memory-needs are lower due to the optimized graph-structure.
-- Preprocessing `Germany` (including parsing) needs around __3 minutes__.
-  This duration highly depends on the number of cores.
-- A __routing query__ on `Germany` of length `620 km` takes around __16 seconds__ with `bidirectional Dijkstra`.
+- Parsing `Germany` (4 metrics, ~51 million nodes, ~106 million edges, pbf-file) needs around __11-13 GB of RAM__.
+  After parsing, the memory-needs are slightly lower due to the optimized graph-structure.
+- Preprocessing `Germany` (including parsing) needs around __3-7 minutes__.
+  This duration has this large range, because it highly depends on the number of cores and whether you have to use the swap-partition (for other programs).
+
+- A __routing query__ on `Germany` of length around `600 km` takes around __16-22 seconds__ with `bidirectional Dijkstra`, highly depending on the specific src-dst-pair.
   This could be improved by removing intermediate nodes (like `b` in `a->b->c`), but they are kept for now.
-  An `Astar` is not used anymore, because its only purpose is reducing the search-space, which can be reduced much more using `Contraction Hierarchies`.
+  Maybe, they are needed for precise/realistic traffic-simulation.
+  An `Astar` is not used anymore, because its only purpose is reducing the search-space, which can be reduced much more using [`Contraction Hierarchies`](#contraction-hierarchies).
   Further, `Astar` has issues when it comes to multiple or custom metrics, because of the metrics' heuristics.
 
 Small maps like `Isle of Man` run on every machine and are parsed in less than a second.
 
 
-## Contraction-Hierarchies
+## Contraction-Hierarchies <a name="contraction-hierarchies"></a>
 
 For speedup, this repository supports graphs contracted via contraction-hierarchies.
 The repository [`lesstat/multi-ch-constructor`][github/lesstat/multi-ch-constructor] generates contracted graphs from `fmi`-files of a certain format.
 This repository, `osmgraphing`, uses the `lesstat/multi-ch-constructor/master`-branch (commit `bec548c1a1ebeae7ac19d3250d5473199336d6fe`) for its ch-graphs.
 For reproducability, the used steps are listed below.
 
-First of all, the tool `multi-ch` needs a `fmi`-map-file of specific format as input.
+First of all, the tool `multi-ch` needs an `fmi`-map-file of specific format as input.
 To generate such a `fmi`-map-file in the correct format, the `mapgenerator` of `osmgraphing` can be used with the `generator-config` shown below, following the [defined requirements][github/lesstat/cyclops/blob/README].
 
 The `Ignore`s are important, because the `multi-ch-constructor` needs the placeholders.
@@ -179,3 +182,4 @@ He has implemented the first (and running) approach of the `A*`-algorithm.
 [github/self/tree/examples]: https://github.com/dominicparga/osmgraphing/tree/nightly/examples
 [github/self/wiki/usage]: https://github.com/dominicparga/osmgraphing/wiki/Usage
 [osm]: https://openstreetmap.org
+[github/servo/rust-smallvec]: https://github.com/servo/rust-smallvec
