@@ -107,10 +107,12 @@ impl Graph {
 
     pub fn fwd_edges<'a>(&'a self) -> EdgeAccessor<'a> {
         EdgeAccessor {
-            edge_dsts: &(self.fwd_dsts),
-            offsets: &(self.fwd_offsets),
-            xwd_to_fwd_map: &(self.fwd_to_fwd_map),
+            edge_dsts: &self.fwd_dsts,
+            offsets: &self.fwd_offsets,
+            xwd_to_fwd_map: &self.fwd_to_fwd_map,
             metrics: self.metrics(),
+            sc_offsets: &self.sc_offsets,
+            sc_edges: &self.sc_edges,
         }
     }
 
@@ -120,6 +122,8 @@ impl Graph {
             offsets: &(self.bwd_offsets),
             xwd_to_fwd_map: &(self.bwd_to_fwd_map),
             metrics: self.metrics(),
+            sc_offsets: &self.sc_offsets,
+            sc_edges: &self.sc_edges,
         }
     }
 
@@ -152,7 +156,7 @@ impl Display for Graph {
                 if i == n - 1 {
                     // if at least 2 nodes are missing -> print `...`
                     if i + 1 < self.nodes().count() {
-                        writeln!(f, "...")?;
+                        writeln!(f, "Node: ...")?;
                     }
                     // print last node
                     i = self.nodes().count() - 1;
@@ -197,7 +201,7 @@ impl Display for Graph {
                     if j == m - 1 {
                         // if at least 2 edges are missing -> print `...`
                         if j + 1 < fwd_dsts.count() {
-                            writeln!(f, "...")?;
+                            writeln!(f, "{}edge: ...", xwd_prefix)?;
                         }
                         // print last edge
                         j = fwd_dsts.count() - 1;
@@ -210,9 +214,10 @@ impl Display for Graph {
                         .collect();
                     writeln!(
                         f,
-                        "{}edge: {{ idx: {}, ({})-{:?}->({}) }}",
+                        "{}edge: {{ idx: {}, sc-offset: {}, ({})-{:?}->({}) }}",
                         xwd_prefix,
                         j,
+                        self.sc_offsets[j],
                         self.node_ids[*src_idx],
                         metrics,
                         self.node_ids[*half_edge.dst_idx()],
@@ -231,15 +236,15 @@ impl Display for Graph {
                     if i == n - 1 {
                         // if at least 2 offsets are missing -> print `...`
                         if i + 1 < self.nodes().count() {
-                            writeln!(f, "...")?;
+                            writeln!(f, "{}offset: ...", xwd_prefix)?;
                         }
                         // print last offset
                         i = self.nodes().count() - 1;
                     }
                     writeln!(
                         f,
-                        "{{ id: {}, {}offset: {} }}",
-                        i, xwd_prefix, xwd_offsets[i]
+                        "{}offset: {{ id: {}, offset: {} }}",
+                        xwd_prefix, i, xwd_offsets[i]
                     )?;
                 } else {
                     break;
@@ -249,13 +254,52 @@ impl Display for Graph {
             let i = xwd_offsets.len() - 1;
             writeln!(
                 f,
-                "{{ __: {}, {}offset: {} }}",
-                i, xwd_prefix, xwd_offsets[i]
+                "{}offset: {{ __: {}, offset: {} }}",
+                xwd_prefix, i, xwd_offsets[i]
             )?;
 
-            // if not graph-stuff -> print empty line
-            if stuff_idx < graph_stuff.len() - 1 {
-                writeln!(f, "")?;
+            writeln!(f, "")?;
+        }
+
+        // print up to m shortcut-edges
+        if self.sc_edges.len() == 0 {
+            writeln!(f, "No shortcuts in graph.")?;
+        } else {
+            let mut edge_idx = 0;
+            for mut j in 0..m {
+                // if enough edges are in the graph
+                println!("sc-edges = {:?}", self.sc_edges);
+                if j < self.sc_edges.len() {
+                    // if last edge that gets printed
+                    if j == m - 1 {
+                        // if at least 2 edges are missing -> print `...`
+                        if j + 1 < self.sc_edges.len() {
+                            writeln!(f, "shortcut: ...")?;
+                        }
+                        // print last edge
+                        j = self.sc_edges.len() - 1;
+                    }
+                    println!("before");
+                    println!("j={}", j);
+                    println!("edge-idx={}", edge_idx);
+                    println!("{:?}", self.sc_offsets);
+                    // get edge-idx from sc-edge
+                    while self.sc_offsets[edge_idx] <= j {
+                        edge_idx += 1;
+                        println!("edge-idx={}", edge_idx);
+                    }
+                    edge_idx -= 1;
+                    println!("after");
+                    writeln!(
+                        f,
+                        "shortcut: {{ edge-idx: {}, sc-offset: {}, replaced: {:?} }}",
+                        edge_idx,
+                        self.sc_offsets[edge_idx],
+                        self.sc_edges[self.sc_offsets[edge_idx]],
+                    )?;
+                } else {
+                    break;
+                }
             }
         }
 
@@ -312,8 +356,7 @@ impl Display for Node {
 #[derive(Debug)]
 pub struct HalfEdge<'a> {
     idx: EdgeIdx,
-    edge_dsts: &'a Vec<NodeIdx>,
-    metrics: &'a MetricAccessor<'a>,
+    edge_accessor: &'a EdgeAccessor<'a>,
 }
 
 impl<'a> HalfEdge<'a> {
@@ -322,15 +365,25 @@ impl<'a> HalfEdge<'a> {
     }
 
     pub fn dst_idx(&self) -> NodeIdx {
-        self.edge_dsts[*self.idx]
+        self.edge_accessor.dst_idx(self.idx)
+    }
+
+    pub fn is_shortcut(&self) -> bool {
+        self.edge_accessor.is_shortcut(self.idx)
+    }
+
+    pub fn sc_edges(&self) -> Option<&[EdgeIdx; 2]> {
+        self.edge_accessor.sc_edges(self.idx)
     }
 
     pub fn metric(&self, metric_idx: MetricIdx) -> f64 {
-        self.metrics.get(metric_idx, self.idx)
+        self.edge_accessor.metrics.get(metric_idx, self.idx)
     }
 
     pub fn metrics(&self, metric_indices: &[MetricIdx]) -> DimVec<f64> {
-        self.metrics.get_more(metric_indices, self.idx)
+        self.edge_accessor
+            .metrics
+            .get_more(metric_indices, self.idx)
     }
 }
 
@@ -344,7 +397,12 @@ impl<'a> PartialEq for HalfEdge<'a> {
 
 impl<'a> Display for HalfEdge<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{{ (src)-{}->({}) }}", self.metrics, self.dst_idx(),)
+        write!(
+            f,
+            "{{ (src)-{}->({}) }}",
+            self.edge_accessor.metrics,
+            self.dst_idx(),
+        )
     }
 }
 
@@ -435,6 +493,9 @@ pub struct EdgeAccessor<'a> {
     // indirect mapping to save memory
     xwd_to_fwd_map: &'a Vec<EdgeIdx>,
     metrics: MetricAccessor<'a>,
+    // shortcuts
+    sc_offsets: &'a Vec<usize>,
+    sc_edges: &'a Vec<[EdgeIdx; 2]>,
 }
 
 impl<'a> EdgeAccessor<'a> {
@@ -445,13 +506,25 @@ impl<'a> EdgeAccessor<'a> {
     pub fn half_edge(&'a self, idx: EdgeIdx) -> HalfEdge {
         HalfEdge {
             idx,
-            edge_dsts: self.edge_dsts,
-            metrics: &self.metrics,
+            edge_accessor: self,
         }
     }
 
     pub fn dst_idx(&self, idx: EdgeIdx) -> NodeIdx {
         self.edge_dsts[*idx]
+    }
+
+    pub fn is_shortcut(&self, idx: EdgeIdx) -> bool {
+        // no overflow due to (len + 1)
+        self.sc_offsets[(*idx) + 1] - self.sc_offsets[*idx] != 0
+    }
+
+    pub fn sc_edges(&self, idx: EdgeIdx) -> Option<&[EdgeIdx; 2]> {
+        if self.is_shortcut(idx) {
+            Some(&self.sc_edges[self.sc_offsets[*idx]])
+        } else {
+            None
+        }
     }
 
     pub fn starting_from(&self, idx: NodeIdx) -> Option<Vec<HalfEdge>> {

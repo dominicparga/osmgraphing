@@ -1,8 +1,9 @@
 use crate::{
     configs::parser::{self, EdgeCategory, NodeCategory},
+    defaults,
     defaults::capacity::DimVec,
     helpers,
-    network::{EdgeBuilder, MetricIdx, NodeBuilder, ProtoEdge, ProtoNode},
+    network::{EdgeBuilder, EdgeIdx, MetricIdx, NodeBuilder, ProtoEdge, ProtoNode},
     units::geo,
 };
 use log::info;
@@ -150,6 +151,8 @@ impl ProtoEdge {
         let mut metric_values = DimVec::<_>::with_capacity(cfg.dim());
         let mut src_id = None;
         let mut dst_id = None;
+        let mut sc_edge_0 = None;
+        let mut sc_edge_1 = None;
 
         // Loop over edge-categories and parse params accordingly.
         let params: Vec<&str> = line.split_whitespace().collect();
@@ -230,6 +233,30 @@ impl ProtoEdge {
                         metric_values.push(None);
                     }
                 }
+                EdgeCategory::ShortcutEdgeIdx => {
+                    if param != defaults::parser::NO_SHORTCUT_IDX {
+                        let sc_edge_idx = {
+                            param.parse::<usize>().ok().ok_or(format!(
+                                "Parsing {} '{}' of edge-param #{} didn't work.",
+                                category, param, param_idx
+                            ))?
+                        };
+
+                        if sc_edge_0.is_none() {
+                            sc_edge_0 = Some(sc_edge_idx);
+                        } else if sc_edge_1.is_none() {
+                            sc_edge_1 = Some(sc_edge_idx);
+                        } else {
+                            return Err(format!(
+                                "Too many {}: parsing '{}' of edge-param #{}",
+                                EdgeCategory::ShortcutEdgeIdx,
+                                param,
+                                param_idx
+                            ));
+                        }
+                    }
+                    param_idx += 1;
+                }
                 EdgeCategory::IgnoredSrcIdx
                 | EdgeCategory::IgnoredDstIdx
                 | EdgeCategory::Ignore => param_idx += 1,
@@ -243,10 +270,20 @@ impl ProtoEdge {
             metric_values.len(),
             cfg.dim()
         );
+
+        let sc_edges = {
+            if sc_edge_0.is_none() && sc_edge_1.is_none() {
+                None
+            } else {
+                Some([EdgeIdx(sc_edge_0.unwrap()), EdgeIdx(sc_edge_1.unwrap())])
+            }
+        };
+
         Ok(ProtoEdge {
             src_id: src_id.ok_or("Proto-edge should have a src-id, but doesn't.".to_owned())?,
             dst_id: dst_id.ok_or("Proto-edge should have a dst-id, but doesn't.".to_owned())?,
             metrics: metric_values,
+            sc_edges,
         })
     }
 }

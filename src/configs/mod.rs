@@ -236,6 +236,7 @@ pub mod parser {
             Seconds,
             LaneCount,
             Custom,
+            ShortcutEdgeIdx,
             SrcId,
             #[serde(rename = "Ignore - SrcIdx")]
             IgnoredSrcIdx,
@@ -259,6 +260,7 @@ pub mod parser {
                     | Category::Seconds
                     | Category::LaneCount => true,
                     Category::Custom
+                    | Category::ShortcutEdgeIdx
                     | Category::SrcId
                     | Category::IgnoredSrcIdx
                     | Category::DstId
@@ -273,6 +275,7 @@ pub mod parser {
                     | Category::DstId
                     | Category::IgnoredSrcIdx
                     | Category::IgnoredDstIdx
+                    | Category::ShortcutEdgeIdx
                     | Category::Ignore => false,
                     Category::Meters
                     | Category::KilometersPerHour
@@ -289,6 +292,7 @@ pub mod parser {
                     Category::Meters
                     | Category::LaneCount
                     | Category::Custom
+                    | Category::ShortcutEdgeIdx
                     | Category::SrcId
                     | Category::IgnoredSrcIdx
                     | Category::DstId

@@ -32,6 +32,7 @@ Maybe, it is concept for later documentation, or just keep-up-the-good-work (`ku
   - implement routing-tests for parsed pbf-files (just comparing src-id, dst-id and length)
 - Take results from actions of commit f28d88a for parsing-tests (fmi).
 - Test personalized routing explicitly using certain alpha-values and new expected paths.
+- Test `small.ch.fmi`!!!
 
 
 ### Extend configs
@@ -45,6 +46,11 @@ Maybe, it is concept for later documentation, or just keep-up-the-good-work (`ku
 - Print __edit-link__ for weird osm-content (in addition to currently printed warnings).
 - Parse lanes (now: use default).
   - tags: `lanes`, `lanes:backward` (`way-id: 33172848`)
+
+
+### Extend generating
+
+- Process `parser::EdgeCategory::ShortcutEdgeIdx`
 
 
 ### Extend routing

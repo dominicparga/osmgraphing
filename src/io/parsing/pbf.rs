@@ -116,6 +116,7 @@ impl super::Parsing for Parser {
                     | EdgeCategory::IgnoredSrcIdx
                     | EdgeCategory::DstId
                     | EdgeCategory::IgnoredDstIdx
+                    | EdgeCategory::ShortcutEdgeIdx
                     | EdgeCategory::Ignore => (),
                 }
             }
@@ -127,6 +128,7 @@ impl super::Parsing for Parser {
                     src_id: nodes[node_idx],
                     dst_id: nodes[node_idx + 1],
                     metrics: metrics.clone(),
+                    sc_edges: None,
                 });
             }
         }

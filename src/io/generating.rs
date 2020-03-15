@@ -165,7 +165,8 @@ pub mod fmi {
                                 parser::EdgeCategory::IgnoredSrcIdx => EdgeCategory::SrcIdx,
                                 parser::EdgeCategory::DstId => EdgeCategory::DstId,
                                 parser::EdgeCategory::IgnoredDstIdx => EdgeCategory::DstIdx,
-                                parser::EdgeCategory::Ignore => EdgeCategory::Ignore,
+                                parser::EdgeCategory::ShortcutEdgeIdx
+                                | parser::EdgeCategory::Ignore => EdgeCategory::Ignore,
                             }
                         };
 

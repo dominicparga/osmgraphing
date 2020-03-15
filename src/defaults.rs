@@ -22,6 +22,16 @@ pub mod capacity {
     // Change this value before compiling, dependent of your number of stored metrics in the graph.
     pub const SMALL_VEC_INLINE_SIZE: usize = 4;
     pub type DimVec<T> = smallvec::SmallVec<[T; SMALL_VEC_INLINE_SIZE]>;
+    pub const MAX_BYTE_PER_CHUNK: usize = 200 * 1_000_000;
+}
+
+pub mod parser {
+    // provided by multi-ch-constructor
+    pub const NO_SHORTCUT_IDX: &str = "-1";
+}
+
+pub mod generator {
+    pub use super::parser::NO_SHORTCUT_IDX;
 }
 
 pub mod network {

@@ -2,7 +2,7 @@
 8
 
 # edge-count
-16
+19
 
 # nodes:
 # [NodeId, Latitude, Longitude]
@@ -18,6 +18,8 @@
 # edges:
 # [SrcId, DstId, Meters, KilometersPerHour]
      1      0       1            30          # b -> a
+     1      0       1            30          # b -> a # duplicate
+     1      0       1            30          # b -> a # duplicate
      1      2       1            30          # b -> c
      2      0       1            30          # c -> a
      2      1       1            30          # c -> b
@@ -27,6 +29,7 @@
      4      3       2            30          # e -> d
      4      5       1            30          # e -> f
      5      4       1            30          # f -> e
+     5      4       1            30          # f -> e # duplicate
      5      7       1            30          # f -> h
      6      4       1            30          # g -> e
      6      5       1            30          # g -> f

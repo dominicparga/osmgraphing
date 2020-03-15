@@ -1,7 +1,6 @@
 use std::{
     cmp::Ord,
-    fmt,
-    fmt::Display,
+    fmt::{self, Display},
     ops::{Deref, DerefMut},
 };
 

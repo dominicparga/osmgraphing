@@ -1,14 +1,14 @@
 use super::{EdgeIdx, Graph, NodeIdx};
 use crate::{
     configs::parser::{Config, EdgeCategory},
-    defaults::capacity::DimVec,
+    defaults::capacity::{self, DimVec},
     helpers::ApproxEq,
     network::MetricIdx,
     units::{geo, geo::Coordinate, length::Kilometers, speed::KilometersPerHour, time::Seconds},
 };
 use log::{debug, info};
 use progressing::{self, Bar};
-use std::{cmp::Reverse, mem};
+use std::mem;
 
 #[derive(Debug)]
 pub struct ProtoNode {
@@ -22,7 +22,23 @@ pub struct ProtoEdge {
     pub src_id: i64,
     pub dst_id: i64,
     pub metrics: DimVec<Option<f64>>,
-    // pub sc_edges: Option<[EdgeIdx; 2]>,
+    pub sc_edges: Option<[EdgeIdx; 2]>,
+}
+
+impl ProtoEdge {
+    /// Work off proto-edges in chunks to keep memory-usage lower.
+    /// For example:
+    /// To keep additional memory-needs below 1 MB, the the maximum amount of four f64-values per
+    /// worked-off chunk has to be limited to 250_000.
+    fn mem_size_b() -> usize {
+        // src_id: i64
+        // dst_id: i64
+        2 * mem::size_of::<i64>()
+        // metrics: DimVec<Option<f64>>
+        + capacity::SMALL_VEC_INLINE_SIZE * mem::size_of::<f64>()
+        // sc_edges: Option<[EdgeIdx; 2]>
+        + 2 * mem::size_of::<EdgeIdx>()
+    }
 }
 
 /// handy for remembering indices after sorting backwards
@@ -69,6 +85,8 @@ impl Graph {
         self.bwd_offsets.shrink_to_fit();
         self.bwd_to_fwd_map.shrink_to_fit();
         self.metrics.shrink_to_fit();
+        self.sc_offsets.shrink_to_fit();
+        self.sc_edges.shrink_to_fit();
     }
 
     /// Uses the graph's nodes, so nodes must have been added before this method works properly.
@@ -181,6 +199,7 @@ impl Graph {
                     }
                     EdgeCategory::LaneCount
                     | EdgeCategory::Custom
+                    | EdgeCategory::ShortcutEdgeIdx
                     | EdgeCategory::SrcId
                     | EdgeCategory::IgnoredSrcIdx
                     | EdgeCategory::DstId
@@ -306,14 +325,14 @@ impl NodeBuilder {
         }
     }
 
-    pub fn next(self) -> GraphBuilder {
-        GraphBuilder {
+    pub fn next(self) -> Result<GraphBuilder, String> {
+        Ok(GraphBuilder {
             cfg: self.cfg,
             node_ids: self.node_ids,
             node_coords: self.node_coords,
             node_levels: self.node_levels,
             proto_edges: self.proto_edges,
-        }
+        })
     }
 }
 
@@ -349,7 +368,7 @@ impl GraphBuilder {
         // add nodes to graph which belong to edges (sorted by asc id)
 
         // logging
-        info!("START Add nodes (sorted) which belongs to an edge.");
+        info!("START Check nodes for existing coordinate.");
         // check if every node has a coordinate, since every node is part of an edge
         for (idx, opt_coord) in self.node_coords.iter().enumerate() {
             if opt_coord.is_none() {
@@ -370,49 +389,107 @@ impl GraphBuilder {
 
         info!("START Sort proto-forward-edges by their src/dst-IDs.");
         // memory-peak is here when sorting
-
-        // sort reversed to make splice efficient
         self.proto_edges
-            .sort_unstable_by_key(|(_, edge)| Reverse((edge.src_id, edge.dst_id)));
+            .sort_unstable_by_key(|(_, edge)| (edge.src_id, edge.dst_id));
+        info!("FINISHED");
+
+        //----------------------------------------------------------------------------------------//
+        // shortcuts: map usize to EdgeIdx
+        // This has to be done before removing duplicates, because the usize-values depend on len()
+
+        info!("START Remap ch-shortcut-indices according to new sorted edges.");
+        // create mapping: old-idx -> new-idx
+        let mut new_indices = vec![0; self.proto_edges.len()];
+        self.proto_edges
+            .iter()
+            .enumerate()
+            .for_each(|(new_idx, (old_idx, _))| new_indices[*old_idx] = new_idx);
+        // update shortcuts due to new sorted proto-edges
+        for (_, proto_edge) in self.proto_edges.iter_mut() {
+            if let Some(shortcuts) = proto_edge.sc_edges.as_mut() {
+                shortcuts[0] = EdgeIdx(new_indices[*shortcuts[0]]);
+                shortcuts[1] = EdgeIdx(new_indices[*shortcuts[1]]);
+            }
+        }
         info!("FINISHED");
 
         //----------------------------------------------------------------------------------------//
         // remove duplicates
+        // This should be done before doing metric to save memory.
 
-        info!("START Remove duplicated proto-edges and flatten ch-shortcuts");
-        let edge_count = self.proto_edges.len();
+        info!("START Remove duplicated proto-edges and correct remaining ch-shortcuts");
         // duplicate is e.g. the edge
         // node-id 314074041 -> node-id 283494218
         // which is part of two ways
-        self.proto_edges.dedup_by(|(_, e0), (_, e1)| {
-            // compare src-id and dst-id, then metrics approximately
-            if (e0.src_id, e0.dst_id) == (e1.src_id, e1.dst_id) {
-                for (e0_opt, e1_opt) in e0.metrics.iter().zip(e1.metrics.iter()) {
-                    if e0_opt.is_none() && e1_opt.is_none() {
-                        // both are none
-                        continue;
-                    } else {
-                        if let (Some(e0_metric), Some(e1_metric)) = (e0_opt, e1_opt) {
-                            // both are some
-                            if e0_metric.approx_eq(&e1_metric) {
-                                continue;
+
+        let mut removed_indices = Vec::new();
+
+        let mut w = 1;
+        for r in 1..self.proto_edges.len() {
+            // compare edge[w-1] and edge[r]
+            let is_duplicate = {
+                let (_, e0) = &self.proto_edges[w - 1];
+                let (_, e1) = &self.proto_edges[r];
+                let mut is_eq = true;
+
+                // compare src-id and dst-id, then metrics approximately
+                if (e0.src_id, e0.dst_id) == (e1.src_id, e1.dst_id) {
+                    for (e0_opt, e1_opt) in e0.metrics.iter().zip(e1.metrics.iter()) {
+                        if e0_opt.is_none() && e1_opt.is_none() {
+                            // both are none
+                            continue;
+                        } else {
+                            if let (Some(e0_metric), Some(e1_metric)) = (e0_opt, e1_opt) {
+                                // both are some
+                                if e0_metric.approx_eq(&e1_metric) {
+                                    continue;
+                                }
                             }
+                            // both are different
+                            is_eq = false;
+                            break;
                         }
-                        // both are different
-                        return false;
+                    }
+                } else {
+                    is_eq = false;
+                }
+
+                is_eq
+            };
+
+            // if duplicate
+            // -> inc r
+            // -> remember index for updating shortcuts
+            if is_duplicate {
+                removed_indices.push(r);
+            }
+            // if not a duplicate
+            // -> swap edge[w] and edge[r]
+            // -> inc w and inc r
+            else {
+                self.proto_edges.swap(w, r);
+                w += 1;
+            }
+        }
+
+        self.proto_edges
+            .truncate(self.proto_edges.len() - removed_indices.len());
+
+        // count shortcut-edges for later
+        let mut sc_count = 0;
+        // correct remaining shortcuts
+        // -> decrement every index, that is at least as high as a removed-idx
+        for (_, proto_edge) in self.proto_edges.iter_mut() {
+            if let Some(shortcuts) = proto_edge.sc_edges.as_mut() {
+                sc_count += 1;
+                for removed_idx in removed_indices.iter() {
+                    for shortcut in shortcuts.iter_mut().filter(|sc| ***sc >= *removed_idx) {
+                        **shortcut -= 1;
                     }
                 }
-                true
-            } else {
-                false
             }
-        });
-        if self.proto_edges.len() != edge_count {
-            info!(
-                "Removed {} duplicates.",
-                (edge_count - self.proto_edges.len())
-            );
         }
+        info!("Removed {} duplicates.", removed_indices.len());
         info!("FINISHED");
 
         //----------------------------------------------------------------------------------------//
@@ -425,23 +502,19 @@ impl GraphBuilder {
         let mut edge_idx: usize = 0;
 
         // Work off proto-edges in chunks to keep memory-usage lower.
-        // For example:
-        // To keep additional memory-needs below 1 MB, the the maximum amount of four f64-values per
-        // worked-off chunk has to be limited to 250_000.
-        // Because ids are more expensive than metrics, (2x i64 = 4x f64), the number is much lower.
-        let bytes_per_edge =
-            2 * mem::size_of::<i64>() + graph.cfg().edges.dim() * mem::size_of::<f64>();
-        let max_byte = 200 * 1_000_000;
-        let max_chunk_size = max_byte / bytes_per_edge;
-        log::debug!("max-chunk-size: {}", max_chunk_size);
+        let max_chunk_size = capacity::MAX_BYTE_PER_CHUNK / ProtoEdge::mem_size_b();
+        debug!("max-chunk-size: {}", max_chunk_size);
         // init metrics
         graph.metrics = vec![vec![]; graph.cfg().edges.dim()];
         let mut new_proto_edges = vec![];
-        log::debug!(
+        let mut new_sc_edges = Vec::with_capacity(sc_count);
+        debug!(
             "initial graph-metric-capacity: {}",
             graph.metrics[0].capacity()
         );
 
+        // sort reversed to make splice efficient
+        self.proto_edges.reverse();
         while self.proto_edges.len() > 0 {
             // Get chunk from proto-edges.
             // Reverse chunk because proto-egdes is sorted reversed to make splice efficient.
@@ -463,8 +536,8 @@ impl GraphBuilder {
                 .iter_mut()
                 .for_each(|m| m.reserve_exact(chunk.len()));
             new_proto_edges.reserve_exact(chunk.len());
-            log::debug!("chunk-len: {}", chunk.len());
-            log::debug!("graph-metric-capacity: {}", graph.metrics[0].capacity());
+            debug!("chunk-len: {}", chunk.len());
+            debug!("graph-metric-capacity: {}", graph.metrics[0].capacity());
 
             for (_, mut proto_edge) in chunk.into_iter() {
                 // add to graph and remember ids
@@ -475,6 +548,11 @@ impl GraphBuilder {
                     dst_id: proto_edge.dst_id,
                     idx: 0, // used later for offset-arrays
                 });
+
+                // remember sc-edges for setting offsets later
+                if let Some(sc_edges) = proto_edge.sc_edges {
+                    new_sc_edges.push((edge_idx, sc_edges));
+                }
 
                 // print progress
                 progress_bar.set(edge_idx);
@@ -493,6 +571,35 @@ impl GraphBuilder {
         graph.shrink_to_fit();
         new_proto_edges.shrink_to_fit();
         // last node needs an upper bound as well for `leaving_edges(...)`
+        info!("FINISHED");
+
+        //----------------------------------------------------------------------------------------//
+        // set ch-shortcut-offsets
+        // do it here to reduce memory-needs by processing metrics first
+
+        info!("START Create ch-shortcut-offsets-array");
+        graph.sc_offsets = vec![new_sc_edges.len(); new_proto_edges.len() + 1];
+        graph.sc_edges = Vec::with_capacity(sc_count);
+        let mut sc_offset = 0;
+        for edge_idx in 0..new_proto_edges.len() {
+            // Since sc-offsets have been initialized with the last offset,
+            // everything is already correct when this point is reached.
+            if sc_offset == new_sc_edges.len() {
+                break;
+            }
+
+            let (sc_edge_idx, sc_edges) = new_sc_edges[sc_offset];
+
+            // update shortcut-offset
+            graph.sc_offsets[edge_idx] = sc_offset;
+
+            // if this was a shortcut-edge
+            // -> increase offset for next edges
+            if edge_idx == sc_edge_idx {
+                graph.sc_edges.push(sc_edges);
+                sc_offset += 1;
+            }
+        }
         info!("FINISHED");
 
         //----------------------------------------------------------------------------------------//
