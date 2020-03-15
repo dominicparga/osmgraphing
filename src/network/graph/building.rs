@@ -382,6 +382,7 @@ impl GraphBuilder {
         graph.node_ids = self.node_ids;
         graph.node_coords = self.node_coords.into_iter().map(Option::unwrap).collect();
         graph.node_levels = self.node_levels;
+        graph.shrink_to_fit();
         info!("FINISHED");
 
         //----------------------------------------------------------------------------------------//
@@ -411,6 +412,7 @@ impl GraphBuilder {
                 shortcuts[1] = EdgeIdx(new_indices[*shortcuts[1]]);
             }
         }
+        drop(new_indices);
         info!("FINISHED");
 
         //----------------------------------------------------------------------------------------//
