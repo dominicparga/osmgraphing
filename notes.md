@@ -10,6 +10,9 @@ Maybe, it is concept for later documentation, or just keep-up-the-good-work (`ku
 
 - Implement graph as server, which can execute queries from clients (e.g. via channels).
 - Warn user when parsing `pbf`-map, if unused categories are provided in the config.
+- Building needs much more memory for `Germany.pbf` (~ `14 GB`) due to sc-edges and meta-info.
+  When creating metrics, memory-consumption shrinks to `10/11 GB` and lower, probably because these values are released.
+  It could make sense to implement simple (de-)serialization for the graph (`map-file.rfmi`, standing for `raw fmi`).
 
 
 ### Build-script
@@ -47,9 +50,6 @@ Maybe, it is concept for later documentation, or just keep-up-the-good-work (`ku
 - Print __edit-link__ for weird osm-content (in addition to currently printed warnings).
 - Parse lanes (now: use default).
   - tags: `lanes`, `lanes:backward` (`way-id: 33172848`)
-- Building needs much more memory for `Germany.pbf` (~ `14 GB`) due to sc-edges, where `50 %` are `None`.
-  When creating metrics, memory-consumption shrinks to `10/11 GB` and lower, probably because these values are released.
-  Otherwise, README has to be updated.
 
 
 ### Extend generating

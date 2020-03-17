@@ -2,7 +2,9 @@ use crate::{
     configs::parser::{self, EdgeCategory},
     defaults::capacity::DimVec,
     helpers,
-    network::{EdgeBuilder, MetricIdx, NodeBuilder, ProtoEdge, ProtoNode, StreetCategory},
+    network::{
+        EdgeBuilder, MetricIdx, NodeBuilder, ProtoEdge, ProtoNode, ProtoShortcut, StreetCategory,
+    },
     units::geo::Coordinate,
 };
 use log::info;
@@ -124,10 +126,12 @@ impl super::Parsing for Parser {
             // for n nodes in a way, you can create (n-1) edges
             for node_idx in 0..(nodes.len() - 1) {
                 // add proto-edge to graph
-                builder.insert(ProtoEdge {
-                    src_id: nodes[node_idx],
-                    dst_id: nodes[node_idx + 1],
-                    metrics: metrics.clone(),
+                builder.insert(ProtoShortcut {
+                    proto_edge: ProtoEdge {
+                        src_id: nodes[node_idx],
+                        dst_id: nodes[node_idx + 1],
+                        metrics: metrics.clone(),
+                    },
                     sc_edges: None,
                 });
             }

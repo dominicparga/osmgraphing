@@ -3,7 +3,7 @@ use crate::{
     defaults,
     defaults::capacity::DimVec,
     helpers,
-    network::{EdgeBuilder, EdgeIdx, MetricIdx, NodeBuilder, ProtoEdge, ProtoNode},
+    network::{EdgeBuilder, EdgeIdx, MetricIdx, NodeBuilder, ProtoEdge, ProtoNode, ProtoShortcut},
     units::geo,
 };
 use log::info;
@@ -109,7 +109,7 @@ impl super::Parsing for Parser {
             line_number += 1;
 
             // create edge and add it
-            let proto_edge = ProtoEdge::from_str(&line, &builder.cfg().edges)?;
+            let proto_edge = ProtoShortcut::from_str(&line, &builder.cfg().edges)?;
             builder.insert(proto_edge);
         }
         info!("FINISHED");
@@ -143,11 +143,11 @@ impl super::Parsing for Parser {
     }
 }
 
-impl ProtoEdge {
+impl ProtoShortcut {
     /// Parse a line of metrics into an edge.
     ///
     /// - When NodeIds are parsed, the first one is interpreted as src-id and the second one as dst-id.
-    pub fn from_str(line: &str, cfg: &parser::edges::Config) -> Result<ProtoEdge, String> {
+    pub fn from_str(line: &str, cfg: &parser::edges::Config) -> Result<ProtoShortcut, String> {
         let mut metric_values = DimVec::<_>::with_capacity(cfg.dim());
         let mut src_id = None;
         let mut dst_id = None;
@@ -279,10 +279,12 @@ impl ProtoEdge {
             }
         };
 
-        Ok(ProtoEdge {
-            src_id: src_id.ok_or("Proto-edge should have a src-id, but doesn't.".to_owned())?,
-            dst_id: dst_id.ok_or("Proto-edge should have a dst-id, but doesn't.".to_owned())?,
-            metrics: metric_values,
+        Ok(ProtoShortcut {
+            proto_edge: ProtoEdge {
+                src_id: src_id.ok_or("Proto-edge should have a src-id, but doesn't.".to_owned())?,
+                dst_id: dst_id.ok_or("Proto-edge should have a dst-id, but doesn't.".to_owned())?,
+                metrics: metric_values,
+            },
             sc_edges,
         })
     }

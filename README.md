@@ -42,23 +42,25 @@ The binary `mapgenerator` (binaries are in `target/release` after release-buildi
 A tool for creating `fmi`-map-files, which contain graphs contracted via contraction-hierarchies, is [multi-ch-constructor][github/lesstat/multi-ch-constructor].
 
 
-## Requirements for large maps (e.g. states or countries)
+## Requirements for large maps (e.g. countries)
 
 In general, the requirements depend on the size of the parsed map (also same map of different dates) and your machine.
-Following numbers base on an __8-core-CPU__ and the `pbf`-map `Germany` from `March 14th, 2020` running on `archlinux`.
+Following numbers base on an __8-core-CPU__ and the `pbf`-map `Germany` from `March 14th, 2020` running on `archlinux` with __16 GB RAM__.
 You should change the number of inlined metrics (via [`SmallVec`][github/servo/rust-smallvec]) according to your needs in the module `defaults` (default is `4`).
 Several GB and performance are saved by doing so.
 
-- Parsing `Germany` (4 metrics, ~51 million nodes, ~106 million edges, pbf-file) needs less than __11 GB of RAM__.
-  After parsing, the memory-needs are slightly lower due to the optimized graph-structure.
-- Preprocessing `Germany` (including parsing) needs around __3 minutes__.
-- A __routing query__ on `Germany` of length around `600 km` takes around __21 seconds__ with `bidirectional Dijkstra`, highly depending on the specific src-dst-pair (and its search-space).
+- Parsing `Germany.pbf` (4 metrics, ~51 million nodes, ~106 million edges) needs around __14 GB of RAM__ at peak.
+  After parsing, the memory-needs are much lower due to the optimized graph-structure.
+- Preprocessing `Germany.pbf` (including parsing) needs a little over __3 minutes__.
+- A __routing query__ on `Germany.pbf` of length around `600 km` takes around __21 seconds__ with `bidirectional Dijkstra`, highly depending on the specific src-dst-pair (and its search-space).
   This could be improved by removing intermediate nodes (like `b` in `a->b->c`), but they are kept for now.
   Maybe, they are needed for precise/realistic traffic-simulation.
   An `Astar` is not used anymore, because its only purpose is reducing the search-space, which can be reduced much more using [`Contraction Hierarchies`](#contraction-hierarchies).
   Further, `Astar` has issues when it comes to multiple or custom metrics, because of the metrics' heuristics.
 
-Small maps like `Isle of Man` run on every machine and are parsed in less than a second.
+Small maps like `Isle-of-Man.pbf` (~50_000 nodes, ~107_000 edges) run on every machine and are parsed in less than a second.
+
+The German state `Baden-Württemberg.pbf` (~9 million nodes, ~18 million edges) needs less than __3 GB RAM__ at peak and under __30 seconds__ to parse.
 
 
 ## Contraction-Hierarchies <a name="contraction-hierarchies"></a>
@@ -178,5 +180,5 @@ He has implemented the first (and running) approach of the `A*`-algorithm.
 [github/self/tags/badge]: https://img.shields.io/github/v/tag/dominicparga/osmgraphing?sort=semver&style=for-the-badge
 [github/self/tree/examples]: https://github.com/dominicparga/osmgraphing/tree/nightly/examples
 [github/self/wiki/usage]: https://github.com/dominicparga/osmgraphing/wiki/Usage
-[osm]: https://openstreetmap.org
 [github/servo/rust-smallvec]: https://github.com/servo/rust-smallvec
+[osm]: https://openstreetmap.org

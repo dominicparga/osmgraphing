@@ -1,6 +1,6 @@
 mod graph;
 pub use graph::{
-    building::{EdgeBuilder, GraphBuilder, NodeBuilder, ProtoEdge, ProtoNode},
+    building::{EdgeBuilder, GraphBuilder, NodeBuilder, ProtoEdge, ProtoNode, ProtoShortcut},
     EdgeAccessor, EdgeIdx, Graph, HalfEdge, MetricAccessor, MetricIdx, Node, NodeAccessor, NodeIdx,
 };
 use serde::Deserialize;

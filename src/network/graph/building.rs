@@ -17,12 +17,28 @@ pub struct ProtoNode {
     pub level: Option<usize>,
 }
 
+pub struct ProtoShortcut {
+    pub proto_edge: ProtoEdge,
+    pub sc_edges: Option<[EdgeIdx; 2]>,
+}
+
+impl ProtoShortcut {
+    /// Work off proto-edges in chunks to keep memory-usage lower.
+    /// For example:
+    /// To keep additional memory-needs below 1 MB, the the maximum amount of four f64-values per
+    /// worked-off chunk has to be limited to 250_000.
+    fn mem_size_b() -> usize {
+        ProtoEdge::mem_size_b()
+        // sc_edges: Option<[EdgeIdx; 2]>
+        + 2 * mem::size_of::<EdgeIdx>()
+    }
+}
+
 #[derive(Debug)]
 pub struct ProtoEdge {
     pub src_id: i64,
     pub dst_id: i64,
     pub metrics: DimVec<Option<f64>>,
-    pub sc_edges: Option<[EdgeIdx; 2]>,
 }
 
 impl ProtoEdge {
@@ -36,8 +52,6 @@ impl ProtoEdge {
         2 * mem::size_of::<i64>()
         // metrics: DimVec<Option<f64>>
         + capacity::SMALL_VEC_INLINE_SIZE * mem::size_of::<f64>()
-        // sc_edges: Option<[EdgeIdx; 2]>
-        + 2 * mem::size_of::<EdgeIdx>()
     }
 }
 
@@ -247,7 +261,8 @@ impl Graph {
 pub struct EdgeBuilder {
     cfg: Config,
     node_ids: Vec<i64>,
-    proto_edges: Vec<(usize, ProtoEdge)>,
+    proto_edges: Vec<(usize, ProtoEdge, Option<usize>)>,
+    proto_shortcuts: Vec<[EdgeIdx; 2]>,
 }
 
 impl EdgeBuilder {
@@ -255,7 +270,13 @@ impl EdgeBuilder {
         &self.cfg
     }
 
-    pub fn insert(&mut self, proto_edge: ProtoEdge) {
+    pub fn insert(
+        &mut self,
+        ProtoShortcut {
+            proto_edge,
+            sc_edges,
+        }: ProtoShortcut,
+    ) {
         // Most of the time, nodes are added for edges of one street,
         // so duplicates are next to each other.
         // -> check k neighbours
@@ -274,11 +295,19 @@ impl EdgeBuilder {
 
         // add edges
         let idx = self.proto_edges.len();
-        self.proto_edges.push((idx, proto_edge));
+        if let Some(sc_edges) = sc_edges {
+            // save index to shortcut in proto-edge
+            self.proto_edges
+                .push((idx, proto_edge, Some(self.proto_shortcuts.len())));
+            self.proto_shortcuts.push(sc_edges);
+        } else {
+            self.proto_edges.push((idx, proto_edge, None));
+        }
     }
 
     pub fn next(mut self) -> NodeBuilder {
         self.proto_edges.shrink_to_fit();
+        self.proto_shortcuts.shrink_to_fit();
 
         // sort nodes, remove duplicates and shrink array since it can only shrink from now on
         self.node_ids.sort_unstable();
@@ -295,6 +324,7 @@ impl EdgeBuilder {
             node_coords,
             node_levels,
             proto_edges: self.proto_edges,
+            proto_shortcuts: self.proto_shortcuts,
         }
     }
 }
@@ -304,7 +334,8 @@ pub struct NodeBuilder {
     node_ids: Vec<i64>,
     node_coords: Vec<Option<Coordinate>>,
     node_levels: Vec<usize>,
-    proto_edges: Vec<(usize, ProtoEdge)>,
+    proto_edges: Vec<(usize, ProtoEdge, Option<usize>)>,
+    proto_shortcuts: Vec<[EdgeIdx; 2]>,
 }
 
 impl NodeBuilder {
@@ -332,6 +363,7 @@ impl NodeBuilder {
             node_coords: self.node_coords,
             node_levels: self.node_levels,
             proto_edges: self.proto_edges,
+            proto_shortcuts: self.proto_shortcuts,
         })
     }
 }
@@ -341,7 +373,8 @@ pub struct GraphBuilder {
     node_ids: Vec<i64>,
     node_coords: Vec<Option<Coordinate>>,
     node_levels: Vec<usize>,
-    proto_edges: Vec<(usize, ProtoEdge)>,
+    proto_edges: Vec<(usize, ProtoEdge, Option<usize>)>,
+    proto_shortcuts: Vec<[EdgeIdx; 2]>,
 }
 
 impl GraphBuilder {
@@ -350,6 +383,7 @@ impl GraphBuilder {
             cfg,
             node_ids: Vec::new(),
             proto_edges: Vec::new(),
+            proto_shortcuts: Vec::new(),
         }
     }
 
@@ -391,7 +425,7 @@ impl GraphBuilder {
         info!("START Sort proto-forward-edges by their src/dst-IDs.");
         // memory-peak is here when sorting
         self.proto_edges
-            .sort_unstable_by_key(|(_, edge)| (edge.src_id, edge.dst_id));
+            .sort_unstable_by_key(|(_, edge, _)| (edge.src_id, edge.dst_id));
         info!("FINISHED");
 
         //----------------------------------------------------------------------------------------//
@@ -400,14 +434,15 @@ impl GraphBuilder {
 
         info!("START Remap ch-shortcut-indices according to new sorted edges.");
         // create mapping: old-idx -> new-idx
-        let mut new_indices = vec![0; self.proto_edges.len()];
+        let mut new_indices: Vec<usize> = vec![0; self.proto_edges.len()];
         self.proto_edges
             .iter()
             .enumerate()
-            .for_each(|(new_idx, (old_idx, _))| new_indices[*old_idx] = new_idx);
+            .for_each(|(new_idx, (old_idx, _, _))| new_indices[*old_idx] = new_idx);
         // update shortcuts due to new sorted proto-edges
-        for (_, proto_edge) in self.proto_edges.iter_mut() {
-            if let Some(shortcuts) = proto_edge.sc_edges.as_mut() {
+        for (_, _, opt_sc_idx) in self.proto_edges.iter() {
+            if let &Some(sc_idx) = opt_sc_idx {
+                let shortcuts = &mut self.proto_shortcuts[sc_idx];
                 shortcuts[0] = EdgeIdx(new_indices[*shortcuts[0]]);
                 shortcuts[1] = EdgeIdx(new_indices[*shortcuts[1]]);
             }
@@ -430,8 +465,8 @@ impl GraphBuilder {
         for r in 1..self.proto_edges.len() {
             // compare edge[w-1] and edge[r]
             let is_duplicate = {
-                let (_, e0) = &self.proto_edges[w - 1];
-                let (_, e1) = &self.proto_edges[r];
+                let (_, e0, _) = &self.proto_edges[w - 1];
+                let (_, e1, _) = &self.proto_edges[r];
                 let mut is_eq = true;
 
                 // compare src-id and dst-id, then metrics approximately
@@ -481,8 +516,9 @@ impl GraphBuilder {
         let mut sc_count = 0;
         // correct remaining shortcuts
         // -> decrement every index, that is at least as high as a removed-idx
-        for (_, proto_edge) in self.proto_edges.iter_mut() {
-            if let Some(shortcuts) = proto_edge.sc_edges.as_mut() {
+        for (_, _, opt_sc_idx) in self.proto_edges.iter() {
+            if let &Some(sc_idx) = opt_sc_idx {
+                let shortcuts = &mut self.proto_shortcuts[sc_idx];
                 sc_count += 1;
                 for removed_idx in removed_indices.iter() {
                     for shortcut in shortcuts.iter_mut().filter(|sc| ***sc >= *removed_idx) {
@@ -504,7 +540,7 @@ impl GraphBuilder {
         let mut edge_idx: usize = 0;
 
         // Work off proto-edges in chunks to keep memory-usage lower.
-        let max_chunk_size = capacity::MAX_BYTE_PER_CHUNK / ProtoEdge::mem_size_b();
+        let max_chunk_size = capacity::MAX_BYTE_PER_CHUNK / ProtoShortcut::mem_size_b();
         debug!("max-chunk-size: {}", max_chunk_size);
         // init metrics
         graph.metrics = vec![vec![]; graph.cfg().edges.dim()];
@@ -541,7 +577,7 @@ impl GraphBuilder {
             debug!("chunk-len: {}", chunk.len());
             debug!("graph-metric-capacity: {}", graph.metrics[0].capacity());
 
-            for (_, mut proto_edge) in chunk.into_iter() {
+            for (_, mut proto_edge, opt_sc_idx) in chunk.into_iter() {
                 // add to graph and remember ids
                 // -> nodes are needed to map NodeId -> NodeIdx
                 graph.add_metrics(&mut proto_edge)?;
@@ -552,8 +588,8 @@ impl GraphBuilder {
                 });
 
                 // remember sc-edges for setting offsets later
-                if let Some(sc_edges) = proto_edge.sc_edges {
-                    new_sc_edges.push((edge_idx, sc_edges));
+                if let Some(sc_idx) = opt_sc_idx {
+                    new_sc_edges.push((edge_idx, self.proto_shortcuts[sc_idx]));
                 }
 
                 // print progress
