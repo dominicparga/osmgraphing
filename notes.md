@@ -83,6 +83,18 @@ Maybe, it is concept for later documentation, or just keep-up-the-good-work (`ku
 - [JMapViewer (Java)][osm/wiki/jmapviewer]
 
 
+## Proof of correctness for bidirectional Dijkstra
+
+The termination of the bidirectional Astar is based on the first node v, that is marked by both, the forward- and the backward-subroutine.
+However, this common node v is part of the shortest path s->t wrt to this particular hop-distance H, but doesn't have to be part of the shortest path s->t wrt to edge-weights.
+
+Every node, that is not settled in any of the both subroutines, has a longer distance to both s and t than the already found common node v and hence can not be part of the shortest path (wrt to edge-weights).
+Otherwise, it would have been settled before v since the priority-queues sort by weights.
+In other words, only already settled nodes and their neighbors (which are already enqueued) can be part of the shortest path.
+
+In conclusion, emptying the remaining nodes in the queues and picking the shortest path of the resulting common nodes leads to the shortest path wrt to edge-weights from s to t.
+
+
 [github/rust-lang/cargo/issues/5624]: https://github.com/rust-lang/cargo/issues/5624
 [kde/marble]: http://api.kde.org/4.x-api/kdeedu-apidocs/marble/html/namespaceMarble.html
 [leafletjs]: https://leafletjs.com/

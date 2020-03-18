@@ -51,8 +51,20 @@ impl Dijkstra {
     }
 
     /// The given costnode is a meeting-costnode, if it is visited by both, the search starting in src and the search starting in dst.
+    /// Further, to be correct for contraction hierarchies, it has to be checked whether the current total-cost are less or equal to the current node-cost.
+    /// This is needed because the bidirectional Dijkstra processes sub-graphs, which are not equal.
+    /// This leads to the possibility, that shortest-paths of a sub-graph could be non-optimal for the total graph, even if both sub-queries (forward and backward) have already found a common meeting-node.
+    /// Paths in sub-graphs have only one direction wrt node-level, namely up for fwd-graph and down for bwd-graph.
+    /// TODO
     fn is_meeting_costnode(&self, costnode: &CostNode) -> bool {
-        self.is_visited_by_src[*costnode.idx] && self.is_visited_by_dst[*costnode.idx]
+        if self.is_visited_by_src[*costnode.idx] && self.is_visited_by_dst[*costnode.idx] {
+            // TODO is it correct to remove these lines?
+            // let cmp = self.total_cost(costnode).approx_cmp(&costnode.cost);
+            // cmp == Ordering::Less || cmp == Ordering::Equal
+            true
+        } else {
+            false
+        }
     }
 
     fn visit(&mut self, costnode: &CostNode) {
@@ -65,9 +77,7 @@ impl Dijkstra {
     fn total_cost(&self, costnode: &CostNode) -> f64 {
         self.fwd_costs[*costnode.idx] + self.bwd_costs[*costnode.idx]
     }
-}
 
-impl Dijkstra {
     pub fn compute_best_path(
         &mut self,
         src: &Node,
@@ -82,7 +92,10 @@ impl Dijkstra {
         //------------------------------------------------------------------------------------//
         // initialization-stuff
 
-        self.resize(graph.nodes().count());
+        let nodes = graph.nodes();
+        let fwd_edges = graph.fwd_edges();
+        let bwd_edges = graph.bwd_edges();
+        self.resize(nodes.count());
         let mut best_meeting: Option<(NodeIdx, f64)> = None;
 
         //------------------------------------------------------------------------------------//
@@ -127,13 +140,10 @@ impl Dijkstra {
             }
 
             // distinguish between fwd and bwd
+            // TODO performance: replace by 2d-array and Direction is mapped to idx
             let (xwd_costs, xwd_edges, xwd_predecessors) = match current.direction {
-                Direction::FWD => (
-                    &mut self.fwd_costs,
-                    graph.fwd_edges(),
-                    &mut self.predecessors,
-                ),
-                Direction::BWD => (&mut self.bwd_costs, graph.bwd_edges(), &mut self.successors),
+                Direction::FWD => (&mut self.fwd_costs, &fwd_edges, &mut self.predecessors),
+                Direction::BWD => (&mut self.bwd_costs, &bwd_edges, &mut self.successors),
             };
 
             // first occurrence has lowest cost
@@ -149,6 +159,9 @@ impl Dijkstra {
                 None => continue,
             };
             for leaving_edge in leaving_edges {
+                if nodes.level(current.idx) > nodes.level(leaving_edge.dst_idx()) {
+                    continue;
+                }
                 let new_cost = current.cost
                     + helpers::dot_product(
                         &cfg.alphas(),
@@ -181,14 +194,13 @@ impl Dijkstra {
                 src.idx(),
                 dst.idx(),
                 smallvec![0.0; cfg.dim()],
-                graph.nodes().count(),
+                nodes.count(),
             );
 
             // iterate backwards over fwd-path
             let mut cur_idx = meeting_node_idx;
             while let Some(incoming_idx) = self.predecessors[*cur_idx] {
                 // get incoming edge, but reversed to get the forward's src-node
-                let bwd_edges = graph.bwd_edges();
                 let reverse_incoming_edge = bwd_edges.half_edge(incoming_idx);
 
                 // update real path-costs
@@ -207,7 +219,6 @@ impl Dijkstra {
             let mut cur_idx = meeting_node_idx;
             while let Some(leaving_idx) = self.successors[*cur_idx] {
                 // get leaving edge, but reversed to get the backward's src-node
-                let fwd_edges = graph.fwd_edges();
                 let reverse_leaving_edge = fwd_edges.half_edge(leaving_idx);
 
                 // update real path-costs

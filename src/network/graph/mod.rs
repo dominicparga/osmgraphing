@@ -268,7 +268,6 @@ impl Display for Graph {
             let mut edge_idx = 0;
             for mut j in 0..m {
                 // if enough edges are in the graph
-                println!("sc-edges = {:?}", self.sc_edges);
                 if j < self.sc_edges.len() {
                     // if last edge that gets printed
                     if j == m - 1 {
@@ -279,17 +278,11 @@ impl Display for Graph {
                         // print last edge
                         j = self.sc_edges.len() - 1;
                     }
-                    println!("before");
-                    println!("j={}", j);
-                    println!("edge-idx={}", edge_idx);
-                    println!("{:?}", self.sc_offsets);
                     // get edge-idx from sc-edge
                     while self.sc_offsets[edge_idx] <= j {
                         edge_idx += 1;
-                        println!("edge-idx={}", edge_idx);
                     }
                     edge_idx -= 1;
-                    println!("after");
                     writeln!(
                         f,
                         "shortcut: {{ edge-idx: {}, sc-offset: {}, replaced: {:?} }}",
