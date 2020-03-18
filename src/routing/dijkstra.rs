@@ -37,15 +37,30 @@ impl Dijkstra {
     }
 
     /// Resizes existing datastructures storing routing-data like costs saving re-allocations.
-    fn resize(&mut self, new_len: usize) {
+    fn init_query(&mut self, new_len: usize) {
         // fwd
-        self.fwd_costs.splice(.., vec![std::f64::INFINITY; new_len]);
-        self.predecessors.splice(.., vec![None; new_len]);
-        self.is_visited_by_src.splice(.., vec![false; new_len]);
+        self.fwd_costs.resize(new_len, std::f64::INFINITY);
+        self.fwd_costs
+            .iter_mut()
+            .for_each(|c| *c = std::f64::INFINITY);
+
+        self.predecessors.resize(new_len, None);
+        self.predecessors.iter_mut().for_each(|p| *p = None);
+
+        self.is_visited_by_src.resize(new_len, false);
+        self.is_visited_by_src.iter_mut().for_each(|v| *v = false);
+
         // bwd
-        self.bwd_costs.splice(.., vec![std::f64::INFINITY; new_len]);
-        self.successors.splice(.., vec![None; new_len]);
-        self.is_visited_by_dst.splice(.., vec![false; new_len]);
+        self.bwd_costs.resize(new_len, std::f64::INFINITY);
+        self.bwd_costs
+            .iter_mut()
+            .for_each(|c| *c = std::f64::INFINITY);
+
+        self.successors.resize(new_len, None);
+        self.successors.iter_mut().for_each(|s| *s = None);
+
+        self.is_visited_by_dst.resize(new_len, false);
+        self.is_visited_by_dst.iter_mut().for_each(|v| *v = false);
 
         self.queue.clear();
     }
@@ -58,9 +73,6 @@ impl Dijkstra {
     /// TODO
     fn is_meeting_costnode(&self, costnode: &CostNode) -> bool {
         if self.is_visited_by_src[*costnode.idx] && self.is_visited_by_dst[*costnode.idx] {
-            // TODO is it correct to remove these lines?
-            // let cmp = self.total_cost(costnode).approx_cmp(&costnode.cost);
-            // cmp == Ordering::Less || cmp == Ordering::Equal
             true
         } else {
             false
@@ -89,16 +101,16 @@ impl Dijkstra {
             panic!("Best path should be computed, but no metric is specified.");
         }
 
-        //------------------------------------------------------------------------------------//
+        //----------------------------------------------------------------------------------------//
         // initialization-stuff
 
         let nodes = graph.nodes();
         let fwd_edges = graph.fwd_edges();
         let bwd_edges = graph.bwd_edges();
-        self.resize(nodes.count());
+        self.init_query(nodes.count());
         let mut best_meeting: Option<(NodeIdx, f64)> = None;
 
-        //------------------------------------------------------------------------------------//
+        //----------------------------------------------------------------------------------------//
         // prepare first iteration(s)
 
         // push src-node
@@ -159,9 +171,12 @@ impl Dijkstra {
                 None => continue,
             };
             for leaving_edge in leaving_edges {
+                // ch-dijkstra
                 if nodes.level(current.idx) > nodes.level(leaving_edge.dst_idx()) {
+                    // TODO break with sorted leaving-edges
                     continue;
                 }
+                // TODO
                 let new_cost = current.cost
                     + helpers::dot_product(
                         &cfg.alphas(),

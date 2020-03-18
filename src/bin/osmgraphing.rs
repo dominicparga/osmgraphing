@@ -26,6 +26,8 @@ use std::{path::PathBuf, time::Instant};
 
 //------------------------------------------------------------------------------------------------//
 
+// TODO add tests for comparing Dijkstra with CH-Dijkstra
+// -> break if different results
 fn main() {
     // process user-input
     let matches = parse_cmdline();

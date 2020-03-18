@@ -424,6 +424,8 @@ impl GraphBuilder {
 
         info!("START Sort proto-forward-edges by their src/dst-IDs.");
         // memory-peak is here when sorting
+        // TODO sort by src-id, then level of dst, then dst-id
+        // -> branch prediction in dijkstra
         self.proto_edges
             .sort_unstable_by_key(|(_, edge, _)| (edge.src_id, edge.dst_id));
         info!("FINISHED");
