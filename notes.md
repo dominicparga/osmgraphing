@@ -13,6 +13,7 @@ Maybe, it is concept for later documentation, or just keep-up-the-good-work (`ku
 - Building needs much more memory for `Germany.pbf` (~ `14 GB`) due to sc-edges and meta-info.
   When creating metrics, memory-consumption shrinks to `10/11 GB` and lower, probably because these values are released.
   It could make sense to implement simple (de-)serialization for the graph (`map-file.rfmi`, standing for `raw fmi`).
+- Write __working-off chunks__ in builder in separate function using `From<Edge>` or `Into<Edge>`
 
 
 ### Build-script

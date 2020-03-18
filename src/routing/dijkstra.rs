@@ -72,11 +72,7 @@ impl Dijkstra {
     /// Paths in sub-graphs have only one direction wrt node-level, namely up for fwd-graph and down for bwd-graph.
     /// TODO
     fn is_meeting_costnode(&self, costnode: &CostNode) -> bool {
-        if self.is_visited_by_src[*costnode.idx] && self.is_visited_by_dst[*costnode.idx] {
-            true
-        } else {
-            false
-        }
+        self.is_visited_by_src[*costnode.idx] && self.is_visited_by_dst[*costnode.idx]
     }
 
     fn visit(&mut self, costnode: &CostNode) {
@@ -174,7 +170,7 @@ impl Dijkstra {
                 // ch-dijkstra
                 if nodes.level(current.idx) > nodes.level(leaving_edge.dst_idx()) {
                     // TODO break with sorted leaving-edges
-                    continue;
+                    break;
                 }
                 // TODO
                 let new_cost = current.cost

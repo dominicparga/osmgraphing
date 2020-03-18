@@ -2,66 +2,13 @@ use super::{EdgeIdx, Graph, NodeIdx};
 use crate::{
     configs::parser::{Config, EdgeCategory},
     defaults::capacity::{self, DimVec},
-    helpers::ApproxEq,
+    helpers::{ApproxEq, MemSize},
     network::MetricIdx,
     units::{geo, geo::Coordinate, length::Kilometers, speed::KilometersPerHour, time::Seconds},
 };
 use log::{debug, info};
 use progressing::{self, Bar};
-use std::mem;
-
-#[derive(Debug)]
-pub struct ProtoNode {
-    pub id: i64,
-    pub coord: Coordinate,
-    pub level: Option<usize>,
-}
-
-pub struct ProtoShortcut {
-    pub proto_edge: ProtoEdge,
-    pub sc_edges: Option<[EdgeIdx; 2]>,
-}
-
-impl ProtoShortcut {
-    /// Work off proto-edges in chunks to keep memory-usage lower.
-    /// For example:
-    /// To keep additional memory-needs below 1 MB, the the maximum amount of four f64-values per
-    /// worked-off chunk has to be limited to 250_000.
-    fn mem_size_b() -> usize {
-        ProtoEdge::mem_size_b()
-        // sc_edges: Option<[EdgeIdx; 2]>
-        + 2 * mem::size_of::<EdgeIdx>()
-    }
-}
-
-#[derive(Debug)]
-pub struct ProtoEdge {
-    pub src_id: i64,
-    pub dst_id: i64,
-    pub metrics: DimVec<Option<f64>>,
-}
-
-impl ProtoEdge {
-    /// Work off proto-edges in chunks to keep memory-usage lower.
-    /// For example:
-    /// To keep additional memory-needs below 1 MB, the the maximum amount of four f64-values per
-    /// worked-off chunk has to be limited to 250_000.
-    fn mem_size_b() -> usize {
-        // src_id: i64
-        // dst_id: i64
-        2 * mem::size_of::<i64>()
-        // metrics: DimVec<Option<f64>>
-        + capacity::SMALL_VEC_INLINE_SIZE * mem::size_of::<f64>()
-    }
-}
-
-/// handy for remembering indices after sorting backwards
-#[derive(Debug)]
-struct MiniProtoEdge {
-    src_id: i64,
-    dst_id: i64,
-    idx: usize,
-}
+use std::{cmp::Reverse, mem, ops::RangeFrom};
 
 /// private stuff for graph-building
 impl Graph {
@@ -107,7 +54,7 @@ impl Graph {
     /// The provided edge is interpreted as forward-edge.
     /// Metric-dependencies between each other are considered by looping enough times
     /// over the calculation-loop.
-    fn add_metrics(&mut self, proto_edge: &mut ProtoEdge) -> Result<(), String> {
+    fn add_metrics(&mut self, proto_edge: &mut ProtoEdgeB) -> Result<(), String> {
         let cfg = &self.cfg;
 
         // - finalize proto-edge -
@@ -130,7 +77,9 @@ impl Graph {
                     if value.approx_eq(&0.0) && category.must_be_positive() {
                         debug!(
                             "Proto-edge (id:{}->id:{}) has {}=0, hence is corrected to epsilon.",
-                            proto_edge.src_id, proto_edge.dst_id, category
+                            self.nodes().id(proto_edge.src_idx),
+                            self.nodes().id(proto_edge.dst_idx),
+                            category
                         );
                         *value = std::f64::EPSILON;
                     }
@@ -141,15 +90,8 @@ impl Graph {
                 // calculate metric dependent on category
                 match category {
                     EdgeCategory::Meters => {
-                        let (src_idx, dst_idx) = {
-                            let nodes = self.nodes();
-                            let src_idx = nodes.src_idx_from(proto_edge.src_id)?;
-                            let dst_idx = nodes.dst_idx_from(proto_edge.dst_id)?;
-                            (src_idx, dst_idx)
-                        };
-
-                        let src_coord = self.node_coords[*src_idx];
-                        let dst_coord = self.node_coords[*dst_idx];
+                        let src_coord = self.node_coords[*proto_edge.src_idx];
+                        let dst_coord = self.node_coords[*proto_edge.dst_idx];
                         proto_edge.metrics[*metric_idx] =
                             Some(*geo::haversine_distance_km(&src_coord, &dst_coord));
                     }
@@ -258,10 +200,93 @@ impl Graph {
     }
 }
 
+#[derive(Debug)]
+pub struct ProtoNode {
+    pub id: i64,
+    pub coord: Coordinate,
+    pub level: Option<usize>,
+}
+
+pub struct ProtoShortcut {
+    pub proto_edge: ProtoEdge,
+    pub sc_edges: Option<[EdgeIdx; 2]>,
+}
+
+impl ProtoShortcut {
+    /// Work off proto-edges in chunks to keep memory-usage lower.
+    /// For example:
+    /// To keep additional memory-needs below 1 MB, the the maximum amount of four f64-values per
+    /// worked-off chunk has to be limited to 250_000.
+    fn mem_size_b() -> usize {
+        ProtoEdge::mem_size_b()
+        // sc_edges: Option<[EdgeIdx; 2]>
+        + 2 * mem::size_of::<EdgeIdx>()
+    }
+}
+
+#[derive(Debug)]
+pub struct ProtoEdge {
+    pub src_id: i64,
+    pub dst_id: i64,
+    pub metrics: DimVec<Option<f64>>,
+}
+
+impl MemSize for ProtoEdge {
+    /// Work off proto-edges in chunks to keep memory-usage lower.
+    /// For example:
+    /// To keep additional memory-needs below 1 MB, the the maximum amount of four f64-values per
+    /// worked-off chunk has to be limited to 250_000.
+    fn mem_size_b() -> usize {
+        // src_id: i64
+        // dst_id: i64
+        2 * mem::size_of::<i64>()
+        // metrics: DimVec<Option<f64>>
+        + capacity::SMALL_VEC_INLINE_SIZE * mem::size_of::<f64>()
+    }
+}
+
+struct ProtoEdgeA {
+    pub idx: usize,
+    pub src_id: i64,
+    pub dst_id: i64,
+    pub metrics: DimVec<Option<f64>>,
+    pub sc_edges: Option<usize>,
+}
+
+struct ProtoEdgeB {
+    pub idx: usize,
+    pub src_idx: NodeIdx,
+    pub dst_idx: NodeIdx,
+    pub metrics: DimVec<Option<f64>>,
+    pub sc_edges: Option<usize>,
+}
+
+impl MemSize for ProtoEdgeB {
+    fn mem_size_b() -> usize {
+        // idx
+        mem::size_of::<usize>()
+        // src_idx
+        // dst_idx
+        + 2 * mem::size_of::<usize>()
+        // metrics
+        + capacity::SMALL_VEC_INLINE_SIZE * mem::size_of::<f64>()
+        // sc_edges
+        + mem::size_of::<usize>()
+    }
+}
+
+/// handy for remembering indices after sorting backwards
+#[derive(Debug)]
+struct ProtoEdgeC {
+    src_idx: NodeIdx,
+    dst_idx: NodeIdx,
+    edge_idx: usize,
+}
+
 pub struct EdgeBuilder {
     cfg: Config,
     node_ids: Vec<i64>,
-    proto_edges: Vec<(usize, ProtoEdge, Option<usize>)>,
+    proto_edges: Vec<ProtoEdgeA>,
     proto_shortcuts: Vec<[EdgeIdx; 2]>,
 }
 
@@ -297,11 +322,22 @@ impl EdgeBuilder {
         let idx = self.proto_edges.len();
         if let Some(sc_edges) = sc_edges {
             // save index to shortcut in proto-edge
-            self.proto_edges
-                .push((idx, proto_edge, Some(self.proto_shortcuts.len())));
+            self.proto_edges.push(ProtoEdgeA {
+                idx,
+                src_id: proto_edge.src_id,
+                dst_id: proto_edge.dst_id,
+                metrics: proto_edge.metrics,
+                sc_edges: Some(self.proto_shortcuts.len()),
+            });
             self.proto_shortcuts.push(sc_edges);
         } else {
-            self.proto_edges.push((idx, proto_edge, None));
+            self.proto_edges.push(ProtoEdgeA {
+                idx,
+                src_id: proto_edge.src_id,
+                dst_id: proto_edge.dst_id,
+                metrics: proto_edge.metrics,
+                sc_edges: None,
+            });
         }
     }
 
@@ -334,7 +370,7 @@ pub struct NodeBuilder {
     node_ids: Vec<i64>,
     node_coords: Vec<Option<Coordinate>>,
     node_levels: Vec<usize>,
-    proto_edges: Vec<(usize, ProtoEdge, Option<usize>)>,
+    proto_edges: Vec<ProtoEdgeA>,
     proto_shortcuts: Vec<[EdgeIdx; 2]>,
 }
 
@@ -373,7 +409,7 @@ pub struct GraphBuilder {
     node_ids: Vec<i64>,
     node_coords: Vec<Option<Coordinate>>,
     node_levels: Vec<usize>,
-    proto_edges: Vec<(usize, ProtoEdge, Option<usize>)>,
+    proto_edges: Vec<ProtoEdgeA>,
     proto_shortcuts: Vec<[EdgeIdx; 2]>,
 }
 
@@ -384,6 +420,16 @@ impl GraphBuilder {
             node_ids: Vec::new(),
             proto_edges: Vec::new(),
             proto_shortcuts: Vec::new(),
+        }
+    }
+
+    fn chunk_range(total_len: usize, max_chunk_size: usize) -> RangeFrom<usize> {
+        if total_len > max_chunk_size {
+            // ATTENTION! Splicing means that the given range is replaced,
+            // hence max_chunk_size has to be, kind of, inverted.
+            (total_len - max_chunk_size)..
+        } else {
+            0..
         }
     }
 
@@ -401,136 +447,201 @@ impl GraphBuilder {
         //----------------------------------------------------------------------------------------//
         // add nodes to graph which belong to edges (sorted by asc id)
 
-        // logging
-        info!("START Check nodes for existing coordinate.");
-        // check if every node has a coordinate, since every node is part of an edge
-        for (idx, opt_coord) in self.node_coords.iter().enumerate() {
-            if opt_coord.is_none() {
-                // should not happen if file is okay
-                return Err(format!(
-                    "Proto-node (id: {}) has no coordinates, but belongs to an edge.",
-                    self.node_ids[idx]
-                ));
+        info!("DO Check (sorted) nodes for existing coordinate.");
+        {
+            // check if every node has a coordinate, since every node is part of an edge
+            for (idx, opt_coord) in self.node_coords.iter().enumerate() {
+                if opt_coord.is_none() {
+                    // should not happen if file is okay
+                    return Err(format!(
+                        "Proto-node (id: {}) has no coordinates, but belongs to an edge.",
+                        self.node_ids[idx]
+                    ));
+                }
             }
+            graph.node_ids = self.node_ids;
+            graph.node_coords = self.node_coords.into_iter().map(Option::unwrap).collect();
+            graph.node_levels = self.node_levels;
+            graph.shrink_to_fit();
         }
-        graph.node_ids = self.node_ids;
-        graph.node_coords = self.node_coords.into_iter().map(Option::unwrap).collect();
-        graph.node_levels = self.node_levels;
-        graph.shrink_to_fit();
-        info!("FINISHED");
+
+        //----------------------------------------------------------------------------------------//
+        // replace edges' node-ids by node-indizes for better performance
+
+        info!("DO Replace edges' node-ids by node-indizes.");
+        let mut proto_edges = {
+            let nodes = graph.nodes();
+
+            let mut new_proto_edges = vec![];
+
+            let mut progress_bar = progressing::MappingBar::new(0..=self.proto_edges.len());
+
+            // Work off proto-edges in chunks to keep memory-usage lower.
+            let max_chunk_size = capacity::MAX_BYTE_PER_CHUNK / ProtoEdgeB::mem_size_b();
+            debug!("max-chunk-size: {}", max_chunk_size);
+
+            // sort reversed to make splice efficient
+            self.proto_edges.reverse();
+            while self.proto_edges.len() > 0 {
+                // Get chunk from proto-edges.
+                // Reverse chunk because proto-egdes is sorted reversed to make splice efficient.
+                let chunk: Vec<_> = self
+                    .proto_edges
+                    .splice(
+                        Self::chunk_range(self.proto_edges.len(), max_chunk_size),
+                        vec![],
+                    )
+                    .rev()
+                    .collect();
+
+                // allocate new memory-needs
+                self.proto_edges.shrink_to_fit();
+                new_proto_edges.reserve_exact(chunk.len());
+                debug!("chunk-len: {}", chunk.len());
+
+                for edge in chunk.into_iter() {
+                    new_proto_edges.push(ProtoEdgeB {
+                        idx: edge.idx,
+                        src_idx: nodes.idx_from(edge.src_id).expect(&format!(
+                            "The given src-id `{:?}` doesn't exist as node",
+                            edge.src_id
+                        )),
+                        dst_idx: nodes.idx_from(edge.dst_id).expect(&format!(
+                            "The given dst-id `{:?}` doesn't exist as node",
+                            edge.dst_id
+                        )),
+                        metrics: edge.metrics,
+                        sc_edges: edge.sc_edges,
+                    });
+
+                    // print progress
+                    progress_bar.add(1usize);
+                    if progress_bar.progress() % (1 + (progress_bar.end() / 10)) == 0 {
+                        info!("{}", progress_bar);
+                    }
+                }
+            }
+            info!("{}", progress_bar.set(new_proto_edges.len()));
+            // reduce and optimize memory-usage
+            new_proto_edges.shrink_to_fit();
+
+            new_proto_edges
+        };
 
         //----------------------------------------------------------------------------------------//
         // sort forward-edges by ascending src-id, then by ascending dst-id -> offset-array
 
-        info!("START Sort proto-forward-edges by their src/dst-IDs.");
-        // memory-peak is here when sorting
-        // TODO sort by src-id, then level of dst, then dst-id
-        // -> branch prediction in dijkstra
-        self.proto_edges
-            .sort_unstable_by_key(|(_, edge, _)| (edge.src_id, edge.dst_id));
-        info!("FINISHED");
+        info!("DO Sort proto-forward-edges by their src/dst-IDs.");
+        {
+            // - memory-peak is here when sorting
+            // - sort by src-id, then level of dst, then dst-id
+            //   -> branch prediction in dijkstra when breaking after level is reached
+            let nodes = graph.nodes();
+            proto_edges
+                .sort_unstable_by_key(|e| (e.src_idx, Reverse(nodes.level(e.dst_idx)), e.dst_idx));
+        }
 
         //----------------------------------------------------------------------------------------//
         // shortcuts: map usize to EdgeIdx
         // This has to be done before removing duplicates, because the usize-values depend on len()
 
-        info!("START Remap ch-shortcut-indices according to new sorted edges.");
-        // create mapping: old-idx -> new-idx
-        let mut new_indices: Vec<usize> = vec![0; self.proto_edges.len()];
-        self.proto_edges
-            .iter()
-            .enumerate()
-            .for_each(|(new_idx, (old_idx, _, _))| new_indices[*old_idx] = new_idx);
-        // update shortcuts due to new sorted proto-edges
-        for (_, _, opt_sc_idx) in self.proto_edges.iter() {
-            if let &Some(sc_idx) = opt_sc_idx {
-                let shortcuts = &mut self.proto_shortcuts[sc_idx];
-                shortcuts[0] = EdgeIdx(new_indices[*shortcuts[0]]);
-                shortcuts[1] = EdgeIdx(new_indices[*shortcuts[1]]);
+        info!("DO Remap ch-shortcut-indices according to new sorted edges.");
+        {
+            // create mapping: old-idx -> new-idx
+            let mut new_indices: Vec<usize> = vec![0; proto_edges.len()];
+            proto_edges
+                .iter()
+                .enumerate()
+                .for_each(|(new_idx, edge)| new_indices[edge.idx] = new_idx);
+            // update shortcuts due to new sorted proto-edges
+            for edge in proto_edges.iter() {
+                if let Some(sc_idx) = edge.sc_edges {
+                    let shortcuts = &mut self.proto_shortcuts[sc_idx];
+                    shortcuts[0] = EdgeIdx(new_indices[*shortcuts[0]]);
+                    shortcuts[1] = EdgeIdx(new_indices[*shortcuts[1]]);
+                }
             }
         }
-        drop(new_indices);
-        info!("FINISHED");
 
         //----------------------------------------------------------------------------------------//
         // remove duplicates
         // This should be done before doing metric to save memory.
 
-        info!("START Remove duplicated proto-edges and correct remaining ch-shortcuts");
-        // duplicate is e.g. the edge
-        // node-id 314074041 -> node-id 283494218
-        // which is part of two ways
-
-        let mut removed_indices = Vec::new();
-
-        let mut w = 1;
-        for r in 1..self.proto_edges.len() {
-            // compare edge[w-1] and edge[r]
-            let is_duplicate = {
-                let (_, e0, _) = &self.proto_edges[w - 1];
-                let (_, e1, _) = &self.proto_edges[r];
-                let mut is_eq = true;
-
-                // compare src-id and dst-id, then metrics approximately
-                if (e0.src_id, e0.dst_id) == (e1.src_id, e1.dst_id) {
-                    for (e0_opt, e1_opt) in e0.metrics.iter().zip(e1.metrics.iter()) {
-                        if e0_opt.is_none() && e1_opt.is_none() {
-                            // both are none
-                            continue;
-                        } else {
-                            if let (Some(e0_metric), Some(e1_metric)) = (e0_opt, e1_opt) {
-                                // both are some
-                                if e0_metric.approx_eq(&e1_metric) {
-                                    continue;
-                                }
-                            }
-                            // both are different
-                            is_eq = false;
-                            break;
-                        }
-                    }
-                } else {
-                    is_eq = false;
-                }
-
-                is_eq
-            };
-
-            // if duplicate
-            // -> inc r
-            // -> remember index for updating shortcuts
-            if is_duplicate {
-                removed_indices.push(r);
-            }
-            // if not a duplicate
-            // -> swap edge[w] and edge[r]
-            // -> inc w and inc r
-            else {
-                self.proto_edges.swap(w, r);
-                w += 1;
-            }
-        }
-
-        self.proto_edges
-            .truncate(self.proto_edges.len() - removed_indices.len());
-
+        info!("DO Remove duplicated proto-edges and correct remaining ch-shortcuts");
         // count shortcut-edges for later
         let mut sc_count = 0;
-        // correct remaining shortcuts
-        // -> decrement every index, that is at least as high as a removed-idx
-        for (_, _, opt_sc_idx) in self.proto_edges.iter() {
-            if let &Some(sc_idx) = opt_sc_idx {
-                let shortcuts = &mut self.proto_shortcuts[sc_idx];
-                sc_count += 1;
-                for removed_idx in removed_indices.iter() {
-                    for shortcut in shortcuts.iter_mut().filter(|sc| ***sc >= *removed_idx) {
-                        **shortcut -= 1;
+        {
+            // duplicate is e.g. the edge
+            // node-id 314074041 -> node-id 283494218
+            // which is part of two ways
+
+            let mut removed_indices = Vec::new();
+
+            let mut w = 1;
+            for r in 1..proto_edges.len() {
+                // compare edge[w-1] and edge[r]
+                let is_duplicate = {
+                    let e0 = &proto_edges[w - 1];
+                    let e1 = &proto_edges[r];
+                    let mut is_eq = true;
+
+                    // compare src-id and dst-id, then metrics approximately
+                    if (e0.src_idx, e0.dst_idx) == (e1.src_idx, e1.dst_idx) {
+                        for (e0_opt, e1_opt) in e0.metrics.iter().zip(e1.metrics.iter()) {
+                            if e0_opt.is_none() && e1_opt.is_none() {
+                                // both are none
+                                continue;
+                            } else {
+                                if let (Some(e0_metric), Some(e1_metric)) = (e0_opt, e1_opt) {
+                                    // both are some
+                                    if e0_metric.approx_eq(&e1_metric) {
+                                        continue;
+                                    }
+                                }
+                                // both are different
+                                is_eq = false;
+                                break;
+                            }
+                        }
+                    } else {
+                        is_eq = false;
+                    }
+
+                    is_eq
+                };
+
+                // if duplicate
+                // -> inc r
+                // -> remember index for updating shortcuts
+                if is_duplicate {
+                    removed_indices.push(r);
+                }
+                // if not a duplicate
+                // -> swap edge[w] and edge[r]
+                // -> inc w and inc r
+                else {
+                    proto_edges.swap(w, r);
+                    w += 1;
+                }
+            }
+
+            proto_edges.truncate(proto_edges.len() - removed_indices.len());
+
+            // correct remaining shortcuts
+            // -> decrement every index, that is at least as high as a removed-idx
+            for edge in proto_edges.iter() {
+                if let Some(sc_idx) = edge.sc_edges {
+                    let shortcuts = &mut self.proto_shortcuts[sc_idx];
+                    sc_count += 1;
+                    for removed_idx in removed_indices.iter() {
+                        for shortcut in shortcuts.iter_mut().filter(|sc| ***sc >= *removed_idx) {
+                            **shortcut -= 1;
+                        }
                     }
                 }
             }
+            info!("Removed {} duplicates.", removed_indices.len());
         }
-        info!("Removed {} duplicates.", removed_indices.len());
-        info!("FINISHED");
 
         //----------------------------------------------------------------------------------------//
         // build metrics
@@ -538,61 +649,143 @@ impl GraphBuilder {
         // building is reduced.
 
         info!("START Create/store/filter metrics.");
-        let mut progress_bar = progressing::MappingBar::new(0..=self.proto_edges.len());
-        let mut edge_idx: usize = 0;
-
-        // Work off proto-edges in chunks to keep memory-usage lower.
-        let max_chunk_size = capacity::MAX_BYTE_PER_CHUNK / ProtoShortcut::mem_size_b();
-        debug!("max-chunk-size: {}", max_chunk_size);
-        // init metrics
-        graph.metrics = vec![vec![]; graph.cfg().edges.dim()];
-        let mut new_proto_edges = vec![];
         let mut new_sc_edges = Vec::with_capacity(sc_count);
-        debug!(
-            "initial graph-metric-capacity: {}",
-            graph.metrics[0].capacity()
-        );
+        let mut proto_edges = {
+            let mut new_proto_edges = vec![];
 
-        // sort reversed to make splice efficient
-        self.proto_edges.reverse();
-        while self.proto_edges.len() > 0 {
-            // Get chunk from proto-edges.
-            // Reverse chunk because proto-egdes is sorted reversed to make splice efficient.
-            let chunk: Vec<_> = if self.proto_edges.len() > max_chunk_size {
-                // ATTENTION! Splicing means that the given range is replaced,
-                // hence max_chunk_size has to be, kind of, inverted.
-                self.proto_edges
-                    .splice((self.proto_edges.len() - max_chunk_size).., vec![])
-            } else {
-                self.proto_edges.splice(.., vec![])
-            }
-            .rev()
-            .collect();
+            let mut progress_bar = progressing::MappingBar::new(0..=proto_edges.len());
+            let mut edge_idx: usize = 0;
 
-            // allocate new memory-needs
-            self.proto_edges.shrink_to_fit();
-            graph
-                .metrics
-                .iter_mut()
-                .for_each(|m| m.reserve_exact(chunk.len()));
-            new_proto_edges.reserve_exact(chunk.len());
-            debug!("chunk-len: {}", chunk.len());
-            debug!("graph-metric-capacity: {}", graph.metrics[0].capacity());
+            // Work off proto-edges in chunks to keep memory-usage lower.
+            let max_chunk_size = capacity::MAX_BYTE_PER_CHUNK / ProtoShortcut::mem_size_b();
+            debug!("max-chunk-size: {}", max_chunk_size);
+            // init metrics
+            graph.metrics = vec![vec![]; graph.cfg().edges.dim()];
+            debug!(
+                "initial graph-metric-capacity: {}",
+                graph.metrics[0].capacity()
+            );
 
-            for (_, mut proto_edge, opt_sc_idx) in chunk.into_iter() {
-                // add to graph and remember ids
-                // -> nodes are needed to map NodeId -> NodeIdx
-                graph.add_metrics(&mut proto_edge)?;
-                new_proto_edges.push(MiniProtoEdge {
-                    src_id: proto_edge.src_id,
-                    dst_id: proto_edge.dst_id,
-                    idx: 0, // used later for offset-arrays
-                });
+            // sort reversed to make splice efficient
+            proto_edges.reverse();
+            while proto_edges.len() > 0 {
+                // Get chunk from proto-edges.
+                // Reverse chunk because proto-egdes is sorted reversed to make splice efficient.
+                let chunk: Vec<_> = proto_edges
+                    .splice(Self::chunk_range(proto_edges.len(), max_chunk_size), vec![])
+                    .rev()
+                    .collect();
 
-                // remember sc-edges for setting offsets later
-                if let Some(sc_idx) = opt_sc_idx {
-                    new_sc_edges.push((edge_idx, self.proto_shortcuts[sc_idx]));
+                // allocate new memory-needs
+                proto_edges.shrink_to_fit();
+                graph
+                    .metrics
+                    .iter_mut()
+                    .for_each(|m| m.reserve_exact(chunk.len()));
+                new_proto_edges.reserve_exact(chunk.len());
+                debug!("chunk-len: {}", chunk.len());
+                debug!("graph-metric-capacity: {}", graph.metrics[0].capacity());
+
+                for mut edge in chunk.into_iter() {
+                    // add to graph and remember ids
+                    // -> nodes are needed to map NodeId -> NodeIdx
+                    graph.add_metrics(&mut edge)?;
+                    new_proto_edges.push(ProtoEdgeC {
+                        src_idx: edge.src_idx,
+                        dst_idx: edge.dst_idx,
+                        edge_idx: 0, // used later for offset-arrays
+                    });
+
+                    // remember sc-edges for setting offsets later
+                    if let Some(sc_idx) = edge.sc_edges {
+                        new_sc_edges.push((edge_idx, self.proto_shortcuts[sc_idx]));
+                    }
+
+                    // print progress
+                    progress_bar.set(edge_idx);
+                    if progress_bar.progress() % (1 + (progress_bar.end() / 10)) == 0 {
+                        info!("{}", progress_bar);
+                    }
+
+                    // update edge-idx
+                    edge_idx += 1;
                 }
+            }
+            info!("{}", progress_bar.set(edge_idx));
+            // reduce and optimize memory-usage
+            graph.shrink_to_fit();
+            new_proto_edges.shrink_to_fit();
+            // last node needs an upper bound as well for `leaving_edges(...)`
+
+            new_proto_edges
+        };
+
+        //----------------------------------------------------------------------------------------//
+        // set ch-shortcut-offsets
+        // do it here to reduce memory-needs by processing metrics first
+
+        info!("DO Create ch-shortcut-offsets-array");
+        {
+            graph.sc_offsets = vec![new_sc_edges.len(); proto_edges.len() + 1];
+            graph.sc_edges = Vec::with_capacity(sc_count);
+            let mut sc_offset = 0;
+            for edge_idx in 0..proto_edges.len() {
+                // Since sc-offsets have been initialized with the last offset,
+                // everything is already correct when this point is reached.
+                if sc_offset == new_sc_edges.len() {
+                    break;
+                }
+
+                let (sc_edge_idx, sc_edges) = new_sc_edges[sc_offset];
+
+                // update shortcut-offset
+                graph.sc_offsets[edge_idx] = sc_offset;
+
+                // if this was a shortcut-edge
+                // -> increase offset for next edges
+                if edge_idx == sc_edge_idx {
+                    graph.sc_edges.push(sc_edges);
+                    sc_offset += 1;
+                }
+            }
+        }
+
+        //----------------------------------------------------------------------------------------//
+        // build forward-offset-array and edges
+
+        // logging
+        info!("START Create the forward-offset-array and the forward-mapping.");
+        {
+            let mut progress_bar = progressing::MappingBar::new(0..=proto_edges.len());
+            // start looping
+            let mut src_idx = NodeIdx(0);
+            let mut offset = 0;
+            graph.fwd_offsets.push(offset);
+            // high-level-idea
+            // count offset for each proto_edge (sorted) and apply offset as far as src doesn't change
+            let mut edge_idx = 0;
+            for proto_edge in proto_edges.iter_mut() {
+                // Add edge-idx here to remember it for indirect mapping bwd->fwd.
+                // Update it at the end of the loop.
+                proto_edge.edge_idx = edge_idx;
+
+                // do not swap src and dst since this is a forward-edge
+                let edge_src_idx = proto_edge.src_idx;
+                let edge_dst_idx = proto_edge.dst_idx;
+
+                // If coming edges have new src, then update offset of new src.
+                // Loop because of nodes with no leaving edges.
+                // Nodes of id y with no leaving edge must have the same offset as the node of id (y+1)
+                // to remember it.
+                while src_idx != edge_src_idx.into() {
+                    *src_idx += 1;
+                    graph.fwd_offsets.push(offset);
+                }
+                offset += 1;
+                graph.bwd_dsts.push(edge_src_idx);
+                graph.fwd_dsts.push(edge_dst_idx);
+                // mapping fwd to fwd is just the identity
+                graph.fwd_to_fwd_map.push(EdgeIdx(edge_idx));
 
                 // print progress
                 progress_bar.set(edge_idx);
@@ -603,187 +796,81 @@ impl GraphBuilder {
                 // update edge-idx
                 edge_idx += 1;
             }
+            // last node needs an upper bound as well for `leaving_edges(...)`
+            graph.fwd_offsets.push(offset);
+            info!("{}", progress_bar.set(offset));
+            // reduce and optimize memory-usage
+            // already dropped via iterator: drop(self.proto_edges);
+            graph.shrink_to_fit();
         }
-        info!("{}", progress_bar.set(edge_idx));
-        // Drop edges
-        drop(self.proto_edges);
-        // reduce and optimize memory-usage
-        graph.shrink_to_fit();
-        new_proto_edges.shrink_to_fit();
-        // last node needs an upper bound as well for `leaving_edges(...)`
-        info!("FINISHED");
-
-        //----------------------------------------------------------------------------------------//
-        // set ch-shortcut-offsets
-        // do it here to reduce memory-needs by processing metrics first
-
-        info!("START Create ch-shortcut-offsets-array");
-        graph.sc_offsets = vec![new_sc_edges.len(); new_proto_edges.len() + 1];
-        graph.sc_edges = Vec::with_capacity(sc_count);
-        let mut sc_offset = 0;
-        for edge_idx in 0..new_proto_edges.len() {
-            // Since sc-offsets have been initialized with the last offset,
-            // everything is already correct when this point is reached.
-            if sc_offset == new_sc_edges.len() {
-                break;
-            }
-
-            let (sc_edge_idx, sc_edges) = new_sc_edges[sc_offset];
-
-            // update shortcut-offset
-            graph.sc_offsets[edge_idx] = sc_offset;
-
-            // if this was a shortcut-edge
-            // -> increase offset for next edges
-            if edge_idx == sc_edge_idx {
-                graph.sc_edges.push(sc_edges);
-                sc_offset += 1;
-            }
-        }
-        info!("FINISHED");
-
-        //----------------------------------------------------------------------------------------//
-        // build forward-offset-array and edges
-
-        // logging
-        info!("START Create the forward-offset-array and the forward-mapping.");
-        let mut progress_bar = progressing::MappingBar::new(0..=new_proto_edges.len());
-        // start looping
-        let mut src_idx = NodeIdx(0);
-        let mut offset = 0;
-        graph.fwd_offsets.push(offset);
-        // high-level-idea
-        // count offset for each proto_edge (sorted) and apply offset as far as src doesn't change
-        let mut edge_idx = 0;
-        for proto_edge in new_proto_edges.iter_mut() {
-            // find edge-data to compare it with expected data later (when setting offset)
-            let src_id = proto_edge.src_id;
-            let dst_id = proto_edge.dst_id;
-
-            // Add edge-idx here to remember it for indirect mapping bwd->fwd.
-            // Update it at the end of the loop.
-            proto_edge.idx = edge_idx;
-
-            // do not swap src and dst since this is a forward-edge
-            let edge_src_idx = match graph.nodes().idx_from(src_id) {
-                Ok(idx) => idx,
-                Err(_) => {
-                    return Err(format!(
-                        "The given src-id `{:?}` doesn't exist as node",
-                        proto_edge.src_id
-                    ))
-                }
-            };
-            let edge_dst_idx = match graph.nodes().idx_from(dst_id) {
-                Ok(idx) => idx,
-                Err(_) => {
-                    return Err(format!(
-                        "The given dst-id `{:?}` doesn't exist as node",
-                        proto_edge.dst_id
-                    ))
-                }
-            };
-
-            // If coming edges have new src, then update offset of new src.
-            // Loop because of nodes with no leaving edges.
-            // Nodes of id y with no leaving edge must have the same offset as the node of id (y+1)
-            // to remember it.
-            while src_idx != edge_src_idx.into() {
-                *src_idx += 1;
-                graph.fwd_offsets.push(offset);
-            }
-            offset += 1;
-            graph.bwd_dsts.push(edge_src_idx);
-            graph.fwd_dsts.push(edge_dst_idx);
-            // mapping fwd to fwd is just the identity
-            graph.fwd_to_fwd_map.push(EdgeIdx(edge_idx));
-
-            // print progress
-            progress_bar.set(edge_idx);
-            if progress_bar.progress() % (1 + (progress_bar.end() / 10)) == 0 {
-                info!("{}", progress_bar);
-            }
-
-            // update edge-idx
-            edge_idx += 1;
-        }
-        // last node needs an upper bound as well for `leaving_edges(...)`
-        graph.fwd_offsets.push(offset);
-        info!("{}", progress_bar.set(offset));
-        // reduce and optimize memory-usage
-        // already dropped via iterator: drop(self.proto_edges);
-        graph.shrink_to_fit();
-        info!("FINISHED");
 
         //----------------------------------------------------------------------------------------//
         // sort backward-edges by ascending dst-id, then by ascending src-id -> offset-array
 
-        info!("START Sort proto-backward-edges by their dst/src-IDs.");
-        new_proto_edges.sort_unstable_by_key(|edge| (edge.dst_id, edge.src_id));
-        info!("FINISHED");
+        info!("DO Sort proto-backward-edges by their dst/src-IDs.");
+        {
+            let nodes = graph.nodes();
+            proto_edges.sort_unstable_by_key(|edge| {
+                (
+                    edge.dst_idx,
+                    Reverse(nodes.level(edge.src_idx)),
+                    edge.src_idx,
+                )
+            });
+        }
 
         //----------------------------------------------------------------------------------------//
         // build backward-offset-array
 
-        // logging
         info!("START Create the backward-offset-array.");
-        let mut progress_bar = progressing::MappingBar::new(0..=new_proto_edges.len());
-        // start looping
-        let mut src_idx = NodeIdx(0);
-        let mut offset = 0;
-        graph.bwd_offsets.push(offset);
-        // high-level-idea
-        // count offset for each proto_edge (sorted) and apply offset as far as src doesn't change
-        for edge_idx in 0..new_proto_edges.len() {
-            let proto_edge = &mut new_proto_edges[edge_idx];
+        {
+            let mut progress_bar = progressing::MappingBar::new(0..=proto_edges.len());
+            // start looping
+            let mut src_idx = NodeIdx(0);
+            let mut offset = 0;
+            graph.bwd_offsets.push(offset);
+            // high-level-idea
+            // count offset for each proto_edge (sorted) and apply offset as far as src doesn't change
+            for edge_idx in 0..proto_edges.len() {
+                let proto_edge = &mut proto_edges[edge_idx];
 
-            // find edge-data to compare it with expected data later (when setting offset)
-            let dst_id = proto_edge.dst_id;
-            // swap src and dst since this is the backward-edge
-            let edge_src_idx = match graph.nodes().idx_from(dst_id) {
-                Ok(idx) => idx,
-                Err(_) => {
-                    return Err(format!(
-                        "The given dst-id `{:?}` doesn't exist as node",
-                        proto_edge.dst_id
-                    ));
+                // swap src and dst since this is the backward-edge
+                let edge_src_idx = proto_edge.dst_idx;
+
+                // If coming edges have new src, then update offset of new src.
+                // Loop because of nodes with no leaving edges.
+                // Nodes of id y with no leaving edge must have the same offset as the node of id (y+1)
+                // to remember it.
+                while src_idx != edge_src_idx {
+                    *src_idx += 1;
+                    graph.bwd_offsets.push(offset);
                 }
-            };
+                offset += 1;
+                // For the backward-mapping, bwd-indices have been remembered above,
+                // but applied to forward-sorted-edges.
+                // Now, that's used to generate the mapping from backward to forward,
+                // which is needed for the offset-arrays.
+                graph.bwd_to_fwd_map.push(EdgeIdx(proto_edge.edge_idx));
 
-            // If coming edges have new src, then update offset of new src.
-            // Loop because of nodes with no leaving edges.
-            // Nodes of id y with no leaving edge must have the same offset as the node of id (y+1)
-            // to remember it.
-            while src_idx != edge_src_idx {
-                *src_idx += 1;
-                graph.bwd_offsets.push(offset);
+                // print progress
+                progress_bar.set(edge_idx);
+                if progress_bar.progress() % (1 + (progress_bar.end() / 10)) == 0 {
+                    info!("{}", progress_bar);
+                }
             }
-            offset += 1;
-            // For the backward-mapping, bwd-indices have been remembered above,
-            // but applied to forward-sorted-edges.
-            // Now, that's used to generate the mapping from backward to forward,
-            // which is needed for the offset-arrays.
-            graph.bwd_to_fwd_map.push(EdgeIdx(proto_edge.idx));
-
-            // print progress
-            progress_bar.set(edge_idx);
-            if progress_bar.progress() % (1 + (progress_bar.end() / 10)) == 0 {
-                info!("{}", progress_bar);
-            }
+            // last node needs an upper bound as well for `leaving_edges(...)`
+            debug_assert_eq!(
+                offset,
+                proto_edges.len(),
+                "Last offset-value should be as big as the number of proto-edges."
+            );
+            graph.bwd_offsets.push(offset);
+            info!("{}", progress_bar.set(graph.fwd_dsts.len()));
+            // reduce and optimize memory-usage
+            graph.shrink_to_fit();
         }
-        // last node needs an upper bound as well for `leaving_edges(...)`
-        debug_assert_eq!(
-            offset,
-            new_proto_edges.len(),
-            "Last offset-value should be as big as the number of proto-edges."
-        );
-        graph.bwd_offsets.push(offset);
-        info!("{}", progress_bar.set(edge_idx));
-        // reduce and optimize memory-usage
-        graph.shrink_to_fit();
-        info!("FINISHED"); // bwd-offset-array
 
-        info!("FINISHED"); // finalize
+        info!("FINISHED Finalizing graph has finished.");
         Ok(graph)
     }
 }

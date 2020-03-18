@@ -432,30 +432,6 @@ impl<'a> NodeAccessor<'a> {
         }
     }
 
-    fn src_idx_from(&self, src_id: i64) -> Result<NodeIdx, String> {
-        match self.idx_from(src_id) {
-            Ok(idx) => Ok(idx),
-            Err(_) => {
-                return Err(format!(
-                    "The given src-id `{:?}` doesn't exist as node",
-                    src_id
-                ))
-            }
-        }
-    }
-
-    fn dst_idx_from(&self, dst_id: i64) -> Result<NodeIdx, String> {
-        match self.idx_from(dst_id) {
-            Ok(idx) => Ok(idx),
-            Err(_) => {
-                return Err(format!(
-                    "The given dst-id `{:?}` doesn't exist as node",
-                    dst_id
-                ))
-            }
-        }
-    }
-
     pub fn create_from(&self, id: i64) -> Option<Node> {
         let idx = match self.idx_from(id) {
             Ok(idx) => idx,
