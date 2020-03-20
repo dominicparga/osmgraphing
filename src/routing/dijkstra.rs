@@ -87,8 +87,10 @@ impl Dijkstra {
             self.predecessors[dir].resize(new_len, None);
             self.predecessors[dir].iter_mut().for_each(|p| *p = None);
 
-            self.is_visited[dir].resize(new_len, false);
-            self.is_visited[dir].iter_mut().for_each(|v| *v = false);
+            if !self.is_ch_dijkstra {
+                self.is_visited[dir].resize(new_len, false);
+                self.is_visited[dir].iter_mut().for_each(|v| *v = false);
+            }
 
             self.has_found_best_meeting_node[dir] = false;
         }
@@ -97,25 +99,25 @@ impl Dijkstra {
     }
 
     fn visit(&mut self, costnode: &CostNode) {
-        self.is_visited[self.dir_idx(costnode.direction)][*costnode.idx] = true
+        if !self.is_ch_dijkstra {
+            self.is_visited[self.dir_idx(costnode.direction)][*costnode.idx] = true
+        }
     }
 
-    /// The given costnode is a meeting-costnode, if it is visited by both,
-    /// the search starting in src and the search starting in dst.
-    ///
     /// This method is optimized by assuming that the provided CostNode has already been visited.
     fn is_meeting_costnode(&self, costnode: &CostNode) -> bool {
-        // The CostNode has already been dequeued, which is the reason for uncommenting this line.
-        debug_assert!(
-            self.is_visited[self.dir_idx(costnode.direction)][*costnode.idx],
-            "CostNode should already be visited."
-        );
-        self.is_visited[self.opp_dir_idx(costnode.direction)][*costnode.idx]
-
-        // WRONG
-        // Costs are updated when costnodes are enqueued, but costnodes have to be dequeued before
-        // they can be considered as visited.
-        // self.costs[self.opp_dir_idx(costnode.direction)][*costnode.idx] != std::f64::INFINITY
+        // Costs are updated when costnodes are enqueued, but costnodes have to be dequeued
+        // before they can be considered as visited (for bidir Dijkstra).
+        if self.is_ch_dijkstra {
+            self.costs[self.opp_dir_idx(costnode.direction)][*costnode.idx] != std::f64::INFINITY
+        } else {
+            // The CostNode has already been dequeued, which is the reason for this assertion.
+            debug_assert!(
+                self.is_visited[self.dir_idx(costnode.direction)][*costnode.idx],
+                "CostNode should already be visited."
+            );
+            self.is_visited[self.opp_dir_idx(costnode.direction)][*costnode.idx]
+        }
     }
 
     /// This method returns true, if both queries can't be better.
@@ -268,7 +270,7 @@ impl Dijkstra {
                     // -> Only for bidirectional Dijkstra, but not incorrect for CH-Dijkstra.
                     //    The CH-Dijkstra has to continue until the global best meeting-node has
                     //    been found (see above).
-                    if best_meeting.is_none() || self.is_ch_dijkstra {
+                    if self.is_ch_dijkstra || best_meeting.is_none() {
                         self.queue.push(Reverse(CostNode {
                             idx: leaving_edge.dst_idx(),
                             cost: new_cost,
