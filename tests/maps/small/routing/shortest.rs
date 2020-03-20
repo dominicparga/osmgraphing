@@ -7,6 +7,21 @@ use osmgraphing::{
 };
 
 #[test]
+fn chdijkstra() {
+    let mut cfg = Config::from_yaml(defaults::paths::resources::configs::SMALL_FMI).unwrap();
+    cfg.routing = configs::routing::Config::from_str(
+        &format!("routing: [{{ id: '{}' }}]", defaults::LENGTH_ID),
+        &cfg.parser,
+    )
+    .ok();
+
+    let mut dijkstra = routing::Dijkstra::new().boostup();
+    let expected_paths = expected_paths();
+
+    assert_path(&mut dijkstra, expected_paths, cfg);
+}
+
+#[test]
 fn dijkstra() {
     let mut cfg = Config::from_yaml(defaults::paths::resources::configs::SMALL_FMI).unwrap();
     cfg.routing = configs::routing::Config::from_str(

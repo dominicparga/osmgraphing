@@ -195,7 +195,7 @@ pub mod network {
         }
 
         pub fn parse_lane_count(&self, _way: &Way) -> u8 {
-            // TODO
+            // TODO parse lanes
             self.lane_count()
         }
 

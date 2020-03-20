@@ -9,83 +9,131 @@ use smallvec::smallvec;
 use std::{cmp::Reverse, collections::BinaryHeap};
 
 /// A bidirectional implementation of Dijkstra's algorithm.
+/// This implementation reuses the underlying datastructures to speedup multiple computations.
+///
+/// Per default, this implementation is optimized for non-contracted graphs.
+/// It is also correct for contracted graphs, but much slower.
+/// For best performance with
+/// - contracted graphs, call `boostup()` after calling `new()`.
+/// - non-contracted graphs, just call `new()`, or `boostdown()` after calling `boostup()`.
 pub struct Dijkstra {
+    // general
+    is_ch_dijkstra: bool,
+    // data-structures for a query
     queue: BinaryHeap<Reverse<CostNode>>,
-    // fwd
-    fwd_costs: Vec<f64>,
-    predecessors: Vec<Option<EdgeIdx>>,
-    is_visited_by_src: Vec<bool>,
-    // bwd
-    bwd_costs: Vec<f64>,
-    successors: Vec<Option<EdgeIdx>>,
-    is_visited_by_dst: Vec<bool>,
+    costs: [Vec<f64>; 2],
+    predecessors: [Vec<Option<EdgeIdx>>; 2],
+    is_visited: [Vec<bool>; 2],
+    has_found_best_meeting_node: [bool; 2],
 }
 
 impl Dijkstra {
+    /// See `struct Dijkstra`
     pub fn new() -> Dijkstra {
         Dijkstra {
+            is_ch_dijkstra: false,
             queue: BinaryHeap::new(),
-            // fwd
-            fwd_costs: Vec::new(),
-            predecessors: Vec::new(),
-            is_visited_by_src: Vec::new(),
-            // bwd
-            bwd_costs: Vec::new(),
-            successors: Vec::new(),
-            is_visited_by_dst: Vec::new(),
+            costs: [Vec::new(), Vec::new()],
+            predecessors: [Vec::new(), Vec::new()],
+            is_visited: [Vec::new(), Vec::new()],
+            has_found_best_meeting_node: [false, false],
         }
     }
 
-    /// Resizes existing datastructures storing routing-data like costs saving re-allocations.
+    /// See `struct Dijkstra`
+    pub fn boostup(mut self) -> Dijkstra {
+        self.is_ch_dijkstra = true;
+        self
+    }
+
+    /// See `struct Dijkstra`
+    pub fn boostdown(mut self) -> Dijkstra {
+        self.is_ch_dijkstra = false;
+        self
+    }
+
+    fn fwd_idx(&self) -> usize {
+        0
+    }
+
+    fn bwd_idx(&self) -> usize {
+        1
+    }
+
+    fn dir_idx(&self, direction: Direction) -> usize {
+        match direction {
+            Direction::FWD => self.fwd_idx(),
+            Direction::BWD => self.bwd_idx(),
+        }
+    }
+
+    fn opp_dir_idx(&self, direction: Direction) -> usize {
+        match direction {
+            Direction::FWD => self.bwd_idx(),
+            Direction::BWD => self.fwd_idx(),
+        }
+    }
+
+    /// Resizes existing datastructures storing routing-data, like costs, saving re-allocations.
     fn init_query(&mut self, new_len: usize) {
-        // fwd
-        self.fwd_costs.resize(new_len, std::f64::INFINITY);
-        self.fwd_costs
-            .iter_mut()
-            .for_each(|c| *c = std::f64::INFINITY);
+        // fwd and bwd
+        for dir in vec![Direction::FWD, Direction::BWD] {
+            let dir = self.dir_idx(dir);
+            self.costs[dir].resize(new_len, std::f64::INFINITY);
+            self.costs[dir]
+                .iter_mut()
+                .for_each(|c| *c = std::f64::INFINITY);
 
-        self.predecessors.resize(new_len, None);
-        self.predecessors.iter_mut().for_each(|p| *p = None);
+            self.predecessors[dir].resize(new_len, None);
+            self.predecessors[dir].iter_mut().for_each(|p| *p = None);
 
-        self.is_visited_by_src.resize(new_len, false);
-        self.is_visited_by_src.iter_mut().for_each(|v| *v = false);
+            self.is_visited[dir].resize(new_len, false);
+            self.is_visited[dir].iter_mut().for_each(|v| *v = false);
 
-        // bwd
-        self.bwd_costs.resize(new_len, std::f64::INFINITY);
-        self.bwd_costs
-            .iter_mut()
-            .for_each(|c| *c = std::f64::INFINITY);
-
-        self.successors.resize(new_len, None);
-        self.successors.iter_mut().for_each(|s| *s = None);
-
-        self.is_visited_by_dst.resize(new_len, false);
-        self.is_visited_by_dst.iter_mut().for_each(|v| *v = false);
+            self.has_found_best_meeting_node[dir] = false;
+        }
 
         self.queue.clear();
     }
 
-    /// The given costnode is a meeting-costnode, if it is visited by both, the search starting in src and the search starting in dst.
-    /// Further, to be correct for contraction hierarchies, it has to be checked whether the current total-cost are less or equal to the current node-cost.
-    /// This is needed because the bidirectional Dijkstra processes sub-graphs, which are not equal.
-    /// This leads to the possibility, that shortest-paths of a sub-graph could be non-optimal for the total graph, even if both sub-queries (forward and backward) have already found a common meeting-node.
-    /// Paths in sub-graphs have only one direction wrt node-level, namely up for fwd-graph and down for bwd-graph.
-    /// TODO
-    fn is_meeting_costnode(&self, costnode: &CostNode) -> bool {
-        self.is_visited_by_src[*costnode.idx] && self.is_visited_by_dst[*costnode.idx]
-    }
-
     fn visit(&mut self, costnode: &CostNode) {
-        match costnode.direction {
-            Direction::FWD => self.is_visited_by_src[*costnode.idx] = true,
-            Direction::BWD => self.is_visited_by_dst[*costnode.idx] = true,
-        }
+        self.is_visited[self.dir_idx(costnode.direction)][*costnode.idx] = true
     }
 
+    /// The given costnode is a meeting-costnode, if it is visited by both,
+    /// the search starting in src and the search starting in dst.
+    ///
+    /// This method is optimized by assuming that the provided CostNode has already been visited.
+    fn is_meeting_costnode(&self, costnode: &CostNode) -> bool {
+        // The CostNode has already been dequeued, which is the reason for uncommenting this line.
+        debug_assert!(self.is_visited[self.dir_idx(costnode.direction)][*costnode.idx]
+        , "CostNode should already be visited.");
+        self.is_visited[self.opp_dir_idx(costnode.direction)][*costnode.idx]
+
+        // WRONG
+        // Costs are updated when costnodes are enqueued, but costnodes have to be dequeued before
+        // they can be considered as visited.
+        // self.costs[self.opp_dir_idx(costnode.direction)][*costnode.idx] != std::f64::INFINITY
+    }
+
+    /// This method returns true, if both queries can't be better.
+    fn has_found_best_meeting_node(&self) -> bool {
+        self.has_found_best_meeting_node[self.fwd_idx()]
+            && self.has_found_best_meeting_node[self.bwd_idx()]
+    }
+
+    /// Returns true, if the provided costnode's cost are better than the registered cost for this
+    /// node-idx (and for this query-direction).
+    fn has_costnode_improved(&self, costnode: &CostNode) -> bool {
+        costnode.cost <= self.costs[self.dir_idx(costnode.direction)][*costnode.idx]
+    }
+
+    /// Returns the cost of a path, so cost(src->v) + cost(v->dst)
     fn total_cost(&self, costnode: &CostNode) -> f64 {
-        self.fwd_costs[*costnode.idx] + self.bwd_costs[*costnode.idx]
+        self.costs[self.fwd_idx()][*costnode.idx] + self.costs[self.bwd_idx()][*costnode.idx]
     }
 
+    /// None means no path exists, whereas an empty path is a path from a node to itself.
     pub fn compute_best_path(
         &mut self,
         src: &Node,
@@ -101,8 +149,19 @@ impl Dijkstra {
         // initialization-stuff
 
         let nodes = graph.nodes();
-        let fwd_edges = graph.fwd_edges();
-        let bwd_edges = graph.bwd_edges();
+        let edges = {
+            debug_assert_eq!(
+                0,
+                self.dir_idx(Direction::FWD),
+                "Direction-Idx of FWD is expected to be 0."
+            );
+            debug_assert_eq!(
+                1,
+                self.dir_idx(Direction::BWD),
+                "Direction-Idx of BWD is expected to be 1."
+            );
+            [graph.fwd_edges(), graph.bwd_edges()]
+        };
         self.init_query(nodes.count());
         let mut best_meeting: Option<(NodeIdx, f64)> = None;
 
@@ -122,71 +181,92 @@ impl Dijkstra {
             direction: Direction::BWD,
         }));
         // update fwd-stats
-        self.fwd_costs[*src.idx()] = 0.0;
+        self.costs[self.fwd_idx()][*src.idx()] = 0.0;
         // update bwd-stats
-        self.bwd_costs[*dst.idx()] = 0.0;
+        self.costs[self.bwd_idx()][*dst.idx()] = 0.0;
 
-        //------------------------------------------------------------------------------------//
+        //----------------------------------------------------------------------------------------//
         // search for shortest path
 
         while let Some(Reverse(current)) = self.queue.pop() {
-            // if path is found
-            // -> remember best meeting-node
-            self.visit(&current);
-            if self.is_meeting_costnode(&current) {
-                if let Some((_meeting_node, total_cost)) = best_meeting {
-                    // if meeting-node is already found
-                    // check if new meeting-node is better
-                    let new_total_cost = self.total_cost(&current);
-                    if new_total_cost < total_cost {
-                        best_meeting = Some((current.idx, new_total_cost));
-                    }
-                } else {
-                    let total_cost = self.total_cost(&current);
-                    best_meeting = Some((current.idx, total_cost));
-                }
+            // For non-contracted graphs, this could be an slight improvement.
+            // For contracted graphs, this is the only stop-criterion.
+            // This is needed, because the bidirectional Dijkstra processes sub-graphs,
+            // which are not equal.
+            // This leads to the possibility, that shortest-paths of a sub-graph could be
+            // non-optimal for the total graph, even if both sub-queries (forward and backward) have
+            // already found a common meeting-node.
+            //
+            // Paths in sub-graphs have only one direction wrt node-level, namely up for fwd-graph
+            // and down for bwd-graph.
+            // This leads to weight-inbalanced queries, leading to solutions, which are optimal only
+            // for the sub-graphs, not for the whole graph.
+            if self.has_found_best_meeting_node() {
+                break;
             }
 
             // distinguish between fwd and bwd
-            // TODO performance: replace by 2d-array and Direction is mapped to idx
-            let (xwd_costs, xwd_edges, xwd_predecessors) = match current.direction {
-                Direction::FWD => (&mut self.fwd_costs, &fwd_edges, &mut self.predecessors),
-                Direction::BWD => (&mut self.bwd_costs, &bwd_edges, &mut self.successors),
-            };
+            let dir = self.dir_idx(current.direction);
 
-            // first occurrence has lowest cost
-            // -> check if current has already been expanded
-            if current.cost > xwd_costs[*current.idx] {
+            // First occurrence has improved, because init-value is infinity.
+            // -> Replaces check if current CostNode has already been visited.
+            if !self.has_costnode_improved(&current) {
                 continue;
             }
+            // otherwise, mark CostNode as visitted
+            self.visit(&current);
 
-            // update costs and add predecessors
-            // of nodes, which are dst of current's leaving edges
-            let leaving_edges = match xwd_edges.starting_from(current.idx) {
+            // if meeting-node is already found
+            // -> check if new meeting-node is better
+            if let Some((_meeting_node, best_total_cost)) = best_meeting {
+                // if cost of single-queue is more expensive than best meeting-node
+                // -> This can't be improved anymore
+                if current.cost > best_total_cost {
+                    self.has_found_best_meeting_node[dir] = true;
+                    continue;
+                }
+
+                let new_total_cost = self.total_cost(&current);
+                if new_total_cost < best_total_cost {
+                    best_meeting = Some((current.idx, new_total_cost));
+                }
+            } else
+            // if meeting-node is found for the first time, remember it
+            if self.is_meeting_costnode(&current) {
+                let new_total_cost = self.total_cost(&current);
+                best_meeting = Some((current.idx, new_total_cost));
+            }
+
+            // update costs and add predecessors of nodes, which are dst of current's leaving edges
+            let leaving_edges = match edges[dir].starting_from(current.idx) {
                 Some(e) => e,
                 None => continue,
             };
             for leaving_edge in leaving_edges {
-                // ch-dijkstra
-                if nodes.level(current.idx) > nodes.level(leaving_edge.dst_idx()) {
-                    // TODO break with sorted leaving-edges
+                if self.is_ch_dijkstra
+                    && nodes.level(current.idx) > nodes.level(leaving_edge.dst_idx())
+                {
+                    // break because leaving-edges are sorted by level
                     break;
                 }
-                // TODO
+
                 let new_cost = current.cost
                     + helpers::dot_product(
                         &cfg.alphas(),
                         &leaving_edge.metrics(&cfg.metric_indices()),
                     );
-                if new_cost < xwd_costs[*leaving_edge.dst_idx()] {
-                    xwd_predecessors[*leaving_edge.dst_idx()] = Some(leaving_edge.idx());
-                    xwd_costs[*leaving_edge.dst_idx()] = new_cost;
+                if new_cost < self.costs[dir][*leaving_edge.dst_idx()] {
+                    self.predecessors[dir][*leaving_edge.dst_idx()] = Some(leaving_edge.idx());
+                    self.costs[dir][*leaving_edge.dst_idx()] = new_cost;
 
                     // if path is found
                     // -> Run until queue is empty
                     //    since the shortest path could have longer hop-distance
                     //    with shorter weight-distance than currently found node.
-                    if best_meeting.is_none() {
+                    // -> Only for bidirectional Dijkstra, but not incorrect for CH-Dijkstra.
+                    //    The CH-Dijkstra has to continue until the global best meeting-node has
+                    //    been found (see above).
+                    if best_meeting.is_none() || self.is_ch_dijkstra {
                         self.queue.push(Reverse(CostNode {
                             idx: leaving_edge.dst_idx(),
                             cost: new_cost,
@@ -197,7 +277,7 @@ impl Dijkstra {
             }
         }
 
-        //------------------------------------------------------------------------------------//
+        //----------------------------------------------------------------------------------------//
         // create path if found
 
         if let Some((meeting_node_idx, _total_cost)) = best_meeting {
@@ -210,9 +290,11 @@ impl Dijkstra {
 
             // iterate backwards over fwd-path
             let mut cur_idx = meeting_node_idx;
-            while let Some(incoming_idx) = self.predecessors[*cur_idx] {
+            let dir = self.fwd_idx();
+            let opp_dir = self.bwd_idx();
+            while let Some(incoming_idx) = self.predecessors[dir][*cur_idx] {
                 // get incoming edge, but reversed to get the forward's src-node
-                let reverse_incoming_edge = bwd_edges.half_edge(incoming_idx);
+                let reverse_incoming_edge = edges[opp_dir].half_edge(incoming_idx);
 
                 // update real path-costs
                 helpers::add_to(
@@ -228,9 +310,11 @@ impl Dijkstra {
 
             // iterate backwards over bwd-path
             let mut cur_idx = meeting_node_idx;
-            while let Some(leaving_idx) = self.successors[*cur_idx] {
+            let dir = self.bwd_idx();
+            let opp_dir = self.fwd_idx();
+            while let Some(leaving_idx) = self.predecessors[dir][*cur_idx] {
                 // get leaving edge, but reversed to get the backward's src-node
-                let reverse_leaving_edge = fwd_edges.half_edge(leaving_idx);
+                let reverse_leaving_edge = edges[opp_dir].half_edge(leaving_idx);
 
                 // update real path-costs
                 helpers::add_to(

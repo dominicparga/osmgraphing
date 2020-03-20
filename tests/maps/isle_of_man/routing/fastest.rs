@@ -6,6 +6,22 @@ use osmgraphing::{
 
 #[test]
 #[ignore]
+fn chdijkstra() {
+    let mut cfg = Config::from_yaml(defaults::paths::resources::configs::ISLE_OF_MAN_PBF).unwrap();
+    cfg.routing = configs::routing::Config::from_str(
+        &format!("routing: [{{ id: '{}' }}]", defaults::DURATION_ID),
+        &cfg.parser,
+    )
+    .ok();
+
+    let mut dijkstra = routing::Dijkstra::new().boostup();
+    let expected_paths = expected_paths();
+
+    assert_path(&mut dijkstra, expected_paths, cfg);
+}
+
+#[test]
+#[ignore]
 fn dijkstra() {
     let mut cfg = Config::from_yaml(defaults::paths::resources::configs::ISLE_OF_MAN_PBF).unwrap();
     cfg.routing = configs::routing::Config::from_str(

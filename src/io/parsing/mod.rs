@@ -93,7 +93,7 @@ trait Parsing {
         let path = Path::new(&cfg.map_file);
         info!("START Parse from given path {}", path.display());
 
-        // TODO parse "cycleway" and others
+        // TODO parse "cycleway" and other tags
         // see https://wiki.openstreetmap.org/wiki/Key:highway
 
         let result = self.parse(cfg)?.finalize();

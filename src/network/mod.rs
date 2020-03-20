@@ -7,7 +7,7 @@ use serde::Deserialize;
 
 //------------------------------------------------------------------------------------------------//
 
-/// TODO
+/// The street-type, collecting all kind of default-values.
 ///
 /// ## Street-types
 ///
