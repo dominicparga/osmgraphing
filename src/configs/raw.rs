@@ -7,7 +7,6 @@ use std::collections::BTreeMap;
 pub struct Config {
     pub parser: parser::Config,
     pub generator: Option<generator::Config>,
-    #[serde(flatten)]
     pub routing: Option<routing::Config>,
 }
 
@@ -106,29 +105,22 @@ pub mod routing {
     use serde::Deserialize;
 
     #[derive(Debug, Deserialize)]
+    #[serde(rename_all = "kebab-case")]
     pub struct Config {
-        #[serde(rename = "routing")]
-        pub entries: Vec<Entry>,
+        pub is_ch_dijkstra: Option<bool>,
+        pub metrics: Vec<Entry>,
     }
 
     impl Config {
         pub fn from_str(yaml_str: &str) -> Result<Config, String> {
-            /// This is needed to support the root-key `routing`:
-            ///
-            /// ```yaml
-            /// routing: ...
-            /// ```
             #[derive(Deserialize)]
             struct Wrapper {
-                #[serde(rename = "routing")]
-                entries: Vec<Entry>,
+                routing: Config,
             }
 
             let wrapper: Result<Wrapper, _> = serde_yaml::from_str(yaml_str);
             match wrapper {
-                Ok(wrapper) => Ok(Config {
-                    entries: wrapper.entries,
-                }),
+                Ok(wrapper) => Ok(wrapper.routing),
                 Err(e) => Err(format!("{}", e)),
             }
         }

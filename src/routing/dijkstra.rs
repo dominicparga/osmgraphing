@@ -11,11 +11,8 @@ use std::{cmp::Reverse, collections::BinaryHeap};
 /// A bidirectional implementation of Dijkstra's algorithm.
 /// This implementation reuses the underlying datastructures to speedup multiple computations.
 ///
-/// Per default, this implementation is optimized for non-contracted graphs.
-/// It is also correct for contracted graphs, but much slower.
-/// For best performance with
-/// - contracted graphs, call `boostup()` after calling `new()`.
-/// - non-contracted graphs, just call `new()`, or `boostdown()` after calling `boostup()`.
+/// This implementation is correct for contracted and non-contracted graphs.
+/// However, the performance highly depends on a flag in the config, which has to be provided when computing the best path.
 pub struct Dijkstra {
     // general
     is_ch_dijkstra: bool,
@@ -28,7 +25,6 @@ pub struct Dijkstra {
 }
 
 impl Dijkstra {
-    /// See `struct Dijkstra`
     pub fn new() -> Dijkstra {
         Dijkstra {
             is_ch_dijkstra: false,
@@ -38,18 +34,6 @@ impl Dijkstra {
             is_visited: [Vec::new(), Vec::new()],
             has_found_best_meeting_node: [false, false],
         }
-    }
-
-    /// See `struct Dijkstra`
-    pub fn boostup(mut self) -> Dijkstra {
-        self.is_ch_dijkstra = true;
-        self
-    }
-
-    /// See `struct Dijkstra`
-    pub fn boostdown(mut self) -> Dijkstra {
-        self.is_ch_dijkstra = false;
-        self
     }
 
     fn fwd_idx(&self) -> usize {
@@ -148,6 +132,8 @@ impl Dijkstra {
         if cfg.dim() <= 0 {
             panic!("Best path should be computed, but no metric is specified.");
         }
+
+        self.is_ch_dijkstra = cfg.is_ch_dijkstra();
 
         //----------------------------------------------------------------------------------------//
         // initialization-stuff

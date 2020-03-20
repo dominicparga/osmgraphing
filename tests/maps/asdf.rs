@@ -20,9 +20,29 @@ pub mod parsing {
     fn routing_config_from_str() {
         let cfg = Config::from_yaml(defaults::paths::resources::configs::SMALL_FMI).unwrap();
         configs::routing::Config::from_str(
-            "routing: [{ id: 'Meters' }, { id: 'Seconds' }]",
+            "routing: { metrics: [{ id: 'Meters' }, { id: 'Seconds' }] }",
             &cfg.parser,
         )
-        .expect("MetricIds should be provided");
+        .expect("Routing-config is wrong.");
+
+        let yaml_str = &format!(
+            "routing: {{ metrics: [{{ id: '{}' }}], is-ch-dijkstra: true }}",
+            defaults::DURATION_ID
+        );
+        let routing_cfg = configs::routing::Config::from_str(yaml_str, &cfg.parser).unwrap();
+        assert!(
+            routing_cfg.is_ch_dijkstra(),
+            "Routing-config should specify ch-dijkstra."
+        );
+
+        let yaml_str = &format!(
+            "routing: {{ metrics: [{{ id: '{}' }}], is-ch-dijkstra: false }}",
+            defaults::LENGTH_ID
+        );
+        let routing_cfg = configs::routing::Config::from_str(yaml_str, &cfg.parser).unwrap();
+        assert!(
+            !routing_cfg.is_ch_dijkstra(),
+            "Routing-config should specify normal dijkstra."
+        );
     }
 }

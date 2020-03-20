@@ -1,5 +1,5 @@
 use crate::helpers::{defaults, parse};
-use osmgraphing::configs::{self, Config};
+use osmgraphing::configs::Config;
 
 #[test]
 fn pbf_yaml() {
@@ -18,13 +18,7 @@ fn ch_fmi_yaml() {
 
 #[test]
 fn yaml_str() {
-    let cfg = Config::from_yaml(defaults::paths::resources::configs::ISLE_OF_MAN_PBF).unwrap();
-
-    let yaml_str = &format!("routing: [{{ id: '{}' }}]", defaults::DURATION_ID);
-    configs::routing::Config::from_str(yaml_str, &cfg.parser).unwrap();
-
-    let yaml_str = &format!("routing: [{{ id: '{}' }}]", defaults::LENGTH_ID);
-    configs::routing::Config::from_str(yaml_str, &cfg.parser).unwrap();
+    Config::from_yaml(defaults::paths::resources::configs::ISLE_OF_MAN_PBF).unwrap();
 }
 
 #[test]

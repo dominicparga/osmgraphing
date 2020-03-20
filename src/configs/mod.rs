@@ -355,21 +355,19 @@ pub mod routing {
 
     #[derive(Debug)]
     pub struct Config {
+        is_ch_dijkstra: bool,
         metric_indices: DimVec<MetricIdx>,
         alphas: DimVec<f64>,
     }
 
     impl Config {
-        pub fn new(metric_indices: DimVec<MetricIdx>, alphas: DimVec<f64>) -> Config {
-            Config {
-                metric_indices,
-                alphas,
-            }
-        }
-
         fn _push(&mut self, idx: MetricIdx, alpha: f64) {
             self.metric_indices.push(idx);
             self.alphas.push(alpha);
+        }
+
+        pub fn is_ch_dijkstra(&self) -> bool {
+            self.is_ch_dijkstra
         }
 
         pub fn alpha(&self, metric_idx: MetricIdx) -> f64 {
@@ -407,7 +405,7 @@ pub mod routing {
             cfg_parser: &super::parser::Config,
         ) -> Config {
             let (metric_indices, alphas) = raw_cfg
-                .entries
+                .metrics
                 .into_iter()
                 .map(|entry| {
                     (
@@ -417,7 +415,11 @@ pub mod routing {
                 })
                 .unzip();
 
-            Config::new(metric_indices, alphas)
+            Config {
+                is_ch_dijkstra: raw_cfg.is_ch_dijkstra.unwrap_or(false),
+                metric_indices,
+                alphas,
+            }
         }
     }
 }

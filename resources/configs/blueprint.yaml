@@ -80,12 +80,20 @@ generator:
 
 # The metrics, which should be considered in routing, are listed here.
 # The given alphas are used as scale.
+# The ch-flag specifies the routing-algorithm.
+# It doesn't change correctness, but effects performance positively and
+# negatively depending on the provided map.
+# It is recommended to set this properly.
 #
 # Optional, but will panic as soon as routing will try to use it
 routing:
-- id: 'to-the-moon-and-back',
-  # optional; default is 1.0
-  alpha: 169.0
-- id: 'Seconds',
-  # optional; default is 1.0
-  alpha: 331.0
+  # optional; default is false
+  is-ch-dijkstra: true
+  # list of routing-relevant metrics
+  metrics:
+  - id: 'to-the-moon-and-back',
+    # optional; default is 1.0
+    alpha: 169.0
+  - id: 'Seconds',
+    # optional; default is 1.0
+    alpha: 331.0

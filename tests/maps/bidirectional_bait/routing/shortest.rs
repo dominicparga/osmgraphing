@@ -11,12 +11,15 @@ fn chdijkstra() {
     let mut cfg =
         Config::from_yaml(defaults::paths::resources::configs::BIDIRECTIONAL_BAIT_FMI).unwrap();
     cfg.routing = configs::routing::Config::from_str(
-        &format!("routing: [{{ id: '{}' }}]", defaults::LENGTH_ID),
+        &format!(
+            "routing: {{ metrics: [{{ id: '{}' }}] }}",
+            defaults::LENGTH_ID
+        ),
         &cfg.parser,
     )
     .ok();
 
-    let mut dijkstra = routing::Dijkstra::new().boostup();
+    let mut dijkstra = routing::Dijkstra::new();
     let expected_paths = expected_paths();
 
     assert_path(&mut dijkstra, expected_paths, cfg);
@@ -27,7 +30,10 @@ fn dijkstra() {
     let mut cfg =
         Config::from_yaml(defaults::paths::resources::configs::BIDIRECTIONAL_BAIT_FMI).unwrap();
     cfg.routing = configs::routing::Config::from_str(
-        &format!("routing: [{{ id: '{}' }}]", defaults::LENGTH_ID),
+        &format!(
+            "routing: {{ metrics: [{{ id: '{}' }}] }}",
+            defaults::LENGTH_ID
+        ),
         &cfg.parser,
     )
     .ok();
