@@ -106,8 +106,10 @@ impl Dijkstra {
     /// This method is optimized by assuming that the provided CostNode has already been visited.
     fn is_meeting_costnode(&self, costnode: &CostNode) -> bool {
         // The CostNode has already been dequeued, which is the reason for uncommenting this line.
-        debug_assert!(self.is_visited[self.dir_idx(costnode.direction)][*costnode.idx]
-        , "CostNode should already be visited.");
+        debug_assert!(
+            self.is_visited[self.dir_idx(costnode.direction)][*costnode.idx],
+            "CostNode should already be visited."
+        );
         self.is_visited[self.opp_dir_idx(costnode.direction)][*costnode.idx]
 
         // WRONG
