@@ -353,7 +353,7 @@ pub mod generator {
 pub mod routing {
     use crate::{defaults::capacity::DimVec, network::MetricIdx};
 
-    #[derive(Debug)]
+    #[derive(Clone, Debug)]
     pub struct Config {
         is_ch_dijkstra: bool,
         metric_indices: DimVec<MetricIdx>,
@@ -368,6 +368,10 @@ pub mod routing {
 
         pub fn is_ch_dijkstra(&self) -> bool {
             self.is_ch_dijkstra
+        }
+
+        pub fn set_ch_dijkstra(&mut self, is_ch_dijkstra: bool) {
+            self.is_ch_dijkstra = is_ch_dijkstra
         }
 
         pub fn alpha(&self, metric_idx: MetricIdx) -> f64 {
