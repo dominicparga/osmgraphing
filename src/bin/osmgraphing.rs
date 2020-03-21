@@ -26,8 +26,6 @@ use std::{path::PathBuf, time::Instant};
 
 //------------------------------------------------------------------------------------------------//
 
-// TODO add tests for comparing Dijkstra with CH-Dijkstra
-// -> break if different results
 fn main() {
     // process user-input
     let matches = parse_cmdline();
@@ -52,7 +50,7 @@ fn main() {
             Ok(cfg) => cfg,
             Err(msg) => {
                 error!("{}", msg);
-                return;
+                std::process::exit(1);
             }
         }
     };
@@ -75,7 +73,7 @@ fn main() {
         Ok(graph) => graph,
         Err(msg) => {
             error!("{}", msg);
-            return;
+            std::process::exit(1);
         }
     };
     info!(
@@ -93,7 +91,7 @@ fn main() {
     };
 
     //--------------------------------------------------------------------------------------------//
-    // executing dijkstra-queries
+    // routing-example
 
     let nodes = graph.nodes();
     let mut dijkstra = routing::Dijkstra::new();
@@ -101,31 +99,43 @@ fn main() {
     // generate random route-pairs
     let route_count = 100;
     let seed = 42;
-    let routes = {
-        let mut routes = vec![];
-        // if all possible routes are less than the preferred route-count
-        // -> just print all possible routes
-        // else: print random routes
+
+    // if all possible routes are less than the preferred route-count
+    // -> just print all possible routes
+    // else: print random routes
+    let mut gen_route: Box<dyn FnMut() -> Option<(NodeIdx, NodeIdx)>> = {
         if nodes.count() * nodes.count() <= route_count {
-            for src_idx in (0..nodes.count()).map(NodeIdx) {
-                for dst_idx in (0..nodes.count()).map(NodeIdx) {
-                    routes.push((src_idx, dst_idx));
+            let mut i = 0;
+            let nodes = graph.nodes();
+            Box::new(move || {
+                if i < nodes.count() * nodes.count() {
+                    let src_idx = NodeIdx(i / nodes.count());
+                    let dst_idx = NodeIdx(i % nodes.count());
+                    i += 1;
+                    Some((src_idx, dst_idx))
+                } else {
+                    None
                 }
-            }
+            })
         } else {
             let mut rng = rand_pcg::Pcg32::seed_from_u64(seed);
             let die = Uniform::from(0..nodes.count());
-            for _ in 0..route_count {
-                let src_idx = NodeIdx(die.sample(&mut rng));
-                let dst_idx = NodeIdx(die.sample(&mut rng));
-                routes.push((src_idx, dst_idx));
-            }
+            let mut i = 0;
+            Box::new(move || {
+                if i < route_count {
+                    let src_idx = NodeIdx(die.sample(&mut rng));
+                    let dst_idx = NodeIdx(die.sample(&mut rng));
+                    i += 1;
+                    Some((src_idx, dst_idx))
+                } else {
+                    None
+                }
+            })
         }
-        routes
     };
 
     // calculate best paths
-    for (src_idx, dst_idx) in routes {
+    while let Some((src_idx, dst_idx)) = gen_route() {
         let src = nodes.create(src_idx);
         let dst = nodes.create(dst_idx);
 
