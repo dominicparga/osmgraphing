@@ -1,7 +1,5 @@
-use crate::network::NodeIdx;
+use crate::{helpers::ApproxEq, network::NodeIdx};
 use std::collections::HashMap;
-
-//------------------------------------------------------------------------------------------------//
 
 /// A path from a src to a dst storing predecessors and successors.
 ///
@@ -9,102 +7,9 @@ use std::collections::HashMap;
 /// Some words about it without doing a benchmark:
 /// - Since the vector-approach stores two fully allocated vectors, it probably consumes more memory than the hashmap-approach.
 /// - Just by looking at resulting times of long paths (~670 km) in Germany, the hashmap-approach seems to be slightly better in performance, but both approaches take around 7 seconds for it.
-#[derive(Clone)]
+/// - The hashmap is faster for small routes (isle-of-man, 2.9 ms vs 2.6 ms)
+#[derive(Clone, Debug)]
 pub struct Path<M> {
-    // core: paths::VecPath<M>,
-    core: HashPath<M>,
-}
-
-impl<M> Path<M> {
-    fn new(src_idx: NodeIdx, dst_idx: NodeIdx, cost_max: M) -> Self {
-        let core = HashPath::new(src_idx, dst_idx, cost_max);
-        Path { core }
-    }
-
-    /// Capacity is `graph.nodes().count()`, which is only used, if the path bases on vectors.
-    /// If it bases on hashmaps, it ignores the given capacity.
-    pub fn with_capacity(
-        src_idx: NodeIdx,
-        dst_idx: NodeIdx,
-        cost_max: M,
-        _capacity: usize,
-    ) -> Self {
-        // let core = VecPath::with_capacity(src_idx, dst_idx, capacity);
-        Path::new(src_idx, dst_idx, cost_max)
-    }
-
-    pub fn src_idx(&self) -> NodeIdx {
-        self.core.src_idx
-    }
-
-    pub fn dst_idx(&self) -> NodeIdx {
-        self.core.dst_idx
-    }
-
-    pub fn cost(&self) -> &M {
-        &self.core.cost
-    }
-
-    pub fn cost_mut(&mut self) -> &mut M {
-        &mut (self.core.cost)
-    }
-
-    pub fn add_pred_succ(&mut self, pred: NodeIdx, succ: NodeIdx) {
-        self.core.add_pred_succ(pred, succ)
-    }
-
-    /// Return idx of predecessor-node
-    pub fn pred_node_idx(&self, idx: NodeIdx) -> Option<NodeIdx> {
-        self.core.pred_node_idx(idx)
-    }
-
-    /// Return idx of successor-node
-    pub fn succ_node_idx(&self, idx: NodeIdx) -> Option<NodeIdx> {
-        self.core.succ_node_idx(idx)
-    }
-}
-
-//------------------------------------------------------------------------------------------------//
-
-#[derive(Clone)]
-pub struct VecPath<M> {
-    src_idx: NodeIdx,
-    dst_idx: NodeIdx,
-    cost: M,
-    predecessors: Vec<Option<NodeIdx>>,
-    successors: Vec<Option<NodeIdx>>,
-}
-
-#[allow(dead_code)]
-impl<M> VecPath<M> {
-    pub fn with_capacity(src_idx: NodeIdx, dst_idx: NodeIdx, cost_max: M, capacity: usize) -> Self {
-        VecPath {
-            src_idx,
-            dst_idx,
-            cost: cost_max,
-            predecessors: vec![None; capacity],
-            successors: vec![None; capacity],
-        }
-    }
-
-    pub fn add_pred_succ(&mut self, pred: NodeIdx, succ: NodeIdx) {
-        self.predecessors[*succ] = Some(pred);
-        self.successors[*pred] = Some(succ);
-    }
-
-    pub fn pred_node_idx(&self, idx: NodeIdx) -> Option<NodeIdx> {
-        *(self.predecessors.get(*idx)?)
-    }
-
-    pub fn succ_node_idx(&self, idx: NodeIdx) -> Option<NodeIdx> {
-        *(self.successors.get(*idx)?)
-    }
-}
-
-//------------------------------------------------------------------------------------------------//
-
-#[derive(Clone)]
-pub struct HashPath<M> {
     src_idx: NodeIdx,
     dst_idx: NodeIdx,
     cost: M,
@@ -112,9 +17,9 @@ pub struct HashPath<M> {
     successors: HashMap<NodeIdx, NodeIdx>,
 }
 
-impl<M> HashPath<M> {
+impl<M> Path<M> {
     pub fn new(src_idx: NodeIdx, dst_idx: NodeIdx, cost_max: M) -> Self {
-        HashPath {
+        Path {
             src_idx,
             dst_idx,
             cost: cost_max,
@@ -123,15 +28,33 @@ impl<M> HashPath<M> {
         }
     }
 
+    pub fn src_idx(&self) -> NodeIdx {
+        self.src_idx
+    }
+
+    pub fn dst_idx(&self) -> NodeIdx {
+        self.dst_idx
+    }
+
+    pub fn cost(&self) -> &M {
+        &self.cost
+    }
+
+    pub fn cost_mut(&mut self) -> &mut M {
+        &mut (self.cost)
+    }
+
     pub fn add_pred_succ(&mut self, pred: NodeIdx, succ: NodeIdx) {
         self.predecessors.insert(succ, pred);
         self.successors.insert(pred, succ);
     }
 
+    /// Return idx of predecessor-node
     pub fn pred_node_idx(&self, idx: NodeIdx) -> Option<NodeIdx> {
         Some(*(self.predecessors.get(&idx)?))
     }
 
+    /// Return idx of successor-node
     pub fn succ_node_idx(&self, idx: NodeIdx) -> Option<NodeIdx> {
         Some(*(self.successors.get(&idx)?))
     }
@@ -150,4 +73,15 @@ impl<M> HashPath<M> {
     //         nodes
     //     }
     // }
+}
+
+impl<M> ApproxEq for Path<M>
+where
+    M: ApproxEq,
+{
+    fn approx_eq(&self, other: &Path<M>) -> bool {
+        self.src_idx() == other.src_idx()
+            && self.dst_idx() == other.dst_idx()
+            && self.cost().approx_eq(other.cost())
+    }
 }

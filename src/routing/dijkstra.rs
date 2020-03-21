@@ -271,12 +271,7 @@ impl Dijkstra {
         // create path if found
 
         if let Some((meeting_node_idx, _total_cost)) = best_meeting {
-            let mut path = Path::with_capacity(
-                src.idx(),
-                dst.idx(),
-                smallvec![0.0; cfg.dim()],
-                nodes.count(),
-            );
+            let mut path = Path::new(src.idx(), dst.idx(), smallvec![0.0; cfg.dim()]);
 
             // iterate backwards over fwd-path
             let mut cur_idx = meeting_node_idx;
