@@ -7,7 +7,7 @@ pub mod accuracy {
     ///     -> 1e-5 degrees equals around 1.1 m
     ///   - lon: distance depends on latitude
     ///     -> 1e-5 degrees equals <= 1.1 m (equator)
-    ///   -> 1e-5 degrees points to a person in a house, see https://xkcd.com/2170/
+    ///   -> 1e-5 degrees points to a person in a room, see https://xkcd.com/2170/
     pub const F64_ABS: f64 = 0.000_01; // = 10^(-F64__FMT_DIGITS)
     pub const F64_FMT_DIGITS: usize = 5;
 }
