@@ -1,11 +1,9 @@
 use super::paths::Path;
 use crate::{
     configs::routing::Config,
-    defaults::capacity::DimVec,
     helpers,
     network::{EdgeIdx, Graph, Node, NodeIdx},
 };
-use smallvec::smallvec;
 use std::{cmp::Reverse, collections::BinaryHeap};
 
 /// A bidirectional implementation of Dijkstra's algorithm.
@@ -128,7 +126,7 @@ impl Dijkstra {
         dst: &Node,
         graph: &Graph,
         cfg: &Config,
-    ) -> Option<Path<DimVec<f64>>> {
+    ) -> Option<Path> {
         if cfg.dim() <= 0 {
             panic!("Best path should be computed, but no metric is specified.");
         }
@@ -139,7 +137,7 @@ impl Dijkstra {
         // initialization-stuff
 
         let nodes = graph.nodes();
-        let edges = {
+        let xwd_edges = {
             debug_assert_eq!(
                 0,
                 self.dir_idx(Direction::FWD),
@@ -228,7 +226,7 @@ impl Dijkstra {
             }
 
             // update costs and add predecessors of nodes, which are dst of current's leaving edges
-            let leaving_edges = match edges[dir].starting_from(current.idx) {
+            let leaving_edges = match xwd_edges[dir].starting_from(current.idx) {
                 Some(e) => e,
                 None => continue,
             };
@@ -270,52 +268,35 @@ impl Dijkstra {
         //----------------------------------------------------------------------------------------//
         // create path if found
 
-        if let Some((meeting_node_idx, _total_cost)) = best_meeting {
-            let mut path = Path::new(src.idx(), dst.idx(), smallvec![0.0; cfg.dim()]);
+        if let Some((meeting_node_idx, _best_total_cost)) = best_meeting {
+            let mut proto_path = Vec::new();
 
             // iterate backwards over fwd-path
             let mut cur_idx = meeting_node_idx;
             let dir = self.fwd_idx();
             let opp_dir = self.bwd_idx();
             while let Some(incoming_idx) = self.predecessors[dir][*cur_idx] {
+                proto_path.push(incoming_idx);
+
                 // get incoming edge, but reversed to get the forward's src-node
-                let reverse_incoming_edge = edges[opp_dir].half_edge(incoming_idx);
-
-                // update real path-costs
-                helpers::add_to(
-                    path.cost_mut(),
-                    &reverse_incoming_edge.metrics(&cfg.metric_indices()),
-                );
-
-                // add predecessor/successor and prepare next loop-run
-                let pred_idx = reverse_incoming_edge.dst_idx();
-                path.add_pred_succ(pred_idx, cur_idx);
-                cur_idx = pred_idx;
+                cur_idx = xwd_edges[opp_dir].dst_idx(incoming_idx);
             }
+
+            // take fwd-part in the right order
+            proto_path.reverse();
 
             // iterate backwards over bwd-path
             let mut cur_idx = meeting_node_idx;
             let dir = self.bwd_idx();
             let opp_dir = self.fwd_idx();
             while let Some(leaving_idx) = self.predecessors[dir][*cur_idx] {
+                proto_path.push(leaving_idx);
+
                 // get leaving edge, but reversed to get the backward's src-node
-                let reverse_leaving_edge = edges[opp_dir].half_edge(leaving_idx);
-
-                // update real path-costs
-                helpers::add_to(
-                    path.cost_mut(),
-                    &reverse_leaving_edge.metrics(&cfg.metric_indices()),
-                );
-
-                // add predecessor/successor and prepare next loop-run
-                let succ_idx = reverse_leaving_edge.dst_idx();
-                path.add_pred_succ(cur_idx, succ_idx);
-                cur_idx = succ_idx;
+                cur_idx = xwd_edges[opp_dir].dst_idx(leaving_idx);
             }
 
-            // predecessor of src is not set
-            // successor of dst is not set
-            Some(path)
+            Some(Path::new(src.idx(), dst.idx(), proto_path))
         } else {
             None
         }

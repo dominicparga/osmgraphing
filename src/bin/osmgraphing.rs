@@ -148,7 +148,12 @@ fn main() {
             now.elapsed().as_micros() as f64 / 1_000.0,
         );
         if let Some(path) = option_path {
-            info!("Cost {:?} from ({}) to ({}).", path.cost(), src, dst);
+            info!(
+                "Cost {:?} from ({}) to ({}).",
+                path.calc_cost(cfg_routing.metric_indices(), &graph),
+                src,
+                dst
+            );
         } else {
             info!("No path from ({}) to ({}).", src, dst);
         }

@@ -1,9 +1,9 @@
-use crate::helpers::{assert_path, defaults, TestNode};
+use crate::helpers::{defaults, test_dijkstra_on_map, TestNode};
 use osmgraphing::{
     configs::{self, Config},
-    helpers::ApproxEq,
+    defaults::capacity::DimVec,
     io::Parser,
-    network::NodeIdx,
+    network::{MetricIdx, NodeIdx},
     routing,
 };
 use rand::{
@@ -11,29 +11,32 @@ use rand::{
     SeedableRng,
 };
 
+const METRIC_ID: &str = defaults::LENGTH_ID;
+const PBF_CONFIG: &str = defaults::paths::resources::configs::ISLE_OF_MAN_PBF;
+const CH_FMI_CONFIG: &str = defaults::paths::resources::configs::ISLE_OF_MAN_CH_FMI;
+const FMI_CONFIG: &str = defaults::paths::resources::configs::ISLE_OF_MAN_FMI;
+const IS_CH_DIJKSTRA: bool = true;
+
 #[test]
 #[ignore]
-fn compare_dijkstras() {
-    let mut cfg =
-        Config::from_yaml(defaults::paths::resources::configs::ISLE_OF_MAN_CH_FMI).unwrap();
+fn compare_dijkstras_on_ch_fmi_map() {
+    // build configs
+    let mut cfg = Config::from_yaml(CH_FMI_CONFIG).unwrap();
     cfg.routing = configs::routing::Config::from_str(
-        &format!(
-            "routing: {{ metrics: [{{ id: '{}' }}] }}",
-            defaults::LENGTH_ID
-        ),
+        &format!("routing: {{ metrics: [{{ id: '{}' }}] }}", METRIC_ID),
         &cfg.parser,
     )
     .ok();
-
-    let graph = Parser::parse_and_finalize(cfg.parser).unwrap();
-
-    let nodes = graph.nodes();
-    let mut dijkstra = routing::Dijkstra::new();
-
     let mut cfg_routing = cfg.routing.unwrap();
     cfg_routing.set_ch_dijkstra(false);
     let mut cfg_routing_ch = cfg_routing.clone();
     cfg_routing_ch.set_ch_dijkstra(true);
+
+    // parse graph and init dijkstra
+    let graph = Parser::parse_and_finalize(cfg.parser).unwrap();
+
+    let nodes = graph.nodes();
+    let mut dijkstra = routing::Dijkstra::new();
 
     // generate random route-pairs
     let route_count = 1_000;
@@ -83,7 +86,7 @@ fn compare_dijkstras() {
 
         // check basic info
         if let (Some(ch_path), Some(path)) = (&option_ch_path, &option_path) {
-            assert!(ch_path.approx_eq(path),
+            assert!(ch_path == path,
                 "CH-Dijkstra's path is different from Dijkstra's path. --------------------- CH-Dijkstra's {:?} --------------------- Dijkstra's {:?}",
                 ch_path,
                 path
@@ -94,42 +97,77 @@ fn compare_dijkstras() {
 
 #[test]
 #[ignore]
-fn chdijkstra() {
-    let mut cfg = Config::from_yaml(defaults::paths::resources::configs::ISLE_OF_MAN_PBF).unwrap();
-    cfg.routing = configs::routing::Config::from_str(
-        &format!(
-            "routing: {{ metrics: [{{ id: '{}' }}] }}",
-            defaults::LENGTH_ID
-        ),
-        &cfg.parser,
+fn chdijkstra_on_ch_fmi_map() {
+    test_dijkstra_on_map(
+        CH_FMI_CONFIG,
+        METRIC_ID,
+        IS_CH_DIJKSTRA,
+        Box::new(expected_paths),
     )
-    .ok();
-
-    let mut dijkstra = routing::Dijkstra::new();
-    let expected_paths = expected_paths();
-
-    assert_path(&mut dijkstra, expected_paths, cfg);
 }
 
 #[test]
 #[ignore]
-fn dijkstra() {
-    let mut cfg = Config::from_yaml(defaults::paths::resources::configs::ISLE_OF_MAN_PBF).unwrap();
-    cfg.routing = configs::routing::Config::from_str(
-        &format!(
-            "routing: {{ metrics: [{{ id: '{}' }}] }}",
-            defaults::LENGTH_ID
-        ),
-        &cfg.parser,
+fn dijkstra_on_ch_fmi_map() {
+    test_dijkstra_on_map(
+        CH_FMI_CONFIG,
+        METRIC_ID,
+        !IS_CH_DIJKSTRA,
+        Box::new(expected_paths),
     )
-    .ok();
-
-    let mut dijkstra = routing::Dijkstra::new();
-    let expected_paths = expected_paths();
-
-    assert_path(&mut dijkstra, expected_paths, cfg);
 }
 
-fn expected_paths() -> Vec<(TestNode, TestNode, Option<(f64, Vec<Vec<TestNode>>)>)> {
+#[test]
+#[ignore]
+fn chdijkstra_on_fmi_map() {
+    test_dijkstra_on_map(
+        FMI_CONFIG,
+        METRIC_ID,
+        IS_CH_DIJKSTRA,
+        Box::new(expected_paths),
+    )
+}
+
+#[test]
+#[ignore]
+fn dijkstra_on_fmi_map() {
+    test_dijkstra_on_map(
+        FMI_CONFIG,
+        METRIC_ID,
+        !IS_CH_DIJKSTRA,
+        Box::new(expected_paths),
+    )
+}
+
+#[test]
+#[ignore]
+fn chdijkstra_on_pbf_map() {
+    test_dijkstra_on_map(
+        PBF_CONFIG,
+        METRIC_ID,
+        IS_CH_DIJKSTRA,
+        Box::new(expected_paths),
+    )
+}
+
+#[test]
+#[ignore]
+fn dijkstra_on_pbf_map() {
+    test_dijkstra_on_map(
+        PBF_CONFIG,
+        METRIC_ID,
+        !IS_CH_DIJKSTRA,
+        Box::new(expected_paths),
+    )
+}
+
+fn expected_paths(
+    _cfg_parser: &configs::parser::Config,
+) -> Vec<(
+    TestNode,
+    TestNode,
+    DimVec<MetricIdx>,
+    Option<(DimVec<f64>, Vec<Vec<TestNode>>)>,
+)> {
     unimplemented!("Testing routing on isle-of-man is not supported yet.")
 }

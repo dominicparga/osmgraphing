@@ -23,6 +23,9 @@ fn main() {
             }
         }
     };
+    let cfg_routing = cfg
+        .routing
+        .expect("Config-file should contain routing-settings.");
 
     // measure parsing-time
     let now = Instant::now();
@@ -51,13 +54,7 @@ fn main() {
     let dst = nodes.create(NodeIdx(5));
 
     let now = Instant::now();
-    let option_path = dijkstra.compute_best_path(
-        &src,
-        &dst,
-        &graph,
-        &cfg.routing
-            .expect("Config-file should contain routing-settings."),
-    );
+    let option_path = dijkstra.compute_best_path(&src, &dst, &graph, &cfg_routing);
 
     info!("");
     info!(
@@ -65,7 +62,12 @@ fn main() {
         now.elapsed().as_micros() as f64 / 1_000.0,
     );
     if let Some(path) = option_path {
-        info!("Cost {:?} from ({}) to ({}).", path.cost(), src, dst);
+        info!(
+            "Cost {:?} from ({}) to ({}).",
+            path.calc_cost(cfg_routing.metric_indices(), &graph),
+            src,
+            dst
+        );
     } else {
         info!("No path from ({}) to ({}).", src, dst);
     }

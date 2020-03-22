@@ -2,7 +2,11 @@ pub mod building;
 mod indexing;
 pub use indexing::{EdgeIdx, MetricIdx, NodeIdx};
 
-use crate::{configs::parser::Config, defaults::capacity::DimVec, units::geo::Coordinate};
+use crate::{
+    configs::parser::Config,
+    defaults::capacity::{self, DimVec},
+    units::geo::Coordinate,
+};
 use std::{fmt, fmt::Display};
 
 /// Stores graph-data as offset-graph in arrays and provides methods and shallow structs for accessing them.
@@ -564,6 +568,13 @@ impl<'a> MetricAccessor<'a> {
     }
 
     pub fn get_more(&self, metric_indices: &[MetricIdx], edge_idx: EdgeIdx) -> DimVec<f64> {
+        debug_assert!(
+            metric_indices.len() <= capacity::SMALL_VEC_INLINE_SIZE,
+            "Path is asked for calculation-costs of a metric-combination, \
+             that is longer {} than this executable is compiled to {}.",
+            metric_indices.len(),
+            capacity::SMALL_VEC_INLINE_SIZE
+        );
         metric_indices
             .iter()
             .map(|&midx| self.metrics[*midx][*edge_idx])

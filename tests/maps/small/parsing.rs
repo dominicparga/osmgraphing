@@ -2,6 +2,11 @@ use crate::helpers::{assert_nodes, defaults, parse, TestEdge, TestNode};
 use osmgraphing::{configs::Config, network::NodeIdx};
 
 #[test]
+fn ch_fmi_yaml() {
+    Config::from_yaml(defaults::paths::resources::configs::SMALL_CH_FMI).unwrap();
+}
+
+#[test]
 fn fmi_yaml() {
     Config::from_yaml(defaults::paths::resources::configs::SMALL_FMI).unwrap();
 }

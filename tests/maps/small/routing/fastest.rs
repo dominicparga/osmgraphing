@@ -1,48 +1,55 @@
-use crate::helpers::{assert_path, defaults, TestNode};
+use crate::helpers::{defaults, test_dijkstra_on_map, TestNode};
 use osmgraphing::{
-    configs::{self, Config},
-    network::NodeIdx,
-    routing,
+    configs::{self, SimpleId},
+    defaults::capacity::DimVec,
+    network::{MetricIdx, NodeIdx},
     units::geo::Coordinate,
 };
+use smallvec::smallvec;
+
+const METRIC_ID: &str = defaults::DURATION_ID;
+const CONFIG: &str = defaults::paths::resources::configs::SMALL_FMI;
+const CH_CONFIG: &str = defaults::paths::resources::configs::SMALL_CH_FMI;
+const IS_CH_DIJKSTRA: bool = true;
 
 #[test]
-fn chdijkstra() {
-    let mut cfg = Config::from_yaml(defaults::paths::resources::configs::SMALL_FMI).unwrap();
-    cfg.routing = configs::routing::Config::from_str(
-        &format!(
-            "routing: {{ metrics: [{{ id: '{}' }}], is-ch-dijkstra: true }}",
-            defaults::DURATION_ID
-        ),
-        &cfg.parser,
+fn chdijkstra_on_chmap() {
+    test_dijkstra_on_map(
+        CH_CONFIG,
+        METRIC_ID,
+        IS_CH_DIJKSTRA,
+        Box::new(expected_paths),
     )
-    .ok();
-
-    let mut dijkstra = routing::Dijkstra::new();
-    let expected_paths = expected_paths();
-
-    assert_path(&mut dijkstra, expected_paths, cfg);
 }
 
 #[test]
-fn dijkstra() {
-    let mut cfg = Config::from_yaml(defaults::paths::resources::configs::SMALL_FMI).unwrap();
-    cfg.routing = configs::routing::Config::from_str(
-        &format!(
-            "routing: {{ metrics: [{{ id: '{}' }}], is-ch-dijkstra: false }}",
-            defaults::DURATION_ID
-        ),
-        &cfg.parser,
+fn dijkstra_on_chmap() {
+    test_dijkstra_on_map(
+        CH_CONFIG,
+        METRIC_ID,
+        !IS_CH_DIJKSTRA,
+        Box::new(expected_paths),
     )
-    .ok();
-
-    let mut dijkstra = routing::Dijkstra::new();
-    let expected_paths = expected_paths();
-
-    assert_path(&mut dijkstra, expected_paths, cfg);
 }
 
-fn expected_paths() -> Vec<(TestNode, TestNode, Option<(f64, Vec<Vec<TestNode>>)>)> {
+#[test]
+fn chdijkstra_on_map() {
+    test_dijkstra_on_map(CONFIG, METRIC_ID, IS_CH_DIJKSTRA, Box::new(expected_paths))
+}
+
+#[test]
+fn dijkstra_on_map() {
+    test_dijkstra_on_map(CONFIG, METRIC_ID, !IS_CH_DIJKSTRA, Box::new(expected_paths))
+}
+
+fn expected_paths(
+    cfg_parser: &configs::parser::Config,
+) -> Vec<(
+    TestNode,
+    TestNode,
+    DimVec<MetricIdx>,
+    Option<(DimVec<f64>, Vec<Vec<TestNode>>)>,
+)> {
     let a: usize = 0;
     let b: usize = 1;
     let c: usize = 2;
@@ -165,7 +172,7 @@ fn expected_paths() -> Vec<(TestNode, TestNode, Option<(f64, Vec<Vec<TestNode>>)
         .map(|(src_idx, dst_idx, path_info)| {
             let src = nodes[src_idx].clone();
             let dst = nodes[dst_idx].clone();
-            let path_info: Option<(f64, Vec<Vec<TestNode>>)> = match path_info {
+            let path_info: Option<(DimVec<f64>, Vec<Vec<TestNode>>)> = match path_info {
                 Some((cost, paths)) => {
                     let paths = paths
                         .into_iter()
@@ -175,11 +182,16 @@ fn expected_paths() -> Vec<(TestNode, TestNode, Option<(f64, Vec<Vec<TestNode>>)
                                 .collect()
                         })
                         .collect();
-                    Some((cost, paths))
+                    Some((smallvec![cost], paths))
                 }
                 None => None,
             };
-            (src, dst, path_info)
+            (
+                src,
+                dst,
+                smallvec![cfg_parser.edges.metric_idx(&SimpleId::from(METRIC_ID))],
+                path_info,
+            )
         })
         .collect()
 }
