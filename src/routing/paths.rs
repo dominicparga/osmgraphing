@@ -45,6 +45,10 @@ impl Path {
         self.dst_idx
     }
 
+    pub fn edge_count(&self) -> usize {
+        self.edges.len()
+    }
+
     /// Flattens shortcuts, out-of-place
     pub fn flatten(self, graph: &Graph) -> Path {
         // setup new edges

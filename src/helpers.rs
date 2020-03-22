@@ -14,6 +14,10 @@ pub fn add_to(a: &mut DimVec<f64>, b: &DimVec<f64>) {
     a.iter_mut().zip(b).for_each(|(aa, bb)| *aa += bb);
 }
 
+pub fn sub(a: &DimVec<f64>, b: &DimVec<f64>) -> DimVec<f64> {
+    a.iter().zip(b).map(|(aa, bb)| aa - bb).collect()
+}
+
 pub fn dot_product(a: &DimVec<f64>, b: &DimVec<f64>) -> f64 {
     a.iter()
         .zip(b)
@@ -49,7 +53,7 @@ impl Approx for f64 {
 
 impl ApproxEq for f64 {
     fn approx_eq(&self, other: &f64) -> bool {
-        (self - other).abs() <= accuracy::F64_ABS
+        (self.approx() - other.approx()).abs() <= accuracy::F64_ABS
     }
 }
 

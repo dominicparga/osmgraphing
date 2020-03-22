@@ -1,4 +1,4 @@
-use crate::helpers::{defaults, test_dijkstra_on_map, TestNode};
+use crate::helpers::{defaults, test_dijkstra, TestNode};
 use osmgraphing::{
     configs::{self, SimpleId},
     defaults::capacity::DimVec,
@@ -13,12 +13,12 @@ const IS_CH_DIJKSTRA: bool = true;
 
 #[test]
 fn chdijkstra_on_map() {
-    test_dijkstra_on_map(CONFIG, METRIC_ID, IS_CH_DIJKSTRA, Box::new(expected_paths))
+    test_dijkstra(CONFIG, METRIC_ID, IS_CH_DIJKSTRA, Box::new(expected_paths))
 }
 
 #[test]
 fn dijkstra_on_map() {
-    test_dijkstra_on_map(CONFIG, METRIC_ID, !IS_CH_DIJKSTRA, Box::new(expected_paths))
+    test_dijkstra(CONFIG, METRIC_ID, !IS_CH_DIJKSTRA, Box::new(expected_paths))
 }
 
 fn expected_paths(

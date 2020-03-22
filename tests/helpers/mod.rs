@@ -4,7 +4,7 @@
 use osmgraphing::{
     configs::{self, Config},
     defaults::capacity::DimVec,
-    helpers::ApproxEq,
+    helpers::{ApproxEq, self},
     io::Parser,
     network::{EdgeIdx, Graph, MetricIdx, Node, NodeAccessor, NodeIdx},
     routing::{self},
@@ -12,6 +12,10 @@ use osmgraphing::{
 };
 use smallvec::SmallVec;
 use std::fmt::{self, Display};
+use rand::{
+    distributions::{Distribution, Uniform},
+    SeedableRng,
+};
 
 #[allow(dead_code)]
 pub mod defaults {
@@ -46,8 +50,8 @@ pub fn parse(cfg: configs::parser::Config) -> Graph {
 }
 
 #[allow(dead_code)]
-pub fn test_dijkstra_on_map(
-    mapfile: &str,
+pub fn test_dijkstra(
+    config_file: &str,
     metric_id: &str,
     is_ch_dijkstra: bool,
     expected_paths: Box<
@@ -61,7 +65,7 @@ pub fn test_dijkstra_on_map(
         )>,
     >,
 ) {
-    let mut cfg = Config::from_yaml(mapfile).unwrap();
+    let mut cfg = Config::from_yaml(config_file).unwrap();
     cfg.routing = configs::routing::Config::from_str(
         &format!(
             "routing: {{ metrics: [{{ id: '{}' }}], is-ch-dijkstra: {} }}",
@@ -76,6 +80,107 @@ pub fn test_dijkstra_on_map(
     let expected_paths = expected_paths(&cfg.parser);
 
     assert_path(&mut dijkstra, expected_paths, cfg);
+}
+
+#[allow(dead_code)]
+pub fn compare_dijkstras(ch_fmi_config_file: &str, metric_id: &str) {
+    // build configs
+    let mut cfg = Config::from_yaml(ch_fmi_config_file).unwrap();
+    cfg.routing = configs::routing::Config::from_str(
+        &format!("routing: {{ metrics: [{{ id: '{}' }}] }}", metric_id),
+        &cfg.parser,
+    )
+    .ok();
+    let mut cfg_routing = cfg.routing.unwrap();
+    cfg_routing.set_ch_dijkstra(false);
+    let mut cfg_routing_ch = cfg_routing.clone();
+    cfg_routing_ch.set_ch_dijkstra(true);
+
+    // parse graph and init dijkstra
+    let graph = Parser::parse_and_finalize(cfg.parser).unwrap();
+
+    let nodes = graph.nodes();
+    let mut dijkstra = routing::Dijkstra::new();
+
+    // generate random route-pairs
+    let route_count = 100;
+    let seed = 42;
+
+    // if all possible routes are less than the preferred route-count
+    // -> just print all possible routes
+    // else: print random routes
+    let mut gen_route = {
+        let mut rng = rand_pcg::Pcg32::seed_from_u64(seed);
+        let die = Uniform::from(0..nodes.count());
+        let mut i = 0;
+        move || {
+            if i < route_count {
+                let src_idx = NodeIdx(die.sample(&mut rng));
+                let dst_idx = NodeIdx(die.sample(&mut rng));
+                i += 1;
+                Some((src_idx, dst_idx))
+            } else {
+                None
+            }
+        }
+    };
+
+    while let Some((src_idx, dst_idx)) = gen_route() {
+        let src = nodes.create(src_idx);
+        let dst = nodes.create(dst_idx);
+
+        let option_ch_path = dijkstra.compute_best_path(&src, &dst, &graph, &cfg_routing_ch);
+        let option_path = dijkstra.compute_best_path(&src, &dst, &graph, &cfg_routing);
+
+        // check if both are none/not-none
+        if option_ch_path.is_none() != option_path.is_none() {
+            let (ch_err, err) = {
+                if option_ch_path.is_none() {
+                    ("None", "Some")
+                } else {
+                    ("Some", "None")
+                }
+            };
+            panic!(
+                "CH-Dijkstra's result is {}, while Dijkstra's result is {}. \
+                 Route is from ({}) to ({}).",
+                ch_err, err, src, dst
+            );
+        }
+
+        // check basic info
+        if let (Some(ch_path), Some(path)) = (option_ch_path, option_path) {
+            let flattened_ch_path = ch_path.flatten(&graph);
+
+            // cmp src
+            if flattened_ch_path.src_idx() != path.src_idx() {
+                panic!(
+                    "CH-Dijkstra's path's src-idx ({}) is different from Dijkstra's path's src-idx ({}).",
+                    flattened_ch_path.src_idx(),
+                    path.src_idx()
+                )
+            }
+
+            // cmp dst
+            if flattened_ch_path.dst_idx() != path.dst_idx() {
+                panic!(
+                    "CH-Dijkstra's path's dst-idx ({}) is different from Dijkstra's path's dst-idx ({}).",
+                    flattened_ch_path.dst_idx(),
+                    path.dst_idx()
+                )
+            }
+
+            // cmp cost
+            let ch_cost = flattened_ch_path.calc_cost(cfg_routing.metric_indices(), &graph);
+            let cost = path.calc_cost(cfg_routing.metric_indices(), &graph);
+            assert!(ch_cost.approx_eq(&cost),
+                "CH-Dijkstra's path's cost ({:?}) is different ({:?}) from Dijkstra's path's cost ({:?}). --------------------- CH-Dijkstra's path {} --------------------- Dijkstra's path {}",
+                ch_cost, helpers::sub(&ch_cost, &cost), cost,
+                flattened_ch_path,
+                path
+            );
+        }
+    }
 }
 
 #[allow(dead_code)]
