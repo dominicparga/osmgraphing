@@ -153,24 +153,6 @@ pub fn compare_dijkstras(ch_fmi_config_file: &str, metric_id: &str) {
             let flattened_ch_path = ch_path.flatten(&graph);
             let flattened_path = path.flatten(&graph);
 
-            // cmp src
-            if flattened_ch_path.src_idx() != flattened_path.src_idx() {
-                panic!(
-                    "CH-Dijkstra's path's src-idx ({}) is different from Dijkstra's path's src-idx ({}).",
-                    flattened_ch_path.src_idx(),
-                    flattened_path.src_idx()
-                )
-            }
-
-            // cmp dst
-            if flattened_ch_path.dst_idx() != flattened_path.dst_idx() {
-                panic!(
-                    "CH-Dijkstra's path's dst-idx ({}) is different from Dijkstra's path's dst-idx ({}).",
-                    flattened_ch_path.dst_idx(),
-                    flattened_path.dst_idx()
-                )
-            }
-
             // cmp cost
             let ch_cost = flattened_ch_path.calc_cost(cfg_routing.metric_indices(), &graph);
             let cost = flattened_path.calc_cost(cfg_routing.metric_indices(), &graph);
