@@ -2,6 +2,7 @@
 
 set -e
 
-cargo fmt
+cargo fmt -- --check
+
 cargo build
 cargo build --release --features="osmgraphing"

@@ -2,6 +2,8 @@
 
 set -e
 
+cargo fmt -- --check
+
 # build
 CUR_DIR="$(dirname "$(pwd)${0:1}")"
 "${CUR_DIR}/build.sh"
@@ -10,4 +12,3 @@ CUR_DIR="$(dirname "$(pwd)${0:1}")"
 cargo test
 cargo run --example dijkstra
 cargo run --example parser
-cargo fmt -- --check

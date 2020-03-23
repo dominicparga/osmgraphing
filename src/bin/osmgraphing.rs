@@ -50,7 +50,7 @@ fn main() {
             Ok(cfg) => cfg,
             Err(msg) => {
                 error!("{}", msg);
-                return;
+                std::process::exit(1);
             }
         }
     };
@@ -73,7 +73,7 @@ fn main() {
         Ok(graph) => graph,
         Err(msg) => {
             error!("{}", msg);
-            return;
+            std::process::exit(1);
         }
     };
     info!(
@@ -91,7 +91,7 @@ fn main() {
     };
 
     //--------------------------------------------------------------------------------------------//
-    // executing dijkstra-queries
+    // routing-example
 
     let nodes = graph.nodes();
     let mut dijkstra = routing::Dijkstra::new();
@@ -99,31 +99,43 @@ fn main() {
     // generate random route-pairs
     let route_count = 100;
     let seed = 42;
-    let routes = {
-        let mut routes = vec![];
-        // if all possible routes are less than the preferred route-count
-        // -> just print all possible routes
-        // else: print random routes
+
+    // if all possible routes are less than the preferred route-count
+    // -> just print all possible routes
+    // else: print random routes
+    let mut gen_route: Box<dyn FnMut() -> Option<(NodeIdx, NodeIdx)>> = {
         if nodes.count() * nodes.count() <= route_count {
-            for src_idx in (0..nodes.count()).map(NodeIdx) {
-                for dst_idx in (0..nodes.count()).map(NodeIdx) {
-                    routes.push((src_idx, dst_idx));
+            let mut i = 0;
+            let nodes = graph.nodes();
+            Box::new(move || {
+                if i < nodes.count() * nodes.count() {
+                    let src_idx = NodeIdx(i / nodes.count());
+                    let dst_idx = NodeIdx(i % nodes.count());
+                    i += 1;
+                    Some((src_idx, dst_idx))
+                } else {
+                    None
                 }
-            }
+            })
         } else {
             let mut rng = rand_pcg::Pcg32::seed_from_u64(seed);
             let die = Uniform::from(0..nodes.count());
-            for _ in 0..route_count {
-                let src_idx = NodeIdx(die.sample(&mut rng));
-                let dst_idx = NodeIdx(die.sample(&mut rng));
-                routes.push((src_idx, dst_idx));
-            }
+            let mut i = 0;
+            Box::new(move || {
+                if i < route_count {
+                    let src_idx = NodeIdx(die.sample(&mut rng));
+                    let dst_idx = NodeIdx(die.sample(&mut rng));
+                    i += 1;
+                    Some((src_idx, dst_idx))
+                } else {
+                    None
+                }
+            })
         }
-        routes
     };
 
     // calculate best paths
-    for (src_idx, dst_idx) in routes {
+    while let Some((src_idx, dst_idx)) = gen_route() {
         let src = nodes.create(src_idx);
         let dst = nodes.create(dst_idx);
 
@@ -136,7 +148,12 @@ fn main() {
             now.elapsed().as_micros() as f64 / 1_000.0,
         );
         if let Some(path) = option_path {
-            info!("Cost {:?} from ({}) to ({}).", path.cost(), src, dst);
+            info!(
+                "Cost {:?} from ({}) to ({}).",
+                path.calc_cost(cfg_routing.metric_indices(), &graph),
+                src,
+                dst
+            );
         } else {
             info!("No path from ({}) to ({}).", src, dst);
         }
@@ -178,22 +195,9 @@ fn parse_cmdline<'a>() -> clap::ArgMatches<'a> {
         .about(env!("CARGO_PKG_DESCRIPTION"))
         .long_about(
             (&[
+                "",
                 "This tool takes a config-file, parses the chosen graph with specified",
-                "settings, and executes some routing-queries.",
-                "",
-                "",
-                "EXAMPLES",
-                "",
-                "In case you're using cargo, please use",
-                "    cargo run --example",
-                "for all supported example files",
-                "",
-                "",
-                "BENCHMARKS",
-                "",
-                "In addition, you can execute benchmarks, e.g.",
-                "    cargo bench --bench routing -- --warm-up-time 10 --measurement-time 120",
-                "and view the results in ./target/criterion/<bench>/report/index.html",
+                "settings, and executes some routing-queries (if provided in config-file).",
             ]
             .join("\n"))
                 .as_ref(),

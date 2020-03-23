@@ -40,11 +40,21 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 
 ### Added <a name="unreleased/added"></a>
 
-\-
+- Support for generating `fmi`-files with __`src`-__ and __`dst`-indices__ as column.
+- Implement __config-parser's categories__ separate from __config-generator's categories__ to guarantee ideal support.
+- Add __`isle-of-man.ch.fmi`__ and update `pbf-to-fmi.yaml` respectively.
+  Add very basic parsing-tests.
+- Add __contraction-hierarchies-level__ to nodes.
 
 
 ### Changed <a name="unreleased/changed"></a>
 
+- __Config-parser-category `Ignore`__ is allowed to have the id `Ignore`, which may occur multiple times.
+  For this, no other config-parser-category is allowed to have an id `Ignore`.
+  It's not hardcoded but named after the enum-variant.
+- Edit __generated__ `fmi`-map-files.
+  - Let generator print ids of the provided config-edge-categories, not their categories.
+  - Let generator print `Ignore`-column as `_`.
 - Move defaults for `SmallVec`-inline-size into a new submodule `capacity`.
 - Make __graphbuilder__ much more efficient in performance and memory (both around `25 %`).
   - Replace `BTreeMap` of graphbuilder by `Vec` and a handy (forced) way of adding graph-components.
@@ -96,6 +106,7 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
   - Inconsistent `semver` in old tags -> probably `cargo yank VERSION` needed
 - The link to `doc.rs` is hardcoded to `major.minor.patch=0.y.z` because `docs.rs` chooses version `1.0.0` though it's yanked..
 - Comparing `f32` could be wrong due to hard criterion `<= std::f32::EPSILON`.
+- When generating a map, only the parser-config's metrics are counted for setting the generated dimension, but it is possible to generate a map of less metrics.
 
 
 ### Fixed <a name="v0.11.1/fixed"></a>

@@ -18,4 +18,5 @@ parser:
 
 # needed for examples/dijkstra
 routing:
-- id: 'Meters'
+  metrics:
+  - id: 'Meters'

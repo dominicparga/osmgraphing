@@ -1,153 +1,101 @@
-use crate::network::NodeIdx;
-use std::collections::HashMap;
+use crate::{
+    defaults::capacity::DimVec,
+    helpers,
+    network::{EdgeIdx, Graph, MetricIdx, NodeIdx},
+};
+use smallvec::smallvec;
+use std::{
+    cmp::{Eq, PartialEq},
+    fmt::{self, Display},
+};
 
-//------------------------------------------------------------------------------------------------//
-
-/// A path from a src to a dst storing predecessors and successors.
-///
-/// The implementation bases either on vectors or on hashmaps.
-/// Some words about it without doing a benchmark:
-/// - Since the vector-approach stores two fully allocated vectors, it probably consumes more memory than the hashmap-approach.
-/// - Just by looking at resulting times of long paths (~670 km) in Germany, the hashmap-approach seems to be slightly better in performance, but both approaches take around 7 seconds for it.
-#[derive(Clone)]
-pub struct Path<M> {
-    // core: paths::VecPath<M>,
-    core: HashPath<M>,
+/// A path from a src to a dst storing all edges in between.
+#[derive(Clone, Debug)]
+pub struct Path {
+    src_idx: NodeIdx,
+    dst_idx: NodeIdx,
+    edges: Vec<EdgeIdx>,
 }
 
-impl<M> Path<M> {
-    fn new(src_idx: NodeIdx, dst_idx: NodeIdx, cost_max: M) -> Self {
-        let core = HashPath::new(src_idx, dst_idx, cost_max);
-        Path { core }
+impl Display for Path {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let prettier_edges: Vec<_> = self.edges.iter().map(|edge_idx| **edge_idx).collect();
+        write!(
+            f,
+            "{{ src-idx: {}, dst-idx: {}, edges: {:?} }}",
+            self.src_idx, self.dst_idx, prettier_edges
+        )
     }
+}
 
-    /// Capacity is `graph.nodes().count()`, which is only used, if the path bases on vectors.
-    /// If it bases on hashmaps, it ignores the given capacity.
-    pub fn with_capacity(
-        src_idx: NodeIdx,
-        dst_idx: NodeIdx,
-        cost_max: M,
-        _capacity: usize,
-    ) -> Self {
-        // let core = VecPath::with_capacity(src_idx, dst_idx, capacity);
-        Path::new(src_idx, dst_idx, cost_max)
+impl Path {
+    pub fn new(src_idx: NodeIdx, dst_idx: NodeIdx, edges: Vec<EdgeIdx>) -> Path {
+        Path {
+            src_idx,
+            dst_idx,
+            edges,
+        }
     }
 
     pub fn src_idx(&self) -> NodeIdx {
-        self.core.src_idx
+        self.src_idx
     }
 
     pub fn dst_idx(&self) -> NodeIdx {
-        self.core.dst_idx
+        self.dst_idx
     }
 
-    pub fn cost(&self) -> &M {
-        &self.core.cost
+    pub fn edge_count(&self) -> usize {
+        self.edges.len()
     }
 
-    pub fn cost_mut(&mut self) -> &mut M {
-        &mut (self.core.cost)
-    }
+    /// Flattens shortcuts, out-of-place
+    pub fn flatten(self, graph: &Graph) -> Path {
+        // setup new edges
+        let mut flattened_path = Path {
+            src_idx: self.src_idx,
+            dst_idx: self.dst_idx,
+            edges: Vec::with_capacity(self.edges.capacity()),
+        };
 
-    pub fn add_pred_succ(&mut self, pred: NodeIdx, succ: NodeIdx) {
-        self.core.add_pred_succ(pred, succ)
-    }
+        // interpret old edges as stack, beginning with src
+        let mut old_edges = self.edges;
+        old_edges.shrink_to_fit();
+        old_edges.reverse();
 
-    /// Return idx of predecessor-node
-    pub fn pred_node_idx(&self, idx: NodeIdx) -> Option<NodeIdx> {
-        self.core.pred_node_idx(idx)
-    }
+        let fwd_edges = graph.fwd_edges();
+        while let Some(mut edge_idx) = old_edges.pop() {
+            // if edge is shortcut
+            // -> push on old-edges
+            while let Some(sc_edges) = fwd_edges.sc_edges(edge_idx) {
+                old_edges.push(sc_edges[1]);
+                edge_idx = sc_edges[0];
+            }
 
-    /// Return idx of successor-node
-    pub fn succ_node_idx(&self, idx: NodeIdx) -> Option<NodeIdx> {
-        self.core.succ_node_idx(idx)
-    }
-}
-
-//------------------------------------------------------------------------------------------------//
-
-#[derive(Clone)]
-pub struct VecPath<M> {
-    src_idx: NodeIdx,
-    dst_idx: NodeIdx,
-    cost: M,
-    predecessors: Vec<Option<NodeIdx>>,
-    successors: Vec<Option<NodeIdx>>,
-}
-
-#[allow(dead_code)]
-impl<M> VecPath<M> {
-    pub fn with_capacity(src_idx: NodeIdx, dst_idx: NodeIdx, cost_max: M, capacity: usize) -> Self {
-        VecPath {
-            src_idx,
-            dst_idx,
-            cost: cost_max,
-            predecessors: vec![None; capacity],
-            successors: vec![None; capacity],
+            // edge-idx is not a shortcut
+            // -> push to flattened path
+            flattened_path.edges.push(edge_idx);
         }
+
+        flattened_path
     }
 
-    pub fn add_pred_succ(&mut self, pred: NodeIdx, succ: NodeIdx) {
-        self.predecessors[*succ] = Some(pred);
-        self.successors[*pred] = Some(succ);
-    }
-
-    pub fn pred_node_idx(&self, idx: NodeIdx) -> Option<NodeIdx> {
-        *(self.predecessors.get(*idx)?)
-    }
-
-    pub fn succ_node_idx(&self, idx: NodeIdx) -> Option<NodeIdx> {
-        *(self.successors.get(*idx)?)
+    pub fn calc_cost(&self, metric_indices: &[MetricIdx], graph: &Graph) -> DimVec<f64> {
+        self.edges
+            .iter()
+            .map(|edge_idx| graph.metrics().get_more(metric_indices, *edge_idx))
+            .fold(smallvec![0.0; metric_indices.len()], |acc, m| {
+                helpers::add(&acc, &m)
+            })
     }
 }
 
-//------------------------------------------------------------------------------------------------//
+impl Eq for Path {}
 
-#[derive(Clone)]
-pub struct HashPath<M> {
-    src_idx: NodeIdx,
-    dst_idx: NodeIdx,
-    cost: M,
-    predecessors: HashMap<NodeIdx, NodeIdx>,
-    successors: HashMap<NodeIdx, NodeIdx>,
-}
-
-impl<M> HashPath<M> {
-    pub fn new(src_idx: NodeIdx, dst_idx: NodeIdx, cost_max: M) -> Self {
-        HashPath {
-            src_idx,
-            dst_idx,
-            cost: cost_max,
-            predecessors: HashMap::new(),
-            successors: HashMap::new(),
-        }
+impl PartialEq for Path {
+    fn eq(&self, other: &Path) -> bool {
+        self.src_idx() == other.src_idx()
+            && self.dst_idx() == other.dst_idx()
+            && self.edges == other.edges
     }
-
-    pub fn add_pred_succ(&mut self, pred: NodeIdx, succ: NodeIdx) {
-        self.predecessors.insert(succ, pred);
-        self.successors.insert(pred, succ);
-    }
-
-    pub fn pred_node_idx(&self, idx: NodeIdx) -> Option<NodeIdx> {
-        Some(*(self.predecessors.get(&idx)?))
-    }
-
-    pub fn succ_node_idx(&self, idx: NodeIdx) -> Option<NodeIdx> {
-        Some(*(self.successors.get(&idx)?))
-    }
-
-    // impl Into<Vec<usize>> for Path {
-    //     fn into(self) -> Vec<usize> {
-    //         let mut nodes = vec![];
-    //         if self.successors.len() > 0 {
-    //             let mut current = self.src_idx;
-    //             nodes.push(current);
-    //             while let Some(succ) = self.successor(current) {
-    //                 nodes.push(succ);
-    //                 current = succ;
-    //             }
-    //         }
-    //         nodes
-    //     }
-    // }
 }

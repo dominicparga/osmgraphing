@@ -14,10 +14,26 @@ pub fn add_to(a: &mut DimVec<f64>, b: &DimVec<f64>) {
     a.iter_mut().zip(b).for_each(|(aa, bb)| *aa += bb);
 }
 
+pub fn sub(a: &DimVec<f64>, b: &DimVec<f64>) -> DimVec<f64> {
+    a.iter().zip(b).map(|(aa, bb)| aa - bb).collect()
+}
+
 pub fn dot_product(a: &DimVec<f64>, b: &DimVec<f64>) -> f64 {
     a.iter()
         .zip(b)
         .fold(0.0, |start, (aa, &bb)| start + aa * bb)
+}
+
+/// For example:
+/// Work off proto-edges in chunks to keep memory-usage lower.
+/// To keep additional memory-needs below 1 MB, the the maximum amount of four f64-values per
+/// worked-off chunk has to be limited to 250_000.
+pub trait MemSize {
+    fn mem_size_b() -> usize;
+}
+
+pub trait Approx {
+    fn approx(self) -> f64;
 }
 
 pub trait ApproxEq {
@@ -29,9 +45,15 @@ pub trait ApproxCmp {
     fn approx_cmp(&self, other: &Self) -> Ordering;
 }
 
+impl Approx for f64 {
+    fn approx(self) -> f64 {
+        (self / accuracy::F64_ABS).round() * accuracy::F64_ABS
+    }
+}
+
 impl ApproxEq for f64 {
     fn approx_eq(&self, other: &f64) -> bool {
-        (self - other).abs() <= accuracy::F32_EQ
+        (self.approx() - other.approx()).abs() <= accuracy::F64_ABS
     }
 }
 

@@ -9,6 +9,11 @@ Maybe, it is concept for later documentation, or just keep-up-the-good-work (`ku
 ### General
 
 - Implement graph as server, which can execute queries from clients (e.g. via channels).
+- Warn user when parsing `pbf`-map, if unused categories are provided in the config.
+- Building needs much more memory for `Germany.pbf` (~ `14 GB`) due to sc-edges and meta-info.
+  When creating metrics, memory-consumption shrinks to `10/11 GB` and lower, probably because these values are released.
+  It could make sense to implement simple (de-)serialization for the graph (`map-file.rfmi`, standing for `raw fmi`).
+- Write __working-off chunks__ in builder in separate function using `From<Edge>` or `Into<Edge>`
 
 
 ### Build-script
@@ -21,17 +26,18 @@ Maybe, it is concept for later documentation, or just keep-up-the-good-work (`ku
 ### Documentation
 
 - Write down alternative implementation-approaches
-  - Implement shortcut-edges more memory-efficient storing list of costs per src-dst-pair instead of per edge.
   - Routing from src-node to dst-node where dst-node has at least the city-level of the src-node.
+  - Implement shortcuts with array `[edge: EdgeIdx -> is_sc: bool]` and array `[some_idx: usize -> (edge, sc0, sc1): (EdgeIdx, EdgeIdx, EdgeIdx)]`, latter sorted by edge to search logarithmically.
 
 
 ### Extend tests
 
 - extend routing-tests
-  - implement tests comparing upcoming ch-dijkstra with normal dijkstra on isle-of-man
+  - implement tests comparing ch-dijkstra with normal dijkstra on isle-of-man
   - implement routing-tests for parsed pbf-files (just comparing src-id, dst-id and length)
 - Take results from actions of commit f28d88a for parsing-tests (fmi).
 - Test personalized routing explicitly using certain alpha-values and new expected paths.
+- Test `small.ch.fmi`!!!
 
 
 ### Extend configs
@@ -42,9 +48,14 @@ Maybe, it is concept for later documentation, or just keep-up-the-good-work (`ku
 ### Extend parsing
 
 - Use __preprocessing-phase__ for `pbf`-parser to count edges and __allocate memory__ accordingly.
-- Store proto-edges in __graphbuilder__ in a `Vec` instead of `BTreeMap`
-  -> optimize memory and memory-allocation
 - Print __edit-link__ for weird osm-content (in addition to currently printed warnings).
+- Parse lanes (now: use default).
+  - tags: `lanes`, `lanes:backward` (`way-id: 33172848`)
+
+
+### Extend generating
+
+- Process `parser::EdgeCategory::ShortcutEdgeIdx`
 
 
 ### Extend routing
@@ -71,6 +82,18 @@ Maybe, it is concept for later documentation, or just keep-up-the-good-work (`ku
 - [leafletjs (JavaScript)][leafletjs]
 - [Marble (C++ or python)][kde/marble]
 - [JMapViewer (Java)][osm/wiki/jmapviewer]
+
+
+## Proof of correctness for bidirectional Dijkstra
+
+The termination of the bidirectional Astar is based on the first node v, that is marked by both, the forward- and the backward-subroutine.
+However, this common node v is part of the shortest path s->t wrt to this particular hop-distance H, but doesn't have to be part of the shortest path s->t wrt to edge-weights.
+
+Every node, that is not settled in any of the both subroutines, has a longer distance to both s and t than the already found common node v and hence can not be part of the shortest path (wrt to edge-weights).
+Otherwise, it would have been settled before v since the priority-queues sort by weights.
+In other words, only already settled nodes and their neighbors (which are already enqueued) can be part of the shortest path.
+
+In conclusion, emptying the remaining nodes in the queues and picking the shortest path of the resulting common nodes leads to the shortest path wrt to edge-weights from s to t.
 
 
 [github/rust-lang/cargo/issues/5624]: https://github.com/rust-lang/cargo/issues/5624

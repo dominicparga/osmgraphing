@@ -1,8 +1,9 @@
 use crate::{
-    configs::{parser, EdgeCategory, NodeCategory},
+    configs::parser::{self, EdgeCategory, NodeCategory},
+    defaults,
     defaults::capacity::DimVec,
     helpers,
-    network::{EdgeBuilder, MetricIdx, NodeBuilder, ProtoEdge, ProtoNode},
+    network::{EdgeBuilder, EdgeIdx, MetricIdx, NodeBuilder, ProtoEdge, ProtoNode, ProtoShortcut},
     units::geo,
 };
 use log::info;
@@ -108,7 +109,7 @@ impl super::Parsing for Parser {
             line_number += 1;
 
             // create edge and add it
-            let proto_edge = ProtoEdge::from_str(&line, &builder.cfg().edges)?;
+            let proto_edge = ProtoShortcut::from_str(&line, &builder.cfg().edges)?;
             builder.insert(proto_edge);
         }
         info!("FINISHED");
@@ -142,14 +143,16 @@ impl super::Parsing for Parser {
     }
 }
 
-impl ProtoEdge {
+impl ProtoShortcut {
     /// Parse a line of metrics into an edge.
     ///
     /// - When NodeIds are parsed, the first one is interpreted as src-id and the second one as dst-id.
-    pub fn from_str(line: &str, cfg: &parser::edges::Config) -> Result<ProtoEdge, String> {
+    pub fn from_str(line: &str, cfg: &parser::edges::Config) -> Result<ProtoShortcut, String> {
         let mut metric_values = DimVec::<_>::with_capacity(cfg.dim());
         let mut src_id = None;
         let mut dst_id = None;
+        let mut sc_edge_0 = None;
+        let mut sc_edge_1 = None;
 
         // Loop over edge-categories and parse params accordingly.
         let params: Vec<&str> = line.split_whitespace().collect();
@@ -230,7 +233,33 @@ impl ProtoEdge {
                         metric_values.push(None);
                     }
                 }
-                EdgeCategory::Ignore => param_idx += 1,
+                EdgeCategory::ShortcutEdgeIdx => {
+                    if param != defaults::parser::NO_SHORTCUT_IDX {
+                        let sc_edge_idx = {
+                            param.parse::<usize>().ok().ok_or(format!(
+                                "Parsing {} '{}' of edge-param #{} didn't work.",
+                                category, param, param_idx
+                            ))?
+                        };
+
+                        if sc_edge_0.is_none() {
+                            sc_edge_0 = Some(sc_edge_idx);
+                        } else if sc_edge_1.is_none() {
+                            sc_edge_1 = Some(sc_edge_idx);
+                        } else {
+                            return Err(format!(
+                                "Too many {}: parsing '{}' of edge-param #{}",
+                                EdgeCategory::ShortcutEdgeIdx,
+                                param,
+                                param_idx
+                            ));
+                        }
+                    }
+                    param_idx += 1;
+                }
+                EdgeCategory::IgnoredSrcIdx
+                | EdgeCategory::IgnoredDstIdx
+                | EdgeCategory::Ignore => param_idx += 1,
             }
         }
 
@@ -241,10 +270,22 @@ impl ProtoEdge {
             metric_values.len(),
             cfg.dim()
         );
-        Ok(ProtoEdge {
-            src_id: src_id.ok_or("Proto-edge should have a src-id, but doesn't.".to_owned())?,
-            dst_id: dst_id.ok_or("Proto-edge should have a dst-id, but doesn't.".to_owned())?,
-            metrics: metric_values,
+
+        let sc_edges = {
+            if sc_edge_0.is_none() && sc_edge_1.is_none() {
+                None
+            } else {
+                Some([EdgeIdx(sc_edge_0.unwrap()), EdgeIdx(sc_edge_1.unwrap())])
+            }
+        };
+
+        Ok(ProtoShortcut {
+            proto_edge: ProtoEdge {
+                src_id: src_id.ok_or("Proto-edge should have a src-id, but doesn't.".to_owned())?,
+                dst_id: dst_id.ok_or("Proto-edge should have a dst-id, but doesn't.".to_owned())?,
+                metrics: metric_values,
+            },
+            sc_edges,
         })
     }
 }
@@ -310,7 +351,7 @@ impl ProtoNode {
                         }
                     };
                 }
-                NodeCategory::NodeIdx | NodeCategory::Ignore => (),
+                NodeCategory::Ignore => (),
             }
         }
 

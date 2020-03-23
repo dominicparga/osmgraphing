@@ -1,3 +1,3 @@
-pub mod dijkstra;
+mod dijkstra;
 pub mod paths;
 pub use dijkstra::Dijkstra;

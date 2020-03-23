@@ -5,13 +5,13 @@
 13
 
 # nodes:
-# [ NodeId,    Latitude,  Longitude]
-  26033921   48.9840100   9.4589188    # Oppenweiler
-  26160028   48.9416023   9.4332023    # Backnang
-1621605361   48.9396327   9.4188681    # Dead-end in Backnang
- 298249467   48.8108510   9.3679493    # Endersbach
- 252787940   48.8271096   9.3098661    # Waiblingen
-2933335353   48.7701757   9.1565768    # Stuttgart (Schwabstrasse)
+# [ NodeId,   Latitude,  Longitude]
+  26033921   48.984010    9.458919    # Oppenweiler
+  26160028   48.941602    9.433202    # Backnang
+1621605361   48.939633    9.418868    # Dead-end in Backnang
+ 298249467   48.810851    9.367949    # Endersbach
+ 252787940   48.827110    9.309866    # Waiblingen
+2933335353   48.770176    9.156577    # Stuttgart (Schwabstrasse)
 
 # edges:
 # [  SrcId,      DstId,   Meters, KilometersPerHour]

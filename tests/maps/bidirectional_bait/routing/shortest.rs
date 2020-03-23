@@ -1,28 +1,34 @@
-use crate::helpers::{assert_path, defaults, TestNode};
+use crate::helpers::{defaults, test_dijkstra, TestNode};
 use osmgraphing::{
-    configs::{self, Config},
-    network::NodeIdx,
-    routing,
+    configs::{self, SimpleId},
+    defaults::capacity::DimVec,
+    network::{MetricIdx, NodeIdx},
     units::geo::Coordinate,
 };
+use smallvec::smallvec;
+
+const METRIC_ID: &str = defaults::LENGTH_ID;
+const CONFIG: &str = defaults::paths::resources::configs::BIDIRECTIONAL_BAIT_FMI;
+const IS_CH_DIJKSTRA: bool = true;
 
 #[test]
-fn dijkstra() {
-    let mut cfg =
-        Config::from_yaml(defaults::paths::resources::configs::BIDIRECTIONAL_BAIT_FMI).unwrap();
-    cfg.routing = configs::routing::Config::from_str(
-        &format!("routing: [{{ id: '{}' }}]", defaults::LENGTH_ID),
-        &cfg.parser,
-    )
-    .ok();
-
-    let mut dijkstra = routing::Dijkstra::new();
-    let expected_paths = expected_paths();
-
-    assert_path(&mut dijkstra, expected_paths, cfg);
+fn chdijkstra_on_map() {
+    test_dijkstra(CONFIG, METRIC_ID, IS_CH_DIJKSTRA, Box::new(expected_paths))
 }
 
-fn expected_paths() -> Vec<(TestNode, TestNode, Option<(f64, Vec<Vec<TestNode>>)>)> {
+#[test]
+fn dijkstra_on_map() {
+    test_dijkstra(CONFIG, METRIC_ID, !IS_CH_DIJKSTRA, Box::new(expected_paths))
+}
+
+fn expected_paths(
+    cfg_parser: &configs::parser::Config,
+) -> Vec<(
+    TestNode,
+    TestNode,
+    DimVec<MetricIdx>,
+    Option<(DimVec<f64>, Vec<Vec<TestNode>>)>,
+)> {
     // ll left
     // bb bottom
     // rr right
@@ -41,6 +47,7 @@ fn expected_paths() -> Vec<(TestNode, TestNode, Option<(f64, Vec<Vec<TestNode>>)
             idx: NodeIdx(idx),
             id: idx as i64,
             coord: Coordinate::zero(),
+            level: 0,
         })
         .collect();
 
@@ -83,7 +90,7 @@ fn expected_paths() -> Vec<(TestNode, TestNode, Option<(f64, Vec<Vec<TestNode>>)
         .map(|(src_idx, dst_idx, path_info)| {
             let src = nodes[src_idx].clone();
             let dst = nodes[dst_idx].clone();
-            let path_info: Option<(f64, Vec<Vec<TestNode>>)> = match path_info {
+            let path_info: Option<(DimVec<f64>, Vec<Vec<TestNode>>)> = match path_info {
                 Some((cost, paths)) => {
                     let paths = paths
                         .into_iter()
@@ -93,11 +100,16 @@ fn expected_paths() -> Vec<(TestNode, TestNode, Option<(f64, Vec<Vec<TestNode>>)
                                 .collect()
                         })
                         .collect();
-                    Some((cost, paths))
+                    Some((smallvec![cost], paths))
                 }
                 None => None,
             };
-            (src, dst, path_info)
+            (
+                src,
+                dst,
+                smallvec![cfg_parser.edges.metric_idx(&SimpleId::from(METRIC_ID))],
+                path_info,
+            )
         })
         .collect()
 }

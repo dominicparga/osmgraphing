@@ -57,12 +57,12 @@ fn criterion_benchmark(c: &mut Criterion) {
 
     // benchmarking shortest routing
     let routing_strs = vec![
-        "routing: [{ id: 'Meters' }]",
-        "routing: [{ id: 'Meters' }, { id: 'Seconds' }]",
+        "routing: { metrics: [{ id: 'Meters' }] }",
+        "routing: { metrics: [{ id: 'Meters' }, { id: 'Seconds' }] }",
     ];
     for routing_str in routing_strs {
         let routing_cfg = configs::routing::Config::from_str(routing_str, graph.cfg())
-            .expect("MetricIds should be provided.");
+            .expect("Routing-config is wrong.");
 
         for (prefix, suffix, routes) in labelled_routes.iter() {
             c.bench_function(

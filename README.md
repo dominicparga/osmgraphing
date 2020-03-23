@@ -19,39 +19,125 @@ All calculations should be done effectively on a single desktop instead of an ex
 
 ## Setup and usage
 
-`cargo` is the build-tool of Rust and can be used to run everything except scripts in `scripts/`.
-`cargo run` will give you help, e.g. it tells you to use `cargo run --example`.
-Running this command will print names of runnable examples.
-Further, refer to the [examples][github/self/tree/examples] for more details, or to [cargo-docs][docs.rs/self] to get details about the repo's setup and implementation.
+### Long story short
+
+Rust has a build-tool called `cargo`, which can be used to run everything except scripts in `scripts/`.
+
+```zsh
+# Just executing some easy cargo-build-commands
+./scripts/build.sh
+# Parse isle-of-man
+./target/release/osmgraphing --config resources/config/isle-of-man.pbf.yaml
+```
+
+### Download and generate maps
 
 Downloaded osm-data is provided in xml (`osm`) or binary (`pbf`), where nodes are related to location in latitude and longitude.
 Problems will be the size-limit when downloading from [openstreetmap][osm], but there are other osm data providers like [geofabrik][geofabrik] for instance.
 
 For testing, some simple text-based format `fmi` is used.
 Since they are created manually for certain tasks, parsing them - generally speaking - is unstable.
-However, this repository has a generator, which can create such `fmi`-files from `pbf`- or other `fmi`-files (for different metric-order).
+However, this repository has a generator, which can create such `fmi`-files from `pbf`- or other `fmi`-files (e.g. for different metric-order).
 The binary `mapgenerator` (binaries are in `target/release` after release-building) helps with generating proper config-files, but have a look at `resources/configs/blueprint` to get further explanations.
 A tool for creating `fmi`-map-files, which contain graphs contracted via contraction-hierarchies, is [multi-ch-constructor][github/lesstat/multi-ch-constructor].
 
 
-## Requirements for large maps
+## Requirements for large maps (e.g. countries)
 
-In general, the requirements depend on the size of the parsed map and your machine.
-Following numbers base on an __8-core-CPU__ and the `pbf`-map `Germany` running on `archlinux`.
-Further, they base on the assumption, that you don't use more than 4 metrics (besides ignore and ids), because up to 4 metrics are inlined with `SmallVec`.
-You should change the number of inlined metrics according to your needs in the module `defaults`, because, during build-phase, the memory is allocated anyways.
+In general, the requirements depend on the size of the parsed map (also same map of different dates) and your machine.
+Following numbers base on an __8-core-CPU__ and the `pbf`-map `Germany` from `March 14th, 2020` running on `archlinux` with __16 GB RAM__.
+You should change the number of inlined metrics (via [`SmallVec`][github/servo/rust-smallvec]) according to your needs in the module `defaults` (default is `4`).
+Several GB and performance are saved by doing so.
 
-- Parsing `Germany` (~50 million nodes, ~103 million edges, pbf-file) needs around __11 GB of RAM__.
-  (Using only one metric and only one metric inlined, the memory-peak is around __6.5 GB__.)
-  After parsing, the memory-needs are lower due to the optimized graph-structure.
-- Preprocessing `Germany` (including parsing) needs around __3 minutes__.
-  This duration highly depends on the number of cores.
-- A __routing query__ on `Germany` of length `620 km` takes around __16 seconds__ with `bidirectional Dijkstra`.
+- Parsing `Germany.pbf` (4 metrics, ~51 million nodes, ~106 million edges) needs around __14 GB of RAM__ at peak.
+  After parsing, the memory-needs are much lower due to the optimized graph-structure.
+- Preprocessing `Germany.pbf` (including parsing) needs a little over __3 minutes__.
+- A __routing query__ on `Germany.pbf` of length around `600 km` takes around __21 seconds__ with `bidirectional Dijkstra`, highly depending on the specific src-dst-pair (and its search-space).
   This could be improved by removing intermediate nodes (like `b` in `a->b->c`), but they are kept for now.
-  An `Astar` is not used anymore, because its only purpose is reducing the search-space, which can be reduced much more using `Contraction Hierarchies`.
+  Maybe, they are needed for precise/realistic traffic-simulation.
+  An `Astar` is not used anymore, because its only purpose is reducing the search-space, which can be reduced much more using [`Contraction Hierarchies`](#contraction-hierarchies).
   Further, `Astar` has issues when it comes to multiple or custom metrics, because of the metrics' heuristics.
 
-Small maps like `Isle of Man` run on every machine and are parsed in less than a second.
+Small maps like `Isle-of-Man.pbf` (~50_000 nodes, ~107_000 edges) run on every machine and are parsed in less than a second.
+
+The German state `Baden-Württemberg.pbf` (~9 million nodes, ~18 million edges) needs less than __3 GB RAM__ at peak and under __30 seconds__ to parse.
+
+
+## Contraction-Hierarchies <a name="contraction-hierarchies"></a>
+
+For speedup, this repository supports graphs contracted via contraction-hierarchies.
+The repository [`lesstat/multi-ch-constructor`][github/lesstat/multi-ch-constructor] generates contracted graphs from `fmi`-files of a certain format.
+This repository, `osmgraphing`, uses the `lesstat/multi-ch-constructor/master`-branch (commit `bec548c1a1ebeae7ac19d3250d5473199336d6fe`) for its ch-graphs.
+For reproducability, the used steps are listed below.
+
+First of all, the tool `multi-ch` needs an `fmi`-map-file of specific format as input.
+To generate such a `fmi`-map-file in the correct format, the `mapgenerator` of `osmgraphing` can be used with the `generator-config` shown below, following the [defined requirements][github/lesstat/cyclops/blob/README].
+
+The `Ignore`s are important, because the `multi-ch-constructor` needs the placeholders.
+Besides that, the `multi-ch-constructor` uses node-indices as ids, leading to errors when the mapping `node -> indices [0; n]` is not surjective.
+
+```yaml
+parser:
+  map-file: 'resources/maps/isle-of-man_2020-03-14.osm.pbf'
+  vehicles:
+    category: 'Car'
+    are-drivers-picky: false
+  nodes:
+  - category: 'NodeId'
+  - category: 'Latitude'
+  - category: 'Longitude'
+  edges:
+  - category: 'SrcId'
+  - category: 'DstId'
+  - category: 'Meters'
+    is-provided: false
+  - category: 'KilometersPerHour'
+  - category: 'Seconds'
+    is-provided: false
+    calc-rules: ['Meters', 'KilometersPerHour']
+  - category: 'Ignore - SrcIdx'
+    id: 'SrcIdx'
+  - category: 'Ignore - DstIdx'
+    id: 'DstIdx'
+
+generator:
+  map-file: 'resources/maps/isle-of-man_2020-03-14.fmi'
+  nodes:
+  - category: 'NodeIdx'
+  - category: 'NodeId'
+  - category: 'Latitude'
+  - category: 'Longitude'
+  - category: 'Ignore' # height
+  - category: 'Ignore' # level for contraction-hierarchies
+  edges:
+  - id: 'SrcIdx'
+  - id: 'DstIdx'
+  - id: 'Meters'
+  - id: 'KilometersPerHour'
+  - id: 'Seconds'
+  - id: 'Ignore' # shortcut-edge-0
+  - id: 'Ignore' # shortcut-edge-1
+```
+
+The `multi-ch`-tool needs 3 counts at the file-beginning: metric-count (dimension), node-count, edge-count.
+The `mapgenerator` does add these counts in this order.
+
+Before the `multi-ch`-tool can be used, it has to be built.
+For the sake of optimization, you have to set the metric-count as dimension in [multi-ch-constructor/src/multi_lib/graph.hpp, line 49][github/lesstat/multi-ch-constructor/change-dim].
+Set this dimension according to the dimension in the previously generated `fmi`-file.
+
+```zsh
+git clone --recursive https://github.com/lesstat/multi-ch-constructor
+cd multi-ch-constructor
+
+cmake -Bbuild
+cmake --build build
+
+./build/multi-ch --text path/to/fmi/graph --percent 99.85 --stats --write path/to/new/fmi/graph
+```
+
+> Note that the multi-ch-constructor is not deterministic (March 12th, 2020).
+> Using it does only speedup your queries, but due to a different resulting order in the priority or rounding-errors, it could lead to different paths of "same" length.
 
 
 ## Credits
@@ -79,7 +165,9 @@ He has implemented the first (and running) approach of the `A*`-algorithm.
 [github/dominicparga]: https://github.com/dominicparga
 [github/jenasat]: https://github.com/JenaSat
 [github/lesstat]: https://github.com/lesstat
+[github/lesstat/cyclops/blob/README]: https://github.com/Lesstat/cyclops/blob/master/README.md#graph-data
 [github/lesstat/multi-ch-constructor]: https://github.com/Lesstat/multi-ch-constructor
+[github/lesstat/multi-ch-constructor/change-dim]: https://github.com/Lesstat/multi-ch-constructor/blob/bec548c1a1ebeae7ac19d3250d5473199336d6fe/src/multi_lib/graph.hpp#L49
 [github/self/actions]: https://github.com/dominicparga/osmgraphing/actions
 [github/self/actions/badge]: https://img.shields.io/github/workflow/status/dominicparga/osmgraphing/Rust?label=nightly-build&style=for-the-badge
 [github/self/blob/changelog]: https://github.com/dominicparga/osmgraphing/blob/nightly/CHANGELOG.md
@@ -92,4 +180,5 @@ He has implemented the first (and running) approach of the `A*`-algorithm.
 [github/self/tags/badge]: https://img.shields.io/github/v/tag/dominicparga/osmgraphing?sort=semver&style=for-the-badge
 [github/self/tree/examples]: https://github.com/dominicparga/osmgraphing/tree/nightly/examples
 [github/self/wiki/usage]: https://github.com/dominicparga/osmgraphing/wiki/Usage
+[github/servo/rust-smallvec]: https://github.com/servo/rust-smallvec
 [osm]: https://openstreetmap.org

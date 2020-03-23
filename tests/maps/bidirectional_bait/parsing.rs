@@ -1,8 +1,5 @@
 use crate::helpers::{assert_nodes, defaults, parse, TestEdge, TestNode};
-use osmgraphing::{
-    configs::{self, Config},
-    network::NodeIdx,
-};
+use osmgraphing::{configs::Config, network::NodeIdx};
 
 #[test]
 fn fmi_yaml() {
@@ -11,14 +8,7 @@ fn fmi_yaml() {
 
 #[test]
 fn yaml_str() {
-    let cfg =
-        Config::from_yaml(defaults::paths::resources::configs::BIDIRECTIONAL_BAIT_FMI).unwrap();
-
-    let yaml_str = &format!("routing: [{{ id: '{}' }}]", defaults::DURATION_ID);
-    configs::routing::Config::from_str(yaml_str, &cfg.parser).unwrap();
-
-    let yaml_str = &format!("routing: [{{ id: '{}' }}]", defaults::LENGTH_ID);
-    configs::routing::Config::from_str(yaml_str, &cfg.parser).unwrap();
+    Config::from_yaml(defaults::paths::resources::configs::BIDIRECTIONAL_BAIT_FMI).unwrap();
 }
 
 #[test]
@@ -32,11 +22,11 @@ fn fmi_graph() {
 
     // nodes sorted by id
     // name, id, decimicro_lat, decimicro_lon
-    let node_ll = TestNode::new("left", 0, 0.0000000, 0.0000000, &graph);
-    let node_bb = TestNode::new("bottom", 1, 0.0000000, 0.0000000, &graph);
-    let node_rr = TestNode::new("right", 2, 0.0000000, 0.0000000, &graph);
-    let node_tr = TestNode::new("top-right", 3, 0.0000000, 0.0000000, &graph);
-    let node_tl = TestNode::new("top-left", 4, 0.0000000, 0.0000000, &graph);
+    let node_ll = TestNode::new("left", 0, 0.0000000, 0.0000000, 0, &graph);
+    let node_bb = TestNode::new("bottom", 1, 0.0000000, 0.0000000, 0, &graph);
+    let node_rr = TestNode::new("right", 2, 0.0000000, 0.0000000, 0, &graph);
+    let node_tr = TestNode::new("top-right", 3, 0.0000000, 0.0000000, 0, &graph);
+    let node_tl = TestNode::new("top-left", 4, 0.0000000, 0.0000000, 0, &graph);
 
     // Due to the offset-array, the fwd-edge-ids should match with sorting by src-id, then by dst-id.
     // name, idx, id, src, dst, length, maxspeed, duration

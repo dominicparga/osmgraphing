@@ -36,7 +36,7 @@ parser:
     # Value `false` leads to calculate the value via coordinates and haversine.
     is-provided: false
   - category: 'Meters'
-    is-provided: true
+    # is-provided: true # default is true
   - category: 'KilometersPerHour'
     id: 'faster-than-light'
     # Value `false` leads to calculate the value via length and duration.
@@ -47,12 +47,15 @@ parser:
     is-provided: false
     calc-rules: ['to-the-moon-and-back', 'faster-than-light']
   - category: 'LaneCount'
-    is-provided: true
   - category: 'Custom'
     id: 'my-custom-value'
     is-provided: true
 
-  # only category, which is allowed to have duplicated ids
+  # used for ch-graph, typically twice
+  - category: 'ShortcutEdgeIdx'
+  - category: 'ShortcutEdgeIdx'
+
+  # only this category is allowed to have duplicated ids
   - category: 'Ignore'
     id: 'unnecessary'
   - category: 'Ignore'
@@ -77,12 +80,20 @@ generator:
 
 # The metrics, which should be considered in routing, are listed here.
 # The given alphas are used as scale.
+# The ch-flag specifies the routing-algorithm.
+# It doesn't change correctness, but effects performance positively and
+# negatively depending on the provided map.
+# It is recommended to set this properly.
 #
 # Optional, but will panic as soon as routing will try to use it
 routing:
-- id: 'to-the-moon-and-back',
-  # optional; default is 1.0
-  alpha: 169.0
-- id: 'Seconds',
-  # optional; default is 1.0
-  alpha: 331.0
+  # optional; default is false
+  is-ch-dijkstra: true
+  # list of routing-relevant metrics
+  metrics:
+  - id: 'to-the-moon-and-back',
+    # optional; default is 1.0
+    alpha: 169.0
+  - id: 'Seconds',
+    # optional; default is 1.0
+    alpha: 331.0
