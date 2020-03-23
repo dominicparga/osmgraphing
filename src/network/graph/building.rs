@@ -1,10 +1,13 @@
 use super::{EdgeIdx, Graph, NodeIdx};
 use crate::{
     configs::parser::{Config, EdgeCategory},
-    defaults::capacity::{self, DimVec},
+    defaults::{
+        self,
+        capacity::{self, DimVec},
+    },
     helpers::{ApproxEq, MemSize},
     network::MetricIdx,
-    units::{geo, geo::Coordinate, length::Kilometers, speed::KilometersPerHour, time::Seconds},
+    units::geo::{self, Coordinate},
 };
 use log::{debug, info};
 use progressing::{self, Bar};
@@ -92,20 +95,22 @@ impl Graph {
                     EdgeCategory::Meters => {
                         let src_coord = self.node_coords[*proto_edge.src_idx];
                         let dst_coord = self.node_coords[*proto_edge.dst_idx];
-                        proto_edge.metrics[*metric_idx] =
-                            Some(*geo::haversine_distance_km(&src_coord, &dst_coord));
+                        let length = defaults::length::TYPE::from(geo::haversine_distance_km(
+                            &src_coord, &dst_coord,
+                        ));
+                        proto_edge.metrics[*metric_idx] = Some(*length);
                     }
                     EdgeCategory::Seconds => {
                         // get length and maxspeed to calculate duration
-                        let mut length = None;
-                        let mut maxspeed = None;
+                        let mut raw_length = None;
+                        let mut raw_speed = None;
                         // get calculation-rules
                         for &(other_type, other_idx) in cfg.edges.calc_rules(metric_idx) {
                             // get values from edge dependent of calculation-rules
                             match other_type {
-                                EdgeCategory::Meters => length = proto_edge.metrics[*other_idx],
+                                EdgeCategory::Meters => raw_length = proto_edge.metrics[*other_idx],
                                 EdgeCategory::KilometersPerHour => {
-                                    maxspeed = proto_edge.metrics[*other_idx];
+                                    raw_speed = proto_edge.metrics[*other_idx];
                                 }
                                 _ => {
                                     return Err(format!(
@@ -116,9 +121,11 @@ impl Graph {
                             }
                         }
                         // calc duration and update proto-edge
-                        if let (Some(length), Some(maxspeed)) = (length, maxspeed) {
-                            let duration: Seconds =
-                                Kilometers(length) / KilometersPerHour(maxspeed);
+                        if let (Some(raw_length), Some(raw_speed)) = (raw_length, raw_speed) {
+                            let duration: defaults::time::TYPE =
+                                (defaults::length::TYPE::new(raw_length)
+                                    / defaults::speed::TYPE::new(raw_speed))
+                                .into();
                             proto_edge.metrics[*metric_idx] = Some(*duration)
                         } else {
                             are_all_metrics_some = false;
@@ -126,15 +133,15 @@ impl Graph {
                     }
                     EdgeCategory::KilometersPerHour => {
                         // get length and duration to calculate maxspeed
-                        let mut length = None;
-                        let mut duration = None;
+                        let mut raw_length = None;
+                        let mut raw_duration = None;
                         // get calculation-rules
                         for &(other_type, other_idx) in cfg.edges.calc_rules(metric_idx) {
                             // get values from edge dependent of calculation-rules
                             match other_type {
-                                EdgeCategory::Meters => length = proto_edge.metrics[*other_idx],
+                                EdgeCategory::Meters => raw_length = proto_edge.metrics[*other_idx],
                                 EdgeCategory::Seconds => {
-                                    duration = proto_edge.metrics[*other_idx];
+                                    raw_duration = proto_edge.metrics[*other_idx];
                                 }
                                 _ => {
                                     return Err(format!(
@@ -145,9 +152,11 @@ impl Graph {
                             }
                         }
                         // calc maxspeed and update proto-edge
-                        if let (Some(length), Some(duration)) = (length, duration) {
-                            let maxspeed: KilometersPerHour =
-                                Kilometers(length) / Seconds(duration);
+                        if let (Some(raw_length), Some(raw_duration)) = (raw_length, raw_duration) {
+                            let maxspeed: defaults::speed::TYPE =
+                                (defaults::length::TYPE::new(raw_length)
+                                    / defaults::time::TYPE::new(raw_duration))
+                                .into();
                             proto_edge.metrics[*metric_idx] = Some(*maxspeed)
                         } else {
                             are_all_metrics_some = false;

@@ -1,10 +1,9 @@
 use crate::{
     configs::parser::{self, EdgeCategory, NodeCategory},
-    defaults,
-    defaults::capacity::DimVec,
+    defaults::{self, capacity::DimVec},
     helpers,
     network::{EdgeBuilder, EdgeIdx, MetricIdx, NodeBuilder, ProtoEdge, ProtoNode, ProtoShortcut},
-    units::geo,
+    units::{geo, length::Meters, speed::KilometersPerHour, time::Seconds},
 };
 use log::info;
 use std::{
@@ -200,8 +199,9 @@ impl ProtoShortcut {
                     let metric_idx = MetricIdx(metric_values.len());
 
                     if cfg.is_metric_provided(metric_idx) {
-                        if let Ok(meters) = param.parse::<f64>() {
-                            metric_values.push(Some(meters / 1_000.0));
+                        if let Ok(raw_m) = param.parse::<f64>() {
+                            let length = defaults::length::TYPE::from(Meters(raw_m));
+                            metric_values.push(Some(*length));
                         } else {
                             return Err(format!(
                                 "Parsing {} '{}' of edge-param #{} didn't work.",
@@ -213,10 +213,43 @@ impl ProtoShortcut {
                         metric_values.push(None);
                     }
                 }
-                EdgeCategory::KilometersPerHour
-                | EdgeCategory::Seconds
-                | EdgeCategory::LaneCount
-                | EdgeCategory::Custom => {
+                EdgeCategory::Seconds => {
+                    let metric_idx = MetricIdx(metric_values.len());
+
+                    if cfg.is_metric_provided(metric_idx) {
+                        if let Ok(raw_s) = param.parse::<f64>() {
+                            let duration = defaults::time::TYPE::from(Seconds(raw_s));
+                            metric_values.push(Some(*duration));
+                        } else {
+                            return Err(format!(
+                                "Parsing {} '{}' of edge-param #{} didn't work.",
+                                category, param, param_idx
+                            ));
+                        };
+                        param_idx += 1;
+                    } else {
+                        metric_values.push(None);
+                    }
+                }
+                EdgeCategory::KilometersPerHour => {
+                    let metric_idx = MetricIdx(metric_values.len());
+
+                    if cfg.is_metric_provided(metric_idx) {
+                        if let Ok(raw_kmph) = param.parse::<f64>() {
+                            let maxspeed = defaults::speed::TYPE::from(KilometersPerHour(raw_kmph));
+                            metric_values.push(Some(*maxspeed));
+                        } else {
+                            return Err(format!(
+                                "Parsing {} '{}' of edge-param #{} didn't work.",
+                                category, param, param_idx
+                            ));
+                        };
+                        param_idx += 1;
+                    } else {
+                        metric_values.push(None);
+                    }
+                }
+                EdgeCategory::LaneCount | EdgeCategory::Custom => {
                     let metric_idx = MetricIdx(metric_values.len());
 
                     if cfg.is_metric_provided(metric_idx) {

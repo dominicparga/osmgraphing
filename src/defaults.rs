@@ -14,7 +14,16 @@ pub mod accuracy {
     pub const F64_FMT_DIGITS: usize = 6;
 }
 
+pub mod length {
+    pub type TYPE = crate::units::length::Kilometers;
+}
+
+pub mod time {
+    pub type TYPE = crate::units::time::Minutes;
+}
+
 pub mod speed {
+    pub type TYPE = crate::units::speed::KilometersPerHour;
     pub const MAX_KMH: u16 = 130;
     pub const MIN_KMH: u8 = 5;
 }
@@ -40,6 +49,7 @@ pub mod network {
     use crate::{
         defaults,
         network::{StreetCategory, VehicleCategory},
+        units::speed::KilometersPerHour,
     };
     use log::warn;
     use osmpbfreader::Way;
@@ -70,8 +80,8 @@ pub mod network {
             }
         }
 
-        fn maxspeed(&self) -> u16 {
-            match self {
+        fn maxspeed(&self) -> KilometersPerHour {
+            KilometersPerHour(match self {
                 StreetCategory::Motorway => 130,
                 StreetCategory::MotorwayLink => 50,
                 StreetCategory::Trunk => 100,
@@ -91,7 +101,7 @@ pub mod network {
                 StreetCategory::Cycleway => 25,
                 StreetCategory::Pedestrian => 5,
                 StreetCategory::Path => 15,
-            }
+            } as f64)
         }
 
         pub fn is_for(&self, vehicle_category: &VehicleCategory, is_driver_picky: bool) -> bool {
@@ -201,7 +211,7 @@ pub mod network {
             self.lane_count()
         }
 
-        pub fn parse_maxspeed(&self, way: &Way) -> u16 {
+        pub fn parse_maxspeed(&self, way: &Way) -> KilometersPerHour {
             let snippet = match way.tags.get("maxspeed") {
                 Some(snippet) => snippet,
                 None => return self.maxspeed(),
@@ -209,7 +219,9 @@ pub mod network {
 
             // parse given maxspeed and return
             match snippet.parse::<u16>() {
-                Ok(maxspeed) => max(defaults::speed::MIN_KMH.into(), maxspeed),
+                Ok(maxspeed) => {
+                    KilometersPerHour(max(defaults::speed::MIN_KMH.into(), maxspeed) as f64)
+                }
                 Err(_) => match snippet.trim().to_ascii_lowercase().as_ref() {
                     // motorway
                     "de:motorway"
@@ -224,21 +236,21 @@ pub mod network {
                     | "50; 100" // way-id: 152374728
                     | "50;100" // way-id: 266299302
                     | "60 mph"
-                    => 100,
+                    => KilometersPerHour(100.0),
                     // 80 kmh
                     | "50 mph"
                     | "60;80" // way-id: 24441573
                     | "80;60" // way-id: 25154358
-                    => 80,
+                    => KilometersPerHour(80.0),
                     // 70 kmh
                     "70; 50" // way-id: 260835537
                     | "50;70" // way-id: 48581258
                     | "50; 70" // way-id: 20600128
                     | "40 mph"
-                    => 70,
+                    => KilometersPerHour(70.0),
                     // 60 kmh
                     "60;50" // way-id: 48453714
-                    => 60,
+                    => KilometersPerHour(60.0),
                     // 50 kmh
                     | "20; 50" // way-id: 308645778
                     | "30 mph"
@@ -251,7 +263,7 @@ pub mod network {
                     | "5ß" // way-id: 8367325
                     | "de:urban" // way-id: 111446158
                     | "maxspeed=50"
-                    => 50,
+                    => KilometersPerHour(50.0),
                     // 30 kmh
                     | "20 mph"
                     | "30 @ (mo-fr 06:00-18:00)" // way-id: 558224330
@@ -263,13 +275,13 @@ pub mod network {
                     | "de:zone:30" // way-id: 32657912
                     | "de:zone30"
                     | "zone:maxspeed=de:30" // way-id: 26521170
-                    => 30,
+                    => KilometersPerHour(30.0),
                     // 25 kmh
                     "15 mph"
-                    => 25,
+                    => KilometersPerHour(25.0),
                     // 20 kmh
                     "2ß"
-                    => 20,
+                    => KilometersPerHour(20.0),
                     // bicycle
                     "de:bicycle_road"
                     => StreetCategory::Cycleway.maxspeed(),

@@ -1,6 +1,6 @@
 use crate::{
     configs::parser::{self, EdgeCategory},
-    defaults::capacity::DimVec,
+    defaults::{self, capacity::DimVec},
     helpers,
     network::{
         EdgeBuilder, MetricIdx, NodeBuilder, ProtoEdge, ProtoNode, ProtoShortcut, StreetCategory,
@@ -92,8 +92,9 @@ impl super::Parsing for Parser {
                     }
                     EdgeCategory::KilometersPerHour => {
                         if is_provided {
-                            let maxspeed = highway_tag.parse_maxspeed(&way);
-                            metrics[*metric_idx] = Some(maxspeed as f64);
+                            let maxspeed =
+                                defaults::speed::TYPE::from(highway_tag.parse_maxspeed(&way));
+                            metrics[*metric_idx] = Some(*maxspeed);
                         } else {
                             return Err(format!(
                                 "The {} of an edge in a pbf-file has to be provided, \

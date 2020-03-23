@@ -1,4 +1,11 @@
-use super::{speed::KilometersPerHour, time::Seconds};
+use crate::{
+    helpers::ApproxEq,
+    units::{
+        length::Meters,
+        speed::KilometersPerHour,
+        time::{Hours, Minutes, Seconds},
+    },
+};
 use std::{
     fmt,
     fmt::Display,
@@ -8,9 +15,27 @@ use std::{
 #[derive(Debug, Default, Clone, Copy, PartialOrd, PartialEq)]
 pub struct Kilometers(pub f64);
 
+impl Kilometers {
+    pub fn new(km: f64) -> Kilometers {
+        Kilometers(km)
+    }
+}
+
 impl Display for Kilometers {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{} km", self.0)
+    }
+}
+
+impl From<Meters> for Kilometers {
+    fn from(meters: Meters) -> Kilometers {
+        Kilometers(meters.0 / 1_000.0)
+    }
+}
+
+impl From<&Meters> for Kilometers {
+    fn from(meters: &Meters) -> Kilometers {
+        Kilometers::from(*meters)
     }
 }
 
@@ -25,6 +50,12 @@ impl Deref for Kilometers {
 impl DerefMut for Kilometers {
     fn deref_mut(&mut self) -> &mut f64 {
         &mut self.0
+    }
+}
+
+impl ApproxEq<Kilometers> for Kilometers {
+    fn approx_eq(&self, other: &Kilometers) -> bool {
+        self.0.approx_eq(other)
     }
 }
 
@@ -61,15 +92,33 @@ impl Div<Seconds> for Kilometers {
     type Output = KilometersPerHour;
 
     fn div(self, duration: Seconds) -> KilometersPerHour {
-        KilometersPerHour(3_600.0 * self.0 / (*duration))
+        KilometersPerHour(self.0 / (*Hours::from(duration)))
+    }
+}
+
+/// v = s / t
+impl Div<Minutes> for Kilometers {
+    type Output = KilometersPerHour;
+
+    fn div(self, duration: Minutes) -> KilometersPerHour {
+        KilometersPerHour(self.0 / (*Hours::from(duration)))
+    }
+}
+
+/// v = s / t
+impl Div<Hours> for Kilometers {
+    type Output = KilometersPerHour;
+
+    fn div(self, duration: Hours) -> KilometersPerHour {
+        KilometersPerHour(self.0 / (*duration))
     }
 }
 
 /// t = s / v
 impl Div<KilometersPerHour> for Kilometers {
-    type Output = Seconds;
+    type Output = Hours;
 
-    fn div(self, speed: KilometersPerHour) -> Seconds {
-        Seconds(3_600.0 * self.0 / (*speed))
+    fn div(self, speed: KilometersPerHour) -> Hours {
+        Hours(self.0 / (*speed))
     }
 }

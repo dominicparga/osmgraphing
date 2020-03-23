@@ -36,8 +36,8 @@ pub trait Approx {
     fn approx(self) -> f64;
 }
 
-pub trait ApproxEq {
-    fn approx_eq(&self, other: &Self) -> bool;
+pub trait ApproxEq<O> {
+    fn approx_eq(&self, other: &O) -> bool;
 }
 
 pub trait ApproxCmp {
@@ -51,7 +51,7 @@ impl Approx for f64 {
     }
 }
 
-impl ApproxEq for f64 {
+impl ApproxEq<f64> for f64 {
     fn approx_eq(&self, other: &f64) -> bool {
         (self.approx() - other.approx()).abs() <= accuracy::F64_ABS
     }
@@ -75,7 +75,7 @@ impl ApproxCmp for f64 {
     }
 }
 
-impl ApproxEq for DimVec<f64> {
+impl ApproxEq<DimVec<f64>> for DimVec<f64> {
     fn approx_eq(&self, other: &DimVec<f64>) -> bool {
         self.iter()
             .zip(other)

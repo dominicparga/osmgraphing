@@ -1,4 +1,7 @@
-use super::{length::Kilometers, time::Seconds};
+use super::{
+    length::Kilometers,
+    time::{Minutes, Seconds},
+};
 use std::{
     fmt,
     fmt::Display,
@@ -7,6 +10,12 @@ use std::{
 
 #[derive(Debug, Default, Clone, Copy, PartialOrd, PartialEq)]
 pub struct KilometersPerHour(pub f64);
+
+impl KilometersPerHour {
+    pub fn new(kmph: f64) -> KilometersPerHour {
+        KilometersPerHour(kmph)
+    }
+}
 
 impl Display for KilometersPerHour {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -53,6 +62,15 @@ impl Sub<KilometersPerHour> for KilometersPerHour {
 impl SubAssign<KilometersPerHour> for KilometersPerHour {
     fn sub_assign(&mut self, other: KilometersPerHour) {
         self.0 -= other.0;
+    }
+}
+
+/// s = v * t
+impl Mul<Minutes> for KilometersPerHour {
+    type Output = Kilometers;
+
+    fn mul(self, duration: Minutes) -> Kilometers {
+        Kilometers(self.0 * (*duration) / 60.0)
     }
 }
 

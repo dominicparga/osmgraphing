@@ -3,7 +3,7 @@ use osmgraphing::{
     configs::{self, SimpleId},
     defaults::capacity::DimVec,
     network::{MetricIdx, NodeIdx},
-    units::geo::Coordinate,
+    units::{geo::Coordinate, length::Kilometers},
 };
 use smallvec::smallvec;
 
@@ -54,33 +54,33 @@ fn expected_paths(
     let expected_paths = vec![
         // ll
         (ll, ll, Some((0.0, vec![vec![]]))),
-        (ll, bb, Some((0.005, vec![vec![ll, bb]]))),
-        (ll, rr, Some((0.009, vec![vec![ll, tl, tr, rr]]))),
-        (ll, tr, Some((0.006, vec![vec![ll, tl, tr]]))),
-        (ll, tl, Some((0.003, vec![vec![ll, tl]]))),
+        (ll, bb, Some((5.0, vec![vec![ll, bb]]))),
+        (ll, rr, Some((9.0, vec![vec![ll, tl, tr, rr]]))),
+        (ll, tr, Some((6.0, vec![vec![ll, tl, tr]]))),
+        (ll, tl, Some((3.0, vec![vec![ll, tl]]))),
         // bb
-        (bb, ll, Some((0.005, vec![vec![bb, ll]]))),
+        (bb, ll, Some((5.0, vec![vec![bb, ll]]))),
         (bb, bb, Some((0.0, vec![vec![]]))),
-        (bb, rr, Some((0.005, vec![vec![bb, rr]]))),
-        (bb, tr, Some((0.008, vec![vec![bb, rr, tr]]))),
-        (bb, tl, Some((0.008, vec![vec![bb, ll, tl]]))),
+        (bb, rr, Some((5.0, vec![vec![bb, rr]]))),
+        (bb, tr, Some((8.0, vec![vec![bb, rr, tr]]))),
+        (bb, tl, Some((8.0, vec![vec![bb, ll, tl]]))),
         // rr
-        (rr, ll, Some((0.009, vec![vec![rr, tr, tl, ll]]))),
-        (rr, bb, Some((0.005, vec![vec![rr, bb]]))),
+        (rr, ll, Some((9.0, vec![vec![rr, tr, tl, ll]]))),
+        (rr, bb, Some((5.0, vec![vec![rr, bb]]))),
         (rr, rr, Some((0.0, vec![vec![]]))),
-        (rr, tr, Some((0.003, vec![vec![rr, tr]]))),
-        (rr, tl, Some((0.006, vec![vec![rr, tr, tl]]))),
+        (rr, tr, Some((3.0, vec![vec![rr, tr]]))),
+        (rr, tl, Some((6.0, vec![vec![rr, tr, tl]]))),
         // tr
-        (tr, ll, Some((0.006, vec![vec![tr, tl, ll]]))),
-        (tr, bb, Some((0.008, vec![vec![tr, rr, bb]]))),
-        (tr, rr, Some((0.003, vec![vec![tr, rr]]))),
+        (tr, ll, Some((6.0, vec![vec![tr, tl, ll]]))),
+        (tr, bb, Some((8.0, vec![vec![tr, rr, bb]]))),
+        (tr, rr, Some((3.0, vec![vec![tr, rr]]))),
         (tr, tr, Some((0.0, vec![vec![]]))),
-        (tr, tl, Some((0.003, vec![vec![tr, tl]]))),
+        (tr, tl, Some((3.0, vec![vec![tr, tl]]))),
         // tl
-        (tl, ll, Some((0.003, vec![vec![tl, ll]]))),
-        (tl, bb, Some((0.008, vec![vec![tl, ll, bb]]))),
-        (tl, rr, Some((0.006, vec![vec![tl, tr, rr]]))),
-        (tl, tr, Some((0.003, vec![vec![tl, tr]]))),
+        (tl, ll, Some((3.0, vec![vec![tl, ll]]))),
+        (tl, bb, Some((8.0, vec![vec![tl, ll, bb]]))),
+        (tl, rr, Some((6.0, vec![vec![tl, tr, rr]]))),
+        (tl, tr, Some((3.0, vec![vec![tl, tr]]))),
         (tl, tl, Some((0.0, vec![vec![]]))),
     ];
 
@@ -100,7 +100,8 @@ fn expected_paths(
                                 .collect()
                         })
                         .collect();
-                    Some((smallvec![cost], paths))
+                    let cost = Kilometers(cost / 1_000.0);
+                    Some((smallvec![*cost], paths))
                 }
                 None => None,
             };

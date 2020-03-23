@@ -3,7 +3,7 @@ use osmgraphing::{
     configs::{self, SimpleId},
     defaults::capacity::DimVec,
     network::{MetricIdx, NodeIdx},
-    units::geo::Coordinate,
+    units::{geo::Coordinate, length::Kilometers},
 };
 use smallvec::smallvec;
 
@@ -115,7 +115,8 @@ fn expected_paths(
                                 .collect()
                         })
                         .collect();
-                    Some((smallvec![cost], paths))
+                    let cost = Kilometers(cost);
+                    Some((smallvec![*cost], paths))
                 }
                 None => None,
             };
