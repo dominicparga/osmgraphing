@@ -4,18 +4,18 @@
 use osmgraphing::{
     configs::{self, Config},
     defaults::capacity::DimVec,
-    helpers::{ApproxEq, self},
+    helpers::{self, ApproxEq},
     io::Parser,
     network::{EdgeIdx, Graph, MetricIdx, Node, NodeAccessor, NodeIdx},
     routing::{self},
     units::geo::Coordinate,
 };
-use smallvec::SmallVec;
-use std::fmt::{self, Display};
 use rand::{
     distributions::{Distribution, Uniform},
     SeedableRng,
 };
+use smallvec::SmallVec;
+use std::fmt::{self, Display};
 
 #[allow(dead_code)]
 pub mod defaults {
@@ -151,34 +151,38 @@ pub fn compare_dijkstras(ch_fmi_config_file: &str, metric_id: &str) {
         // check basic info
         if let (Some(ch_path), Some(path)) = (option_ch_path, option_path) {
             let flattened_ch_path = ch_path.flatten(&graph);
+            let flattened_path = path.flatten(&graph);
 
             // cmp src
-            if flattened_ch_path.src_idx() != path.src_idx() {
+            if flattened_ch_path.src_idx() != flattened_path.src_idx() {
                 panic!(
                     "CH-Dijkstra's path's src-idx ({}) is different from Dijkstra's path's src-idx ({}).",
                     flattened_ch_path.src_idx(),
-                    path.src_idx()
+                    flattened_path.src_idx()
                 )
             }
 
             // cmp dst
-            if flattened_ch_path.dst_idx() != path.dst_idx() {
+            if flattened_ch_path.dst_idx() != flattened_path.dst_idx() {
                 panic!(
                     "CH-Dijkstra's path's dst-idx ({}) is different from Dijkstra's path's dst-idx ({}).",
                     flattened_ch_path.dst_idx(),
-                    path.dst_idx()
+                    flattened_path.dst_idx()
                 )
             }
 
             // cmp cost
             let ch_cost = flattened_ch_path.calc_cost(cfg_routing.metric_indices(), &graph);
-            let cost = path.calc_cost(cfg_routing.metric_indices(), &graph);
+            let cost = flattened_path.calc_cost(cfg_routing.metric_indices(), &graph);
             assert!(ch_cost.approx_eq(&cost),
                 "CH-Dijkstra's path's cost ({:?}) is different ({:?}) from Dijkstra's path's cost ({:?}). --------------------- CH-Dijkstra's path {} --------------------- Dijkstra's path {}",
                 ch_cost, helpers::sub(&ch_cost, &cost), cost,
                 flattened_ch_path,
-                path
+                flattened_path
             );
+
+            // cmp edges
+            assert!(flattened_ch_path == flattened_path, "CH-Dijkstra's path  is different from Dijkstra's path. --------------------- CH-Dijkstra's path {} --------------------- Dijkstra's path {}", flattened_ch_path, flattened_path);
         }
     }
 }

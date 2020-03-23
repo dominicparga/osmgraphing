@@ -1,9 +1,5 @@
-use crate::helpers::{defaults, compare_dijkstras, test_dijkstra, TestNode};
-use osmgraphing::{
-    configs,
-    defaults::capacity::DimVec,
-    network::{MetricIdx},
-};
+use crate::helpers::{compare_dijkstras, defaults, test_dijkstra, TestNode};
+use osmgraphing::{configs, defaults::capacity::DimVec, network::MetricIdx};
 
 const METRIC_ID: &str = defaults::LENGTH_ID;
 const PBF_CONFIG: &str = defaults::paths::resources::configs::ISLE_OF_MAN_PBF;

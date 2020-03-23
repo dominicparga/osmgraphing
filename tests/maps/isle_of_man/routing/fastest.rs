@@ -1,4 +1,4 @@
-use crate::helpers::{defaults, TestNode, test_dijkstra, compare_dijkstras};
+use crate::helpers::{compare_dijkstras, defaults, test_dijkstra, TestNode};
 use osmgraphing::{configs, defaults::capacity::DimVec, network::MetricIdx};
 
 const METRIC_ID: &str = defaults::DURATION_ID;
