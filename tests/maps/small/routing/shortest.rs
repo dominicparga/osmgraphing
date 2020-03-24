@@ -1,4 +1,4 @@
-use crate::helpers::{defaults, test_dijkstra, TestNode};
+use crate::helpers::{compare_dijkstras, defaults, test_dijkstra, TestNode};
 use osmgraphing::{
     configs::{self, SimpleId},
     defaults::capacity::DimVec,
@@ -11,6 +11,11 @@ const METRIC_ID: &str = defaults::LENGTH_ID;
 const CONFIG: &str = defaults::paths::resources::configs::SMALL_FMI;
 const CH_CONFIG: &str = defaults::paths::resources::configs::SMALL_CH_FMI;
 const IS_CH_DIJKSTRA: bool = true;
+
+#[test]
+fn compare_dijkstras_on_ch_fmi_map() {
+    compare_dijkstras(CH_CONFIG, METRIC_ID);
+}
 
 #[test]
 fn chdijkstra_on_chmap() {

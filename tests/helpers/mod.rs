@@ -4,7 +4,7 @@
 use osmgraphing::{
     configs::{self, Config},
     defaults::capacity::DimVec,
-    helpers::{self, ApproxEq},
+    helpers,
     io::Parser,
     network::{Graph, MetricIdx, NodeIdx},
     routing::{self},
@@ -156,7 +156,9 @@ pub fn compare_dijkstras(ch_fmi_config_file: &str, metric_id: &str) {
             // cmp cost
             let ch_cost = flattened_ch_path.calc_cost(cfg_routing.metric_indices(), &graph);
             let cost = flattened_path.calc_cost(cfg_routing.metric_indices(), &graph);
-            assert!(ch_cost.approx_eq(&cost),
+            // not approx because both Dijkstras are running on the same graph
+            // -> same best path-cost should be found
+            assert!(ch_cost == cost,
                 "CH-Dijkstra's path's cost ({:?}) is different ({:?}) from Dijkstra's path's cost ({:?}). --------------------- CH-Dijkstra's path {} --------------------- Dijkstra's path {}",
                 ch_cost, helpers::sub(&ch_cost, &cost), cost,
                 flattened_ch_path,
