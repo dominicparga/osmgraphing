@@ -45,14 +45,17 @@ A tool for creating `fmi`-map-files, which contain graphs contracted via contrac
 ## Requirements for large maps (e.g. countries)
 
 In general, the requirements depend on the size of the parsed map (also same map of different dates) and your machine.
-Following numbers base on an __8-core-CPU__ and the `pbf`-map `Germany` from `March 14th, 2020` running on `archlinux` with __16 GB RAM__.
-You should change the number of inlined metrics (via [`SmallVec`][github/servo/rust-smallvec]) according to your needs in the module `defaults` (default is `4`).
-Several GB and performance are saved by doing so.
+Following numbers base on an __8-core-CPU__ and the `pbf`-maps from `March 14th, 2020` running on `archlinux` with __16 GB RAM__.
+Basing on the numbers below, without doing further detailled benchmarks, the memory-usage scales linearly with the graph-size with a growth-factor of `0.5`.
+Hence you could expect around `2x` `RAM`-usage for `4x` graph-size (meaning `4x` node- and `4x` edge-count).
+
+In the module `defaults`, you should change the number of inlined metrics (for [`SmallVec`][github/servo/rust-smallvec]) according to your needs.
+Several GB can be saved by doing so.
 
 - Parsing `Germany.pbf` (4 metrics, ~51 million nodes, ~106 million edges) needs around __14 GB of RAM__ at peak.
   After parsing, the memory-needs are much lower due to the optimized graph-structure.
-- Preprocessing `Germany.pbf` (including parsing) needs a little over __3 minutes__.
-- A __routing query__ on `Germany.pbf` of length around `600 km` takes around __21 seconds__ with `bidirectional Dijkstra`, highly depending on the specific src-dst-pair (and its search-space).
+- Preprocessing `Germany.pbf` (including parsing) needs less than __4 minutes__.
+- A __routing query__ on `Germany.pbf` of length around `600 km` takes around __22 seconds__ with `bidirectional Dijkstra`, highly depending on the specific src-dst-pair (and its search-space).
   This could be improved by removing intermediate nodes (like `b` in `a->b->c`), but they are kept for now.
   Maybe, they are needed for precise/realistic traffic-simulation.
   An `Astar` is not used anymore, because its only purpose is reducing the search-space, which can be reduced much more using [`Contraction Hierarchies`](#contraction-hierarchies).
@@ -60,7 +63,7 @@ Several GB and performance are saved by doing so.
 
 Small maps like `Isle-of-Man.pbf` (~50_000 nodes, ~107_000 edges) run on every machine and are parsed in less than a second.
 
-The German state `Baden-Württemberg.pbf` (~9 million nodes, ~18 million edges) needs less than __3 GB RAM__ at peak and under __30 seconds__ to parse.
+The German state `Baden-Württemberg.pbf` (~9 million nodes, ~18 million edges) needs less than __5 GB RAM__ at peak and around __30 seconds__ to parse.
 
 
 ## Contraction-Hierarchies <a name="contraction-hierarchies"></a>
@@ -113,7 +116,6 @@ generator:
   - id: 'SrcIdx'
   - id: 'DstIdx'
   - id: 'Meters'
-  - id: 'KilometersPerHour'
   - id: 'Seconds'
   - id: 'Ignore' # shortcut-edge-0
   - id: 'Ignore' # shortcut-edge-1
@@ -137,7 +139,7 @@ cmake --build build
 ```
 
 > Note that the multi-ch-constructor is not deterministic (March 12th, 2020).
-> Using it does only speedup your queries, but due to a different resulting order in the priority or rounding-errors, it could lead to different paths of "same" length.
+> Using it does only speedup your queries, but due to a different resulting order in the priority or rounding-errors, it could lead to different paths of same weight.
 
 
 ## Credits
