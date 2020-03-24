@@ -324,6 +324,7 @@ impl EdgeBuilder {
 
         // Most of the time, nodes are added for edges of one street,
         // so duplicates are next to each other.
+        // Duplicates are removed later, but checking here saves a memory.
         // -> check k neighbours
         let n = self.node_ids.len();
         let k = 2;
