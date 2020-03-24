@@ -351,7 +351,10 @@ pub mod generator {
 }
 
 pub mod routing {
-    use crate::{defaults::capacity::DimVec, network::MetricIdx};
+    use crate::{
+        defaults::{self, capacity::DimVec},
+        network::MetricIdx,
+    };
 
     #[derive(Clone, Debug)]
     pub struct Config {
@@ -414,7 +417,7 @@ pub mod routing {
                 .map(|entry| {
                     (
                         cfg_parser.edges.metric_idx(&entry.id),
-                        entry.alpha.unwrap_or(1.0),
+                        entry.alpha.unwrap_or(defaults::routing::ALPHA),
                     )
                 })
                 .unzip();

@@ -45,6 +45,10 @@ pub mod generator {
     pub use super::parser::NO_SHORTCUT_IDX;
 }
 
+pub mod routing {
+    pub const ALPHA: f64 = 1.0;
+}
+
 pub mod network {
     use crate::{
         defaults,
