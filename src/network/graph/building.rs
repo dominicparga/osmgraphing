@@ -240,6 +240,15 @@ pub struct ProtoEdge {
     pub metrics: DimVec<Option<f64>>,
 }
 
+impl Into<ProtoShortcut> for ProtoEdge {
+    fn into(self) -> ProtoShortcut {
+        ProtoShortcut {
+            proto_edge: self,
+            sc_edges: None,
+        }
+    }
+}
+
 impl MemSize for ProtoEdge {
     /// Work off proto-edges in chunks to keep memory-usage lower.
     /// For example:
@@ -304,13 +313,15 @@ impl EdgeBuilder {
         &self.cfg
     }
 
-    pub fn insert(
-        &mut self,
-        ProtoShortcut {
+    pub fn insert<E>(&mut self, proto_edge: E)
+    where
+        E: Into<ProtoShortcut>,
+    {
+        let ProtoShortcut {
             proto_edge,
             sc_edges,
-        }: ProtoShortcut,
-    ) {
+        } = proto_edge.into();
+
         // Most of the time, nodes are added for edges of one street,
         // so duplicates are next to each other.
         // -> check k neighbours
