@@ -1,29 +1,33 @@
 use crate::helpers::{defaults, parse};
 use osmgraphing::configs::Config;
 
+const PBF_CONFIG: &str = defaults::paths::resources::configs::ISLE_OF_MAN_PBF;
+const CH_FMI_CONFIG: &str = defaults::paths::resources::configs::ISLE_OF_MAN_CH_FMI;
+const FMI_CONFIG: &str = defaults::paths::resources::configs::ISLE_OF_MAN_FMI;
+
 #[test]
 fn pbf_yaml() {
-    Config::from_yaml(defaults::paths::resources::configs::ISLE_OF_MAN_PBF).unwrap();
+    Config::from_yaml(PBF_CONFIG).unwrap();
 }
 
 #[test]
 fn fmi_yaml() {
-    Config::from_yaml(defaults::paths::resources::configs::ISLE_OF_MAN_FMI).unwrap();
+    Config::from_yaml(FMI_CONFIG).unwrap();
 }
 
 #[test]
 fn ch_fmi_yaml() {
-    Config::from_yaml(defaults::paths::resources::configs::ISLE_OF_MAN_CH_FMI).unwrap();
+    Config::from_yaml(CH_FMI_CONFIG).unwrap();
 }
 
 #[test]
 fn yaml_str() {
-    Config::from_yaml(defaults::paths::resources::configs::ISLE_OF_MAN_PBF).unwrap();
+    Config::from_yaml(PBF_CONFIG).unwrap();
 }
 
 #[test]
 fn pbf_graph() {
-    let cfg = Config::from_yaml(defaults::paths::resources::configs::ISLE_OF_MAN_PBF).unwrap();
+    let cfg = Config::from_yaml(PBF_CONFIG).unwrap();
     let graph = parse(cfg.parser);
 
     let nodes = graph.nodes();
