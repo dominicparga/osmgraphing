@@ -164,7 +164,8 @@ pub fn compare_dijkstras(ch_fmi_config_file: &str, metric_id: &str) {
             );
 
             // cmp edges
-            assert!(flattened_ch_path == flattened_path, "CH-Dijkstra's path  is different from Dijkstra's path. --------------------- CH-Dijkstra's path {} --------------------- Dijkstra's path {}", flattened_ch_path, flattened_path);
+            // unfortunately incorrect for alternative paths of same cost
+            // assert!(flattened_ch_path == flattened_path, "CH-Dijkstra's path  is different from Dijkstra's path. --------------------- CH-Dijkstra's path {} --------------------- Dijkstra's path {}", flattened_ch_path, flattened_path);
         }
     }
 }
