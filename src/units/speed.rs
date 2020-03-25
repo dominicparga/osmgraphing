@@ -1,5 +1,5 @@
 use super::{
-    length::Kilometers,
+    distance::Kilometers,
     time::{Minutes, Seconds},
 };
 use std::{

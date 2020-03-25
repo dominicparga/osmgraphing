@@ -73,17 +73,17 @@ pub struct TestEdge {
 
 impl TestEdge {
     #[allow(dead_code)]
-    pub fn new_fwd<L, T>(
+    pub fn new_fwd<D, T>(
         name: Option<&str>,
         edge_idx: EdgeIdx,
         src: &TestNode,
         dst: &TestNode,
-        length: L,
+        distance: D,
         maxspeed: KilometersPerHour,
         duration: T,
     ) -> TestEdge
     where
-        L: Into<defaults::length::TYPE>,
+        D: Into<defaults::distance::TYPE>,
         T: Into<defaults::time::TYPE>,
     {
         TestEdge {
@@ -92,22 +92,22 @@ impl TestEdge {
             is_fwd: true,
             src_idx: src.idx.into(),
             dst_idx: dst.idx.into(),
-            metrics: vec![*length.into(), *maxspeed, *duration.into()],
+            metrics: vec![*distance.into(), *maxspeed, *duration.into()],
         }
     }
 
     #[allow(dead_code)]
-    pub fn new_bwd<L, T>(
+    pub fn new_bwd<D, T>(
         name: Option<&str>,
         edge_idx: EdgeIdx,
         src: &TestNode,
         dst: &TestNode,
-        length: L,
+        distance: D,
         maxspeed: KilometersPerHour,
         duration: T,
     ) -> TestEdge
     where
-        L: Into<defaults::length::TYPE>,
+        D: Into<defaults::distance::TYPE>,
         T: Into<defaults::time::TYPE>,
     {
         TestEdge {
@@ -116,7 +116,7 @@ impl TestEdge {
             is_fwd: false,
             src_idx: src.idx.into(),
             dst_idx: dst.idx.into(),
-            metrics: vec![*length.into(), *maxspeed, *duration.into()],
+            metrics: vec![*distance.into(), *maxspeed, *duration.into()],
         }
     }
 

@@ -16,7 +16,7 @@ mod raw;
 /// But since `pbf`-files does not provide a column-based metric-list, but intrinsically by parsing `osm`-data, you can distinguish between default-metrics and custom-metrics via the key `category`.
 /// Default-categories are described in `EdgeCategory`.
 ///
-/// Internally, a default-metric uses provided calculation-rules to be calculated by other default-categories as well (like the duration from length and maxspeed).
+/// Internally, a default-metric uses provided calculation-rules to be calculated by other default-categories as well (like the duration from distance and maxspeed).
 ///
 /// Keep in mind, that metrics (except for id) are stored as `f64` for better maintainability and efficiency.
 ///
@@ -26,7 +26,7 @@ mod raw;
 /// Further, the metrics, which are used in the routing, can be listed in the routing-section with their previously defined id.
 /// Comparisons are made using pareto-optimality, so there is no comparison between metrics.
 /// In case you'll use personlized-routing, default-preferences can be set with weights.
-/// The example below shows a routing-case, where the metric `length` is weighted with `169 / (169 + 331) = 33.8 %` while the metric `duration` is weighted with `331 / (169 + 331) = 66.2 %`.
+/// The example below shows a routing-case, where the metric `distance` is weighted with `169 / (169 + 331) = 33.8 %` while the metric `duration` is weighted with `331 / (169 + 331) = 66.2 %`.
 ///
 ///
 /// ### Supported structure
@@ -34,8 +34,8 @@ mod raw;
 /// The supported `yaml`-structure can be seen in `resources/configs/schema.yaml`.
 ///
 // Every metric (!= every category) will be stored in the graph, if mentioned in this `yaml`-file.
-/// If a metric is mentioned, but `provided` is false, it will be calculated (e.g. edge-length from node-coordinates and haversine).
-/// Please note, that metrics being calculated (like the duration from length and maxspeed) need the respective metrics to be calculated.
+/// If a metric is mentioned, but `provided` is false, it will be calculated (e.g. edge-distance from node-coordinates and haversine).
+/// Please note, that metrics being calculated (like the duration from distance and maxspeed) need the respective metrics to be calculated.
 #[derive(Debug, Deserialize)]
 #[serde(from = "raw::Config")]
 pub struct Config {

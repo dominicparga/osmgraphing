@@ -3,11 +3,11 @@ use osmgraphing::{
     configs::{self, SimpleId},
     defaults::capacity::DimVec,
     network::{MetricIdx, NodeIdx},
-    units::{geo::Coordinate, length::Kilometers},
+    units::{geo::Coordinate, distance::Kilometers},
 };
 use smallvec::smallvec;
 
-const METRIC_ID: &str = defaults::LENGTH_ID;
+const METRIC_ID: &str = defaults::DISTANCE_ID;
 const CONFIG: &str = defaults::paths::resources::configs::BIDIRECTIONAL_BAIT_FMI;
 const IS_CH_DIJKSTRA: bool = true;
 

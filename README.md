@@ -60,7 +60,7 @@ Several GB can be saved by doing so.
 - Parsing `Germany.pbf` (4 metrics, ~51 million nodes, ~106 million edges) needs around __14 GB of RAM__ at peak.
   After parsing, the memory-needs are much lower due to the optimized graph-structure.
 - Preprocessing `Germany.pbf` (including parsing) needs less than __4 minutes__.
-- A __routing query__ on `Germany.pbf` of length around `600 km` takes around __22 seconds__ with `bidirectional Dijkstra`, highly depending on the specific src-dst-pair (and its search-space).
+- A __routing query__ on `Germany.pbf` of distance around `600 km` takes around __22 seconds__ with `bidirectional Dijkstra`, highly depending on the specific src-dst-pair (and its search-space).
   This could be improved by removing intermediate nodes (like `b` in `a->b->c`), but they are kept for now.
   Maybe, they are needed for precise/realistic traffic-simulation.
   An `Astar` is not used anymore, because its only purpose is reducing the search-space, which can be reduced much more using [`Contraction Hierarchies`](#contraction-hierarchies).

@@ -31,7 +31,7 @@ Maybe, it is concept for later documentation, or just keep-up-the-good-work (`ku
 ### Extend tests
 
 - extend routing-tests
-  - implement routing-tests for parsed pbf-files (just comparing src-id, dst-id and length)
+  - implement routing-tests for parsed pbf-files (just comparing src-id, dst-id and distance)
 - Take results from actions of commit f28d88a for parsing-tests (fmi).
 - Test personalized routing explicitly using certain alpha-values and new expected paths.
 
