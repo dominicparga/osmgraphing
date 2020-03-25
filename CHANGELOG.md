@@ -40,11 +40,37 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 
 ### Added <a name="unreleased/added"></a>
 
-- Support for generating `fmi`-files with __`src`-__ and __`dst`-indices__ as column.
-- Implement __config-parser's categories__ separate from __config-generator's categories__ to guarantee ideal support.
-- Add __`isle-of-man.ch.fmi`__ and update `pbf-to-fmi.yaml` respectively.
-  Add very basic parsing-tests.
-- Add __contraction-hierarchies-level__ to nodes.
+- Support generating `fmi`-files with __`src`-__ and __`dst`-indices__ as column.
+- Extend __configs__
+  - Implement __config-parser's categories__ separate from __config-generator's categories__ to guarantee ideal support.
+  - Add __`is-ch-dijkstra`__ to routing-config (needing a keyword for `metrics`).
+  - Extend parser to __check config__ before starting parsing.
+- Support graphs created via __contraction-hierarchies__ and efficient routing on these graphs.
+  - Extend the __bidirectional Dijkstra__ to support normal and contracted graphs efficiently with one implementation (using a flag and lazy bool-evaluation).
+    - Add __contraction-hierarchies-level__ to nodes.
+      Further, let the graphbuilder __sort edge-ids by level__ to allow `break` instead of `continue` when iterating over leaving-edges in the bidirectional CH-Dijkstra.
+    - Add `ProtoShortcut`s and replace `ProtoEdge`s.
+    - Add very basic parsing-tests.
+    - Add __`isle-of-man.ch.fmi`__ and its `config`, and update `pbf-to-fmi.yaml` respectively.
+    - Add __`small.ch.fmi`__ and its `config`.yaml` respectively.
+    - Extend __parser__ by removing __duplicates__.
+      - Add duplicates to some test-maps.
+  - Extend the __graph__ to access shortcuts and node-level quickly and memory-efficient (via offsets).
+    Make graph-output prettier and add shortcuts.
+  - Extend the __graphbuilder__ to build shortcuts and their shortcuts.
+  - Extend the __graphbuilder__ to build in different stages.
+    This allows a better naming-convention for intermediate proto-edge-types and improves maintenance a lot.
+- Add script for doing benchmarks.
+- Add script for creating __[flamegraphs][github/flamegraph-rs/flamegraph]__.
+- Add many __defaults__
+  - Move defaults for `SmallVec`-inline-size into a new submodule `capacity`.
+  - Add __metric-unit-defaults__ and use them overall.
+  - Add realistic __accuracy-limits__ (`1e-6` is way enough, as explained in the respective module `defaults`, and `EPSILON` could easily fail due to rounding-errors).
+  - Add __capacity-defaults__, like the bytes-limit per chunk when building the graph.
+- Add __helpers__
+  - Add trait `MemSize` considering runtime-dependencies like the number of metrics in a edge.
+- Add __units__ and test-cases, and replace many places, where units are relevant.
+  - It could make sense to export units as own module (Kilometers, Meters, Seconds, Minutes, Hours, KilometersPerHour)
 
 
 ### Changed <a name="unreleased/changed"></a>
@@ -55,11 +81,26 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 - Edit __generated__ `fmi`-map-files.
   - Let generator print ids of the provided config-edge-categories, not their categories.
   - Let generator print `Ignore`-column as `_`.
-- Move defaults for `SmallVec`-inline-size into a new submodule `capacity`.
 - Make __graphbuilder__ much more efficient in performance and memory (both around `25 %`).
   - Replace `BTreeMap` of graphbuilder by `Vec` and a handy (forced) way of adding graph-components.
+    This needs a replacement of __node-ids by node-indices__ during build-phase.
   - __Replace `f32` by `f64`__ thanks to the new optimized graphbuilder.
-- Make __accuracy-limits__ more realistic (`1e-6` is way enough and `EPSILON` could easily fail due to rounding-errors).
+- Slightly update repo, updating __code-of-conduct__ and __contributing__ slightly, and replacing __`Apache-2.0-LICENSE`-description__ by a shorter, more general description of it (including purpose).
+- Update all maps to be up-to-date (March 14th, 2020).
+  - Extend parser by some new special-cases (also from older maps).
+- Change how __random routes__ are generated in binary `osmgraphing`, using generators (closures) now.
+- Make __graph-access handier__ by adding/editting functions like `MetricAccessor::get_more(...)`.
+- Move `SteetType`-documentation into code (where the defaults are set) `:)`.
+- Implement __`routing::paths::Path`__ as vector of edge-indices.
+  - This improves efficiency, since no extra intermediate node-mapping is needed, which has to be remapped to edges afterwards.
+  - Costs are not stored in the path anymore, but can be calculated.
+    One reason for this are shortcuts, which could have slightly different cost than their underlying edges due to rounding-errors.
+    Thanks to the edge-indices in the path, the path is more flexible.
+    It is possible to ask for every possible metric-combination, even for those, which are not optimized by the Dijkstra.
+  - Paths can be flattened.
+- Cleanup/refactor __module `helpers`__ and __`tests`__ a little.
+  - Move __dijkstra-testing__ and __dijkstra-comparison__ into `helpers`, reducing code-duplicates in tests.
+  - Extend some tests or refactor some tests.
 
 
 ### Deprecated <a name="unreleased/deprecated"></a>
@@ -73,12 +114,14 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 
 ### Removed <a name="unreleased/removed"></a>
 
-\-
+- Remove `routing::paths::{VecPath, HashPath}`.
 
 
 ### Fixed <a name="unreleased/fixed"></a>
 
-\-
+- Let scripts check `cargo fmt` before building, so user has to format code manually before running it with the script.
+- Using `Vec::splice(...)` in `Dijkstra` is too expensive in performance, hence it has been replaced by `Vec::resize(...)`.
+- Let binary `osmgraphing` exit with exit-code non-zero, if an error occurs (before, it just returned).
 
 
 ### Security <a name="unreleased/security"></a>
@@ -107,6 +150,8 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 - The link to `doc.rs` is hardcoded to `major.minor.patch=0.y.z` because `docs.rs` chooses version `1.0.0` though it's yanked..
 - Comparing `f32` could be wrong due to hard criterion `<= std::f32::EPSILON`.
 - When generating a map, only the parser-config's metrics are counted for setting the generated dimension, but it is possible to generate a map of less metrics.
+- The build-script doesn't check format neither formats the code.
+- In case of an error, the binary `osmgraphing` does return, with error-code `0`, instead of returning a non-zero exit-code.
 
 
 ### Fixed <a name="v0.11.1/fixed"></a>
@@ -596,6 +641,7 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 - todo
 
 
+[github/flamegraph-rs/flamegraph]: https://github.com/flamegraph-rs/flamegraph
 [keepachangelog]: https://keepachangelog.com/en/
 [semver]: https://semver.org/
 
