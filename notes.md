@@ -9,7 +9,6 @@ Maybe, it is concept for later documentation, or just keep-up-the-good-work (`ku
 ### General
 
 - Implement graph as server, which can execute queries from clients (e.g. via channels).
-- Warn user when parsing `pbf`-map, if unused categories are provided in the config.
 - Building needs much more memory for `Germany.pbf` (~ `14 GB`) due to sc-edges and meta-info.
   When creating metrics, memory-consumption shrinks to `10/11 GB` and lower, probably because these values are released.
   It could make sense to implement simple (de-)serialization for the graph (`map-file.rfmi`, standing for `raw fmi`).
@@ -27,29 +26,26 @@ Maybe, it is concept for later documentation, or just keep-up-the-good-work (`ku
 
 - Write down alternative implementation-approaches
   - Routing from src-node to dst-node where dst-node has at least the city-level of the src-node.
-  - Implement shortcuts with array `[edge: EdgeIdx -> is_sc: bool]` and array `[some_idx: usize -> (edge, sc0, sc1): (EdgeIdx, EdgeIdx, EdgeIdx)]`, latter sorted by edge to search logarithmically.
 
 
 ### Extend tests
 
 - extend routing-tests
-  - implement tests comparing ch-dijkstra with normal dijkstra on isle-of-man
-  - implement routing-tests for parsed pbf-files (just comparing src-id, dst-id and length)
+  - implement routing-tests for parsed pbf-files (just comparing src-id, dst-id and distance)
 - Take results from actions of commit f28d88a for parsing-tests (fmi).
 - Test personalized routing explicitly using certain alpha-values and new expected paths.
-- Test `small.ch.fmi`!!!
 
 
 ### Extend configs
 
-\-
+- Warn user when parsing `pbf`-map, if unused categories are provided in the config.
 
 
 ### Extend parsing
 
 - Use __preprocessing-phase__ for `pbf`-parser to count edges and __allocate memory__ accordingly.
 - Print __edit-link__ for weird osm-content (in addition to currently printed warnings).
-- Parse lanes (now: use default).
+- Parse lanes (currently, default is used).
   - tags: `lanes`, `lanes:backward` (`way-id: 33172848`)
 
 
@@ -94,6 +90,15 @@ Otherwise, it would have been settled before v since the priority-queues sort by
 In other words, only already settled nodes and their neighbors (which are already enqueued) can be part of the shortest path.
 
 In conclusion, emptying the remaining nodes in the queues and picking the shortest path of the resulting common nodes leads to the shortest path wrt to edge-weights from s to t.
+
+
+## Proof of correctness for bidirectional Dijkstra for contracted graphs
+
+Here, the proof for bidirectional Dijkstra doesn't hold, because each sub-graph doesn't visit every node of the total graph, due to the level-filter when pushing edges to the queue.
+Hence, the forward- and the backward-query are not balanced wrt weights.
+Thus, after finding the first meeting-node, the hop-distance of the shortest-path could be arbitrary.
+This leads to wrong paths with normal bidirectional Dijkstra.
+To correct this issue, stop the query after polling a node of a sub-distance, which is higher than the currently best meeting-node's total distance.
 
 
 [github/rust-lang/cargo/issues/5624]: https://github.com/rust-lang/cargo/issues/5624

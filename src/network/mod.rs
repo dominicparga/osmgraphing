@@ -50,9 +50,9 @@ use serde::Deserialize;
 /// The speed-limit is used in `km/h`, which is the provided unit by osm.
 /// > Default: See table above
 ///
-/// ## Length
+/// ## Distance
 ///
-/// The length is used in `km`, which is the provided unit by osm.
+/// The distance is used in `km`, which is the provided unit by osm.
 /// > Default: Calculated by coordinates of involved nodes.
 ///
 ///

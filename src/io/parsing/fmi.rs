@@ -3,7 +3,7 @@ use crate::{
     defaults::{self, capacity::DimVec},
     helpers,
     network::{EdgeBuilder, EdgeIdx, MetricIdx, NodeBuilder, ProtoEdge, ProtoNode, ProtoShortcut},
-    units::{geo, length::Meters, speed::KilometersPerHour, time::Seconds},
+    units::{geo, distance::Meters, speed::KilometersPerHour, time::Seconds},
 };
 use log::info;
 use std::{
@@ -200,8 +200,8 @@ impl ProtoShortcut {
 
                     if cfg.is_metric_provided(metric_idx) {
                         if let Ok(raw_m) = param.parse::<f64>() {
-                            let length = defaults::length::TYPE::from(Meters(raw_m));
-                            metric_values.push(Some(*length));
+                            let distance = defaults::distance::TYPE::from(Meters(raw_m));
+                            metric_values.push(Some(*distance));
                         } else {
                             return Err(format!(
                                 "Parsing {} '{}' of edge-param #{} didn't work.",

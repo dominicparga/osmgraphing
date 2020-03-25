@@ -1,15 +1,15 @@
 mod units {
-    use osmgraphing::units::{length::Kilometers, speed::KilometersPerHour, time::Seconds};
+    use osmgraphing::units::{distance::Kilometers, speed::KilometersPerHour, time::Seconds};
     // correct defaults for calculations
     const DURATION: Seconds = Seconds(1_000.0);
-    const LENGTH: Kilometers = Kilometers(1.0);
+    const DISTANCE: Kilometers = Kilometers(1.0);
     const SPEED: KilometersPerHour = KilometersPerHour(3.6);
 
-    mod length {
+    mod distance {
         use osmgraphing::{
             helpers::ApproxEq,
             units::{
-                length::{Kilometers, Meters},
+                distance::{Kilometers, Meters},
                 speed::KilometersPerHour,
                 time::{Hours, Minutes, Seconds},
             },
@@ -40,7 +40,7 @@ mod units {
             let s = Seconds::from(super::DURATION);
             let kmph = KilometersPerHour::from(super::SPEED);
 
-            let km = Kilometers::from(super::LENGTH);
+            let km = Kilometers::from(super::DISTANCE);
             let result = s * kmph;
 
             assert!(
@@ -54,7 +54,7 @@ mod units {
             let min = Minutes::from(super::DURATION);
             let kmph = KilometersPerHour::from(super::SPEED);
 
-            let km = Kilometers::from(super::LENGTH);
+            let km = Kilometers::from(super::DISTANCE);
             let result = min * kmph;
 
             assert!(
@@ -68,7 +68,7 @@ mod units {
             let h = Hours::from(super::DURATION);
             let kmph = KilometersPerHour::from(super::SPEED);
 
-            let km = Kilometers::from(super::LENGTH);
+            let km = Kilometers::from(super::DISTANCE);
             let result = h * kmph;
 
             assert!(
@@ -82,7 +82,7 @@ mod units {
         use osmgraphing::{
             helpers::ApproxEq,
             units::{
-                length::{Kilometers, Meters},
+                distance::{Kilometers, Meters},
                 speed::KilometersPerHour,
                 time::{Hours, Minutes, Seconds},
             },
@@ -150,7 +150,7 @@ mod units {
 
         #[test]
         fn m_div_kmph() {
-            let m = Meters::from(super::LENGTH);
+            let m = Meters::from(super::DISTANCE);
             let kmph = KilometersPerHour::from(super::SPEED);
 
             let h = Hours::from(super::DURATION);
@@ -164,7 +164,7 @@ mod units {
 
         #[test]
         fn km_div_kmph() {
-            let km = Kilometers::from(super::LENGTH);
+            let km = Kilometers::from(super::DISTANCE);
             let kmph = KilometersPerHour::from(super::SPEED);
 
             let h = Hours::from(super::DURATION);
@@ -181,7 +181,7 @@ mod units {
         use osmgraphing::{
             helpers::ApproxEq,
             units::{
-                length::{Kilometers, Meters},
+                distance::{Kilometers, Meters},
                 speed::KilometersPerHour,
                 time::{Hours, Minutes, Seconds},
             },
@@ -189,7 +189,7 @@ mod units {
 
         #[test]
         fn m_div_s() {
-            let m = Meters::from(super::LENGTH);
+            let m = Meters::from(super::DISTANCE);
             let s = Seconds::from(super::DURATION);
 
             let kmph = KilometersPerHour::from(super::SPEED);
@@ -203,7 +203,7 @@ mod units {
 
         #[test]
         fn m_div_min() {
-            let m = Kilometers::from(super::LENGTH);
+            let m = Kilometers::from(super::DISTANCE);
             let min = Minutes::from(super::DURATION);
 
             let kmph = KilometersPerHour::from(super::SPEED);
@@ -217,7 +217,7 @@ mod units {
 
         #[test]
         fn m_div_h() {
-            let m = Kilometers::from(super::LENGTH);
+            let m = Kilometers::from(super::DISTANCE);
             let h = Hours::from(super::DURATION);
 
             let kmph = KilometersPerHour::from(super::SPEED);
@@ -231,7 +231,7 @@ mod units {
 
         #[test]
         fn km_div_s() {
-            let km = Kilometers::from(super::LENGTH);
+            let km = Kilometers::from(super::DISTANCE);
             let s = Seconds::from(super::DURATION);
 
             let kmph = KilometersPerHour::from(super::SPEED);
@@ -245,7 +245,7 @@ mod units {
 
         #[test]
         fn km_div_min() {
-            let km = Kilometers::from(super::LENGTH);
+            let km = Kilometers::from(super::DISTANCE);
             let min = Minutes::from(super::DURATION);
 
             let kmph = KilometersPerHour::from(super::SPEED);
@@ -259,7 +259,7 @@ mod units {
 
         #[test]
         fn km_div_h() {
-            let km = Kilometers::from(super::LENGTH);
+            let km = Kilometers::from(super::DISTANCE);
             let h = Hours::from(super::DURATION);
 
             let kmph = KilometersPerHour::from(super::SPEED);

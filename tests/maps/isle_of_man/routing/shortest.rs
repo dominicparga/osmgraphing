@@ -1,7 +1,7 @@
 use crate::helpers::{compare_dijkstras, defaults, test_dijkstra, TestNode};
 use osmgraphing::{configs, defaults::capacity::DimVec, network::MetricIdx};
 
-const METRIC_ID: &str = defaults::LENGTH_ID;
+const METRIC_ID: &str = defaults::DISTANCE_ID;
 const PBF_CONFIG: &str = defaults::paths::resources::configs::ISLE_OF_MAN_PBF;
 const CH_FMI_CONFIG: &str = defaults::paths::resources::configs::ISLE_OF_MAN_CH_FMI;
 const FMI_CONFIG: &str = defaults::paths::resources::configs::ISLE_OF_MAN_FMI;

@@ -39,11 +39,11 @@ parser:
     # is-provided: true # default is true
   - category: 'KilometersPerHour'
     id: 'faster-than-light'
-    # Value `false` leads to calculate the value via length and duration.
+    # Value `false` leads to calculate the value via distance and duration.
     is-provided: true
     calc-rules: ['to-the-moon-and-back', 'Seconds']
   - category: 'Seconds'
-    # Value `false` leads to calculate the value via length and maxspeed.
+    # Value `false` leads to calculate the value via distance and maxspeed.
     is-provided: false
     calc-rules: ['to-the-moon-and-back', 'faster-than-light']
   - category: 'LaneCount'

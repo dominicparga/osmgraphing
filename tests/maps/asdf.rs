@@ -37,7 +37,7 @@ pub mod parsing {
 
         let yaml_str = &format!(
             "routing: {{ metrics: [{{ id: '{}' }}], is-ch-dijkstra: false }}",
-            defaults::LENGTH_ID
+            defaults::DISTANCE_ID
         );
         let routing_cfg = configs::routing::Config::from_str(yaml_str, &cfg.parser).unwrap();
         assert!(

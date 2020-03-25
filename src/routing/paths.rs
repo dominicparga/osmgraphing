@@ -60,7 +60,6 @@ impl Path {
 
         // interpret old edges as stack, beginning with src
         let mut old_edges = self.edges;
-        old_edges.shrink_to_fit();
         old_edges.reverse();
 
         let fwd_edges = graph.fwd_edges();
@@ -77,6 +76,7 @@ impl Path {
             flattened_path.edges.push(edge_idx);
         }
 
+        flattened_path.edges.shrink_to_fit();
         flattened_path
     }
 

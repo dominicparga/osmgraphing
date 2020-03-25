@@ -16,7 +16,7 @@ use rand::{
 
 #[allow(dead_code)]
 pub mod defaults {
-    pub const LENGTH_ID: &str = "Meters";
+    pub const DISTANCE_ID: &str = "Meters";
     pub const DURATION_ID: &str = "Seconds";
 
     pub mod paths {
@@ -281,7 +281,7 @@ pub fn assert_path(
             &graph,
             &cfg.routing
                 .as_ref()
-                .expect("Routing-config should be existedefaults::LENGTH_IDnt"),
+                .expect("Routing-config should be existent"),
         );
         assert_eq!(
             option_path.is_some(),

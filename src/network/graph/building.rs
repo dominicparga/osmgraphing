@@ -95,20 +95,20 @@ impl Graph {
                     EdgeCategory::Meters => {
                         let src_coord = self.node_coords[*proto_edge.src_idx];
                         let dst_coord = self.node_coords[*proto_edge.dst_idx];
-                        let length = defaults::length::TYPE::from(geo::haversine_distance_km(
+                        let distance = defaults::distance::TYPE::from(geo::haversine_distance_km(
                             &src_coord, &dst_coord,
                         ));
-                        proto_edge.metrics[*metric_idx] = Some(*length);
+                        proto_edge.metrics[*metric_idx] = Some(*distance);
                     }
                     EdgeCategory::Seconds => {
-                        // get length and maxspeed to calculate duration
-                        let mut raw_length = None;
+                        // get distance and maxspeed to calculate duration
+                        let mut raw_distance = None;
                         let mut raw_speed = None;
                         // get calculation-rules
                         for &(other_type, other_idx) in cfg.edges.calc_rules(metric_idx) {
                             // get values from edge dependent of calculation-rules
                             match other_type {
-                                EdgeCategory::Meters => raw_length = proto_edge.metrics[*other_idx],
+                                EdgeCategory::Meters => raw_distance = proto_edge.metrics[*other_idx],
                                 EdgeCategory::KilometersPerHour => {
                                     raw_speed = proto_edge.metrics[*other_idx];
                                 }
@@ -121,9 +121,9 @@ impl Graph {
                             }
                         }
                         // calc duration and update proto-edge
-                        if let (Some(raw_length), Some(raw_speed)) = (raw_length, raw_speed) {
+                        if let (Some(raw_distance), Some(raw_speed)) = (raw_distance, raw_speed) {
                             let duration: defaults::time::TYPE =
-                                (defaults::length::TYPE::new(raw_length)
+                                (defaults::distance::TYPE::new(raw_distance)
                                     / defaults::speed::TYPE::new(raw_speed))
                                 .into();
                             proto_edge.metrics[*metric_idx] = Some(*duration)
@@ -132,14 +132,14 @@ impl Graph {
                         }
                     }
                     EdgeCategory::KilometersPerHour => {
-                        // get length and duration to calculate maxspeed
-                        let mut raw_length = None;
+                        // get distance and duration to calculate maxspeed
+                        let mut raw_distance = None;
                         let mut raw_duration = None;
                         // get calculation-rules
                         for &(other_type, other_idx) in cfg.edges.calc_rules(metric_idx) {
                             // get values from edge dependent of calculation-rules
                             match other_type {
-                                EdgeCategory::Meters => raw_length = proto_edge.metrics[*other_idx],
+                                EdgeCategory::Meters => raw_distance = proto_edge.metrics[*other_idx],
                                 EdgeCategory::Seconds => {
                                     raw_duration = proto_edge.metrics[*other_idx];
                                 }
@@ -152,9 +152,9 @@ impl Graph {
                             }
                         }
                         // calc maxspeed and update proto-edge
-                        if let (Some(raw_length), Some(raw_duration)) = (raw_length, raw_duration) {
+                        if let (Some(raw_distance), Some(raw_duration)) = (raw_distance, raw_duration) {
                             let maxspeed: defaults::speed::TYPE =
-                                (defaults::length::TYPE::new(raw_length)
+                                (defaults::distance::TYPE::new(raw_distance)
                                     / defaults::time::TYPE::new(raw_duration))
                                 .into();
                             proto_edge.metrics[*metric_idx] = Some(*maxspeed)
@@ -240,6 +240,15 @@ pub struct ProtoEdge {
     pub metrics: DimVec<Option<f64>>,
 }
 
+impl Into<ProtoShortcut> for ProtoEdge {
+    fn into(self) -> ProtoShortcut {
+        ProtoShortcut {
+            proto_edge: self,
+            sc_edges: None,
+        }
+    }
+}
+
 impl MemSize for ProtoEdge {
     /// Work off proto-edges in chunks to keep memory-usage lower.
     /// For example:
@@ -304,15 +313,18 @@ impl EdgeBuilder {
         &self.cfg
     }
 
-    pub fn insert(
-        &mut self,
-        ProtoShortcut {
+    pub fn insert<E>(&mut self, proto_edge: E)
+    where
+        E: Into<ProtoShortcut>,
+    {
+        let ProtoShortcut {
             proto_edge,
             sc_edges,
-        }: ProtoShortcut,
-    ) {
+        } = proto_edge.into();
+
         // Most of the time, nodes are added for edges of one street,
         // so duplicates are next to each other.
+        // Duplicates are removed later, but checking here saves a memory.
         // -> check k neighbours
         let n = self.node_ids.len();
         let k = 2;

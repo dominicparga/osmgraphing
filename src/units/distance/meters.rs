@@ -1,7 +1,7 @@
 use crate::{
     helpers::ApproxEq,
     units::{
-        length::Kilometers,
+        distance::Kilometers,
         speed::KilometersPerHour,
         time::{Hours, Minutes, Seconds},
     },

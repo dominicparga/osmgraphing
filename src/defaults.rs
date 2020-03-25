@@ -14,8 +14,8 @@ pub mod accuracy {
     pub const F64_FMT_DIGITS: usize = 6;
 }
 
-pub mod length {
-    pub type TYPE = crate::units::length::Kilometers;
+pub mod distance {
+    pub type TYPE = crate::units::distance::Kilometers;
 }
 
 pub mod time {

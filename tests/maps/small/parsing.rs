@@ -2,7 +2,7 @@ use crate::helpers::{assert_graph, defaults, parse, TestEdge, TestNode};
 use osmgraphing::{
     configs::Config,
     network::EdgeIdx,
-    units::{geo::Coordinate, length::Kilometers, speed::KilometersPerHour, time::Seconds},
+    units::{geo::Coordinate, distance::Kilometers, speed::KilometersPerHour, time::Seconds},
 };
 
 const CONFIG: &str = defaults::paths::resources::configs::SMALL_FMI;
