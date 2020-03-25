@@ -13,6 +13,8 @@ impl Coordinate {
         Coordinate { lat: 0.0, lon: 0.0 }
     }
 
+    /// Attention with rouding errors, if important.
+    /// It is very likely that it doesn't matter, since dµ-(lat, lon) is already precise for sub-meters.
     pub fn from_decimicro(decimicro_lat: i32, decimicro_lon: i32) -> Coordinate {
         Coordinate {
             lat: (decimicro_lat as f64 * 1e-7) as f64,
@@ -35,8 +37,20 @@ impl Display for Coordinate {
     }
 }
 
-/// Result in km
-fn haversine_distance(from: &Coordinate, to: &Coordinate) -> f64 {
+/// The haversince-distance is the distance (e.g. in meters) between two points on a sphere (given in latitude and longitude).
+///
+/// The earth-radius is taken as `6371 km` since
+///
+/// 1. the resuluting sphere has same volume as the earth-ellipsoid, and
+/// 1. it is the average radius.
+///
+/// Note that the result could have rounding errors due to cutting (f64 -> u32) and up-scaling (* 1000.0) afterwards.
+///
+/// ## Additional info
+///
+/// - [detailled information](http://www.movable-type.co.uk/scripts/latlong.html)
+/// - [cpp](https://geographiclib.sourceforge.io/)
+pub fn haversine_distance_km(from: &Coordinate, to: &Coordinate) -> Kilometers {
     let earth_mean_radius = 6_371.0; // kilometers
 
     let from_lat = from.lat as f64;
@@ -53,25 +67,10 @@ fn haversine_distance(from: &Coordinate, to: &Coordinate) -> f64 {
     let sin_lat = (delta_lat / 2.0).sin();
     let sin_lon = (delta_lon / 2.0).sin();
 
-    (sin_lat * sin_lat + from_lat_rad.cos() * to_lat_rad.cos() * sin_lon * sin_lon)
-        .sqrt()
-        .asin()
-        * (2.0 * earth_mean_radius)
-}
-
-/// The haversince-distance is the distance (e.g. in meters) between two points on a sphere (given in latitude and longitude).
-///
-/// The earth-radius is taken as `6371 km` since
-///
-/// 1. the resuluting sphere has same volume as the earth-ellipsoid, and
-/// 1. it is the average radius.
-///
-/// Note that the result could have rounding errors due to cutting (f64 -> u32) and up-scaling (* 1000.0) afterwards.
-///
-/// ## Additional info
-///
-/// - [detailled information](http://www.movable-type.co.uk/scripts/latlong.html)
-/// - [cpp](https://geographiclib.sourceforge.io/)
-pub fn haversine_distance_km(from: &Coordinate, to: &Coordinate) -> Kilometers {
-    Kilometers(haversine_distance(from, to) as f64)
+    Kilometers(
+        (sin_lat * sin_lat + from_lat_rad.cos() * to_lat_rad.cos() * sin_lon * sin_lon)
+            .sqrt()
+            .asin()
+            * (2.0 * earth_mean_radius),
+    )
 }
