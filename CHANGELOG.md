@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 ## Table of contents
 
 1. [Unreleased](#unreleased)
+1. [v0.12.0](#v0.12.0)
 1. [v0.11.1](#v0.11.1)
     1. [v0.11.0](#v0.11.0)
 1. [v0.10.0](#v0.10.0)
@@ -39,6 +40,42 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 ## [Unreleased][github/self/unreleased] <a name="unreleased"></a>
 
 ### Added <a name="unreleased/added"></a>
+
+\-
+
+
+### Changed <a name="unreleased/changed"></a>
+
+\-
+
+
+### Deprecated <a name="unreleased/deprecated"></a>
+
+- Documentation is missing, though comments are very well.
+- `CHANGELOG.md` contains empty version-descriptions.
+  - Replace existing tags with ones referring to `CHANGELOG.md` and add old tag-texts to the `CHANGELOG.md`
+  - Inconsistent `semver` in old tags -> probably `cargo yank VERSION` needed
+- The link to `doc.rs` is hardcoded to `major.minor.patch=0.y.z` because `docs.rs` chooses version `1.0.0` though it's yanked..
+
+
+### Removed <a name="unreleased/removed"></a>
+
+\-
+
+
+### Fixed <a name="unreleased/fixed"></a>
+
+\-
+
+
+### Security <a name="unreleased/security"></a>
+
+\-
+
+
+## [v0.12.0][github/self/v0.12.0] <a name="v0.12.0"></a>
+
+### Added <a name="v0.12.0/added"></a>
 
 - Support generating `fmi`-files with __`src`-__ and __`dst`-indices__ as column.
 - Extend __configs__
@@ -73,7 +110,7 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
   - It could make sense to export units as own module (Kilometers, Meters, Seconds, Minutes, Hours, KilometersPerHour)
 
 
-### Changed <a name="unreleased/changed"></a>
+### Changed <a name="v0.12.0/changed"></a>
 
 - __Config-parser-category `Ignore`__ is allowed to have the id `Ignore`, which may occur multiple times.
   For this, no other config-parser-category is allowed to have an id `Ignore`.
@@ -103,7 +140,7 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
   - Extend some tests or refactor some tests.
 
 
-### Deprecated <a name="unreleased/deprecated"></a>
+### Deprecated <a name="v0.12.0/deprecated"></a>
 
 - Documentation is missing, though comments are very well.
 - `CHANGELOG.md` contains empty version-descriptions.
@@ -112,21 +149,16 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 - The link to `doc.rs` is hardcoded to `major.minor.patch=0.y.z` because `docs.rs` chooses version `1.0.0` though it's yanked..
 
 
-### Removed <a name="unreleased/removed"></a>
+### Removed <a name="v0.12.0/removed"></a>
 
 - Remove `routing::paths::{VecPath, HashPath}`.
 
 
-### Fixed <a name="unreleased/fixed"></a>
+### Fixed <a name="v0.12.0/fixed"></a>
 
 - Let scripts check `cargo fmt` before building, so user has to format code manually before running it with the script.
 - Using `Vec::splice(...)` in `Dijkstra` is too expensive in performance, hence it has been replaced by `Vec::resize(...)`.
 - Let binary `osmgraphing` exit with exit-code non-zero, if an error occurs (before, it just returned).
-
-
-### Security <a name="unreleased/security"></a>
-
-\-
 
 
 ## [v0.11.1][github/self/v0.11.1] <a name="v0.11.1"></a>
@@ -645,7 +677,8 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 [keepachangelog]: https://keepachangelog.com/en/
 [semver]: https://semver.org/
 
-[github/self/unreleased]: https://github.com/dominicparga/osmgraphing/compare/v0.11.1...HEAD
+[github/self/unreleased]: https://github.com/dominicparga/osmgraphing/compare/v0.12.0...HEAD
+[github/self/v0.12.0]: https://github.com/dominicparga/osmgraphing/compare/v0.11.1...v0.12.0
 [github/self/v0.11.1]: https://github.com/dominicparga/osmgraphing/compare/v0.11.0...v0.11.1
 [github/self/v0.11.0]: https://github.com/dominicparga/osmgraphing/compare/v0.10.0...v0.11.0
 [github/self/v0.10.0]: https://github.com/dominicparga/osmgraphing/compare/v0.9.0...v0.10.0
