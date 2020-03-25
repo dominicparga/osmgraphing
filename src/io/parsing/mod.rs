@@ -2,11 +2,12 @@ pub mod fmi;
 pub mod pbf;
 
 use crate::{
-    configs::{parser, NodeCategory},
+    configs::parser::{self, EdgeCategory, NodeCategory},
+    defaults::capacity,
     io::{MapFileExt, SupportingFileExts, SupportingMapFileExts},
-    network::{Graph, GraphBuilder},
+    network::{EdgeBuilder, Graph, GraphBuilder, NodeBuilder},
 };
-use log::info;
+use log::{info, warn};
 use std::path::Path;
 
 /// The parser parsing `*.osm.pbf`- and `*.fmi`-files into a graphbuilder or a graph.
@@ -43,7 +44,7 @@ use std::path::Path;
 pub struct Parser;
 
 impl Parser {
-    pub fn parse(cfg: &parser::Config) -> Result<GraphBuilder, String> {
+    pub fn parse(cfg: parser::Config) -> Result<GraphBuilder, String> {
         match Parser::from_path(&cfg.map_file)? {
             MapFileExt::PBF => pbf::Parser::new().parse(cfg),
             MapFileExt::FMI => fmi::Parser::new().parse(cfg),
@@ -70,38 +71,32 @@ trait Parsing {
         check_parser_config(cfg)
     }
 
-    fn parse(&mut self, cfg: &parser::Config) -> Result<GraphBuilder, String> {
-        let mut graph_builder = GraphBuilder::new();
+    fn parse(&mut self, cfg: parser::Config) -> Result<GraphBuilder, String> {
+        let mut builder = GraphBuilder::new(cfg);
 
         info!("START Process given file");
-        self.preprocess(cfg)?;
-        self.parse_ways(cfg, &mut graph_builder)?;
-        self.parse_nodes(cfg, &mut graph_builder)?;
+        self.preprocess(builder.cfg())?;
+        self.parse_ways(&mut builder)?;
+        let mut builder = builder.next();
+        self.parse_nodes(&mut builder)?;
+        let builder = builder.next();
         info!("FINISHED");
 
-        Ok(graph_builder)
+        builder
     }
 
-    fn parse_ways(
-        &self,
-        cfg: &parser::Config,
-        graph_builder: &mut GraphBuilder,
-    ) -> Result<(), String>;
+    fn parse_ways(&self, builder: &mut EdgeBuilder) -> Result<(), String>;
 
-    fn parse_nodes(
-        &self,
-        cfg: &parser::Config,
-        graph_builder: &mut GraphBuilder,
-    ) -> Result<(), String>;
+    fn parse_nodes(&self, builder: &mut NodeBuilder) -> Result<(), String>;
 
     fn parse_and_finalize(&mut self, cfg: parser::Config) -> Result<Graph, String> {
         let path = Path::new(&cfg.map_file);
         info!("START Parse from given path {}", path.display());
 
-        // TODO parse "cycleway" and others
+        // TODO parse "cycleway" and other tags
         // see https://wiki.openstreetmap.org/wiki/Key:highway
 
-        let result = self.parse(&cfg)?.finalize(cfg);
+        let result = self.parse(cfg)?.finalize();
         info!("FINISHED");
         result
     }
@@ -110,18 +105,51 @@ trait Parsing {
 fn check_parser_config(cfg: &parser::Config) -> Result<(), String> {
     // check if yaml-config is correct
     if !cfg.nodes.categories().contains(&NodeCategory::NodeId) {
-        Err(String::from(
+        return Err(String::from(
             "The provided config-file doesn't contain a NodeId, but needs to.",
-        ))
-    } else if !cfg.nodes.categories().contains(&NodeCategory::Latitude) {
-        Err(String::from(
-            "The provided config-file doesn't contain a latitude, but needs to.",
-        ))
-    } else if !cfg.nodes.categories().contains(&NodeCategory::Longitude) {
-        Err(String::from(
-            "The provided config-file doesn't contain a longitude, but needs to.",
-        ))
-    } else {
-        Ok(())
+        ));
     }
+    if !cfg.nodes.categories().contains(&NodeCategory::Latitude) {
+        return Err(String::from(
+            "The provided config-file doesn't contain a latitude, but needs to.",
+        ));
+    }
+    if !cfg.nodes.categories().contains(&NodeCategory::Longitude) {
+        return Err(String::from(
+            "The provided config-file doesn't contain a longitude, but needs to.",
+        ));
+    }
+    if cfg.edges.dim() > capacity::SMALL_VEC_INLINE_SIZE {
+        return Err(format!(
+            "The provided config-file has more metrics for the graph ({}) \
+             than the parser has been compiled to ({}).",
+            cfg.edges.dim(),
+            capacity::SMALL_VEC_INLINE_SIZE
+        ));
+    }
+
+    let count = cfg
+        .edges
+        .edge_categories()
+        .iter()
+        .filter(|category| category == &&EdgeCategory::ShortcutEdgeIdx)
+        .count();
+    if count > 0 && count != 2 {
+        return Err(format!(
+            "The config-file has a different number than 0 or 2 of edge-category '{}'",
+            EdgeCategory::ShortcutEdgeIdx
+        ));
+    }
+
+    if cfg.edges.dim() < capacity::SMALL_VEC_INLINE_SIZE {
+        warn!(
+            "The provided config-file has less metrics for the graph ({}) \
+             than the parser has been compiled to ({}). \
+             Compiling accordingly saves memory.",
+            cfg.edges.dim(),
+            capacity::SMALL_VEC_INLINE_SIZE
+        );
+    }
+
+    Ok(())
 }

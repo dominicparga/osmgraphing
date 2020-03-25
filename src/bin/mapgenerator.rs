@@ -140,6 +140,7 @@ fn parse_cmdline<'a>() -> clap::ArgMatches<'a> {
         .about(env!("CARGO_PKG_DESCRIPTION"))
         .long_about(
             (&[
+                "",
                 "This tool takes a config-file, parses the chosen graph with specified",
                 "settings, and exports it as fmi-map-file as specified.",
             ]

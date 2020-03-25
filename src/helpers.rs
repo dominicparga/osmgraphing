@@ -1,4 +1,4 @@
-use crate::defaults::DimVec;
+use crate::defaults::{accuracy, capacity::DimVec};
 use std::{
     cmp::Ordering::{self, Equal, Greater, Less},
     fs::File,
@@ -6,22 +6,38 @@ use std::{
     str::FromStr,
 };
 
-pub fn add(a: &DimVec<f32>, b: &DimVec<f32>) -> DimVec<f32> {
+pub fn add(a: &DimVec<f64>, b: &DimVec<f64>) -> DimVec<f64> {
     a.iter().zip(b).map(|(aa, bb)| aa + bb).collect()
 }
 
-pub fn add_to(a: &mut DimVec<f32>, b: &DimVec<f32>) {
+pub fn add_to(a: &mut DimVec<f64>, b: &DimVec<f64>) {
     a.iter_mut().zip(b).for_each(|(aa, bb)| *aa += bb);
 }
 
-pub fn dot_product(a: &DimVec<f32>, b: &DimVec<f32>) -> f32 {
+pub fn sub(a: &DimVec<f64>, b: &DimVec<f64>) -> DimVec<f64> {
+    a.iter().zip(b).map(|(aa, bb)| aa - bb).collect()
+}
+
+pub fn dot_product(a: &DimVec<f64>, b: &DimVec<f64>) -> f64 {
     a.iter()
         .zip(b)
         .fold(0.0, |start, (aa, &bb)| start + aa * bb)
 }
 
-pub trait ApproxEq {
-    fn approx_eq(&self, other: &Self) -> bool;
+/// For example:
+/// Work off proto-edges in chunks to keep memory-usage lower.
+/// To keep additional memory-needs below 1 MB, the the maximum amount of four f64-values per
+/// worked-off chunk has to be limited to 250_000.
+pub trait MemSize {
+    fn mem_size_b() -> usize;
+}
+
+pub trait Approx {
+    fn approx(self) -> f64;
+}
+
+pub trait ApproxEq<O> {
+    fn approx_eq(&self, other: &O) -> bool;
 }
 
 pub trait ApproxCmp {
@@ -29,14 +45,20 @@ pub trait ApproxCmp {
     fn approx_cmp(&self, other: &Self) -> Ordering;
 }
 
-impl ApproxEq for f32 {
-    fn approx_eq(&self, other: &f32) -> bool {
-        (self - other).abs() <= std::f32::EPSILON
+impl Approx for f64 {
+    fn approx(self) -> f64 {
+        (self / accuracy::F64_ABS).round() * accuracy::F64_ABS
     }
 }
 
-impl ApproxCmp for f32 {
-    fn approx_partial_cmp(&self, other: &f32) -> Option<Ordering> {
+impl ApproxEq<f64> for f64 {
+    fn approx_eq(&self, other: &f64) -> bool {
+        (self.approx() - other.approx()).abs() <= accuracy::F64_ABS
+    }
+}
+
+impl ApproxCmp for f64 {
+    fn approx_partial_cmp(&self, other: &f64) -> Option<Ordering> {
         match (self < other, self > other, self.approx_eq(other)) {
             (false, false, false) => None,
             (false, true, false) => Some(Greater),
@@ -45,16 +67,16 @@ impl ApproxCmp for f32 {
         }
     }
 
-    fn approx_cmp(&self, other: &f32) -> Ordering {
+    fn approx_cmp(&self, other: &f64) -> Ordering {
         self.approx_partial_cmp(other).expect(&format!(
-            "No f32-comparison for {} and {} possible.",
+            "No f64-comparison for {} and {} possible.",
             self, other
         ))
     }
 }
 
-impl ApproxEq for DimVec<f32> {
-    fn approx_eq(&self, other: &DimVec<f32>) -> bool {
+impl ApproxEq<DimVec<f64>> for DimVec<f64> {
+    fn approx_eq(&self, other: &DimVec<f64>) -> bool {
         self.iter()
             .zip(other)
             .fold(true, |acc, (aa, bb)| acc && aa.approx_eq(bb))

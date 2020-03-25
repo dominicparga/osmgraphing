@@ -1,13 +1,13 @@
 mod graph;
 pub use graph::{
-    building::{GraphBuilder, ProtoEdge, ProtoNode},
+    building::{EdgeBuilder, GraphBuilder, NodeBuilder, ProtoEdge, ProtoNode, ProtoShortcut},
     EdgeAccessor, EdgeIdx, Graph, HalfEdge, MetricAccessor, MetricIdx, Node, NodeAccessor, NodeIdx,
 };
 use serde::Deserialize;
 
 //------------------------------------------------------------------------------------------------//
 
-/// TODO
+/// The street-type, collecting all kind of default-values.
 ///
 /// ## Street-types
 ///
@@ -50,31 +50,16 @@ use serde::Deserialize;
 /// The speed-limit is used in `km/h`, which is the provided unit by osm.
 /// > Default: See table above
 ///
-/// ## Length
+/// ## Distance
 ///
-/// The length is used in `km`, which is the provided unit by osm.
+/// The distance is used in `km`, which is the provided unit by osm.
 /// > Default: Calculated by coordinates of involved nodes.
 ///
 ///
 /// ## Tag `oneway`
 ///
 /// This tag seems to be very creative.
-///
-/// |              tag-value             | tag-value for default behavior |  way-ID  |
-/// |:-----------------------------------|--------------------------------|---------:|
-/// | `yes @ (2018 Aug 0 - 2018 Dec 21)` |              `yes`             | [24379239](https://www.openstreetmap.org/way/24379239) |
-/// | `use_sidepath`                     |              `yes`             | [3701112](https://www.openstreetmap.org/way/3701112) |
-/// | `alternating`                      |               `no`             | [5051072](https://www.openstreetmap.org/way/5051072) |
-/// | `reversible`                       |               `no`             | [4005347](https://www.openstreetmap.org/way/4005347) |
-/// | `bicycle`                          |               `no`             | [25596393](https://www.openstreetmap.org/way/25596393) |
-/// | `recommended`                      |              `yes`             | [38250792](https://www.openstreetmap.org/way/38250792) |
-/// | `-1;no`                            |               `-1`             | [180680762](https://www.openstreetmap.org/way/180680762) |
-/// | `fixme`                            |               `no`             | [199388177](https://www.openstreetmap.org/way/199388177) |
-/// | `left;through`                     |              `yes`             | [679817792](https://www.openstreetmap.org/way/679817792) |
-/// | `undefined`                        |               `no`             | [331847642](https://www.openstreetmap.org/way/331847642) |
-/// | `unknown`                          |               `no`             | [380885551](https://www.openstreetmap.org/way/380885551) |
-/// | `shelter`                          |              `yes`             | [680612616](https://www.openstreetmap.org/way/680612616) |
-/// | `cycle_barrier`                    |               `no`             | [691452957](https://www.openstreetmap.org/way/691452957) |
+/// For defaults, see code.
 pub enum StreetCategory {
     Motorway,
     MotorwayLink,

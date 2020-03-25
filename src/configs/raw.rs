@@ -1,9 +1,4 @@
-use crate::{
-    configs::{EdgeCategory, SimpleId},
-    defaults::DimVec,
-    network::MetricIdx,
-};
-use log::warn;
+use crate::{configs::SimpleId, defaults::capacity::DimVec, network::MetricIdx};
 use serde::Deserialize;
 use smallvec::smallvec;
 use std::collections::BTreeMap;
@@ -12,7 +7,6 @@ use std::collections::BTreeMap;
 pub struct Config {
     pub parser: parser::Config,
     pub generator: Option<generator::Config>,
-    #[serde(flatten)]
     pub routing: Option<routing::Config>,
 }
 
@@ -43,7 +37,7 @@ pub mod parser {
     }
 
     pub mod nodes {
-        use crate::configs::parser::nodes::NodeCategory;
+        use crate::configs::parser::NodeCategory;
         use serde::Deserialize;
 
         #[derive(Debug, Deserialize)]
@@ -59,7 +53,7 @@ pub mod parser {
     }
 
     pub mod edges {
-        use crate::configs::{parser::edges::EdgeCategory, SimpleId};
+        use crate::configs::{parser::EdgeCategory, SimpleId};
         use serde::Deserialize;
 
         #[derive(Debug, Deserialize)]
@@ -86,7 +80,7 @@ pub mod generator {
     }
 
     pub mod nodes {
-        use crate::configs::parser::nodes::NodeCategory;
+        use crate::configs::generator::NodeCategory;
         use serde::Deserialize;
 
         #[derive(Debug, Deserialize)]
@@ -111,29 +105,22 @@ pub mod routing {
     use serde::Deserialize;
 
     #[derive(Debug, Deserialize)]
+    #[serde(rename_all = "kebab-case")]
     pub struct Config {
-        #[serde(rename = "routing")]
-        pub entries: Vec<Entry>,
+        pub is_ch_dijkstra: Option<bool>,
+        pub metrics: Vec<Entry>,
     }
 
     impl Config {
         pub fn from_str(yaml_str: &str) -> Result<Config, String> {
-            /// This is needed to support the root-key `routing`:
-            ///
-            /// ```yaml
-            /// routing: ...
-            /// ```
             #[derive(Deserialize)]
             struct Wrapper {
-                #[serde(rename = "routing")]
-                entries: Vec<Entry>,
+                routing: Config,
             }
 
             let wrapper: Result<Wrapper, _> = serde_yaml::from_str(yaml_str);
             match wrapper {
-                Ok(wrapper) => Ok(Config {
-                    entries: wrapper.entries,
-                }),
+                Ok(wrapper) => Ok(wrapper.routing),
                 Err(e) => Err(format!("{}", e)),
             }
         }
@@ -142,7 +129,7 @@ pub mod routing {
     #[derive(Debug, Deserialize)]
     pub struct Entry {
         pub id: SimpleId,
-        pub alpha: Option<f32>,
+        pub alpha: Option<f64>,
     }
 }
 
@@ -168,13 +155,6 @@ impl From<Config> for super::Config {
                     .map(|entry| entry.category)
                     .collect(),
             );
-            if nodes.categories().contains(&super::NodeCategory::NodeIdx) {
-                warn!(
-                    "The config for parser::nodes contains the node-category {:?}, \
-                     which is ignored.",
-                    super::NodeCategory::NodeIdx
-                );
-            }
 
             // build super::parser::edges::Config
             let edges = {
@@ -196,9 +176,16 @@ impl From<Config> for super::Config {
                         Some(entry_id) => entry_id,
                         None => SimpleId(format!("{}", entry.category)),
                     };
-                    // check whether id is duplicate, but ids of ignore are ignored :3
-                    if entry.category != EdgeCategory::Ignore && edge_ids.contains(&entry_id) {
-                        panic!("Config has duplicate id: {}", entry_id);
+                    // Allow only category Ignore to be called 'Ignore'
+                    // to allow multiple ignored values without the need of an id.
+                    // Further check whether id is duplicate, but ids of ignore are ignored :3
+                    if entry.category != super::parser::EdgeCategory::Ignore {
+                        if edge_ids.contains(&entry_id)
+                            || entry_id
+                                == SimpleId(format!("{}", super::parser::EdgeCategory::Ignore))
+                        {
+                            panic!("Config has duplicate id: {}", entry_id);
+                        }
                     }
                     edge_ids.push(entry_id.clone());
 

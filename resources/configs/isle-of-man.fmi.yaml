@@ -1,5 +1,5 @@
 parser:
-  map-file: 'resources/maps/isle-of-man_2019-09-05.fmi'
+  map-file: 'resources/maps/isle-of-man_2020-03-14.fmi'
   vehicles:
     category: 'Car'
     are-drivers-picky: false
@@ -8,11 +8,8 @@ parser:
   - category: 'Ignore'
   - category: 'Latitude'
   - category: 'Longitude'
-  - category: 'Ignore' # height
-  - category: 'Level'
   edges:
   - category: 'SrcId'
   - category: 'DstId'
   - category: 'Meters'
-  - category: 'KilometersPerHour'
   - category: 'Seconds'

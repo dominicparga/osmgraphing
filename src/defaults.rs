@@ -1,17 +1,59 @@
-// For optimal performance and memory-usage:
-// Change this value before compiling, dependent of your number of stored metrics in the graph.
-pub const SMALL_VEC_INLINE_SIZE: usize = 4;
-pub type DimVec<T> = smallvec::SmallVec<[T; SMALL_VEC_INLINE_SIZE]>;
+pub mod accuracy {
+    /// value is good because it refers to
+    /// - 1 mm for km
+    /// - 1 µs for s
+    /// - 60 µs for min
+    /// - 3.6 ms for hour
+    /// - lat/lon
+    ///   - lat: 1/60 ~ 0.0167 degrees equals 1_852 m
+    ///     -> 1e-6 degrees equals around 0.11 m
+    ///   - lon: distance depends on latitude
+    ///     -> 1e-6 degrees equals <= 0.11 m (equator)
+    ///   -> 1e-5 degrees points to a person in a room, see https://xkcd.com/2170/
+    pub const F64_ABS: f64 = 0.000_001; // = 10^(-F64__FMT_DIGITS)
+    pub const F64_FMT_DIGITS: usize = 6;
+}
+
+pub mod distance {
+    pub type TYPE = crate::units::distance::Kilometers;
+}
+
+pub mod time {
+    pub type TYPE = crate::units::time::Minutes;
+}
 
 pub mod speed {
+    pub type TYPE = crate::units::speed::KilometersPerHour;
     pub const MAX_KMH: u16 = 130;
     pub const MIN_KMH: u8 = 5;
+}
+
+pub mod capacity {
+    // For optimal performance and memory-usage:
+    // Change this value before compiling, dependent of your number of stored metrics in the graph.
+    pub const SMALL_VEC_INLINE_SIZE: usize = 4;
+    pub type DimVec<T> = smallvec::SmallVec<[T; SMALL_VEC_INLINE_SIZE]>;
+    pub const MAX_BYTE_PER_CHUNK: usize = 200 * 1_000_000;
+}
+
+pub mod parser {
+    // provided by multi-ch-constructor
+    pub const NO_SHORTCUT_IDX: &str = "-1";
+}
+
+pub mod generator {
+    pub use super::parser::NO_SHORTCUT_IDX;
+}
+
+pub mod routing {
+    pub const ALPHA: f64 = 1.0;
 }
 
 pub mod network {
     use crate::{
         defaults,
         network::{StreetCategory, VehicleCategory},
+        units::speed::KilometersPerHour,
     };
     use log::warn;
     use osmpbfreader::Way;
@@ -42,8 +84,8 @@ pub mod network {
             }
         }
 
-        fn maxspeed(&self) -> u16 {
-            match self {
+        fn maxspeed(&self) -> KilometersPerHour {
+            KilometersPerHour(match self {
                 StreetCategory::Motorway => 130,
                 StreetCategory::MotorwayLink => 50,
                 StreetCategory::Trunk => 100,
@@ -63,7 +105,7 @@ pub mod network {
                 StreetCategory::Cycleway => 25,
                 StreetCategory::Pedestrian => 5,
                 StreetCategory::Path => 15,
-            }
+            } as f64)
         }
 
         pub fn is_for(&self, vehicle_category: &VehicleCategory, is_driver_picky: bool) -> bool {
@@ -169,11 +211,11 @@ pub mod network {
         }
 
         pub fn parse_lane_count(&self, _way: &Way) -> u8 {
-            // TODO
+            // TODO parse lanes
             self.lane_count()
         }
 
-        pub fn parse_maxspeed(&self, way: &Way) -> u16 {
+        pub fn parse_maxspeed(&self, way: &Way) -> KilometersPerHour {
             let snippet = match way.tags.get("maxspeed") {
                 Some(snippet) => snippet,
                 None => return self.maxspeed(),
@@ -181,92 +223,104 @@ pub mod network {
 
             // parse given maxspeed and return
             match snippet.parse::<u16>() {
-                Ok(maxspeed) => max(defaults::speed::MIN_KMH.into(), maxspeed),
+                Ok(maxspeed) => {
+                    KilometersPerHour(max(defaults::speed::MIN_KMH.into(), maxspeed) as f64)
+                }
                 Err(_) => match snippet.trim().to_ascii_lowercase().as_ref() {
                     // motorway
                     "de:motorway"
                     => StreetCategory::Motorway.maxspeed(),
                     // 100 kmh
-                    "100, 70" // way-id: 319046425
-                    | "100;70" // way-id: 130006647
-                    | "100;70;50" // way-id: 313097404
-                    | "100|70" // way-id: 118245446
+                    | "100, 70" // way-id: 319046425
                     | "100; 50" // way-id: 130880229
-                    | "60 mph"
-                    | "50;100" // way-id: 266299302
+                    | "100;70;50" // way-id: 313097404
+                    | "100;70" // way-id: 130006647
+                    | "100;80" // way-id: 161216768
+                    | "100|70" // way-id: 118245446
                     | "50; 100" // way-id: 152374728
-                    => 100,
+                    | "50;100" // way-id: 266299302
+                    | "60 mph"
+                    => KilometersPerHour(100.0),
                     // 80 kmh
-                    "80;60" // way-id: 25154358
-                    | "60;80" // way-id: 24441573
                     | "50 mph"
-                    => 80,
+                    | "60;80" // way-id: 24441573
+                    | "80;60" // way-id: 25154358
+                    => KilometersPerHour(80.0),
                     // 70 kmh
                     "70; 50" // way-id: 260835537
                     | "50;70" // way-id: 48581258
                     | "50; 70" // way-id: 20600128
                     | "40 mph"
-                    => 70,
+                    => KilometersPerHour(70.0),
                     // 60 kmh
                     "60;50" // way-id: 48453714
-                    => 60,
+                    => KilometersPerHour(60.0),
                     // 50 kmh
-                    "20; 50" // way-id: 308645778
-                    | "30;50" // way-id: 4954059
-                    | "30; 50" // way-id: 305677124
-                    | "30,50" // way-id: 28293340
+                    | "20; 50" // way-id: 308645778
                     | "30 mph"
-                    | "50;30" // way-id: 25616305
+                    | "30,50" // way-id: 28293340
+                    | "30; 50" // way-id: 305677124
+                    | "30;50" // way-id: 4954059
                     | "50; 30" // way-id: 28494183
+                    | "50;30" // way-id: 25616305
                     | "50b"
+                    | "5ß" // way-id: 8367325
                     | "de:urban" // way-id: 111446158
                     | "maxspeed=50"
-                    => 50,
+                    => KilometersPerHour(50.0),
                     // 30 kmh
-                    "20 mph"
+                    | "20 mph"
+                    | "30 @ (mo-fr 06:00-18:00)" // way-id: 558224330
                     | "30 kph"
                     | "30;10" // way-id: 111450904
-                    | "30 @ (mo-fr 06:00-18:00)" // way-id: 558224330
+                    | "30; 40" // way-id: 28311529
+                    | "3ß" // way-id: 4045417
                     | "conditional=30 @ (mo-fr 06:00-22:00)" // way-id: 612333030
-                    | "de:zone30"
                     | "de:zone:30" // way-id: 32657912
+                    | "de:zone30"
                     | "zone:maxspeed=de:30" // way-id: 26521170
-                    => 30,
+                    => KilometersPerHour(30.0),
                     // 25 kmh
                     "15 mph"
-                    => 25,
+                    => KilometersPerHour(25.0),
                     // 20 kmh
                     "2ß"
-                    => 20,
+                    => KilometersPerHour(20.0),
                     // bicycle
                     "de:bicycle_road"
                     => StreetCategory::Cycleway.maxspeed(),
                     // walk (<= 15 kmh)
-                    "3 mph"
-                    | "4-7"
+                    | "10 mph"
+                    | "10#" // way-id: 301985410
+                    | "1ß"
+                    | "3 mph"
                     | "4-6"
+                    | "4-7"
                     | "5 mph"
+                    | "6 km/h" // way-id: 60066367
                     | "6,5" // way-id: 27172163
                     | "7-10" // way-id: 60805930
-                    | "10 mph"
-                    | "1ß"
                     | "de:living_street"
                     | "de:walk"
                     | "schrittgeschwindigkeit" // way-id: 212487477
                     | "walk"
                     => StreetCategory::LivingStreet.maxspeed(),
                     // known defaults/weirdos
-                    "*" // way-id: 4682329
+                    | "*" // way-id: 4682329
                     | "20:forward" // way-id: 24215081
                     | "30+" // way-id: 87765739
-                    | "at:urban" // way-id: 30504860
                     | "at:rural" // way-id: 23622533
+                    | "at:urban" // way-id: 30504860
+                    | "cz:urban" // way-id: 683729581
+                    | "de:274.1[30]" // way-id: 458676403
                     | "de:rural" // way-id: 15558598
                     | "de" // way-id: 180794115
                     | "fixme:höchster üblicher wert" // way-id: 8036120
+                    | "hgv=30" // way-id: 33172848
                     | "nome" // way-id: 67659840
                     | "none" // way-id: 3061397
                     | "posted time dependent" // way-id: 168135218
+                    | "signal" // way-id: 189189059
                     | "signals" // way-id: 3996833
                     | "variable" // way-id: 461169632
                     => self.maxspeed(),
@@ -294,27 +348,29 @@ pub mod network {
                 Some(oneway_value) => {
                     match oneway_value.trim().to_ascii_lowercase().as_ref() {
                         // yes
-                        "1"
-                        | "left;through"
-                        | "recommended"
-                        | "shelter"
+                        | "1"
+                        | "left;through" // way-id: 679817792
+                        | "motor_vehicle" // way-id: 172676596
+                        | "recommended" // way-id: 38250792
+                        | "shelter" // way-id: 680612616
+                        | "use_sidepath" // way-id: 3701112
+                        | "yes + oneway:bicycle=no" // way-id: 25013800
                         | "yes"
                         => (is_oneway, !is_reverse),
                         // yes but reverse
-                        "´-1" // way-id: 721848168
+                        | "´-1" // way-id: 721848168
                         | "-1"
-                        | "-1;no"
+                        | "-1;no" // way-id: 180680762
                         => (is_oneway, is_reverse),
                         // no
-                        "alternating"
-                        | "bicycle"
-                        | "cycle_barrier"
-                        | "fixme"
+                        | "alternating" // way-id: 5051072
+                        | "bicycle" // way-id: 25596393
+                        | "cycle_barrier" // way-id: 691452957
+                        | "fixme" // way-id: 199388177
                         | "no"
-                        | "reversible"
-                        | "undefined"
-                        | "unknown"
-                        | "use_sidepath" // way-id: 3701112
+                        | "reversible" // way-id: 4005347
+                        | "undefined" // way-id: 331847642
+                        | "unknown" // way-id: 380885551
                         | "yes @ (2018 aug 0 - 2018 dec 21)" // way-id: 24379239
                         | "yes;no" // way-id: 158249443
                         => (!is_oneway, !is_reverse),
@@ -336,100 +392,128 @@ pub mod network {
     impl FromStr for StreetCategory {
         type Err = bool;
 
-        fn from_str(s: &str) -> Result<Self, Self::Err> {
+        fn from_str(s: &str) -> Result<StreetCategory, bool> {
             let is_unknown = true;
             match s.trim().to_ascii_lowercase().as_ref() {
                 // known and used
-                "highway:motorway"
+                | "highway:motorway"
                 => Ok(StreetCategory::Motorway),
-                "highway:motorway_link"
+                | "highway:motorway_link"
                 => Ok(StreetCategory::MotorwayLink),
-                "highway:trunk"
+                | "highway:trunk"
                 => Ok(StreetCategory::Trunk),
-                "highway:trunk_link"
+                | "highway:trunk_link"
                 => Ok(StreetCategory::TrunkLink),
-                "highway:primary"
+                | "highway:primary"
                 => Ok(StreetCategory::Primary),
-                "highway:primary_link"
+                | "highway:primary_link"
                 => Ok(StreetCategory::PrimaryLink),
-                "highway:secondary"
+                | "highway:secondary"
                 => Ok(StreetCategory::Secondary),
-                "highway:secondary_link"
+                | "highway:secondary_link"
                 => Ok(StreetCategory::SecondaryLink),
-                "highway:tertiary"
+                | "highway:tertiary"
                 => Ok(StreetCategory::Tertiary),
-                "highway:tertiary_link"
+                | "highway:tertiary_link"
+                | "highway:traffic_calming" // way-id: 746304770
                 | "highway:unclassified_link" // way-id: 460413095
                 => Ok(StreetCategory::TertiaryLink),
-                "highway:unclassified"
+                | "highway:give_way" // way-id: 61580672
+                | "highway:unclassified"
+                | "highway:unclasified" // way-id: 71428454
                 => Ok(StreetCategory::Unclassified),
-                "highway:residential"
+                | "highway:area:residential" // way-id: 36986745
+                | "highway:asphalt" // way-id: 773144688
                 | "highway:junction" // way-id: 589935900
+                | "highway:mini_roundabout" // way-id: 745748272
+                | "highway:residential"
                 => Ok(StreetCategory::Residential),
-                "highway:living_street"
+                | "highway:living_street"
                 => Ok(StreetCategory::LivingStreet),
-                "highway:service"
+                | "highway:razed:service" // way-id: 415355747
                 | "highway:service;yes" // way-id: 170702046
+                | "highway:service"
+                | "highway:sevice" // way-id: 557625537
+                | "highway:service2" // way-id: 553698179
+                | "highway:swervice" // way-id: 551728065
                 => Ok(StreetCategory::Service),
-                "highway:byway" // way-id: 29881284
+                | "highway:byway" // way-id: 29881284
                 | "highway:historic" // way-id: 192265844
                 | "highway:path;unclassified" // way-id: 38480982
                 | "highway:tra#" // way-id: 721881475
                 | "highway:track"
                 | "highway:track;path" // way-id: 640616710
                 | "highway:trank" // way-id: 685079101
+                | "highway:track; cycleway; cycleway; track; track" // way-id: 128073314
                 => Ok(StreetCategory::Track),
-                "highway:bridge" // way-id: 696697784
+                | "highway:4" // way-id: 23128594545
+                | "highway:bridge" // way-id: 696697784
+                | "highway:fixme" // way-id: 371216260
+                | "highway:parking_aisle" // way-id: 552156572
                 | "highway:road"
                 | "highway:yes" // way-id: 684234513
                 => Ok(StreetCategory::Road),
-                "highway:cycleway"
+                | "highway:cycleway"
                 | "highway:bridleway" // way-id: 3617168
                 => Ok(StreetCategory::Cycleway),
-                "highway:access" // way-id: 357086739
                 | "highway:access_ramp" // way-id: 24975340
+                | "highway:access" // way-id: 357086739
                 | "highway:alley" // way-id: 24453717
                 | "highway:corridor" // way-id: 210464225
                 | "highway:crossing" // way-id: 679590652
-                | "highway:footway"
+                | "highway:elevator" // way-id: 166960177
+                | "highway:footpath" // way-id: 306304178
+                | "highway:footway rad frei" // way-id: 45786636
                 | "highway:footway;service" // way-id: 245106042
+                | "highway:footway"
+                | "highway:fo" // way-id: 558233034
+                | "highway:f" // way-id: 562267514
                 | "highway:pa" // way-id: 193668915
                 | "highway:pedestrian"
                 | "highway:private_footway" // way-id: 61557441
                 | "highway:ramp" // way-id: 60561495
+                | "highway:schoolyard" // way-id: 254357487
                 | "highway:sidewalk" // way-id: 492983410
                 | "highway:stairs" // way-id: 698856376
                 | "highway:steps"
                 | "highway:trail" // way-id: 606170671
-                | "highway:vitrual" // way-id: 699685919
                 | "highway:virtual" // way-id: 612194863
+                | "highway:vitrual" // way-id: 699685919
                 | "highway:yes;footway" // way-id: 634213443
                 => Ok(StreetCategory::Pedestrian),
-                "highway:informal_path" // way-id: 27849992
+                | "highway:informal_path" // way-id: 27849992
                 | "highway:ladder" // way-id: 415352091
+                | "highway:path---" // way-id: 753671939
+                | "highway:path;steps" // way-id: 768826568
                 | "highway:path"
                 | "highway:path/cycleway" // way-id: 152848247
+                | "highway:pathless" // way-id: 529231499
                 => Ok(StreetCategory::Path),
                 // ignored
-                "highway:85" // way-id: 28682800
-                | "highway:abandoned" // way-id: 551167806
+                | "highway:85" // way-id: 28682800
+                | "highway:abondoned" // way-id: 550607106
                 | "highway:abandoned:highway" // way-id: 243670918
                 | "highway:abandoned:path" // way-id: 659187494
                 | "highway:abandoned:service" // way-id: 668073809
-                | "highway:bus" // way-id: 653176966
+                | "highway:abandoned" // way-id: 551167806
                 | "highway:bus_guideway" // way-id: 659097872
                 | "highway:bus_stop" // way-id: 551048594
+                | "highway:bus" // way-id: 653176966
+                | "highway:busway" // way-id: 26178605
                 | "highway:centre_line" // way-id: 131730185
                 | "highway:climbing_access" // way-id: 674680967
                 | "highway:common" // way-id: 680432920
+                | "highway:under construction" // way-id: 557005264
                 | "highway:construction" // way-id: 23692144
+                | "highway:constuction" // way-id: 40101546
                 | "highway:demolished" // way-id: 146859260
                 | "highway:dismantled" // way-id: 138717422
-                | "highway:disused" // way-id: 4058936
                 | "highway:disused:track" // way-id: 660999751
-                | "highway:elevator" // way-id: 166960177
+                | "highway:disused" // way-id: 4058936
+                | "highway:duckboards" // way-id: 121884826
                 | "highway:emergency_access_point" // way-id: 124039649
                 | "highway:emergency_bay" // way-id: 510872933
+                | "highway:escalator" // way-id: 49542657
                 | "highway:escape" // way-id: 166519327
                 | "highway:foot" // way-id: 675407702
                 | "highway:fuel" // way-id: 385074661
@@ -442,11 +526,12 @@ pub mod network {
                 | "highway:nicht mehr in benutzung" // way-id: 477193801
                 | "highway:no" // way-id: 23605191
                 | "highway:none" // way-id: 144657573
+                | "highway:p" // way-id: 279099565
                 | "highway:passing_place" // way-id: 678674065
+                | "highway:piste" // way-id: 299032574
                 | "highway:place" // way-id: 228745170
                 | "highway:planned" // way-id: 509400222
                 | "highway:platform" // way-id: 552088750
-                | "highway:piste" // way-id: 299032574
                 | "highway:private" // way-id: 707015329
                 | "highway:project" // way-id: 698166909
                 | "highway:projected" // way-id: 698166910
@@ -455,18 +540,20 @@ pub mod network {
                 | "highway:razed" // way-id: 23653804
                 | "highway:removed" // way-id: 667029512
                 | "highway:rest_area" // way-id: 23584797
-                | "highway:sere" // way-id: 167276926
                 | "highway:ser" // way-id: 27215798
+                | "highway:sere" // way-id: 167276926
                 | "highway:services" // way-id: 111251693
-                | "highway:stop" // way-id: 669234427
                 | "highway:stop_line" // way-id: 569603293
+                | "highway:stop" // way-id: 669234427
                 | "highway:street_lamp" // way-id: 614573217
-                | "highway:traffic_signals" // way-id: 300419851
                 | "highway:tidal_path" // way-id: 27676473
                 | "highway:traffic_island" // way-id: 263644518
+                | "highway:traffic_signals" // way-id: 300419851
                 | "highway:turning_circle" // way-id: 669184618
                 | "highway:turning_loop" // way-id: 31516941
+                | "highway:unused" // way-id: 37888214
                 | "highway:via_ferrata" // way-id: 23939968
+                | "highway:virtual_rail" // way-id: 772152425
                 => Err(!is_unknown),
                 // unknown
                 _ => Err(is_unknown),

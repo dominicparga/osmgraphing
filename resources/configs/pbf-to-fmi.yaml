@@ -1,5 +1,5 @@
 parser:
-  map-file: 'resources/maps/isle-of-man_2019-09-05.osm.pbf'
+  map-file: 'resources/maps/isle-of-man_2020-03-14.osm.pbf'
   vehicles:
     category: 'Car'
     are-drivers-picky: false
@@ -16,19 +16,25 @@ parser:
   - category: 'Seconds'
     is-provided: false
     calc-rules: ['Meters', 'KilometersPerHour']
+  - category: 'Ignore - SrcIdx'
+    id: 'SrcIdx'
+  - category: 'Ignore - DstIdx'
+    id: 'DstIdx'
 
 generator:
-  map-file: 'resources/maps/isle-of-man_2019-09-05.fmi'
+  map-file: 'resources/maps/isle-of-man_2020-03-14.fmi'
   nodes:
-  - category: 'NodeId'
+  - category: 'NodeIdx'
   - category: 'NodeId'
   - category: 'Latitude'
   - category: 'Longitude'
   - category: 'Ignore' # height
-  - category: 'Level'
+  - category: 'Ignore' # level for contraction-hierarchies
   edges:
-  - id: 'SrcId'
-  - id: 'DstId'
+  - id: 'SrcIdx'
+  - id: 'DstIdx'
   - id: 'Meters'
-  - id: 'KilometersPerHour'
+  # - id: 'KilometersPerHour' # nope because addition (in ch) makes no sense
   - id: 'Seconds'
+  - id: 'Ignore' # shortcut-edge-0
+  - id: 'Ignore' # shortcut-edge-1

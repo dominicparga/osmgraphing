@@ -1,0 +1,22 @@
+parser:
+  map-file: 'resources/maps/small.ch.fmi'
+  vehicles:
+    category: 'Car'
+    are-drivers-picky: false
+  nodes:
+  - category: 'NodeId' # node-idx
+  - category: 'Ignore' # osm-id
+  - category: 'Latitude'
+  - category: 'Longitude'
+  - category: 'Ignore' # height
+  - category: 'Level'
+  edges:
+  - category: 'SrcId'
+  - category: 'DstId'
+  - category: 'Meters'
+  - category: 'Seconds'
+  - category: 'ShortcutEdgeIdx'
+    id: 'ShortcutEdgeIdx0'
+  - category: 'ShortcutEdgeIdx'
+    id: 'ShortcutEdgeIdx1'
+

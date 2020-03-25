@@ -1,28 +1,34 @@
-use crate::helpers::{assert_path, defaults, TestNode};
+use crate::helpers::{defaults, test_dijkstra, TestNode};
 use osmgraphing::{
-    configs::{self, Config},
-    network::NodeIdx,
-    routing,
-    units::geo::Coordinate,
+    configs::{self, SimpleId},
+    defaults::capacity::DimVec,
+    network::{MetricIdx, NodeIdx},
+    units::{geo::Coordinate, time::Minutes},
 };
+use smallvec::smallvec;
+
+const METRIC_ID: &str = defaults::DURATION_ID;
+const CONFIG: &str = defaults::paths::resources::configs::SIMPLE_STUTTGART_FMI;
+const IS_CH_DIJKSTRA: bool = true;
 
 #[test]
-fn dijkstra() {
-    let mut cfg =
-        Config::from_yaml(defaults::paths::resources::configs::SIMPLE_STUTTGART_FMI).unwrap();
-    cfg.routing = configs::routing::Config::from_str(
-        &format!("routing: [{{ id: '{}' }}]", defaults::DURATION_ID),
-        &cfg.parser,
-    )
-    .ok();
-
-    let mut dijkstra = routing::Dijkstra::new();
-    let expected_paths = expected_paths();
-
-    assert_path(&mut dijkstra, expected_paths, cfg);
+fn chdijkstra_on_map() {
+    test_dijkstra(CONFIG, METRIC_ID, IS_CH_DIJKSTRA, Box::new(expected_paths))
 }
 
-fn expected_paths() -> Vec<(TestNode, TestNode, Option<(f32, Vec<Vec<TestNode>>)>)> {
+#[test]
+fn dijkstra_on_map() {
+    test_dijkstra(CONFIG, METRIC_ID, !IS_CH_DIJKSTRA, Box::new(expected_paths))
+}
+
+fn expected_paths(
+    cfg_parser: &configs::parser::Config,
+) -> Vec<(
+    TestNode,
+    TestNode,
+    DimVec<MetricIdx>,
+    Option<(DimVec<f64>, Vec<Vec<TestNode>>)>,
+)> {
     let opp: usize = 0;
     let bac: usize = 1;
     let wai: usize = 2;
@@ -44,38 +50,39 @@ fn expected_paths() -> Vec<(TestNode, TestNode, Option<(f32, Vec<Vec<TestNode>>)
         idx: NodeIdx(idx),
         id,
         coord: Coordinate { lat, lon },
+        level: 0,
     })
     .collect();
 
     let expected_paths = vec![
         // opp
         (opp, opp, Some((0.0, vec![vec![]]))),
-        (opp, bac, Some((576.0, vec![vec![opp, bac]]))),
-        (opp, wai, Some((1_266.0, vec![vec![opp, bac, wai]]))),
-        (opp, end, Some((1_566.0, vec![vec![opp, bac, end]]))),
-        (opp, dea, Some((704.28, vec![vec![opp, bac, dea]]))),
-        (opp, stu, Some((1_878.0, vec![vec![opp, bac, wai, stu]]))),
+        (opp, bac, Some((9.6, vec![vec![opp, bac]]))),
+        (opp, wai, Some((21.1, vec![vec![opp, bac, wai]]))),
+        (opp, end, Some((26.1, vec![vec![opp, bac, end]]))),
+        (opp, dea, Some((11.738, vec![vec![opp, bac, dea]]))),
+        (opp, stu, Some((31.3, vec![vec![opp, bac, wai, stu]]))),
         // bac
-        (bac, opp, Some((576.0, vec![vec![bac, opp]]))),
+        (bac, opp, Some((9.6, vec![vec![bac, opp]]))),
         (bac, bac, Some((0.0, vec![vec![]]))),
-        (bac, wai, Some((690.0, vec![vec![bac, wai]]))),
-        (bac, end, Some((990.0, vec![vec![bac, end]]))),
-        (bac, dea, Some((128.28, vec![vec![bac, dea]]))),
-        (bac, stu, Some((1_302.0, vec![vec![bac, wai, stu]]))),
+        (bac, wai, Some((11.5, vec![vec![bac, wai]]))),
+        (bac, end, Some((16.5, vec![vec![bac, end]]))),
+        (bac, dea, Some((2.138, vec![vec![bac, dea]]))),
+        (bac, stu, Some((21.7, vec![vec![bac, wai, stu]]))),
         // wai
-        (wai, opp, Some((1_266.0, vec![vec![wai, bac, opp]]))),
-        (wai, bac, Some((690.0, vec![vec![wai, bac]]))),
+        (wai, opp, Some((21.1, vec![vec![wai, bac, opp]]))),
+        (wai, bac, Some((11.5, vec![vec![wai, bac]]))),
         (wai, wai, Some((0.0, vec![vec![]]))),
-        (wai, end, Some((576.0, vec![vec![wai, end]]))),
-        (wai, dea, Some((818.28, vec![vec![wai, bac, dea]]))),
-        (wai, stu, Some((612.0, vec![vec![wai, stu]]))),
+        (wai, end, Some((9.6, vec![vec![wai, end]]))),
+        (wai, dea, Some((13.638, vec![vec![wai, bac, dea]]))),
+        (wai, stu, Some((10.2, vec![vec![wai, stu]]))),
         // end
-        (end, opp, Some((1_566.0, vec![vec![end, bac, opp]]))),
-        (end, bac, Some((990.0, vec![vec![end, bac]]))),
-        (end, wai, Some((576.0, vec![vec![end, wai]]))),
+        (end, opp, Some((26.1, vec![vec![end, bac, opp]]))),
+        (end, bac, Some((16.5, vec![vec![end, bac]]))),
+        (end, wai, Some((9.6, vec![vec![end, wai]]))),
         (end, end, Some((0.0, vec![vec![]]))),
-        (end, dea, Some((1_118.28, vec![vec![end, bac, dea]]))),
-        (end, stu, Some((945.0, vec![vec![end, stu]]))),
+        (end, dea, Some((18.638, vec![vec![end, bac, dea]]))),
+        (end, stu, Some((15.75, vec![vec![end, stu]]))),
         // dea
         (dea, opp, None),
         (dea, bac, None),
@@ -84,11 +91,11 @@ fn expected_paths() -> Vec<(TestNode, TestNode, Option<(f32, Vec<Vec<TestNode>>)
         (dea, dea, Some((0.0, vec![vec![]]))),
         (dea, stu, None),
         // stu
-        (stu, opp, Some((1_878.0, vec![vec![stu, wai, bac, opp]]))),
-        (stu, bac, Some((1_302.0, vec![vec![stu, wai, bac]]))),
-        (stu, wai, Some((612.0, vec![vec![stu, wai]]))),
-        (stu, end, Some((945.0, vec![vec![stu, end]]))),
-        (stu, dea, Some((1_430.28, vec![vec![stu, wai, bac, dea]]))),
+        (stu, opp, Some((31.3, vec![vec![stu, wai, bac, opp]]))),
+        (stu, bac, Some((21.7, vec![vec![stu, wai, bac]]))),
+        (stu, wai, Some((10.2, vec![vec![stu, wai]]))),
+        (stu, end, Some((15.75, vec![vec![stu, end]]))),
+        (stu, dea, Some((23.838, vec![vec![stu, wai, bac, dea]]))),
         (stu, stu, Some((0.0, vec![vec![]]))),
     ];
 
@@ -98,7 +105,7 @@ fn expected_paths() -> Vec<(TestNode, TestNode, Option<(f32, Vec<Vec<TestNode>>)
         .map(|(src_idx, dst_idx, path_info)| {
             let src = nodes[src_idx].clone();
             let dst = nodes[dst_idx].clone();
-            let path_info: Option<(f32, Vec<Vec<TestNode>>)> = match path_info {
+            let path_info: Option<(DimVec<f64>, Vec<Vec<TestNode>>)> = match path_info {
                 Some((cost, paths)) => {
                     let paths = paths
                         .into_iter()
@@ -108,11 +115,17 @@ fn expected_paths() -> Vec<(TestNode, TestNode, Option<(f32, Vec<Vec<TestNode>>)
                                 .collect()
                         })
                         .collect();
-                    Some((cost, paths))
+                    let cost = Minutes(cost);
+                    Some((smallvec![*cost], paths))
                 }
                 None => None,
             };
-            (src, dst, path_info)
+            (
+                src,
+                dst,
+                smallvec![cfg_parser.edges.metric_idx(&SimpleId::from(METRIC_ID))],
+                path_info,
+            )
         })
         .collect()
 }

@@ -1,4 +1,4 @@
 pub mod geo;
-pub mod length;
+pub mod distance;
 pub mod speed;
 pub mod time;
