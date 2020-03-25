@@ -108,7 +108,9 @@ impl Graph {
                         for &(other_type, other_idx) in cfg.edges.calc_rules(metric_idx) {
                             // get values from edge dependent of calculation-rules
                             match other_type {
-                                EdgeCategory::Meters => raw_distance = proto_edge.metrics[*other_idx],
+                                EdgeCategory::Meters => {
+                                    raw_distance = proto_edge.metrics[*other_idx]
+                                }
                                 EdgeCategory::KilometersPerHour => {
                                     raw_speed = proto_edge.metrics[*other_idx];
                                 }
@@ -139,7 +141,9 @@ impl Graph {
                         for &(other_type, other_idx) in cfg.edges.calc_rules(metric_idx) {
                             // get values from edge dependent of calculation-rules
                             match other_type {
-                                EdgeCategory::Meters => raw_distance = proto_edge.metrics[*other_idx],
+                                EdgeCategory::Meters => {
+                                    raw_distance = proto_edge.metrics[*other_idx]
+                                }
                                 EdgeCategory::Seconds => {
                                     raw_duration = proto_edge.metrics[*other_idx];
                                 }
@@ -152,7 +156,9 @@ impl Graph {
                             }
                         }
                         // calc maxspeed and update proto-edge
-                        if let (Some(raw_distance), Some(raw_duration)) = (raw_distance, raw_duration) {
+                        if let (Some(raw_distance), Some(raw_duration)) =
+                            (raw_distance, raw_duration)
+                        {
                             let maxspeed: defaults::speed::TYPE =
                                 (defaults::distance::TYPE::new(raw_distance)
                                     / defaults::time::TYPE::new(raw_duration))

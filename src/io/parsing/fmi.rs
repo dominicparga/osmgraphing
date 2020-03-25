@@ -3,7 +3,7 @@ use crate::{
     defaults::{self, capacity::DimVec},
     helpers,
     network::{EdgeBuilder, EdgeIdx, MetricIdx, NodeBuilder, ProtoEdge, ProtoNode, ProtoShortcut},
-    units::{geo, distance::Meters, speed::KilometersPerHour, time::Seconds},
+    units::{distance::Meters, geo, speed::KilometersPerHour, time::Seconds},
 };
 use log::info;
 use std::{

@@ -2,7 +2,7 @@ use crate::helpers::{assert_graph, defaults, parse, TestEdge, TestNode};
 use osmgraphing::{
     configs::Config,
     network::EdgeIdx,
-    units::{geo::Coordinate, distance::Meters, speed::KilometersPerHour, time::Seconds},
+    units::{distance::Meters, geo::Coordinate, speed::KilometersPerHour, time::Seconds},
 };
 
 const CONFIG: &str = defaults::paths::resources::configs::BIDIRECTIONAL_BAIT_FMI;

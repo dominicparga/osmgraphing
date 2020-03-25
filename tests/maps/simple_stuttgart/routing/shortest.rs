@@ -3,7 +3,7 @@ use osmgraphing::{
     configs::{self, SimpleId},
     defaults::capacity::DimVec,
     network::{MetricIdx, NodeIdx},
-    units::{geo::Coordinate, distance::Kilometers},
+    units::{distance::Kilometers, geo::Coordinate},
 };
 use smallvec::smallvec;
 
