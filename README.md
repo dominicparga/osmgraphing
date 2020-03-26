@@ -150,7 +150,7 @@ cmake --build build
 ## Credits
 
 The project started in the mid of 2019 as a student project.
-This page honors the workers and helpers of this project, sorted by their last names.
+This section honors the workers and helpers of this project, sorted by their last names.
 
 __[Florian Barth][github/lesstat]__  
 is the supervisor of the project since beginning and is always helping immediately with his experience and advice.
