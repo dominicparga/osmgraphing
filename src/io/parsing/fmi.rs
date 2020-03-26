@@ -3,8 +3,8 @@ use crate::{
     defaults::{self, capacity::DimVec},
     helpers,
     network::{EdgeBuilder, EdgeIdx, MetricIdx, NodeBuilder, ProtoEdge, ProtoNode, ProtoShortcut},
-    units::{distance::Meters, geo, speed::KilometersPerHour, time::Seconds},
 };
+use kissunits::{distance::Meters, geo, speed::KilometersPerHour, time::Seconds};
 use log::info;
 use std::{
     io::{BufRead, BufReader},

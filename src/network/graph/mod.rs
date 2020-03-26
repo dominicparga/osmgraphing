@@ -5,8 +5,8 @@ pub use indexing::{EdgeIdx, MetricIdx, NodeIdx};
 use crate::{
     configs::parser::Config,
     defaults::capacity::{self, DimVec},
-    units::geo::Coordinate,
 };
+use kissunits::geo::Coordinate;
 use std::{fmt, fmt::Display};
 
 /// Stores graph-data as offset-graph in arrays and provides methods and shallow structs for accessing them.

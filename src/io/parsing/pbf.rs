@@ -3,8 +3,8 @@ use crate::{
     defaults::{self, capacity::DimVec},
     helpers,
     network::{EdgeBuilder, MetricIdx, NodeBuilder, ProtoEdge, ProtoNode, StreetCategory},
-    units::geo::Coordinate,
 };
+use kissunits::geo::Coordinate;
 use log::info;
 use osmpbfreader::{reader::OsmPbfReader, OsmObj};
 use smallvec::smallvec;

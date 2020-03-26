@@ -7,7 +7,11 @@ use crate::{
     },
     helpers::{ApproxEq, MemSize},
     network::MetricIdx,
-    units::geo::{self, Coordinate},
+};
+use kissunits::{
+    distance::Kilometers,
+    geo::{self, Coordinate},
+    time::Hours,
 };
 use log::{debug, info};
 use progressing::{self, Bar};
@@ -159,10 +163,10 @@ impl Graph {
                         if let (Some(raw_distance), Some(raw_duration)) =
                             (raw_distance, raw_duration)
                         {
-                            let maxspeed: defaults::speed::TYPE =
-                                (defaults::distance::TYPE::new(raw_distance)
-                                    / defaults::time::TYPE::new(raw_duration))
-                                .into();
+                            let distance =
+                                Kilometers::from(defaults::distance::TYPE::new(raw_distance));
+                            let duration = Hours::from(defaults::time::TYPE::new(raw_duration));
+                            let maxspeed = defaults::speed::TYPE::from(distance / duration);
                             proto_edge.metrics[*metric_idx] = Some(*maxspeed)
                         } else {
                             are_all_metrics_some = false;

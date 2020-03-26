@@ -1,10 +1,8 @@
-use crate::defaults::{accuracy, capacity::DimVec};
-use std::{
-    cmp::Ordering::{self, Equal, Greater, Less},
-    fs::File,
-    path::Path,
-    str::FromStr,
-};
+use crate::defaults::capacity::DimVec;
+use std::{fs::File, path::Path, str::FromStr};
+
+mod approx;
+pub use approx::{Approx, ApproxCmp, ApproxEq};
 
 pub fn add(a: &DimVec<f64>, b: &DimVec<f64>) -> DimVec<f64> {
     a.iter().zip(b).map(|(aa, bb)| aa + bb).collect()
@@ -30,57 +28,6 @@ pub fn dot_product(a: &DimVec<f64>, b: &DimVec<f64>) -> f64 {
 /// worked-off chunk has to be limited to 250_000.
 pub trait MemSize {
     fn mem_size_b() -> usize;
-}
-
-pub trait Approx {
-    fn approx(self) -> f64;
-}
-
-pub trait ApproxEq<O> {
-    fn approx_eq(&self, other: &O) -> bool;
-}
-
-pub trait ApproxCmp {
-    fn approx_partial_cmp(&self, other: &Self) -> Option<Ordering>;
-    fn approx_cmp(&self, other: &Self) -> Ordering;
-}
-
-impl Approx for f64 {
-    fn approx(self) -> f64 {
-        (self / accuracy::F64_ABS).round() * accuracy::F64_ABS
-    }
-}
-
-impl ApproxEq<f64> for f64 {
-    fn approx_eq(&self, other: &f64) -> bool {
-        (self.approx() - other.approx()).abs() <= accuracy::F64_ABS
-    }
-}
-
-impl ApproxCmp for f64 {
-    fn approx_partial_cmp(&self, other: &f64) -> Option<Ordering> {
-        match (self < other, self > other, self.approx_eq(other)) {
-            (false, false, false) => None,
-            (false, true, false) => Some(Greater),
-            (true, false, false) => Some(Less),
-            (true, true, false) | (_, _, true) => Some(Equal),
-        }
-    }
-
-    fn approx_cmp(&self, other: &f64) -> Ordering {
-        self.approx_partial_cmp(other).expect(&format!(
-            "No f64-comparison for {} and {} possible.",
-            self, other
-        ))
-    }
-}
-
-impl ApproxEq<DimVec<f64>> for DimVec<f64> {
-    fn approx_eq(&self, other: &DimVec<f64>) -> bool {
-        self.iter()
-            .zip(other)
-            .fold(true, |acc, (aa, bb)| acc && aa.approx_eq(bb))
-    }
 }
 
 pub fn open_file<P: AsRef<Path> + ?Sized>(path: &P) -> Result<File, String> {
