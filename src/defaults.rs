@@ -15,15 +15,15 @@ pub mod accuracy {
 }
 
 pub mod distance {
-    pub type TYPE = crate::units::distance::Kilometers;
+    pub type TYPE = kissunits::distance::Kilometers;
 }
 
 pub mod time {
-    pub type TYPE = crate::units::time::Minutes;
+    pub type TYPE = kissunits::time::Minutes;
 }
 
 pub mod speed {
-    pub type TYPE = crate::units::speed::KilometersPerHour;
+    pub type TYPE = kissunits::speed::KilometersPerHour;
     pub const MAX_KMH: u16 = 130;
     pub const MIN_KMH: u8 = 5;
 }
@@ -53,8 +53,8 @@ pub mod network {
     use crate::{
         defaults,
         network::{StreetCategory, VehicleCategory},
-        units::speed::KilometersPerHour,
     };
+    use kissunits::speed::KilometersPerHour;
     use log::warn;
     use osmpbfreader::Way;
     use std::{cmp::max, fmt, fmt::Display, str::FromStr};

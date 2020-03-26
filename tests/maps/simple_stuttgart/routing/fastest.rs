@@ -1,9 +1,9 @@
 use crate::helpers::{defaults, test_dijkstra, TestNode};
+use kissunits::{geo::Coordinate, time::Minutes};
 use osmgraphing::{
     configs::{self, SimpleId},
     defaults::capacity::DimVec,
     network::{MetricIdx, NodeIdx},
-    units::{geo::Coordinate, time::Minutes},
 };
 use smallvec::smallvec;
 

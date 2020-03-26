@@ -1,4 +1,5 @@
-use crate::{defaults::accuracy, units::geo::Coordinate};
+use crate::defaults::accuracy;
+use kissunits::geo::Coordinate;
 use smallvec::{Array, SmallVec};
 use std::{
     cmp::Ordering::{self, Equal, Greater, Less},

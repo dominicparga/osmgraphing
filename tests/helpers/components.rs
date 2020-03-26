@@ -1,14 +1,14 @@
+use kissunits::{geo::Coordinate, speed::KilometersPerHour};
 use osmgraphing::{
     defaults::{self, capacity::DimVec},
     helpers::ApproxEq,
     network::{EdgeIdx, Graph, MetricIdx, Node, NodeIdx},
     routing::{self},
-    units::{geo::Coordinate, speed::KilometersPerHour},
 };
 use smallvec::SmallVec;
 use std::fmt::{self, Display};
 
-#[derive(Clone, Debug, Eq)]
+#[derive(Clone, Debug)]
 pub struct TestNode {
     pub name: String,
     pub id: i64,
@@ -39,7 +39,7 @@ impl PartialEq for TestNode {
     fn eq(&self, other: &Self) -> bool {
         self.id == other.id
             && self.idx == other.idx
-            && self.coord == other.coord
+            && self.coord.approx_eq(&other.coord)
             && self.level == other.level
     }
 }

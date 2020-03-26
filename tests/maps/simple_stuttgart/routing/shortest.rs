@@ -1,9 +1,9 @@
 use crate::helpers::{defaults, test_dijkstra, TestNode};
+use kissunits::{distance::Kilometers, geo::Coordinate};
 use osmgraphing::{
     configs::{self, SimpleId},
     defaults::capacity::DimVec,
     network::{MetricIdx, NodeIdx},
-    units::{distance::Kilometers, geo::Coordinate},
 };
 use smallvec::smallvec;
 

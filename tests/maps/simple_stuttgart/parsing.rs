@@ -1,9 +1,6 @@
 use crate::helpers::{assert_graph, defaults, parse, TestEdge, TestNode};
-use osmgraphing::{
-    configs::Config,
-    network::EdgeIdx,
-    units::{distance::Kilometers, geo::Coordinate, speed::KilometersPerHour, time::Seconds},
-};
+use kissunits::{distance::Kilometers, geo::Coordinate, speed::KilometersPerHour, time::Seconds};
+use osmgraphing::{configs::Config, network::EdgeIdx};
 
 const CONFIG: &str = defaults::paths::resources::configs::SIMPLE_STUTTGART_FMI;
 

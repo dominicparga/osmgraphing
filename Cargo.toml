@@ -84,6 +84,7 @@ progressing = "2" # progress-bar
 serde = "1" # serialization
 serde_yaml = "0.8" # (de-)serialization
 smallvec = "1" # inlining small vecs
+kissunits = "1" # units like Meters or Coordinate
 
 # generate random numbers
 # bin/osmgraphing
