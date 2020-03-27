@@ -46,7 +46,7 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 
 ### Changed <a name="unreleased/changed"></a>
 
-\-
+- Change style of __LICENSE__ and write it with `markdown`.
 
 
 ### Deprecated <a name="unreleased/deprecated"></a>
