@@ -18,11 +18,9 @@ Instead of copying the whole notice, you may copy only the following short versi
 
 ```text
 osmgraphing
-
-Copyright 2019 Dominic Parga Cacheiro
-
-Apache-2.0
 https://github.com/dominicparga/osmgraphing
+Copyright 2019 Dominic Parga Cacheiro
+License Apache-2.0
 ```
 
 
