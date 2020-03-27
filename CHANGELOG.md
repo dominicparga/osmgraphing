@@ -8,7 +8,8 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 ## Table of contents
 
 1. [Unreleased](#unreleased)
-1. [v0.12.0](#v0.12.0)
+1. [v0.12.1](#v0.12.1)
+    1. [v0.12.0](#v0.12.0)
 1. [v0.11.1](#v0.11.1)
     1. [v0.11.0](#v0.11.0)
 1. [v0.10.0](#v0.10.0)
@@ -71,6 +72,22 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 ### Security <a name="unreleased/security"></a>
 
 \-
+
+
+## [v0.12.1][github/self/v0.12.1] <a name="v0.12.1"></a>
+
+### Changed <a name="v0.12.1/changed"></a>
+
+- Change style of __LICENSE__ and write it with `markdown`.
+
+
+### Deprecated <a name="v0.12.1/deprecated"></a>
+
+- Documentation is missing, though comments are very well.
+- `CHANGELOG.md` contains empty version-descriptions.
+  - Replace existing tags with ones referring to `CHANGELOG.md` and add old tag-texts to the `CHANGELOG.md`
+  - Inconsistent `semver` in old tags -> probably `cargo yank VERSION` needed
+- The link to `doc.rs` is hardcoded to `major.minor.patch=0.y.z` because `docs.rs` chooses version `1.0.0` though it's yanked..
 
 
 ## [v0.12.0][github/self/v0.12.0] <a name="v0.12.0"></a>
