@@ -75,23 +75,18 @@ harness = false
 
 
 [dependencies]
-chrono = "0.4" # pretty date and time
 clap = "2.33" # cmdline-parsing
 env_logger = "0.6" # logging for external use, e.g. main.rs and examples
+kissunits = "1" # units like Meters or Coordinate
 log = "0.4"        # logging for internal use, e.g. lib.rs
 osmpbfreader = "0.13" # read osm.pbf-files
 progressing = "2" # progress-bar
 serde = "1" # serialization
 serde_yaml = "0.8" # (de-)serialization
 smallvec = "1" # inlining small vecs
-kissunits = "1" # units like Meters or Coordinate
 
-# generate random numbers
-# bin/osmgraphing
-rand = { version = "0.7", optional = true }
-# generate random numbers
-# bin/osmgraphing
-rand_pcg = { version = "0.2", optional = true }
+rand = { version = "0.7", optional = true } # generate random numbers
+rand_pcg = { version = "0.2", optional = true } # generate random numbers
 
 
 [dev-dependencies]
