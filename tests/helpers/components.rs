@@ -181,7 +181,7 @@ impl TestEdge {
 pub struct TestPath {
     src: TestNode,
     dst: TestNode,
-    cost: DimVec<f64>,
+    costs: DimVec<f64>,
     metric_indices: DimVec<MetricIdx>,
     alternative_nodes: Vec<Vec<TestNode>>,
 }
@@ -190,14 +190,14 @@ impl TestPath {
     pub fn from_alternatives(
         src: TestNode,
         dst: TestNode,
-        cost: DimVec<f64>,
+        costs: DimVec<f64>,
         metric_indices: DimVec<MetricIdx>,
         alternative_nodes: Vec<Vec<TestNode>>,
     ) -> TestPath {
         TestPath {
             src,
             dst,
-            cost,
+            costs,
             metric_indices,
             alternative_nodes,
         }
@@ -260,8 +260,8 @@ impl TestPath {
             // check path-cost
 
             let (expected_cost, actual_cost) = (
-                &self.cost,
-                flattened_actual_path.calc_cost(&self.metric_indices, graph),
+                &self.costs,
+                flattened_actual_path.costs(&self.metric_indices),
             );
             if !expected_cost.approx_eq(&actual_cost) {
                 wrong_cost_result = Some((expected_cost, actual_cost));

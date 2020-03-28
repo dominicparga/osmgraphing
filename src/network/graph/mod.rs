@@ -563,6 +563,10 @@ impl<'a> Display for MetricAccessor<'a> {
 }
 
 impl<'a> MetricAccessor<'a> {
+    pub fn dim(&self) -> usize {
+        self.cfg.edges.dim()
+    }
+
     pub fn get(&self, metric_idx: MetricIdx, edge_idx: EdgeIdx) -> f64 {
         self.metrics[*metric_idx][*edge_idx]
     }

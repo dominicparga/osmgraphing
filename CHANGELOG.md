@@ -47,7 +47,7 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 
 ### Changed <a name="unreleased/changed"></a>
 
-\-
+- Improve __access to path-costs__ of a (shortest) path.
 
 
 ### Deprecated <a name="unreleased/deprecated"></a>

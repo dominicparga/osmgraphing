@@ -209,6 +209,10 @@ pub mod parser {
                 }
             }
 
+            pub fn metric_indices(&self) -> DimVec<MetricIdx> {
+                (0..self.dim()).into_iter().map(|i| MetricIdx(i)).collect()
+            }
+
             pub fn calc_rules(&self, idx: MetricIdx) -> &DimVec<(Category, MetricIdx)> {
                 match self.calc_rules.get(*idx) {
                     Some(calc_rule) => calc_rule,

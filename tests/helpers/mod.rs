@@ -154,8 +154,8 @@ pub fn compare_dijkstras(ch_fmi_config_file: &str, metric_id: &str) {
             let flattened_path = path.flatten(&graph);
 
             // cmp cost
-            let ch_cost = flattened_ch_path.calc_cost(cfg_routing.metric_indices(), &graph);
-            let cost = flattened_path.calc_cost(cfg_routing.metric_indices(), &graph);
+            let ch_cost = flattened_ch_path.all_costs();
+            let cost = flattened_path.all_costs();
             // not approx because both Dijkstras are running on the same graph
             // -> same best path-cost should be found
             assert!(ch_cost == cost,
