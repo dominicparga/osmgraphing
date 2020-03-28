@@ -580,4 +580,8 @@ impl<'a> MetricAccessor<'a> {
             .map(|&midx| self.metrics[*midx][*edge_idx])
             .collect()
     }
+
+    pub fn get_all(&self, edge_idx: EdgeIdx) -> DimVec<f64> {
+        self.get_more(&self.cfg.edges.metric_indices(), edge_idx)
+    }
 }
