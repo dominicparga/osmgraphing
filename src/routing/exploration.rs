@@ -15,7 +15,7 @@ use std::{cmp::Reverse, collections::BinaryHeap};
 pub struct ConvexHullExplorator {}
 
 impl ConvexHullExplorator {
-    pub fn explore() {
+    pub fn explore(&self, src_idx: NodeIdx, dst_idx: NodeIdx) {
         let mut has_new_route = true;
 
         while has_new_route {

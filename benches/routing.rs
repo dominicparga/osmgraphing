@@ -111,9 +111,7 @@ fn bidir_shortest_dijkstra(
 
     let nodes = graph.nodes();
     for &(src_idx, dst_idx) in routes.iter() {
-        let src = nodes.create(src_idx);
-        let dst = nodes.create(dst_idx);
-        let _option_path = dijkstra.compute_best_path(&src, &dst, graph, cfg);
+        let _option_path = dijkstra.compute_best_path(src_idx, dst_idx, graph, cfg);
     }
 }
 
@@ -126,8 +124,6 @@ fn bidir_fastest_dijkstra(
 
     let nodes = graph.nodes();
     for &(src_idx, dst_idx) in routes.iter() {
-        let src = nodes.create(src_idx);
-        let dst = nodes.create(dst_idx);
-        let _option_path = dijkstra.compute_best_path(&src, &dst, graph, cfg);
+        let _option_path = dijkstra.compute_best_path(src_idx, dst_idx, graph, cfg);
     }
 }

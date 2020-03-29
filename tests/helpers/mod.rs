@@ -129,8 +129,9 @@ pub fn compare_dijkstras(ch_fmi_config_file: &str, metric_id: &str) {
         let src = nodes.create(src_idx);
         let dst = nodes.create(dst_idx);
 
-        let option_ch_path = dijkstra.compute_best_path(&src, &dst, &graph, &cfg_routing_ch);
-        let option_path = dijkstra.compute_best_path(&src, &dst, &graph, &cfg_routing);
+        let option_ch_path =
+            dijkstra.compute_best_path(src.idx(), dst.idx(), &graph, &cfg_routing_ch);
+        let option_path = dijkstra.compute_best_path(src.idx(), dst.idx(), &graph, &cfg_routing);
 
         // check if both are none/not-none
         if option_ch_path.is_none() != option_path.is_none() {
@@ -273,11 +274,9 @@ pub fn assert_path(
     let graph = parse(cfg.parser);
     for (src, dst, metric_indices, option_specs) in expected_paths {
         let nodes = graph.nodes();
-        let graph_src = nodes.create(src.idx);
-        let graph_dst = nodes.create(dst.idx);
         let option_path = dijkstra.compute_best_path(
-            &graph_src,
-            &graph_dst,
+            src.idx,
+            dst.idx,
             &graph,
             &cfg.routing
                 .as_ref()

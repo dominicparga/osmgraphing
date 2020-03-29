@@ -135,14 +135,13 @@ fn main() {
     };
 
     // calculate best paths
-    while let Some((src_idx, dst_idx)) = gen_route() {
-        let src = nodes.create(src_idx);
-        let dst = nodes.create(dst_idx);
-
+    while let Some((src, dst)) =
+        gen_route().map(|(src_idx, dst_idx)| (nodes.create(src_idx), nodes.create(dst_idx)))
+    {
         info!("");
 
         let now = Instant::now();
-        let option_path = dijkstra.compute_best_path(&src, &dst, &graph, &cfg_routing);
+        let option_path = dijkstra.compute_best_path(src.idx(), dst.idx(), &graph, &cfg_routing);
         info!(
             "Ran Dijkstra-query in {} ms",
             now.elapsed().as_micros() as f64 / 1_000.0,

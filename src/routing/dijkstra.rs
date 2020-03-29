@@ -122,8 +122,8 @@ impl Dijkstra {
     /// None means no path exists, whereas an empty path is a path from a node to itself.
     pub fn compute_best_path(
         &mut self,
-        src: &Node,
-        dst: &Node,
+        src_idx: NodeIdx,
+        dst_idx: NodeIdx,
         graph: &Graph,
         cfg: &Config,
     ) -> Option<Path> {
@@ -158,20 +158,20 @@ impl Dijkstra {
 
         // push src-node
         self.queue.push(Reverse(CostNode {
-            idx: src.idx(),
+            idx: src_idx,
             cost: 0.0,
             direction: Direction::FWD,
         }));
         // push dst-node
         self.queue.push(Reverse(CostNode {
-            idx: dst.idx(),
+            idx: dst_idx,
             cost: 0.0,
             direction: Direction::BWD,
         }));
         // update fwd-stats
-        self.costs[self.fwd_idx()][*src.idx()] = 0.0;
+        self.costs[self.fwd_idx()][*src_idx] = 0.0;
         // update bwd-stats
-        self.costs[self.bwd_idx()][*dst.idx()] = 0.0;
+        self.costs[self.bwd_idx()][*dst_idx] = 0.0;
 
         //----------------------------------------------------------------------------------------//
         // search for shortest path
@@ -296,7 +296,7 @@ impl Dijkstra {
                 cur_idx = xwd_edges[opp_dir].dst_idx(leaving_idx);
             }
 
-            Some(Path::new(src.idx(), dst.idx(), proto_path))
+            Some(Path::new(src_idx, dst_idx, proto_path))
         } else {
             None
         }
