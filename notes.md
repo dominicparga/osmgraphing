@@ -101,7 +101,13 @@ This leads to wrong paths with normal bidirectional Dijkstra.
 To correct this issue, stop the query after polling a node of a sub-distance, which is higher than the currently best meeting-node's total distance.
 
 
+## License
+
+[When is a program and its plug-ins considered a single combined program?][gnu/licenses/gpl-faq/gplplugins]
+
+
 [github/rust-lang/cargo/issues/5624]: https://github.com/rust-lang/cargo/issues/5624
+[gnu/licenses/gpl-faq/gplplugins]: https://www.gnu.org/licenses/gpl-faq.html#GPLPlugins
 [kde/marble]: http://api.kde.org/4.x-api/kdeedu-apidocs/marble/html/namespaceMarble.html
 [leafletjs]: https://leafletjs.com/
 [osm/wiki/jmapviewer]: https://wiki.openstreetmap.org/wiki/JMapViewer

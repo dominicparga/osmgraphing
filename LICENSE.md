@@ -1,36 +1,51 @@
 # License and Copyright
 
-This repository and its content are licensed under the Apache License, Version 2.0 (the "License").
-You may not use content of this repository or its files except in compliance with the License.
+As long as you are not building with or depending on the build-feature `gpl-3.0`, the `Apache-2.0`-license holds.
+
+## Apache-2.0
+
+This repository `osmgraphing` parses maps of own format or maps from
+openstreetmap. To do this, a binary `osmgraphing` is built and an own-
+defined config-file can be provided to specify parser- and routing-
+settings. Besides that, a binary `mapgenerator` is built and can be used
+to generate map-files.
+
+The description above gives a (maybe uncomplete) overview about the part of this repository (and resulting binaries), which is licensed under the `Apache License, Version 2.0`.
+You may not use content of this repository or its files, which are directly or indirectly related to above mentioned parts, except in compliance with the `Apache License, Version 2.0`.
 You may obtain a copy of the License at
 
-`http://www.apache.org/licenses/LICENSE-2.0`
+`https://www.apache.org/licenses/LICENSE-2.0`
 
 Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and limitations under the License.
 
 
+## GPL-3.0
+
+Besides that, this repository also explorates graphs and optimizes resulting routes with the module `exploration` and the binary `balancer`.
+Since these parts of this repository use code, which is licensed under the `GPL-3.0`, every other module and binary, using it as described in the `GPL-3.0`, has to be licensed respectively under the `GPL-3.0`.
+You may obtain a copy of the License at
+
+`https://www.gnu.org/licenses/`
+
+
 ## Mentioning this Copyright in own projects
 
 Please include this Copyright- and License-notice in your project.
-As suggested in the License, you may choose a separate file like "NOTICE" for this.
+As suggested in the `Apache License, Version 2.0`, you may choose a separate file like "NOTICE" for this.
 Instead of copying the whole notice, you may copy only the following short version.
 
 ```text
-osmgraphing
+osmgraphing, mapgenerator
 https://github.com/dominicparga/osmgraphing
 Copyright 2019 Dominic Parga Cacheiro
 License Apache-2.0
+
+explorator, balancer
+https://github.com/dominicparga/osmgraphing
+Copyright (C) 2020 Dominic Parga Cacheiro
+License GPL-3.0-only
 ```
-
-
-## Short description of some content
-
-This repository "osmgraphing" parses maps of own format or maps from
-openstreetmap. To do this, a binary "osmgraphing" is built and an own-
-defined config-file can be provided to specify parser- and routing-
-settings. Besides that, a binary "mapgenerator" is built and can be used
-to generate map-files.
 
 
 ## Dependencies
@@ -61,6 +76,12 @@ log
 https://github.com/rust-lang/log
 Copyright (c) 2014 The Rust Project Developers
 License MIT OR Apache-2.0
+```
+
+```text
+nd-triangulation
+https://github.com/lesstat/nd-triangulation
+License GPL-3.0-only
 ```
 
 ```text
