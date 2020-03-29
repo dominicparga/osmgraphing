@@ -30,7 +30,7 @@ Rust has a build-tool called `cargo`, which can be used to run everything except
 
 ```zsh
 # Build the binary for parsing maps and do routing
-cargo build --features "osmgraphing" --release
+cargo build --release
 # Parse isle-of-man
 ./target/release/osmgraphing --config resources/config/isle-of-man.pbf.yaml
 ```
@@ -149,7 +149,7 @@ cmake --build build
 
 ## CGAL-interface with nd-triangulation
 
-For the graph-exploration and balancer, the crate [`nd-triangulation`][github/lesstat/nd-triangulation] is used, which is an interface to [`CGAL`][cgal]'s `c++`-implementation.
+For the graph-exploration and balancer, the crate [`nd-triangulation`][github/lesstat/nd-triangulation] is used, which is an interface to [`CGAL`][cgal]'s `c++`-implementation (licensed with `GPL-3.0`).
 Hence, you need the respective dependencies installed, as described in `nd-triangulation`.
 Maybe, [`CGAL`'s manual][cgal/manual/intro] helps.
 
@@ -159,6 +159,8 @@ In case you are using `archlinux`: Following commands install the dependencies f
 yay -S cgal
 yay -S eigen
 ```
+
+For building accordingly, execute `cargo build --features "gpl-3.0"`.
 
 
 ## Credits
