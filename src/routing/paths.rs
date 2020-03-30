@@ -1,7 +1,7 @@
 use crate::{
     defaults::capacity::DimVec,
     helpers,
-    network::{EdgeIdx, Graph, MetricIdx, NodeIdx},
+    network::{EdgeIdx, Graph, NodeIdx},
 };
 use smallvec::smallvec;
 use std::{
@@ -23,8 +23,8 @@ impl Display for Path {
         let prettier_edges: Vec<_> = self.edges.iter().map(|edge_idx| **edge_idx).collect();
         write!(
             f,
-            "{{ src-idx: {}, dst-idx: {}, edges: {:?} }}",
-            self.src_idx, self.dst_idx, prettier_edges
+            "{{ src-idx: {}, dst-idx: {}, costs: {:?}, edges: {:?} }}",
+            self.src_idx, self.dst_idx, self.costs, prettier_edges
         )
     }
 }
@@ -55,20 +55,7 @@ impl Path {
     }
 
     /// ATTENTION! This method panics if the costs hasn't been calculated (e.g. `calc_cost(...)` or `flatten(...)`).
-    pub fn cost(&self, metric_idx: MetricIdx) -> f64 {
-        self.all_costs()[*metric_idx]
-    }
-
-    /// ATTENTION! This method panics if the costs hasn't been calculated (e.g. `calc_cost(...)` or `flatten(...)`).
-    pub fn costs(&self, metric_indices: &[MetricIdx]) -> DimVec<f64> {
-        metric_indices
-            .iter()
-            .map(|&midx| self.all_costs()[*midx])
-            .collect()
-    }
-
-    /// ATTENTION! This method panics if the costs hasn't been calculated (e.g. `calc_cost(...)` or `flatten(...)`).
-    pub fn all_costs(&self) -> &DimVec<f64> {
+    pub fn costs(&self) -> &DimVec<f64> {
         self.costs
             .as_ref()
             .expect("Path's cost has to be calculated.")
@@ -81,9 +68,9 @@ impl Path {
             self.costs = Some(
                 self.edges
                     .iter()
-                    .map(|edge_idx| graph_metrics.get_all(*edge_idx))
+                    .map(|edge_idx| &graph_metrics[edge_idx])
                     .fold(smallvec![0.0; graph_metrics.dim()], |acc, m| {
-                        helpers::add(&acc, &m)
+                        helpers::add(&acc, m)
                     }),
             );
         }
@@ -118,7 +105,7 @@ impl Path {
             flattened_path.edges.push(edge_idx);
             helpers::add_assign(
                 flattened_path.costs.as_mut().unwrap(),
-                &graph.metrics().get_all(edge_idx),
+                &graph.metrics()[edge_idx],
             );
         }
 

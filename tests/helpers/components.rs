@@ -5,7 +5,7 @@ use osmgraphing::{
     network::{EdgeIdx, Graph, MetricIdx, Node, NodeIdx},
     routing::{self},
 };
-use smallvec::SmallVec;
+use smallvec::{smallvec, SmallVec};
 use std::fmt::{self, Display};
 
 #[derive(Clone, Debug)]
@@ -68,7 +68,7 @@ pub struct TestEdge {
     is_fwd: bool,
     src_idx: NodeIdx,
     dst_idx: NodeIdx,
-    metrics: Vec<f64>,
+    metrics: DimVec<f64>,
 }
 
 impl TestEdge {
@@ -92,7 +92,7 @@ impl TestEdge {
             is_fwd: true,
             src_idx: src.idx.into(),
             dst_idx: dst.idx.into(),
-            metrics: vec![*distance.into(), *maxspeed, *duration.into()],
+            metrics: smallvec![*distance.into(), *maxspeed, *duration.into()],
         }
     }
 
@@ -116,7 +116,7 @@ impl TestEdge {
             is_fwd: false,
             src_idx: src.idx.into(),
             dst_idx: dst.idx.into(),
-            metrics: vec![*distance.into(), *maxspeed, *duration.into()],
+            metrics: smallvec![*distance.into(), *maxspeed, *duration.into()],
         }
     }
 
@@ -164,13 +164,11 @@ impl TestEdge {
             self.name
         );
 
-        let metric_indices = &[MetricIdx(0), MetricIdx(1), MetricIdx(2)];
-        let value = edge.metrics(metric_indices);
         let expected = SmallVec::from_slice(&self.metrics);
         assert!(
-            value.approx_eq(&expected),
+            edge.metrics().approx_eq(&expected),
             "Wrong metrics {:?} for {}edge {}. Expected: {:?}",
-            value,
+            edge.metrics(),
             prefix,
             self.name,
             expected
@@ -261,7 +259,10 @@ impl TestPath {
 
             let (expected_cost, actual_cost) = (
                 &self.costs,
-                flattened_actual_path.costs(&self.metric_indices),
+                self.metric_indices
+                    .iter()
+                    .map(|&metric_idx| flattened_actual_path.costs()[*metric_idx])
+                    .collect(),
             );
             if !expected_cost.approx_eq(&actual_cost) {
                 wrong_cost_result = Some((expected_cost, actual_cost));

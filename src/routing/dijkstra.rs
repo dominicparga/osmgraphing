@@ -2,7 +2,7 @@ use super::paths::Path;
 use crate::{
     configs::routing::Config,
     helpers,
-    network::{EdgeIdx, Graph, Node, NodeIdx},
+    network::{EdgeIdx, Graph, NodeIdx},
 };
 use std::{cmp::Reverse, collections::BinaryHeap};
 
@@ -125,13 +125,13 @@ impl Dijkstra {
         src_idx: NodeIdx,
         dst_idx: NodeIdx,
         graph: &Graph,
-        cfg: &Config,
+        cfg_routing: &Config,
     ) -> Option<Path> {
-        if cfg.dim() <= 0 {
+        if cfg_routing.dim() <= 0 {
             panic!("Best path should be computed, but no metric is specified.");
         }
 
-        self.is_ch_dijkstra = cfg.is_ch_dijkstra();
+        self.is_ch_dijkstra = cfg_routing.is_ch_dijkstra();
 
         //----------------------------------------------------------------------------------------//
         // initialization-stuff
@@ -239,10 +239,7 @@ impl Dijkstra {
                 }
 
                 let new_cost = current.cost
-                    + helpers::dot_product(
-                        &cfg.alphas(),
-                        &leaving_edge.metrics(&cfg.metric_indices()),
-                    );
+                    + helpers::dot_product(&cfg_routing.alphas(), &leaving_edge.metrics());
                 if new_cost < self.costs[dir][*leaving_edge.dst_idx()] {
                     self.predecessors[dir][*leaving_edge.dst_idx()] = Some(leaving_edge.idx());
                     self.costs[dir][*leaving_edge.dst_idx()] = new_cost;

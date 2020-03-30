@@ -56,8 +56,8 @@ fn main() {
     };
     if let Some(cfg_routing) = &cfg.routing {
         info!(
-            "EXECUTE Parse graph, then do routing with {} metric(s).",
-            cfg_routing.dim()
+            "EXECUTE Parse graph, then do routing with alphas: {:?}",
+            cfg_routing.alphas()
         );
     } else {
         info!("EXECUTE Parse graph without routing.");
@@ -148,8 +148,8 @@ fn main() {
         );
         if let Some(path) = option_path {
             info!(
-                "Cost {:?} from ({}) to ({}).",
-                path.flatten(&graph).costs(cfg_routing.metric_indices()),
+                "Path costs {:?} from ({}) to ({}).",
+                path.flatten(&graph).costs(),
                 src,
                 dst
             );

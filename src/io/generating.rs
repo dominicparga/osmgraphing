@@ -174,7 +174,7 @@ pub mod fmi {
                         match category {
                             EdgeCategory::Meters => {
                                 let metric_idx = graph.cfg().edges.metric_idx(id);
-                                let km = graph.metrics().get(metric_idx, edge_idx);
+                                let km = graph.metrics()[edge_idx][*metric_idx];
                                 let m = km * 1_000.0;
                                 write!(writer, "{:.digits$}", m, digits = accuracy::F64_FMT_DIGITS,)?
                             }
@@ -186,7 +186,7 @@ pub mod fmi {
                                 write!(
                                     writer,
                                     "{:.digits$}",
-                                    graph.metrics().get(metric_idx, edge_idx),
+                                    graph.metrics()[edge_idx][*metric_idx],
                                     digits = accuracy::F64_FMT_DIGITS,
                                 )?
                             }

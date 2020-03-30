@@ -63,8 +63,8 @@ fn main() {
     );
     if let Some(path) = option_path {
         info!(
-            "Cost {:?} from ({}) to ({}).",
-            path.flatten(&graph).costs(cfg_routing.metric_indices()),
+            "Path costs {:?} from ({}) to ({}).",
+            path.flatten(&graph).costs(),
             src,
             dst
         );

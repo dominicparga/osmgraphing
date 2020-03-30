@@ -2,12 +2,9 @@ pub mod building;
 mod indexing;
 pub use indexing::{EdgeIdx, MetricIdx, NodeIdx};
 
-use crate::{
-    configs::parser::Config,
-    defaults::capacity::{self, DimVec},
-};
+use crate::{configs::parser::Config, defaults::capacity::DimVec};
 use kissunits::geo::Coordinate;
-use std::{fmt, fmt::Display};
+use std::{fmt, fmt::Display, ops::Index};
 
 /// Stores graph-data as offset-graph in arrays and provides methods and shallow structs for accessing them.
 ///
@@ -89,7 +86,7 @@ pub struct Graph {
     bwd_offsets: Vec<usize>,
     bwd_to_fwd_map: Vec<EdgeIdx>,
     // edge-metrics (sorted according to fwd_dsts)
-    metrics: Vec<Vec<f64>>,
+    metrics: Vec<DimVec<f64>>,
     // shortcuts (contraction-hierarchies)
     sc_offsets: Vec<usize>,
     sc_edges: Vec<[EdgeIdx; 2]>,
@@ -133,8 +130,8 @@ impl Graph {
 
     pub fn metrics<'a>(&'a self) -> MetricAccessor<'a> {
         MetricAccessor {
-            cfg: &(self.cfg),
-            metrics: &(self.metrics),
+            cfg: &self.cfg,
+            metrics: &self.metrics,
         }
     }
 }
@@ -213,9 +210,7 @@ impl Display for Graph {
                     let edge_idx = EdgeIdx(j);
                     let src_idx = bwd_dsts.dst_idx(edge_idx);
                     let half_edge = fwd_dsts.half_edge(edge_idx);
-                    let metrics: Vec<f64> = (0..self.cfg.edges.dim())
-                        .map(|i| self.metrics[i][*edge_idx])
-                        .collect();
+                    let metrics = half_edge.metrics();
                     writeln!(
                         f,
                         "{}edge: {{ idx: {}, sc-offset: {}, ({})-{:?}->({}) }}",
@@ -373,14 +368,8 @@ impl<'a> HalfEdge<'a> {
         self.edge_accessor.sc_edges(self.idx)
     }
 
-    pub fn metric(&self, metric_idx: MetricIdx) -> f64 {
-        self.edge_accessor.metrics.get(metric_idx, self.idx)
-    }
-
-    pub fn metrics(&self, metric_indices: &[MetricIdx]) -> DimVec<f64> {
-        self.edge_accessor
-            .metrics
-            .get_more(metric_indices, self.idx)
+    pub fn metrics(&self) -> &DimVec<f64> {
+        &self.edge_accessor.metrics[self.idx]
     }
 }
 
@@ -487,6 +476,10 @@ impl<'a> EdgeAccessor<'a> {
         self.edge_dsts[*idx]
     }
 
+    pub fn metrics(&self) -> &MetricAccessor<'a> {
+        &self.metrics
+    }
+
     pub fn is_shortcut(&self, idx: EdgeIdx) -> bool {
         // no overflow due to (len + 1)
         self.sc_offsets[(*idx) + 1] - self.sc_offsets[*idx] != 0
@@ -553,7 +546,7 @@ impl<'a> EdgeAccessor<'a> {
 #[derive(Debug)]
 pub struct MetricAccessor<'a> {
     cfg: &'a Config,
-    metrics: &'a Vec<Vec<f64>>,
+    metrics: &'a Vec<DimVec<f64>>,
 }
 
 impl<'a> Display for MetricAccessor<'a> {
@@ -566,26 +559,36 @@ impl<'a> MetricAccessor<'a> {
     pub fn dim(&self) -> usize {
         self.cfg.edges.dim()
     }
+}
 
-    pub fn get(&self, metric_idx: MetricIdx, edge_idx: EdgeIdx) -> f64 {
-        self.metrics[*metric_idx][*edge_idx]
+impl<'a> Index<EdgeIdx> for MetricAccessor<'a> {
+    type Output = DimVec<f64>;
+
+    fn index(&self, edge_idx: EdgeIdx) -> &DimVec<f64> {
+        &self.metrics[*edge_idx]
     }
+}
 
-    pub fn get_more(&self, metric_indices: &[MetricIdx], edge_idx: EdgeIdx) -> DimVec<f64> {
-        debug_assert!(
-            metric_indices.len() <= capacity::SMALL_VEC_INLINE_SIZE,
-            "Path is asked for calculation-costs of a metric-combination, \
-             that is longer {} than this executable is compiled to {}.",
-            metric_indices.len(),
-            capacity::SMALL_VEC_INLINE_SIZE
-        );
-        metric_indices
-            .iter()
-            .map(|&midx| self.metrics[*midx][*edge_idx])
-            .collect()
+impl<'a> Index<EdgeIdx> for &MetricAccessor<'a> {
+    type Output = DimVec<f64>;
+
+    fn index(&self, edge_idx: EdgeIdx) -> &DimVec<f64> {
+        &self.metrics[*edge_idx]
     }
+}
 
-    pub fn get_all(&self, edge_idx: EdgeIdx) -> DimVec<f64> {
-        self.get_more(&self.cfg.edges.metric_indices(), edge_idx)
+impl<'a> Index<&EdgeIdx> for MetricAccessor<'a> {
+    type Output = DimVec<f64>;
+
+    fn index(&self, edge_idx: &EdgeIdx) -> &DimVec<f64> {
+        &self.metrics[**edge_idx]
+    }
+}
+
+impl<'a> Index<&EdgeIdx> for &MetricAccessor<'a> {
+    type Output = DimVec<f64>;
+
+    fn index(&self, edge_idx: &EdgeIdx) -> &DimVec<f64> {
+        &self.metrics[**edge_idx]
     }
 }
