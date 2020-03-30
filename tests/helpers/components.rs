@@ -151,9 +151,12 @@ impl TestEdge {
         };
 
         assert_eq!(
-            edge.idx(), self.edge_idx,
+            edge.idx(),
+            self.edge_idx,
             "Wrong {}edge-idx={} for {}",
-            prefix, edge.idx(), self.name
+            prefix,
+            edge.idx(),
+            self.name
         );
         assert_eq!(
             edge.dst_idx(),
