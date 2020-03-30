@@ -31,7 +31,7 @@ pub mod parsing {
         );
         let routing_cfg = configs::routing::Config::from_str(yaml_str, &cfg.parser).unwrap();
         assert!(
-            routing_cfg.is_ch_dijkstra(),
+            routing_cfg.is_ch_dijkstra,
             "Routing-config should specify ch-dijkstra."
         );
 
@@ -41,7 +41,7 @@ pub mod parsing {
         );
         let routing_cfg = configs::routing::Config::from_str(yaml_str, &cfg.parser).unwrap();
         assert!(
-            !routing_cfg.is_ch_dijkstra(),
+            !routing_cfg.is_ch_dijkstra,
             "Routing-config should specify normal dijkstra."
         );
     }

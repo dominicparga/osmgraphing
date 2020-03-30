@@ -360,27 +360,11 @@ pub mod routing {
 
     #[derive(Clone, Debug)]
     pub struct Config {
-        is_ch_dijkstra: bool,
-        alphas: DimVec<f64>,
+        pub is_ch_dijkstra: bool,
+        pub alphas: DimVec<f64>,
     }
 
     impl Config {
-        pub fn is_ch_dijkstra(&self) -> bool {
-            self.is_ch_dijkstra
-        }
-
-        pub fn set_ch_dijkstra(&mut self, is_ch_dijkstra: bool) {
-            self.is_ch_dijkstra = is_ch_dijkstra
-        }
-
-        pub fn alphas(&self) -> &DimVec<f64> {
-            &self.alphas
-        }
-
-        pub fn dim(&self) -> usize {
-            self.alphas.len()
-        }
-
         pub fn from_str(
             yaml_str: &str,
             cfg_graph: &super::parser::Config,

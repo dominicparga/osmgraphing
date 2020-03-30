@@ -92,9 +92,9 @@ pub fn compare_dijkstras(ch_fmi_config_file: &str, metric_id: &str) {
     )
     .ok();
     let mut cfg_routing = cfg.routing.unwrap();
-    cfg_routing.set_ch_dijkstra(false);
+    cfg_routing.is_ch_dijkstra = false;
     let mut cfg_routing_ch = cfg_routing.clone();
-    cfg_routing_ch.set_ch_dijkstra(true);
+    cfg_routing_ch.is_ch_dijkstra = true;
 
     // parse graph and init dijkstra
     let graph = Parser::parse_and_finalize(cfg.parser).unwrap();
