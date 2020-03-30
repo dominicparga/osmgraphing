@@ -166,133 +166,99 @@ impl ProtoShortcut {
                 params.len()
             ))?;
 
-            match category {
-                EdgeCategory::SrcId => {
-                    if src_id.is_none() {
-                        src_id = Some(param.parse::<i64>().ok().ok_or(format!(
-                            "Parsing {} (for edge-src) '{:?}' from fmi-file, which is not i64.",
-                            category, param
-                        ))?);
-                        param_idx += 1;
-                    } else {
-                        return Err(format!(
-                            "Src-id is already set, but another src-id {} should be parsed.",
-                            param
-                        ));
-                    }
-                }
-                EdgeCategory::DstId => {
-                    if dst_id.is_none() {
-                        dst_id = Some(param.parse::<i64>().ok().ok_or(format!(
-                            "Parsing {} (for edge-src) '{:?}' from fmi-file, which is not i64.",
-                            category, param
-                        ))?);
-                        param_idx += 1;
-                    } else {
-                        return Err(format!(
-                            "Dst-id is already set, but another dst-id {} should be parsed.",
-                            param
-                        ));
-                    }
-                }
-                EdgeCategory::Meters => {
-                    let metric_idx = MetricIdx(metric_values.len());
-
-                    if cfg.is_metric_provided(metric_idx) {
-                        if let Ok(raw_m) = param.parse::<f64>() {
-                            let distance = defaults::distance::TYPE::from(Meters(raw_m));
-                            metric_values.push(Some(*distance));
+            if !category.is_metric() {
+                match category {
+                    EdgeCategory::SrcId => {
+                        if src_id.is_none() {
+                            src_id = Some(param.parse::<i64>().ok().ok_or(format!(
+                                "Parsing {} (for edge-src) '{:?}' from fmi-file, which is not i64.",
+                                category, param
+                            ))?);
+                            param_idx += 1;
                         } else {
                             return Err(format!(
-                                "Parsing {} '{}' of edge-param #{} didn't work.",
-                                category, param, param_idx
-                            ));
-                        };
-                        param_idx += 1;
-                    } else {
-                        metric_values.push(None);
-                    }
-                }
-                EdgeCategory::Seconds => {
-                    let metric_idx = MetricIdx(metric_values.len());
-
-                    if cfg.is_metric_provided(metric_idx) {
-                        if let Ok(raw_s) = param.parse::<f64>() {
-                            let duration = defaults::time::TYPE::from(Seconds(raw_s));
-                            metric_values.push(Some(*duration));
-                        } else {
-                            return Err(format!(
-                                "Parsing {} '{}' of edge-param #{} didn't work.",
-                                category, param, param_idx
-                            ));
-                        };
-                        param_idx += 1;
-                    } else {
-                        metric_values.push(None);
-                    }
-                }
-                EdgeCategory::KilometersPerHour => {
-                    let metric_idx = MetricIdx(metric_values.len());
-
-                    if cfg.is_metric_provided(metric_idx) {
-                        if let Ok(raw_kmph) = param.parse::<f64>() {
-                            let maxspeed = defaults::speed::TYPE::from(KilometersPerHour(raw_kmph));
-                            metric_values.push(Some(*maxspeed));
-                        } else {
-                            return Err(format!(
-                                "Parsing {} '{}' of edge-param #{} didn't work.",
-                                category, param, param_idx
-                            ));
-                        };
-                        param_idx += 1;
-                    } else {
-                        metric_values.push(None);
-                    }
-                }
-                EdgeCategory::LaneCount | EdgeCategory::Custom => {
-                    let metric_idx = MetricIdx(metric_values.len());
-
-                    if cfg.is_metric_provided(metric_idx) {
-                        if let Ok(value) = param.parse::<f64>() {
-                            metric_values.push(Some(value));
-                        } else {
-                            return Err(format!(
-                                "Parsing {} '{}' of edge-param #{} didn't work.",
-                                category, param, param_idx
-                            ));
-                        };
-                        param_idx += 1;
-                    } else {
-                        metric_values.push(None);
-                    }
-                }
-                EdgeCategory::ShortcutEdgeIdx => {
-                    if param != defaults::parser::NO_SHORTCUT_IDX {
-                        let sc_edge_idx = {
-                            param.parse::<usize>().ok().ok_or(format!(
-                                "Parsing {} '{}' of edge-param #{} didn't work.",
-                                category, param, param_idx
-                            ))?
-                        };
-
-                        if sc_edge_0.is_none() {
-                            sc_edge_0 = Some(sc_edge_idx);
-                        } else if sc_edge_1.is_none() {
-                            sc_edge_1 = Some(sc_edge_idx);
-                        } else {
-                            return Err(format!(
-                                "Too many {}: parsing '{}' of edge-param #{}",
-                                EdgeCategory::ShortcutEdgeIdx,
-                                param,
-                                param_idx
+                                "Src-id is already set, but another src-id {} should be parsed.",
+                                param
                             ));
                         }
                     }
-                    param_idx += 1;
+                    EdgeCategory::DstId => {
+                        if dst_id.is_none() {
+                            dst_id = Some(param.parse::<i64>().ok().ok_or(format!(
+                                "Parsing {} (for edge-dst) '{:?}' from fmi-file, which is not i64.",
+                                category, param
+                            ))?);
+                            param_idx += 1;
+                        } else {
+                            return Err(format!(
+                                "Dst-id is already set, but another dst-id {} should be parsed.",
+                                param
+                            ));
+                        }
+                    }
+                    EdgeCategory::ShortcutEdgeIdx => {
+                        if param != defaults::parser::NO_SHORTCUT_IDX {
+                            let sc_edge_idx = {
+                                param.parse::<usize>().ok().ok_or(format!(
+                                    "Parsing {} '{}' of edge-param #{} didn't work.",
+                                    category, param, param_idx
+                                ))?
+                            };
+
+                            if sc_edge_0.is_none() {
+                                sc_edge_0 = Some(sc_edge_idx);
+                            } else if sc_edge_1.is_none() {
+                                sc_edge_1 = Some(sc_edge_idx);
+                            } else {
+                                return Err(format!(
+                                    "Too many {}: parsing '{}' of edge-param #{}",
+                                    EdgeCategory::ShortcutEdgeIdx,
+                                    param,
+                                    param_idx
+                                ));
+                            }
+                        }
+                        param_idx += 1;
+                    }
+                    EdgeCategory::IgnoredSrcIdx
+                    | EdgeCategory::IgnoredDstIdx
+                    | EdgeCategory::Ignore => param_idx += 1,
+                    _ => return Err(format!("Unknown category {}", category)),
                 }
-                EdgeCategory::IgnoredSrcIdx
-                | EdgeCategory::IgnoredDstIdx
-                | EdgeCategory::Ignore => param_idx += 1,
+            } else {
+                let metric_idx = MetricIdx(metric_values.len());
+
+                if cfg.is_metric_provided(metric_idx) {
+                    if let Ok(raw_value) = param.parse::<f64>() {
+                        match category {
+                            EdgeCategory::Meters => {
+                                let distance = defaults::distance::TYPE::from(Meters(raw_value));
+                                metric_values.push(Some(*distance));
+                            }
+                            EdgeCategory::Seconds => {
+                                let duration = defaults::time::TYPE::from(Seconds(raw_value));
+                                metric_values.push(Some(*duration));
+                            }
+                            EdgeCategory::KilometersPerHour => {
+                                let maxspeed =
+                                    defaults::speed::TYPE::from(KilometersPerHour(raw_value));
+                                metric_values.push(Some(*maxspeed));
+                            }
+                            EdgeCategory::LaneCount | EdgeCategory::Custom => {
+                                metric_values.push(Some(raw_value));
+                            }
+                            _ => return Err(format!("Unknown category {}", category)),
+                        }
+                    } else {
+                        return Err(format!(
+                            "Parsing {} '{}' of edge-param #{} didn't work.",
+                            category, param, param_idx
+                        ));
+                    };
+                    param_idx += 1;
+                } else {
+                    metric_values.push(None);
+                }
             }
         }
 

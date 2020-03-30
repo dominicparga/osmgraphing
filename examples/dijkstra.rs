@@ -54,7 +54,7 @@ fn main() {
     let dst = nodes.create(NodeIdx(5));
 
     let now = Instant::now();
-    let option_path = dijkstra.compute_best_path(&src, &dst, &graph, &cfg_routing);
+    let option_path = dijkstra.compute_best_path(src.idx(), dst.idx(), &graph, &cfg_routing);
 
     info!("");
     info!(
@@ -63,8 +63,8 @@ fn main() {
     );
     if let Some(path) = option_path {
         info!(
-            "Cost {:?} from ({}) to ({}).",
-            path.calc_cost(cfg_routing.metric_indices(), &graph),
+            "Path costs {:?} from ({}) to ({}).",
+            path.flatten(&graph).costs(),
             src,
             dst
         );

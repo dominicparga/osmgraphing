@@ -129,8 +129,9 @@ pub fn compare_dijkstras(ch_fmi_config_file: &str, metric_id: &str) {
         let src = nodes.create(src_idx);
         let dst = nodes.create(dst_idx);
 
-        let option_ch_path = dijkstra.compute_best_path(&src, &dst, &graph, &cfg_routing_ch);
-        let option_path = dijkstra.compute_best_path(&src, &dst, &graph, &cfg_routing);
+        let option_ch_path =
+            dijkstra.compute_best_path(src.idx(), dst.idx(), &graph, &cfg_routing_ch);
+        let option_path = dijkstra.compute_best_path(src.idx(), dst.idx(), &graph, &cfg_routing);
 
         // check if both are none/not-none
         if option_ch_path.is_none() != option_path.is_none() {
@@ -154,8 +155,8 @@ pub fn compare_dijkstras(ch_fmi_config_file: &str, metric_id: &str) {
             let flattened_path = path.flatten(&graph);
 
             // cmp cost
-            let ch_cost = flattened_ch_path.calc_cost(cfg_routing.metric_indices(), &graph);
-            let cost = flattened_path.calc_cost(cfg_routing.metric_indices(), &graph);
+            let ch_cost = flattened_ch_path.costs();
+            let cost = flattened_path.costs();
             // not approx because both Dijkstras are running on the same graph
             // -> same best path-cost should be found
             assert!(ch_cost == cost,
@@ -208,34 +209,34 @@ pub fn assert_graph(
         bwd_edges.count()
     );
 
-    for i in nodes.count()..(2 * nodes.count()) {
-        for j in nodes.count()..(2 * nodes.count()) {
-            assert!(
-                fwd_edges.starting_from(NodeIdx(i)).is_none(),
-                "NodeIdx {} >= n={} shouldn't have leaving-edges in fwd-edges",
-                i,
-                nodes.count()
-            );
-            assert!(
-                bwd_edges.starting_from(NodeIdx(j)).is_none(),
-                "NodeIdx {} >= n={} shouldn't have leaving-edges in bwd-edges",
-                j,
-                nodes.count()
-            );
-            assert!(
-                fwd_edges.between(NodeIdx(i), NodeIdx(j)).is_none(),
-                "There should be no fwd-edge from NodeIdx {} to NodeIdx {}.",
-                i,
-                j
-            );
-            assert!(
-                bwd_edges.between(NodeIdx(j), NodeIdx(i)).is_none(),
-                "There should be no bwd-edge from NodeIdx {} to NodeIdx {}.",
-                j,
-                i
-            );
-        }
-    }
+    // for i in nodes.count()..(2 * nodes.count()) {
+    //     for j in nodes.count()..(2 * nodes.count()) {
+    //         assert!(
+    //             fwd_edges.starting_from(NodeIdx(i)).is_none(),
+    //             "NodeIdx {} >= n={} shouldn't have leaving-edges in fwd-edges",
+    //             i,
+    //             nodes.count()
+    //         );
+    //         assert!(
+    //             bwd_edges.starting_from(NodeIdx(j)).is_none(),
+    //             "NodeIdx {} >= n={} shouldn't have leaving-edges in bwd-edges",
+    //             j,
+    //             nodes.count()
+    //         );
+    //         assert!(
+    //             fwd_edges.between(NodeIdx(i), NodeIdx(j)).is_none(),
+    //             "There should be no fwd-edge from NodeIdx {} to NodeIdx {}.",
+    //             i,
+    //             j
+    //         );
+    //         assert!(
+    //             bwd_edges.between(NodeIdx(j), NodeIdx(i)).is_none(),
+    //             "There should be no bwd-edge from NodeIdx {} to NodeIdx {}.",
+    //             j,
+    //             i
+    //         );
+    //     }
+    // }
 
     //--------------------------------------------------------------------------------------------//
     // testing nodes
@@ -272,12 +273,9 @@ pub fn assert_path(
 ) {
     let graph = parse(cfg.parser);
     for (src, dst, metric_indices, option_specs) in expected_paths {
-        let nodes = graph.nodes();
-        let graph_src = nodes.create(src.idx);
-        let graph_dst = nodes.create(dst.idx);
         let option_path = dijkstra.compute_best_path(
-            &graph_src,
-            &graph_dst,
+            src.idx,
+            dst.idx,
             &graph,
             &cfg.routing
                 .as_ref()

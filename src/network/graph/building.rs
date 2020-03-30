@@ -195,11 +195,13 @@ impl Graph {
         }
 
         // add metrics to graph
-        for (i, value) in proto_edge.metrics.iter().enumerate() {
+        let mut metrics = DimVec::new();
+        for (i, metric) in proto_edge.metrics.iter().enumerate() {
             let metric_idx = MetricIdx(i);
+
             // If expected metrics haven't been calculated yet, some metrics are missing!
-            if let &Some(value) = value {
-                self.metrics[*metric_idx].push(value);
+            if let Some(metric) = metric {
+                metrics.push(*metric);
             } else {
                 if cfg.edges.is_metric_provided(metric_idx) {
                     return Err(format!(
@@ -214,6 +216,7 @@ impl Graph {
                 ));
             }
         }
+        self.metrics.push(metrics);
 
         Ok(())
     }
@@ -691,10 +694,10 @@ impl GraphBuilder {
             let max_chunk_size = capacity::MAX_BYTE_PER_CHUNK / ProtoShortcut::mem_size_b();
             debug!("max-chunk-size: {}", max_chunk_size);
             // init metrics
-            graph.metrics = vec![vec![]; graph.cfg().edges.dim()];
+            graph.metrics = Vec::new();
             debug!(
                 "initial graph-metric-capacity: {}",
-                graph.metrics[0].capacity()
+                graph.metrics.capacity()
             );
 
             // sort reversed to make splice efficient
@@ -709,13 +712,10 @@ impl GraphBuilder {
 
                 // allocate new memory-needs
                 proto_edges.shrink_to_fit();
-                graph
-                    .metrics
-                    .iter_mut()
-                    .for_each(|m| m.reserve_exact(chunk.len()));
+                graph.metrics.reserve_exact(chunk.len());
                 new_proto_edges.reserve_exact(chunk.len());
                 debug!("chunk-len: {}", chunk.len());
-                debug!("graph-metric-capacity: {}", graph.metrics[0].capacity());
+                debug!("graph-metric-capacity: {}", graph.metrics.capacity());
 
                 for mut edge in chunk.into_iter() {
                     // add to graph and remember ids

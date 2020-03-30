@@ -42,12 +42,12 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 
 ### Added <a name="unreleased/added"></a>
 
-\-
+- Add __metric-access in graph__ to all metrics with one function (`get_all(...)`).
 
 
 ### Changed <a name="unreleased/changed"></a>
 
-\-
+- Improve __access to path-costs__ of a (shortest) path.
 
 
 ### Deprecated <a name="unreleased/deprecated"></a>

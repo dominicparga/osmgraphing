@@ -2,7 +2,7 @@ use super::paths::Path;
 use crate::{
     configs::routing::Config,
     helpers,
-    network::{EdgeIdx, Graph, Node, NodeIdx},
+    network::{EdgeIdx, Graph, NodeIdx},
 };
 use std::{cmp::Reverse, collections::BinaryHeap};
 
@@ -122,16 +122,16 @@ impl Dijkstra {
     /// None means no path exists, whereas an empty path is a path from a node to itself.
     pub fn compute_best_path(
         &mut self,
-        src: &Node,
-        dst: &Node,
+        src_idx: NodeIdx,
+        dst_idx: NodeIdx,
         graph: &Graph,
-        cfg: &Config,
+        cfg_routing: &Config,
     ) -> Option<Path> {
-        if cfg.dim() <= 0 {
+        if cfg_routing.dim() <= 0 {
             panic!("Best path should be computed, but no metric is specified.");
         }
 
-        self.is_ch_dijkstra = cfg.is_ch_dijkstra();
+        self.is_ch_dijkstra = cfg_routing.is_ch_dijkstra();
 
         //----------------------------------------------------------------------------------------//
         // initialization-stuff
@@ -158,20 +158,20 @@ impl Dijkstra {
 
         // push src-node
         self.queue.push(Reverse(CostNode {
-            idx: src.idx(),
+            idx: src_idx,
             cost: 0.0,
             direction: Direction::FWD,
         }));
         // push dst-node
         self.queue.push(Reverse(CostNode {
-            idx: dst.idx(),
+            idx: dst_idx,
             cost: 0.0,
             direction: Direction::BWD,
         }));
         // update fwd-stats
-        self.costs[self.fwd_idx()][*src.idx()] = 0.0;
+        self.costs[self.fwd_idx()][*src_idx] = 0.0;
         // update bwd-stats
-        self.costs[self.bwd_idx()][*dst.idx()] = 0.0;
+        self.costs[self.bwd_idx()][*dst_idx] = 0.0;
 
         //----------------------------------------------------------------------------------------//
         // search for shortest path
@@ -226,11 +226,7 @@ impl Dijkstra {
             }
 
             // update costs and add predecessors of nodes, which are dst of current's leaving edges
-            let leaving_edges = match xwd_edges[dir].starting_from(current.idx) {
-                Some(e) => e,
-                None => continue,
-            };
-            for leaving_edge in leaving_edges {
+            for leaving_edge in xwd_edges[dir].starting_from(current.idx) {
                 if self.is_ch_dijkstra
                     && nodes.level(current.idx) > nodes.level(leaving_edge.dst_idx())
                 {
@@ -239,10 +235,7 @@ impl Dijkstra {
                 }
 
                 let new_cost = current.cost
-                    + helpers::dot_product(
-                        &cfg.alphas(),
-                        &leaving_edge.metrics(&cfg.metric_indices()),
-                    );
+                    + helpers::dot_product(&cfg_routing.alphas(), &leaving_edge.metrics());
                 if new_cost < self.costs[dir][*leaving_edge.dst_idx()] {
                     self.predecessors[dir][*leaving_edge.dst_idx()] = Some(leaving_edge.idx());
                     self.costs[dir][*leaving_edge.dst_idx()] = new_cost;
@@ -296,7 +289,7 @@ impl Dijkstra {
                 cur_idx = xwd_edges[opp_dir].dst_idx(leaving_idx);
             }
 
-            Some(Path::new(src.idx(), dst.idx(), proto_path))
+            Some(Path::new(src_idx, dst_idx, proto_path))
         } else {
             None
         }

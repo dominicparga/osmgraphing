@@ -29,8 +29,8 @@ However, the underlying parser and graph-structure are working very stable, effi
 Rust has a build-tool called `cargo`, which can be used to run everything except scripts in `scripts/`.
 
 ```zsh
-# Just executing some easy cargo-build-commands
-./scripts/build.sh
+# Build the binary for parsing maps and do routing
+cargo build --release
 # Parse isle-of-man
 ./target/release/osmgraphing --config resources/config/isle-of-man.pbf.yaml
 ```
@@ -129,7 +129,7 @@ generator:
 The `multi-ch`-tool needs 3 counts at the file-beginning: metric-count (dimension), node-count, edge-count.
 The `mapgenerator` does add these counts in this order.
 
-Before the `multi-ch`-tool can be used, it has to be built.
+Before the `multi-ch`-tool can be used, it ehas to be built.
 For the sake of optimization, you have to set the metric-count as dimension in [multi-ch-constructor/src/multi_lib/graph.hpp, line 49][github/lesstat/multi-ch-constructor/change-dim].
 Set this dimension according to the dimension in the previously generated `fmi`-file.
 
@@ -145,6 +145,22 @@ cmake --build build
 
 > Note that the multi-ch-constructor is not deterministic (March 12th, 2020).
 > Using it does only speedup your queries, but due to a different resulting order in the priority or rounding-errors, it could lead to different paths of same weight.
+
+
+## CGAL-interface with nd-triangulation
+
+For the graph-exploration and balancer, the crate [`nd-triangulation`][github/lesstat/nd-triangulation] is used, which is an interface to [`CGAL`][cgal]'s `c++`-implementation (licensed with `GPL-3.0`).
+Hence, you need the respective dependencies installed, as described in `nd-triangulation`.
+Maybe, [`CGAL`'s manual][cgal/manual/intro] helps.
+
+In case you are using `archlinux`: Following commands install the dependencies for `archlinux` and you are done.
+
+```zsh
+yay -S cgal
+yay -S eigen
+```
+
+For building accordingly, execute `cargo build --features "gpl-3.0"`.
 
 
 ## Credits
@@ -164,6 +180,8 @@ has been part of the project's first weeks when project-planning and learning Ru
 He has implemented the first (and running) approach of the `A*`-algorithm.
 
 
+[cgal]: https://www.cgal.org/
+[cgal/manual/intro]: https://doc.cgal.org/latest/Manual/general_intro.html
 [crates.io/self]: https://crates.io/crates/osmgraphing
 [crates.io/self/badge]: https://img.shields.io/crates/v/osmgraphing?style=for-the-badge
 [docs.rs/self]: https://docs.rs/osmgraphing/0/
@@ -175,6 +193,7 @@ He has implemented the first (and running) approach of the `A*`-algorithm.
 [github/lesstat/cyclops/blob/README]: https://github.com/Lesstat/cyclops/blob/master/README.md#graph-data
 [github/lesstat/multi-ch-constructor]: https://github.com/Lesstat/multi-ch-constructor
 [github/lesstat/multi-ch-constructor/change-dim]: https://github.com/Lesstat/multi-ch-constructor/blob/bec548c1a1ebeae7ac19d3250d5473199336d6fe/src/multi_lib/graph.hpp#L49
+[github/lesstat/nd-triangulation]: https://github.com/Lesstat/nd-triangulation
 [github/self/actions]: https://github.com/dominicparga/osmgraphing/actions
 [github/self/actions/badge]: https://img.shields.io/github/workflow/status/dominicparga/osmgraphing/Rust?label=nightly-build&style=for-the-badge
 [github/self/blob/changelog]: https://github.com/dominicparga/osmgraphing/blob/nightly/CHANGELOG.md

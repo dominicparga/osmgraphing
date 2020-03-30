@@ -209,6 +209,10 @@ pub mod parser {
                 }
             }
 
+            pub fn metric_indices(&self) -> DimVec<MetricIdx> {
+                (0..self.dim()).into_iter().map(|i| MetricIdx(i)).collect()
+            }
+
             pub fn calc_rules(&self, idx: MetricIdx) -> &DimVec<(Category, MetricIdx)> {
                 match self.calc_rules.get(*idx) {
                     Some(calc_rule) => calc_rule,
@@ -351,24 +355,16 @@ pub mod generator {
 }
 
 pub mod routing {
-    use crate::{
-        defaults::{self, capacity::DimVec},
-        network::MetricIdx,
-    };
+    use crate::defaults::{self, capacity::DimVec};
+    use smallvec::smallvec;
 
     #[derive(Clone, Debug)]
     pub struct Config {
         is_ch_dijkstra: bool,
-        metric_indices: DimVec<MetricIdx>,
         alphas: DimVec<f64>,
     }
 
     impl Config {
-        fn _push(&mut self, idx: MetricIdx, alpha: f64) {
-            self.metric_indices.push(idx);
-            self.alphas.push(alpha);
-        }
-
         pub fn is_ch_dijkstra(&self) -> bool {
             self.is_ch_dijkstra
         }
@@ -377,26 +373,12 @@ pub mod routing {
             self.is_ch_dijkstra = is_ch_dijkstra
         }
 
-        pub fn alpha(&self, metric_idx: MetricIdx) -> f64 {
-            let idx = match self.metric_indices.iter().position(|i| i == &metric_idx) {
-                Some(idx) => idx,
-                None => {
-                    panic!("Idx {} not found in config.", metric_idx);
-                }
-            };
-            self.alphas[idx]
-        }
-
         pub fn alphas(&self) -> &DimVec<f64> {
             &self.alphas
         }
 
-        pub fn metric_indices(&self) -> &DimVec<MetricIdx> {
-            &self.metric_indices
-        }
-
         pub fn dim(&self) -> usize {
-            self.metric_indices.len()
+            self.alphas.len()
         }
 
         pub fn from_str(
@@ -411,20 +393,18 @@ pub mod routing {
             raw_cfg: super::raw::routing::Config,
             cfg_parser: &super::parser::Config,
         ) -> Config {
-            let (metric_indices, alphas) = raw_cfg
-                .metrics
-                .into_iter()
-                .map(|entry| {
-                    (
-                        cfg_parser.edges.metric_idx(&entry.id),
-                        entry.alpha.unwrap_or(defaults::routing::ALPHA),
-                    )
-                })
-                .unzip();
+            let mut alphas = smallvec![0.0; cfg_parser.edges.dim()];
+            for (metric_idx, alpha) in raw_cfg.metrics.into_iter().map(|entry| {
+                (
+                    cfg_parser.edges.metric_idx(&entry.id),
+                    entry.alpha.unwrap_or(defaults::routing::ALPHA),
+                )
+            }) {
+                alphas[*metric_idx] = alpha;
+            }
 
             Config {
                 is_ch_dijkstra: raw_cfg.is_ch_dijkstra.unwrap_or(false),
-                metric_indices,
                 alphas,
             }
         }

@@ -56,8 +56,8 @@ fn main() {
     };
     if let Some(cfg_routing) = &cfg.routing {
         info!(
-            "EXECUTE Parse graph, then do routing with {} metric(s).",
-            cfg_routing.dim()
+            "EXECUTE Parse graph, then do routing with alphas: {:?}",
+            cfg_routing.alphas()
         );
     } else {
         info!("EXECUTE Parse graph without routing.");
@@ -135,22 +135,21 @@ fn main() {
     };
 
     // calculate best paths
-    while let Some((src_idx, dst_idx)) = gen_route() {
-        let src = nodes.create(src_idx);
-        let dst = nodes.create(dst_idx);
-
+    while let Some((src, dst)) =
+        gen_route().map(|(src_idx, dst_idx)| (nodes.create(src_idx), nodes.create(dst_idx)))
+    {
         info!("");
 
         let now = Instant::now();
-        let option_path = dijkstra.compute_best_path(&src, &dst, &graph, &cfg_routing);
+        let option_path = dijkstra.compute_best_path(src.idx(), dst.idx(), &graph, &cfg_routing);
         info!(
             "Ran Dijkstra-query in {} ms",
             now.elapsed().as_micros() as f64 / 1_000.0,
         );
         if let Some(path) = option_path {
             info!(
-                "Cost {:?} from ({}) to ({}).",
-                path.calc_cost(cfg_routing.metric_indices(), &graph),
+                "Path costs {:?} from ({}) to ({}).",
+                path.flatten(&graph).costs(),
                 src,
                 dst
             );

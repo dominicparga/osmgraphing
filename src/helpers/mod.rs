@@ -8,7 +8,7 @@ pub fn add(a: &DimVec<f64>, b: &DimVec<f64>) -> DimVec<f64> {
     a.iter().zip(b).map(|(aa, bb)| aa + bb).collect()
 }
 
-pub fn add_to(a: &mut DimVec<f64>, b: &DimVec<f64>) {
+pub fn add_assign(a: &mut DimVec<f64>, b: &DimVec<f64>) {
     a.iter_mut().zip(b).for_each(|(aa, bb)| *aa += bb);
 }
 
