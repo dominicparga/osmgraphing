@@ -226,11 +226,7 @@ impl Dijkstra {
             }
 
             // update costs and add predecessors of nodes, which are dst of current's leaving edges
-            let leaving_edges = match xwd_edges[dir].starting_from(current.idx) {
-                Some(e) => e,
-                None => continue,
-            };
-            for leaving_edge in leaving_edges {
+            for leaving_edge in xwd_edges[dir].starting_from(current.idx) {
                 if self.is_ch_dijkstra
                     && nodes.level(current.idx) > nodes.level(leaving_edge.dst_idx())
                 {

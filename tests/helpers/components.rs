@@ -125,7 +125,7 @@ impl TestEdge {
         // get graph-components dependent on own direction
         let fwd_edges = graph.fwd_edges();
         let bwd_edges = graph.bwd_edges();
-        let (edge, edge_idx) = {
+        let edge = {
             if self.is_fwd {
                 fwd_edges
                     .between(self.src_idx, self.dst_idx)
@@ -151,9 +151,9 @@ impl TestEdge {
         };
 
         assert_eq!(
-            edge_idx, self.edge_idx,
+            edge.idx(), self.edge_idx,
             "Wrong {}edge-idx={} for {}",
-            prefix, edge_idx, self.name
+            prefix, edge.idx(), self.name
         );
         assert_eq!(
             edge.dst_idx(),
@@ -240,7 +240,7 @@ impl TestPath {
                             "Edge expected between idx={} and idx={}. Path is from idx={} to idx={}",
                             test_src.idx, test_dst.idx, path_src.idx, path_dst.idx
                         ))
-                        .1,
+                        .idx(),
                 );
             }
 

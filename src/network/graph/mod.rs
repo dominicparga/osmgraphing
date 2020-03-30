@@ -4,7 +4,11 @@ pub use indexing::{EdgeIdx, MetricIdx, NodeIdx};
 
 use crate::{configs::parser::Config, defaults::capacity::DimVec};
 use kissunits::geo::Coordinate;
-use std::{fmt, fmt::Display, ops::Index};
+use std::{
+    fmt,
+    fmt::Display,
+    ops::{Index, Range},
+};
 
 /// Stores graph-data as offset-graph in arrays and provides methods and shallow structs for accessing them.
 ///
@@ -493,51 +497,40 @@ impl<'a> EdgeAccessor<'a> {
         }
     }
 
-    pub fn starting_from(&self, idx: NodeIdx) -> Option<Vec<HalfEdge>> {
-        Some(
-            self.offset_indices(idx)?
+    pub fn starting_from(
+        &'a self,
+        idx: NodeIdx,
+    ) -> Box<dyn std::iter::Iterator<Item = HalfEdge<'a>> + 'a> {
+        Box::new(
+            (self.offset_indices(idx))
                 .into_iter()
-                .map(|edge_idx| self.half_edge(edge_idx))
-                .collect(),
+                .map(move |i| self.xwd_to_fwd_map[i])
+                .map(move |edge_idx| self.half_edge(edge_idx)),
         )
     }
 
     /// uses linear-search, but only on src's leaving edges (±3), so more or less in O(1)
     ///
     /// Returns the index of the edge, which can be used in the function `half_edge(...)`
-    pub fn between(&self, src_idx: NodeIdx, dst_idx: NodeIdx) -> Option<(HalfEdge, EdgeIdx)> {
+    pub fn between(&self, src_idx: NodeIdx, dst_idx: NodeIdx) -> Option<HalfEdge> {
         // find edge of same dst-idx and create edge
-        for edge_idx in self.offset_indices(src_idx)? {
+        for edge_idx in (self.offset_indices(src_idx))
+            .into_iter()
+            .map(move |i| self.xwd_to_fwd_map[i])
+        {
             if self.dst_idx(edge_idx) == dst_idx {
-                return Some((self.half_edge(edge_idx), edge_idx));
+                return Some(self.half_edge(edge_idx));
             }
         }
 
         None
     }
 
-    /// Returns None if
-    ///
-    /// - no node with given idx is in the graph
-    /// - if this node has no leaving edges
-    fn offset_indices(&self, idx: NodeIdx) -> Option<Vec<EdgeIdx>> {
+    fn offset_indices(&'a self, idx: NodeIdx) -> Range<usize> {
         // Use offset-array to get indices for the graph's edges belonging to the given node
-        let i0 = *(self.offsets.get(*idx)?);
         // (idx + 1) guaranteed by offset-array-length
-        let i1 = *(self.offsets.get(*idx + 1)?);
-
-        // i0 < i1 <-> node has leaving edges
-        if i0 < i1 {
-            // map usizes to respective EdgeIdx
-            Some(
-                (i0..i1)
-                    .into_iter()
-                    .map(|i| self.xwd_to_fwd_map[i])
-                    .collect(),
-            )
-        } else {
-            None
-        }
+        // i0 <= i1 <-> node has 0 or more leaving edges
+        self.offsets[*idx]..self.offsets[*idx + 1]
     }
 }
 

@@ -209,34 +209,34 @@ pub fn assert_graph(
         bwd_edges.count()
     );
 
-    for i in nodes.count()..(2 * nodes.count()) {
-        for j in nodes.count()..(2 * nodes.count()) {
-            assert!(
-                fwd_edges.starting_from(NodeIdx(i)).is_none(),
-                "NodeIdx {} >= n={} shouldn't have leaving-edges in fwd-edges",
-                i,
-                nodes.count()
-            );
-            assert!(
-                bwd_edges.starting_from(NodeIdx(j)).is_none(),
-                "NodeIdx {} >= n={} shouldn't have leaving-edges in bwd-edges",
-                j,
-                nodes.count()
-            );
-            assert!(
-                fwd_edges.between(NodeIdx(i), NodeIdx(j)).is_none(),
-                "There should be no fwd-edge from NodeIdx {} to NodeIdx {}.",
-                i,
-                j
-            );
-            assert!(
-                bwd_edges.between(NodeIdx(j), NodeIdx(i)).is_none(),
-                "There should be no bwd-edge from NodeIdx {} to NodeIdx {}.",
-                j,
-                i
-            );
-        }
-    }
+    // for i in nodes.count()..(2 * nodes.count()) {
+    //     for j in nodes.count()..(2 * nodes.count()) {
+    //         assert!(
+    //             fwd_edges.starting_from(NodeIdx(i)).is_none(),
+    //             "NodeIdx {} >= n={} shouldn't have leaving-edges in fwd-edges",
+    //             i,
+    //             nodes.count()
+    //         );
+    //         assert!(
+    //             bwd_edges.starting_from(NodeIdx(j)).is_none(),
+    //             "NodeIdx {} >= n={} shouldn't have leaving-edges in bwd-edges",
+    //             j,
+    //             nodes.count()
+    //         );
+    //         assert!(
+    //             fwd_edges.between(NodeIdx(i), NodeIdx(j)).is_none(),
+    //             "There should be no fwd-edge from NodeIdx {} to NodeIdx {}.",
+    //             i,
+    //             j
+    //         );
+    //         assert!(
+    //             bwd_edges.between(NodeIdx(j), NodeIdx(i)).is_none(),
+    //             "There should be no bwd-edge from NodeIdx {} to NodeIdx {}.",
+    //             j,
+    //             i
+    //         );
+    //     }
+    // }
 
     //--------------------------------------------------------------------------------------------//
     // testing nodes
