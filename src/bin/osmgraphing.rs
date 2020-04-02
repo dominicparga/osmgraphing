@@ -57,7 +57,7 @@ fn main() {
     if let Some(cfg_routing) = &cfg.routing {
         info!(
             "EXECUTE Parse graph, then do routing with alphas: {:?}",
-            cfg_routing.alphas()
+            cfg_routing.alphas
         );
     } else {
         info!("EXECUTE Parse graph without routing.");
