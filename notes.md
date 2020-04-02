@@ -13,6 +13,14 @@ Maybe, it is concept for later documentation, or just keep-up-the-good-work (`ku
   When creating metrics, memory-consumption shrinks to `10/11 GB` and lower, probably because these values are released.
   It could make sense to implement simple (de-)serialization for the graph (`map-file.rfmi`, standing for `raw fmi`).
 - Write __working-off chunks__ in builder in separate function using `From<Edge>` or `Into<Edge>`
+- Use population-data to get routes
+  - Maybe use [realistic src-dst-routes][acm/micro-travel-demand] ([GitHub-repo][github/vbuchhold/routing-framework])
+  - Set population of specific spots and interpolate somehow
+    - [worldometers][worldometers/germany]
+    - [German Federal Statistical Office][destatis]
+  - Get population from osm-data and interpolate somehow
+    - Take nodes/ways and distribute according to max-speed (low speed <-> high population-density).
+    - Take city-level and let routes go from lower to higher levels.
 
 
 ### Build-script
@@ -34,6 +42,10 @@ Maybe, it is concept for later documentation, or just keep-up-the-good-work (`ku
   - implement routing-tests for parsed pbf-files (just comparing src-id, dst-id and distance)
 - Take results from actions of commit f28d88a for parsing-tests (fmi).
 - Test personalized routing explicitly using certain alpha-values and new expected paths.
+- How to test exploration?
+  - Create graph of 2 nodes and 8 edges, where 3 edges are dominated by the others.
+  - At least `2d + 1` edges are needed.
+  - Test restriction(?)
 
 
 ### Extend configs
@@ -61,26 +73,25 @@ Maybe, it is concept for later documentation, or just keep-up-the-good-work (`ku
   To make this less dependent of a certain map, every node is represented by its coordinate or id instead of its index.
 
 
-## serde-yaml-Info
+## Info
 
-- `https://stackoverflow.com/questions/53243795/how-do-you-read-a-yaml-file-in-rust`
-- `https://serde.rs/attributes.html`
-- `https://serde.rs/container-attrs.html`
-- `https://serde.rs/variant-attrs.html`
-- `https://serde.rs/field-attrs.html`
-- `https://serde.rs/enum-representations.html`
-- `https://docs.rs/serde_yaml/0.8.11/serde_yaml/`
+- [OSM-tags][taginfo]
+- serde-yaml
+  - `https://stackoverflow.com/questions/53243795/how-do-you-read-a-yaml-file-in-rust`
+  - `https://serde.rs/attributes.html`
+  - `https://serde.rs/container-attrs.html`
+  - `https://serde.rs/variant-attrs.html`
+  - `https://serde.rs/field-attrs.html`
+  - `https://serde.rs/enum-representations.html`
+  - `https://docs.rs/serde_yaml/0.8.11/serde_yaml/`
+- Mapviewer-libs
+  - actix-web (Rust)
+  - [leafletjs (JavaScript)][leafletjs]
+  - [Marble (C++ or python)][kde/marble]
+  - [JMapViewer (Java)][osm/wiki/jmapviewer]
 
 
-## Mapviewer-libs
-
-- actix-web (Rust)
-- [leafletjs (JavaScript)][leafletjs]
-- [Marble (C++ or python)][kde/marble]
-- [JMapViewer (Java)][osm/wiki/jmapviewer]
-
-
-## Proof of correctness for bidirectional Dijkstra
+### Proof of correctness for bidirectional Dijkstra
 
 The termination of the bidirectional Astar is based on the first node v, that is marked by both, the forward- and the backward-subroutine.
 However, this common node v is part of the shortest path s->t wrt to this particular hop-distance H, but doesn't have to be part of the shortest path s->t wrt to edge-weights.
@@ -92,7 +103,7 @@ In other words, only already settled nodes and their neighbors (which are alread
 In conclusion, emptying the remaining nodes in the queues and picking the shortest path of the resulting common nodes leads to the shortest path wrt to edge-weights from s to t.
 
 
-## Proof of correctness for bidirectional Dijkstra for contracted graphs
+### Proof of correctness for bidirectional Dijkstra for contracted graphs
 
 Here, the proof for bidirectional Dijkstra doesn't hold, because each sub-graph doesn't visit every node of the total graph, due to the level-filter when pushing edges to the queue.
 Hence, the forward- and the backward-query are not balanced wrt weights.
@@ -101,13 +112,18 @@ This leads to wrong paths with normal bidirectional Dijkstra.
 To correct this issue, stop the query after polling a node of a sub-distance, which is higher than the currently best meeting-node's total distance.
 
 
-## License
+### License
 
 [When is a program and its plug-ins considered a single combined program?][gnu/licenses/gpl-faq/gplplugins]
 
 
+[acm/micro-travel-demand]: https://dl.acm.org/doi/10.1145/3347146.3359361
+[destatis]: https://www.destatis.de/DE/Service/Statistik-Visualisiert/RegionalatlasAktuell.html
 [github/rust-lang/cargo/issues/5624]: https://github.com/rust-lang/cargo/issues/5624
+[github/vbuchhold/routing-framework]: https://github.com/vbuchhold/routing-framework
 [gnu/licenses/gpl-faq/gplplugins]: https://www.gnu.org/licenses/gpl-faq.html#GPLPlugins
 [kde/marble]: http://api.kde.org/4.x-api/kdeedu-apidocs/marble/html/namespaceMarble.html
 [leafletjs]: https://leafletjs.com/
 [osm/wiki/jmapviewer]: https://wiki.openstreetmap.org/wiki/JMapViewer
+[taginfo]: https://taginfo.openstreetmap.org/
+[worldometers/germany]: https://www.worldometers.info/world-population/germany-population/
