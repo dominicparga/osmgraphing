@@ -128,10 +128,9 @@ impl Graph {
                         }
                         // calc duration and update proto-edge
                         if let (Some(raw_distance), Some(raw_speed)) = (raw_distance, raw_speed) {
-                            let duration: defaults::time::TYPE =
-                                (defaults::distance::TYPE::new(raw_distance)
-                                    / defaults::speed::TYPE::new(raw_speed))
-                                .into();
+                            let distance = defaults::distance::TYPE::new(raw_distance);
+                            let speed = defaults::speed::TYPE::new(raw_speed);
+                            let duration = defaults::time::TYPE::from(distance / speed);
                             proto_edge.metrics[*metric_idx] = Some(*duration)
                         } else {
                             are_all_metrics_some = false;
