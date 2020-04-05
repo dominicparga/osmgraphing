@@ -10,6 +10,9 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v2
+    - name: Install toolchain
+      run: |
+        rustup component add rustfmt
     - name: Build
       run: |
         cargo build --verbose
@@ -30,6 +33,7 @@ jobs:
       run: |
         rustup toolchain install beta
         rustup default beta
+        rustup component add rustfmt
     - name: Build
       run: |
         cargo build --verbose
@@ -49,6 +53,7 @@ jobs:
       run: |
         rustup toolchain install nightly
         rustup default nightly
+        rustup component add rustfmt
       continue-on-error: true
     - name: Build
       run: |
