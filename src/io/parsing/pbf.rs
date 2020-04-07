@@ -79,7 +79,7 @@ impl super::Parsing for Parser {
                 let is_provided = builder.cfg().edges.is_metric_provided(metric_idx);
 
                 match category {
-                    EdgeCategory::Meters | EdgeCategory::Seconds | EdgeCategory::Custom => {
+                    EdgeCategory::Meters | EdgeCategory::Seconds | EdgeCategory::F64 => {
                         if is_provided {
                             return Err(format!(
                                 "The {} of an edge in a pbf-file has to be calculated, \

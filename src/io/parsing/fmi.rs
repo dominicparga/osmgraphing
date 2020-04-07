@@ -244,7 +244,7 @@ impl ProtoShortcut {
                                     defaults::speed::TYPE::from(KilometersPerHour(raw_value));
                                 metric_values.push(Some(*maxspeed));
                             }
-                            EdgeCategory::LaneCount | EdgeCategory::Custom => {
+                            EdgeCategory::LaneCount | EdgeCategory::F64 => {
                                 metric_values.push(Some(raw_value));
                             }
                             _ => return Err(format!("Unknown category {}", category)),

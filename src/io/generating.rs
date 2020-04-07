@@ -160,7 +160,7 @@ pub mod fmi {
                                 }
                                 parser::EdgeCategory::Seconds => EdgeCategory::Seconds,
                                 parser::EdgeCategory::LaneCount => EdgeCategory::LaneCount,
-                                parser::EdgeCategory::Custom => EdgeCategory::Custom,
+                                parser::EdgeCategory::F64 => EdgeCategory::F64,
                                 parser::EdgeCategory::SrcId => EdgeCategory::SrcId,
                                 parser::EdgeCategory::IgnoredSrcIdx => EdgeCategory::SrcIdx,
                                 parser::EdgeCategory::DstId => EdgeCategory::DstId,
@@ -181,7 +181,7 @@ pub mod fmi {
                             EdgeCategory::KilometersPerHour
                             | EdgeCategory::Seconds
                             | EdgeCategory::LaneCount
-                            | EdgeCategory::Custom => {
+                            | EdgeCategory::F64 => {
                                 let metric_idx = graph.cfg().edges.metric_idx(id);
                                 write!(
                                     writer,

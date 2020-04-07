@@ -231,7 +231,7 @@ pub mod parser {
         /// - `KilometersPerHour` in km/h
         /// - `Seconds`
         /// - `LaneCount`
-        /// - `Custom`, which is just the plain f64-value
+        /// - `F64`, which is just the plain f64-value
         /// - `Ignore`, which is used in `csv`-like `fmi`-maps to jump over columns
         #[derive(Copy, Clone, Debug, Deserialize, Eq, PartialEq)]
         pub enum Category {
@@ -239,7 +239,7 @@ pub mod parser {
             KilometersPerHour,
             Seconds,
             LaneCount,
-            Custom,
+            F64,
             ShortcutEdgeIdx,
             SrcId,
             #[serde(rename = "Ignore - SrcIdx")]
@@ -263,7 +263,7 @@ pub mod parser {
                     | Category::KilometersPerHour
                     | Category::Seconds
                     | Category::LaneCount => true,
-                    Category::Custom
+                    Category::F64
                     | Category::ShortcutEdgeIdx
                     | Category::SrcId
                     | Category::IgnoredSrcIdx
@@ -285,7 +285,7 @@ pub mod parser {
                     | Category::KilometersPerHour
                     | Category::Seconds
                     | Category::LaneCount
-                    | Category::Custom => true,
+                    | Category::F64 => true,
                 }
             }
 
@@ -295,7 +295,7 @@ pub mod parser {
                     Category::Seconds => smallvec![Category::Meters, Category::KilometersPerHour],
                     Category::Meters
                     | Category::LaneCount
-                    | Category::Custom
+                    | Category::F64
                     | Category::ShortcutEdgeIdx
                     | Category::SrcId
                     | Category::IgnoredSrcIdx
@@ -337,7 +337,7 @@ pub mod generator {
             KilometersPerHour,
             Seconds,
             LaneCount,
-            Custom,
+            F64,
             SrcId,
             SrcIdx,
             DstId,

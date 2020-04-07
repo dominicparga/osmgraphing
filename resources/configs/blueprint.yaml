@@ -47,7 +47,7 @@ parser:
     is-provided: false
     calc-rules: ['to-the-moon-and-back', 'faster-than-light']
   - category: 'LaneCount'
-  - category: 'Custom'
+  - category: 'F64'
     id: 'my-custom-value'
     is-provided: true
 

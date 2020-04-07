@@ -172,7 +172,7 @@ impl Graph {
                         }
                     }
                     EdgeCategory::LaneCount
-                    | EdgeCategory::Custom
+                    | EdgeCategory::F64
                     | EdgeCategory::ShortcutEdgeIdx
                     | EdgeCategory::SrcId
                     | EdgeCategory::IgnoredSrcIdx
