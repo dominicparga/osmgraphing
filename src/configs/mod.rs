@@ -115,110 +115,65 @@ pub mod parser {
     }
 
     pub mod edges {
-        use crate::{configs::SimpleId, defaults::capacity::DimVec, network::MetricIdx};
+        use crate::{configs::SimpleId, defaults::capacity::DimVec};
         use serde::Deserialize;
         use smallvec::smallvec;
-        use std::{
-            collections::BTreeMap,
-            fmt::{self, Display},
-        };
+        use std::fmt::{self, Display};
+
+        pub mod metrics {
+            use crate::{configs::SimpleId, defaults::capacity::DimVec};
+            use serde::Deserialize;
+
+            #[derive(Debug)]
+            pub struct Config {
+                pub categories: DimVec<super::Category>, // TODO replace by Unit
+                pub ids: DimVec<SimpleId>,
+                // metric_categories: DimVec<Category>,
+                // are_metrics_provided: DimVec<bool>,
+                // metric_ids: DimVec<SimpleId>,
+                // metric_indices: BTreeMap<SimpleId, MetricIdx>,
+                // calc_rules: DimVec<DimVec<(Category, MetricIdx)>>,
+            }
+
+            #[derive(Copy, Clone, Debug, Deserialize, Eq, PartialEq)]
+            pub enum Unit {
+                Meters,
+                Kilometers,
+                Seconds,
+                Minutes,
+                Hours,
+                KilometersPerHour,
+                LaneCount,
+                F64,
+            }
+
+            impl Config {
+                pub fn dim(&self) -> usize {
+                    self.categories.len()
+                }
+            }
+        }
 
         #[derive(Debug)]
         pub struct Config {
             // store all for order
-            edge_categories: Vec<Category>,
-            edge_ids: Vec<SimpleId>,
+            pub categories: Vec<Category>,
+            pub ids: Vec<SimpleId>,
+
             // store only metrics for quick access
-            metric_categories: DimVec<Category>,
-            are_metrics_provided: DimVec<bool>,
-            metric_ids: DimVec<SimpleId>,
-            metric_indices: BTreeMap<SimpleId, MetricIdx>,
-            calc_rules: DimVec<DimVec<(Category, MetricIdx)>>,
+            pub metrics: metrics::Config,
         }
 
         impl Config {
             pub fn new(
-                edge_categories: Vec<Category>,
-                edge_ids: Vec<SimpleId>,
-                metric_categories: DimVec<Category>,
-                are_metrics_provided: DimVec<bool>,
-                metric_ids: DimVec<SimpleId>,
-                metric_indices: BTreeMap<SimpleId, MetricIdx>,
-                calc_rules: DimVec<DimVec<(Category, MetricIdx)>>,
+                categories: Vec<Category>,
+                ids: Vec<SimpleId>,
+                metrics: metrics::Config,
             ) -> Config {
                 Config {
-                    edge_categories,
-                    edge_ids,
-                    metric_categories,
-                    are_metrics_provided,
-                    metric_ids,
-                    metric_indices,
-                    calc_rules,
-                }
-            }
-        }
-
-        impl Config {
-            pub fn edge_categories(&self) -> &Vec<Category> {
-                &self.edge_categories
-            }
-
-            /// For metrics, use `metric_category(idx)`, since it is faster.
-            pub fn edge_category(&self, id: &SimpleId) -> &Category {
-                match self.edge_ids.iter().position(|i| i == id) {
-                    Some(idx) => &self.edge_categories[idx],
-                    None => {
-                        // if no id exists, it could be an ignored one, e.g. asked by the generator
-                        if id == &SimpleId(format!("{}", Category::Ignore)) {
-                            &Category::Ignore
-                        } else {
-                            panic!("Id {} not found in config.", id);
-                        }
-                    }
-                }
-            }
-
-            pub fn metric_category(&self, idx: MetricIdx) -> Category {
-                match self.metric_categories.get(*idx) {
-                    Some(metric_category) => *metric_category,
-                    None => {
-                        panic!("Idx {} for metric-category not found in config.", idx);
-                    }
-                }
-            }
-
-            pub fn dim(&self) -> usize {
-                self.metric_categories.len()
-            }
-
-            pub fn is_metric_provided(&self, idx: MetricIdx) -> bool {
-                match self.are_metrics_provided.get(*idx) {
-                    Some(is_provided) => *is_provided,
-                    None => {
-                        panic!("Idx {} for info 'is-provided' not found in config.", idx);
-                    }
-                }
-            }
-
-            pub fn metric_idx(&self, id: &SimpleId) -> MetricIdx {
-                match self.metric_indices.get(id) {
-                    Some(idx) => *idx,
-                    None => {
-                        panic!("Id {} not found in config.", id);
-                    }
-                }
-            }
-
-            pub fn metric_indices(&self) -> DimVec<MetricIdx> {
-                (0..self.dim()).into_iter().map(|i| MetricIdx(i)).collect()
-            }
-
-            pub fn calc_rules(&self, idx: MetricIdx) -> &DimVec<(Category, MetricIdx)> {
-                match self.calc_rules.get(*idx) {
-                    Some(calc_rule) => calc_rule,
-                    None => {
-                        panic!("Idx {} for calc-rule not found in config.", idx);
-                    }
+                    categories,
+                    ids,
+                    metrics,
                 }
             }
         }
@@ -240,13 +195,9 @@ pub mod parser {
             Seconds,
             LaneCount,
             F64,
-            ShortcutEdgeIdx,
             SrcId,
-            #[serde(rename = "Ignore - SrcIdx")]
-            IgnoredSrcIdx,
             DstId,
-            #[serde(rename = "Ignore - DstIdx")]
-            IgnoredDstIdx,
+            ShortcutEdgeIdx,
             Ignore,
         }
 
@@ -266,9 +217,7 @@ pub mod parser {
                     Category::F64
                     | Category::ShortcutEdgeIdx
                     | Category::SrcId
-                    | Category::IgnoredSrcIdx
                     | Category::DstId
-                    | Category::IgnoredDstIdx
                     | Category::Ignore => false,
                 }
             }
@@ -277,8 +226,6 @@ pub mod parser {
                 match self {
                     Category::SrcId
                     | Category::DstId
-                    | Category::IgnoredSrcIdx
-                    | Category::IgnoredDstIdx
                     | Category::ShortcutEdgeIdx
                     | Category::Ignore => false,
                     Category::Meters
@@ -298,9 +245,7 @@ pub mod parser {
                     | Category::F64
                     | Category::ShortcutEdgeIdx
                     | Category::SrcId
-                    | Category::IgnoredSrcIdx
                     | Category::DstId
-                    | Category::IgnoredDstIdx
                     | Category::Ignore => smallvec![],
                 }
             }
@@ -375,16 +320,27 @@ pub mod routing {
 
         pub fn from_raw(
             raw_cfg: super::raw::routing::Config,
-            cfg_parser: &super::parser::Config,
+            parser_cfg: &super::parser::Config,
         ) -> Config {
-            let mut alphas = smallvec![0.0; cfg_parser.edges.dim()];
-            for (metric_idx, alpha) in raw_cfg.metrics.into_iter().map(|entry| {
-                (
-                    cfg_parser.edges.metric_idx(&entry.id),
-                    entry.alpha.unwrap_or(defaults::routing::ALPHA),
-                )
-            }) {
-                alphas[*metric_idx] = alpha;
+            let mut alphas = smallvec![0.0; parser_cfg.edges.metrics.dim()];
+
+            for entry in raw_cfg.metrics.into_iter() {
+                let alpha = entry.alpha.unwrap_or(defaults::routing::ALPHA);
+
+                if let Some(metric_idx) = parser_cfg
+                    .edges
+                    .metrics
+                    .ids
+                    .iter()
+                    .position(|id| id == &entry.id)
+                {
+                    alphas[metric_idx] = alpha;
+                } else {
+                    panic!(
+                        "The given id {} should get alpha {}, but doesn't exist.",
+                        entry.id, alpha
+                    );
+                }
             }
 
             Config {

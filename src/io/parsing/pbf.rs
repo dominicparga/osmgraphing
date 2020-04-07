@@ -1,8 +1,8 @@
 use crate::{
     configs::parser::{self, EdgeCategory},
-    defaults::{self, capacity::DimVec},
+    defaults::capacity::DimVec,
     helpers,
-    network::{EdgeBuilder, MetricIdx, NodeBuilder, ProtoEdge, ProtoNode, StreetCategory},
+    network::{EdgeBuilder, NodeBuilder, ProtoEdge, ProtoNode, StreetCategory},
 };
 use kissunits::geo::Coordinate;
 use log::info;
@@ -21,6 +21,30 @@ impl super::Parsing for Parser {
     fn preprocess(&mut self, cfg: &parser::Config) -> Result<(), String> {
         info!("START Start preprocessing pbf-parser.");
         super::check_parser_config(cfg)?;
+
+        for category in cfg.edges.categories.iter() {
+            match category {
+                EdgeCategory::Meters | EdgeCategory::Seconds | EdgeCategory::F64 => {
+                    return Err(format!(
+                        "The {} of an edge in a pbf-file has to be calculated, \
+                         but is expected to be provided.",
+                        category
+                    ));
+                }
+                EdgeCategory::KilometersPerHour | EdgeCategory::LaneCount => {
+                    // irrelevant
+                }
+                EdgeCategory::ShortcutEdgeIdx => {
+                    return Err(String::from(
+                        "Shortcut-edges are not supported in pbf-files.",
+                    ))
+                }
+                EdgeCategory::SrcId | EdgeCategory::DstId | EdgeCategory::Ignore => {
+                    // already checked in check_parser_config(...)
+                }
+            }
+        }
+
         info!("FINISHED");
         Ok(())
     }
@@ -73,52 +97,28 @@ impl super::Parsing for Parser {
 
             // Collect metrics as expected by user-config
             // ATTENTION: A way contains multiple edges, thus be careful when adding new metrics.
-            let mut metrics: DimVec<_> = smallvec![None; builder.cfg().edges.dim()];
-            for metric_idx in (0..builder.cfg().edges.dim()).map(MetricIdx) {
-                let category = builder.cfg().edges.metric_category(metric_idx);
-                let is_provided = builder.cfg().edges.is_metric_provided(metric_idx);
 
+            let mut metrics: DimVec<_> = smallvec![];
+
+            for category in builder.cfg().edges.categories.iter() {
                 match category {
-                    EdgeCategory::Meters | EdgeCategory::Seconds | EdgeCategory::F64 => {
-                        if is_provided {
-                            return Err(format!(
-                                "The {} of an edge in a pbf-file has to be calculated, \
-                                 but is expected to be provided.",
-                                category
-                            ));
-                        }
-                    }
                     EdgeCategory::KilometersPerHour => {
-                        if is_provided {
-                            let maxspeed =
-                                defaults::speed::TYPE::from(highway_tag.parse_maxspeed(&way));
-                            metrics[*metric_idx] = Some(*maxspeed);
-                        } else {
-                            return Err(format!(
-                                "The {} of an edge in a pbf-file has to be provided, \
-                                 but is expected to be calculated.",
-                                category
-                            ));
-                        }
+                        let maxspeed = highway_tag.parse_maxspeed(&way);
+                        metrics.push(*maxspeed);
                     }
                     EdgeCategory::LaneCount => {
-                        if is_provided {
-                            let lane_count = highway_tag.parse_lane_count(&way);
-                            metrics[*metric_idx] = Some(lane_count as f64);
-                        } else {
-                            return Err(format!(
-                                "The {} of an edge in a pbf-file has to be provided, \
-                                 but is expected to be calculated.",
-                                category
-                            ));
-                        }
+                        let lane_count = highway_tag.parse_lane_count(&way);
+                        metrics.push(lane_count as f64);
                     }
-                    EdgeCategory::SrcId
-                    | EdgeCategory::IgnoredSrcIdx
-                    | EdgeCategory::DstId
-                    | EdgeCategory::IgnoredDstIdx
+                    EdgeCategory::Meters
+                    | EdgeCategory::Seconds
+                    | EdgeCategory::F64
                     | EdgeCategory::ShortcutEdgeIdx
-                    | EdgeCategory::Ignore => (),
+                    | EdgeCategory::SrcId
+                    | EdgeCategory::DstId
+                    | EdgeCategory::Ignore => {
+                        // already checked in preprocessing
+                    }
                 }
             }
 

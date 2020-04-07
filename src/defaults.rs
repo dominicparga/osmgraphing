@@ -14,16 +14,7 @@ pub mod accuracy {
     pub const F64_FMT_DIGITS: usize = 6;
 }
 
-pub mod distance {
-    pub type TYPE = kissunits::distance::Kilometers;
-}
-
-pub mod time {
-    pub type TYPE = kissunits::time::Minutes;
-}
-
 pub mod speed {
-    pub type TYPE = kissunits::speed::KilometersPerHour;
     pub const MAX_KMH: u16 = 130;
     pub const MIN_KMH: u8 = 5;
 }

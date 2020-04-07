@@ -104,51 +104,61 @@ trait Parsing {
 
 fn check_parser_config(cfg: &parser::Config) -> Result<(), String> {
     // check if yaml-config is correct
+
+    // check nodes' meta-info
+
     if !cfg.nodes.categories().contains(&NodeCategory::NodeId) {
         return Err(String::from(
             "The provided config-file doesn't contain a NodeId, but needs to.",
         ));
     }
+
+    // check nodes' coordinates
+
     if !cfg.nodes.categories().contains(&NodeCategory::Latitude) {
         return Err(String::from(
             "The provided config-file doesn't contain a latitude, but needs to.",
         ));
     }
+
     if !cfg.nodes.categories().contains(&NodeCategory::Longitude) {
         return Err(String::from(
             "The provided config-file doesn't contain a longitude, but needs to.",
         ));
     }
-    if cfg.edges.dim() > capacity::SMALL_VEC_INLINE_SIZE {
+
+    // check edges' metric-memory-capacity
+
+    if cfg.edges.metrics.dim() > capacity::SMALL_VEC_INLINE_SIZE {
         return Err(format!(
             "The provided config-file has more metrics for the graph ({}) \
              than the parser has been compiled to ({}).",
-            cfg.edges.dim(),
+            cfg.edges.metrics.dim(),
             capacity::SMALL_VEC_INLINE_SIZE
         ));
+    } else if cfg.edges.metrics.dim() < capacity::SMALL_VEC_INLINE_SIZE {
+        warn!(
+            "The provided config-file has less metrics for the graph ({}) \
+             than the parser has been compiled to ({}). \
+             Compiling accordingly saves memory.",
+            cfg.edges.metrics.dim(),
+            capacity::SMALL_VEC_INLINE_SIZE
+        );
     }
+
+    // check count of shortcut-edge-indices
 
     let count = cfg
         .edges
-        .edge_categories()
+        .categories
         .iter()
-        .filter(|category| category == &&EdgeCategory::ShortcutEdgeIdx)
+        .filter(|&category| category == &EdgeCategory::ShortcutEdgeIdx)
         .count();
     if count > 0 && count != 2 {
         return Err(format!(
             "The config-file has a different number than 0 or 2 of edge-category '{}'",
             EdgeCategory::ShortcutEdgeIdx
         ));
-    }
-
-    if cfg.edges.dim() < capacity::SMALL_VEC_INLINE_SIZE {
-        warn!(
-            "The provided config-file has less metrics for the graph ({}) \
-             than the parser has been compiled to ({}). \
-             Compiling accordingly saves memory.",
-            cfg.edges.dim(),
-            capacity::SMALL_VEC_INLINE_SIZE
-        );
     }
 
     Ok(())

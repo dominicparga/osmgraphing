@@ -84,7 +84,7 @@ impl Path {
             src_idx: self.src_idx,
             dst_idx: self.dst_idx,
             edges: Vec::with_capacity(self.edges.capacity()),
-            costs: Some(smallvec![0.0; graph.cfg().edges.dim()]),
+            costs: Some(smallvec![0.0; graph.metrics().dim()]),
         };
 
         // interpret old edges as stack, beginning with src

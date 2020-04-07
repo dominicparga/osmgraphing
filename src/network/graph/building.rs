@@ -1,18 +1,10 @@
 use super::{EdgeIdx, Graph, NodeIdx};
 use crate::{
-    configs::parser::{Config, EdgeCategory},
-    defaults::{
-        self,
-        capacity::{self, DimVec},
-    },
+    configs::parser::Config,
+    defaults::capacity::{self, DimVec},
     helpers::{ApproxEq, MemSize},
-    network::MetricIdx,
 };
-use kissunits::{
-    distance::Kilometers,
-    geo::{self, Coordinate},
-    time::Hours,
-};
+use kissunits::geo::Coordinate;
 use log::{debug, info};
 use progressing::{self, Bar};
 use std::{cmp::Reverse, mem, ops::RangeFrom};
@@ -57,165 +49,24 @@ impl Graph {
         self.sc_edges.shrink_to_fit();
     }
 
-    /// Uses the graph's nodes, so nodes must have been added before this method works properly.
     /// The provided edge is interpreted as forward-edge.
-    /// Metric-dependencies between each other are considered by looping enough times
-    /// over the calculation-loop.
     fn add_metrics(&mut self, proto_edge: &mut ProtoEdgeB) -> Result<(), String> {
         let cfg = &self.cfg;
+        let dim = cfg.edges.metrics.dim();
 
-        // - finalize proto-edge -
-        // Repeat the calculations n times.
-        // In worst case, no metric is provided and all have to be calculated sequentially.
-        for _ in 0..cfg.edges.dim() {
-            // just a quick, coarse way of breaking earlier
-            let mut are_all_metrics_some = true;
-            for metric_idx in (0..cfg.edges.dim()).map(MetricIdx) {
-                // if value should be provided, it is already in the proto-edge from parsing
-                if cfg.edges.is_metric_provided(metric_idx) {
-                    continue;
-                }
-
-                let category = cfg.edges.metric_category(metric_idx);
-
-                // Jump if proto-edge has its value.
-                if let Some(value) = &mut proto_edge.metrics[*metric_idx] {
-                    // But jump only if value is correct.
-                    if value.approx_eq(&0.0) && category.must_be_positive() {
-                        debug!(
-                            "Proto-edge (id:{}->id:{}) has {}=0, hence is corrected to epsilon.",
-                            self.nodes().id(proto_edge.src_idx),
-                            self.nodes().id(proto_edge.dst_idx),
-                            category
-                        );
-                        *value = std::f64::EPSILON;
-                    }
-                    continue;
-                }
-                // now: proto-edge has no value for this metric and has to be updated
-
-                // calculate metric dependent on category
-                match category {
-                    EdgeCategory::Meters => {
-                        let src_coord = self.node_coords[*proto_edge.src_idx];
-                        let dst_coord = self.node_coords[*proto_edge.dst_idx];
-                        let distance = defaults::distance::TYPE::from(geo::haversine_distance_km(
-                            &src_coord, &dst_coord,
-                        ));
-                        proto_edge.metrics[*metric_idx] = Some(*distance);
-                    }
-                    EdgeCategory::Seconds => {
-                        // get distance and maxspeed to calculate duration
-                        let mut raw_distance = None;
-                        let mut raw_speed = None;
-                        // get calculation-rules
-                        for &(other_type, other_idx) in cfg.edges.calc_rules(metric_idx) {
-                            // get values from edge dependent of calculation-rules
-                            match other_type {
-                                EdgeCategory::Meters => {
-                                    raw_distance = proto_edge.metrics[*other_idx]
-                                }
-                                EdgeCategory::KilometersPerHour => {
-                                    raw_speed = proto_edge.metrics[*other_idx];
-                                }
-                                _ => {
-                                    return Err(format!(
-                                    "Wrong metric-category {} in calc-rule for metric-category {}",
-                                    other_type, category
-                                ))
-                                }
-                            }
-                        }
-                        // calc duration and update proto-edge
-                        if let (Some(raw_distance), Some(raw_speed)) = (raw_distance, raw_speed) {
-                            let distance = defaults::distance::TYPE::new(raw_distance);
-                            let speed = defaults::speed::TYPE::new(raw_speed);
-                            let duration = defaults::time::TYPE::from(distance / speed);
-                            proto_edge.metrics[*metric_idx] = Some(*duration)
-                        } else {
-                            are_all_metrics_some = false;
-                        }
-                    }
-                    EdgeCategory::KilometersPerHour => {
-                        // get distance and duration to calculate maxspeed
-                        let mut raw_distance = None;
-                        let mut raw_duration = None;
-                        // get calculation-rules
-                        for &(other_type, other_idx) in cfg.edges.calc_rules(metric_idx) {
-                            // get values from edge dependent of calculation-rules
-                            match other_type {
-                                EdgeCategory::Meters => {
-                                    raw_distance = proto_edge.metrics[*other_idx]
-                                }
-                                EdgeCategory::Seconds => {
-                                    raw_duration = proto_edge.metrics[*other_idx];
-                                }
-                                _ => {
-                                    return Err(format!(
-                                    "Wrong metric-category {} in calc-rule for metric-category {}",
-                                    other_type, category
-                                ))
-                                }
-                            }
-                        }
-                        // calc maxspeed and update proto-edge
-                        if let (Some(raw_distance), Some(raw_duration)) =
-                            (raw_distance, raw_duration)
-                        {
-                            let distance =
-                                Kilometers::from(defaults::distance::TYPE::new(raw_distance));
-                            let duration = Hours::from(defaults::time::TYPE::new(raw_duration));
-                            let maxspeed = defaults::speed::TYPE::from(distance / duration);
-                            proto_edge.metrics[*metric_idx] = Some(*maxspeed)
-                        } else {
-                            are_all_metrics_some = false;
-                        }
-                    }
-                    EdgeCategory::LaneCount
-                    | EdgeCategory::F64
-                    | EdgeCategory::ShortcutEdgeIdx
-                    | EdgeCategory::SrcId
-                    | EdgeCategory::IgnoredSrcIdx
-                    | EdgeCategory::DstId
-                    | EdgeCategory::IgnoredDstIdx
-                    | EdgeCategory::Ignore => {
-                        // Should be set to false here, but being here needs the metric to be none.
-                        // This would be bad anyways, because these metrics should be provided, not
-                        // calculated.
-                        // -> breaking loop for performance is okay
-                        // are_all_metrics_some = false;
-                    }
-                }
-            }
-
-            if are_all_metrics_some {
-                break;
+        for (metric_idx, raw_value) in proto_edge.metrics.iter_mut().enumerate() {
+            if raw_value.approx_eq(&0.0) {
+                debug!(
+                    "Proto-edge (id:{}->id:{}) has {}=0, hence is corrected to epsilon.",
+                    self.nodes().id(proto_edge.src_idx),
+                    self.nodes().id(proto_edge.dst_idx),
+                    cfg.edges.metrics.ids[metric_idx]
+                );
+                *raw_value = std::f64::EPSILON;
             }
         }
 
-        // add metrics to graph
-        let mut metrics = DimVec::new();
-        for (i, metric) in proto_edge.metrics.iter().enumerate() {
-            let metric_idx = MetricIdx(i);
-
-            // If expected metrics haven't been calculated yet, some metrics are missing!
-            if let Some(metric) = metric {
-                metrics.push(*metric);
-            } else {
-                if cfg.edges.is_metric_provided(metric_idx) {
-                    return Err(format!(
-                        "Metric {} should be provided, but is not.",
-                        cfg.edges.metric_category(metric_idx)
-                    ));
-                }
-                return Err(format!(
-                    "Metric {} couldn't be calculated \
-                     since not enough calculation rules were given.",
-                    cfg.edges.metric_category(metric_idx)
-                ));
-            }
-        }
-        self.metrics.push(metrics);
+        self.metrics.push(proto_edge.metrics.clone());
 
         Ok(())
     }
@@ -249,7 +100,7 @@ impl ProtoShortcut {
 pub struct ProtoEdge {
     pub src_id: i64,
     pub dst_id: i64,
-    pub metrics: DimVec<Option<f64>>,
+    pub metrics: DimVec<f64>,
 }
 
 impl Into<ProtoShortcut> for ProtoEdge {
@@ -279,7 +130,7 @@ struct ProtoEdgeA {
     pub idx: usize,
     pub src_id: i64,
     pub dst_id: i64,
-    pub metrics: DimVec<Option<f64>>,
+    pub metrics: DimVec<f64>,
     pub sc_edges: Option<usize>,
 }
 
@@ -287,7 +138,7 @@ struct ProtoEdgeB {
     pub idx: usize,
     pub src_idx: NodeIdx,
     pub dst_idx: NodeIdx,
-    pub metrics: DimVec<Option<f64>>,
+    pub metrics: DimVec<f64>,
     pub sc_edges: Option<usize>,
 }
 
@@ -620,21 +471,13 @@ impl GraphBuilder {
 
                     // compare src-id and dst-id, then metrics approximately
                     if (e0.src_idx, e0.dst_idx) == (e1.src_idx, e1.dst_idx) {
-                        for (e0_opt, e1_opt) in e0.metrics.iter().zip(e1.metrics.iter()) {
-                            if e0_opt.is_none() && e1_opt.is_none() {
-                                // both are none
+                        for (e0_metric, e1_metric) in e0.metrics.iter().zip(e1.metrics.iter()) {
+                            if e0_metric.approx_eq(&e1_metric) {
                                 continue;
-                            } else {
-                                if let (Some(e0_metric), Some(e1_metric)) = (e0_opt, e1_opt) {
-                                    // both are some
-                                    if e0_metric.approx_eq(&e1_metric) {
-                                        continue;
-                                    }
-                                }
-                                // both are different
-                                is_eq = false;
-                                break;
                             }
+                            // values are different
+                            is_eq = false;
+                            break;
                         }
                     } else {
                         is_eq = false;

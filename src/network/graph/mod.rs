@@ -538,7 +538,7 @@ impl<'a> Display for MetricAccessor<'a> {
 
 impl<'a> MetricAccessor<'a> {
     pub fn dim(&self) -> usize {
-        self.cfg.edges.dim()
+        self.cfg.edges.metrics.dim()
     }
 }
 

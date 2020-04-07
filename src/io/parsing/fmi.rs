@@ -147,7 +147,7 @@ impl ProtoShortcut {
     ///
     /// - When NodeIds are parsed, the first one is interpreted as src-id and the second one as dst-id.
     pub fn from_str(line: &str, cfg: &parser::edges::Config) -> Result<ProtoShortcut, String> {
-        let mut metric_values = DimVec::<_>::with_capacity(cfg.dim());
+        let mut metric_values = DimVec::new();
         let mut src_id = None;
         let mut dst_id = None;
         let mut sc_edge_0 = None;
@@ -158,7 +158,7 @@ impl ProtoShortcut {
 
         // Param-idx has to be counted separatedly because some metrics could be calculated.
         let mut param_idx = 0;
-        for category in cfg.edge_categories().iter() {
+        for category in cfg.categories.iter() {
             let param = *params.get(param_idx).ok_or(&format!(
                 "The fmi-map-file is expected to have more edge-params (> {}) \
                  than actually has ({}).",
@@ -220,54 +220,45 @@ impl ProtoShortcut {
                         }
                         param_idx += 1;
                     }
-                    EdgeCategory::IgnoredSrcIdx
-                    | EdgeCategory::IgnoredDstIdx
-                    | EdgeCategory::Ignore => param_idx += 1,
+                    EdgeCategory::Ignore => param_idx += 1,
                     _ => return Err(format!("Unknown category {}", category)),
                 }
             } else {
-                let metric_idx = MetricIdx(metric_values.len());
-
-                if cfg.is_metric_provided(metric_idx) {
-                    if let Ok(raw_value) = param.parse::<f64>() {
-                        match category {
-                            EdgeCategory::Meters => {
-                                let distance = defaults::distance::TYPE::from(Meters(raw_value));
-                                metric_values.push(Some(*distance));
-                            }
-                            EdgeCategory::Seconds => {
-                                let duration = defaults::time::TYPE::from(Seconds(raw_value));
-                                metric_values.push(Some(*duration));
-                            }
-                            EdgeCategory::KilometersPerHour => {
-                                let maxspeed =
-                                    defaults::speed::TYPE::from(KilometersPerHour(raw_value));
-                                metric_values.push(Some(*maxspeed));
-                            }
-                            EdgeCategory::LaneCount | EdgeCategory::F64 => {
-                                metric_values.push(Some(raw_value));
-                            }
-                            _ => return Err(format!("Unknown category {}", category)),
+                if let Ok(raw_value) = param.parse::<f64>() {
+                    match category {
+                        EdgeCategory::Meters => {
+                            let distance = Meters(raw_value);
+                            metric_values.push(*distance);
                         }
-                    } else {
-                        return Err(format!(
-                            "Parsing {} '{}' of edge-param #{} didn't work.",
-                            category, param, param_idx
-                        ));
-                    };
-                    param_idx += 1;
+                        EdgeCategory::Seconds => {
+                            let duration = Seconds(raw_value);
+                            metric_values.push(*duration);
+                        }
+                        EdgeCategory::KilometersPerHour => {
+                            let maxspeed = KilometersPerHour(raw_value);
+                            metric_values.push(*maxspeed);
+                        }
+                        EdgeCategory::LaneCount | EdgeCategory::F64 => {
+                            metric_values.push(raw_value);
+                        }
+                        _ => return Err(format!("Unknown category {}", category)),
+                    }
                 } else {
-                    metric_values.push(None);
-                }
+                    return Err(format!(
+                        "Parsing {} '{}' of edge-param #{} didn't work.",
+                        category, param, param_idx
+                    ));
+                };
+                param_idx += 1;
             }
         }
 
         debug_assert_eq!(
-            cfg.dim(),
+            cfg.metrics.dim(),
             metric_values.len(),
             "Metric-vec of proto-edge has {} elements, but should have {}.",
             metric_values.len(),
-            cfg.dim()
+            cfg.metrics.dim()
         );
 
         let sc_edges = {
