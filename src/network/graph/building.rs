@@ -1,6 +1,9 @@
 use super::{EdgeIdx, Graph, NodeIdx};
 use crate::{
-    configs::parsing::Config,
+    configs::{
+        categories::{edges, nodes},
+        parsing::Config,
+    },
     defaults::capacity::{self, DimVec},
     helpers::{ApproxEq, MemSize},
 };
@@ -746,58 +749,115 @@ impl GraphBuilder {
         // generate new metrics
 
         info!("START Create and convert metrics.");
-        // if let Some(generator_cfg) = self.cfg.generator {
-        //     // nodes
+        if let Some(generating_cfg) = graph.cfg.generating.take() {
+            // nodes
 
-        //     for category in generator_cfg.nodes.categories {
-        //         match category {
-        //             nodes::Category::Meta(info) => match info {
-        //                 nodes::MetaInfo::NodeIdx => {
-        //                     self.cfg.nodes.push(category);
-        //                 }
-        //                 nodes::MetaInfo::NodeId | nodes::MetaInfo::Level => {
-        //                     return Err(format!(
-        //                         "Node-meta-info {} cannot be created and has to be provided.",
-        //                         info
-        //                     ))
-        //                 }
-        //             },
-        //             nodes::Category::Metric(unit) => match unit {
-        //                 nodes::UnitInfo::Latitude
-        //                 | nodes::UnitInfo::Longitude
-        //                 | nodes::UnitInfo::Height => {
-        //                     return Err(format!(
-        //                         "Node-metric {} can't be created and has to be provided.",
-        //                         unit
-        //                     ))
-        //                 }
-        //             },
-        //             nodes::Category::Ignore(_) | nodes::Category::Ignored => (),
-        //         }
-        //     }
+            for category in generating_cfg.nodes.categories.iter() {
+                match category {
+                    nodes::Category::Meta { info, id: new_id } => {
+                        match info {
+                            nodes::MetaInfo::NodeIdx => {
+                                // if id does already exist
+                                // -> error
 
-        //     // edges
-        //     // TODO
+                                if graph.cfg.nodes.categories.iter().any(
+                                    |category| match category {
+                                        nodes::Category::Meta { info: _, id }
+                                        | nodes::Category::Metric { unit: _, id } => new_id == id,
+                                        nodes::Category::Ignored => false,
+                                    },
+                                ) {
+                                    return Err(format!(
+                                        "Node-meta-info {} has id {}, which does already exist.",
+                                        info, new_id
+                                    ));
+                                }
 
-        //     for (id, category) in generator_cfg
-        //         .edges
-        //         .ids
-        //         .iter()
-        //         .zip(generator_cfg.edges.categories)
-        //     {
-        //         match category {
-        //             edges::Category::Meta(info) => match info {
-        //                 edges::MetaInfo::SrcIdx | edges::MetaInfo::DstIdx => {
-        //                     self.cfg.edges.push(id.clone(), category)?;
-        //                 }
-        //             },
-        //             edges::Category::Metric(_) => (),
-        //             edges::Category::Convert { from: _, to: _ } => (),
-        //             edges::Category::Ignore(_) => (),
-        //             edges::Category::Ignored => (),
-        //         }
-        //     }
-        // }
+                                // add new category
+
+                                graph.cfg.nodes.categories.push(category.clone());
+                            }
+                            nodes::MetaInfo::NodeId | nodes::MetaInfo::Level => {
+                                return Err(format!(
+                                    "Node-meta-info {} (id: {}) cannot be created \
+                                     and has to be provided.",
+                                    info, new_id
+                                ))
+                            }
+                        }
+                    }
+                    nodes::Category::Metric { unit, id } => match unit {
+                        nodes::UnitInfo::Latitude
+                        | nodes::UnitInfo::Longitude
+                        | nodes::UnitInfo::Height => {
+                            return Err(format!(
+                                "Node-metric {} (id: {}) can't be created and has to be provided.",
+                                unit, id
+                            ))
+                        }
+                    },
+                    nodes::Category::Ignored => (),
+                }
+            }
+
+            // edges
+
+            for category in generating_cfg.edges.categories.iter() {
+                match category {
+                    edges::Category::Meta { info, id: new_id } => {
+                        match info {
+                            edges::MetaInfo::SrcIdx
+                            | edges::MetaInfo::DstIdx
+                            | edges::MetaInfo::ShortcutIdx0
+                            | edges::MetaInfo::ShortcutIdx1 => {
+                                // if id does already exist
+                                // -> error
+
+                                if graph.cfg.edges.categories.iter().any(
+                                    |category| match category {
+                                        edges::Category::Meta { info: _, id }
+                                        | edges::Category::Metric { unit: _, id } => new_id == id,
+                                        edges::Category::Ignored => false,
+                                    },
+                                ) {
+                                    return Err(format!(
+                                        "Edge-meta-info {} has id {}, which does already exist.",
+                                        info, new_id
+                                    ));
+                                }
+
+                                // add new category
+
+                                graph.cfg.edges.categories.push(category.clone());
+                            }
+                            edges::MetaInfo::SrcId | edges::MetaInfo::DstId => {
+                                return Err(format!(
+                                    "Edge-meta-info {} (id: {}) cannot be created \
+                                     and has to be provided.",
+                                    info, new_id
+                                ))
+                            }
+                        }
+                    }
+                    edges::Category::Metric { unit, id } => match unit {
+                        edges::UnitInfo::Meters
+                        | edges::UnitInfo::Kilometers
+                        | edges::UnitInfo::KilometersPerHour
+                        | edges::UnitInfo::Seconds
+                        | edges::UnitInfo::Minutes
+                        | edges::UnitInfo::Hours
+                        | edges::UnitInfo::LaneCount
+                        | edges::UnitInfo::F64 => {
+                            return Err(format!(
+                                "Node-metric {} (id: {}) can't be created and has to be provided.",
+                                unit, id
+                            ))
+                        }
+                    },
+                    edges::Category::Ignored => (),
+                }
+            }
+        }
 
         info!("FINISHED Finalizing graph has finished.");
         Ok(graph)

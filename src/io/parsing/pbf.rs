@@ -30,8 +30,8 @@ impl super::Parsing for Parser {
                     }
                     edges::MetaInfo::SrcIdx
                     | edges::MetaInfo::DstIdx
-                    | edges::MetaInfo::ShortcutEdgeIdx0
-                    | edges::MetaInfo::ShortcutEdgeIdx1 => {
+                    | edges::MetaInfo::ShortcutIdx0
+                    | edges::MetaInfo::ShortcutIdx1 => {
                         return Err(format!("{} are not supported in pbf-files.", category))
                     }
                 },

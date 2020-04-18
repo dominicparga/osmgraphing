@@ -1,6 +1,7 @@
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Config {
     pub parsing: parsing::Config,
     pub writing: Option<writing::Config>,
@@ -12,12 +13,13 @@ pub mod parsing {
     use std::path::PathBuf;
 
     #[derive(Debug, Deserialize)]
-    #[serde(rename_all = "kebab-case")]
+    #[serde(rename_all = "kebab-case", deny_unknown_fields)]
     pub struct Config {
         pub map_file: PathBuf,
         pub vehicles: vehicles::Config,
         pub nodes: nodes::Config,
         pub edges: edges::Config,
+        pub generating: Option<generating::Config>,
     }
 
     pub mod vehicles {
@@ -25,7 +27,7 @@ pub mod parsing {
         use serde::Deserialize;
 
         #[derive(Debug, Deserialize)]
-        #[serde(rename_all = "kebab-case")]
+        #[serde(rename_all = "kebab-case", deny_unknown_fields)]
         pub struct Config {
             pub category: VehicleCategory,
             pub are_drivers_picky: bool,
@@ -37,6 +39,7 @@ pub mod parsing {
         use serde::Deserialize;
 
         #[derive(Debug, Deserialize)]
+        #[serde(deny_unknown_fields)]
         pub struct Config(pub Vec<Category>);
 
         #[derive(Clone, Debug, Deserialize)]
@@ -65,6 +68,7 @@ pub mod parsing {
         use serde::Deserialize;
 
         #[derive(Debug, Deserialize)]
+        #[serde(deny_unknown_fields)]
         pub struct Config(pub Vec<Category>);
 
         #[derive(Clone, Debug, Deserialize)]
@@ -95,6 +99,60 @@ pub mod parsing {
             F64,
         }
     }
+
+    pub mod generating {
+        use serde::Deserialize;
+
+        #[derive(Debug, Deserialize)]
+        #[serde(rename_all = "kebab-case", deny_unknown_fields)]
+        pub struct Config {
+            pub nodes: nodes::Config,
+            pub edges: edges::Config,
+        }
+
+        pub mod nodes {
+            use crate::configs::SimpleId;
+            use serde::Deserialize;
+
+            #[derive(Debug, Deserialize)]
+            #[serde(deny_unknown_fields)]
+            pub struct Config(pub Vec<Category>);
+
+            #[derive(Clone, Debug, Deserialize)]
+            #[serde(rename_all = "lowercase")]
+            pub enum Category {
+                Meta { info: MetaInfo, id: SimpleId },
+            }
+
+            #[derive(Copy, Clone, Debug, Deserialize, Eq, PartialEq)]
+            pub enum MetaInfo {
+                NodeIdx,
+            }
+        }
+
+        pub mod edges {
+            use crate::configs::SimpleId;
+            use serde::Deserialize;
+
+            #[derive(Debug, Deserialize)]
+            #[serde(deny_unknown_fields)]
+            pub struct Config(pub Vec<Category>);
+
+            #[derive(Clone, Debug, Deserialize)]
+            #[serde(rename_all = "lowercase")]
+            pub enum Category {
+                Meta { info: MetaInfo, id: SimpleId },
+            }
+
+            #[derive(Copy, Clone, Debug, Deserialize, Eq, PartialEq)]
+            pub enum MetaInfo {
+                SrcIdx,
+                DstIdx,
+                ShortcutIdx0,
+                ShortcutIdx1,
+            }
+        }
+    }
 }
 
 pub mod writing {
@@ -102,12 +160,10 @@ pub mod writing {
     use std::path::PathBuf;
 
     #[derive(Debug, Deserialize)]
-    #[serde(rename_all = "kebab-case")]
+    #[serde(rename_all = "kebab-case", deny_unknown_fields)]
     pub struct Config {
         pub map_file: PathBuf,
-        #[serde(flatten)]
         pub nodes: nodes::Config,
-        #[serde(flatten)]
         pub edges: edges::Config,
     }
 
@@ -116,10 +172,7 @@ pub mod writing {
         use serde::Deserialize;
 
         #[derive(Debug, Deserialize)]
-        pub struct Config {
-            #[serde(rename = "nodes")]
-            pub categories: Vec<Category>,
-        }
+        pub struct Config(pub Vec<Category>);
 
         #[derive(Debug, Deserialize)]
         #[serde(rename_all = "lowercase")]
@@ -134,10 +187,7 @@ pub mod writing {
         use serde::Deserialize;
 
         #[derive(Debug, Deserialize)]
-        pub struct Config {
-            #[serde(rename = "edges")]
-            pub categories: Vec<Category>,
-        }
+        pub struct Config(pub Vec<Category>);
 
         #[derive(Debug, Deserialize)]
         #[serde(rename_all = "lowercase")]
@@ -153,7 +203,7 @@ pub mod routing {
     use serde::Deserialize;
 
     #[derive(Debug, Deserialize)]
-    #[serde(rename_all = "kebab-case")]
+    #[serde(rename_all = "kebab-case", deny_unknown_fields)]
     pub struct Config {
         pub is_ch_dijkstra: Option<bool>,
         pub metrics: Vec<Entry>,
@@ -175,6 +225,7 @@ pub mod routing {
     }
 
     #[derive(Debug, Deserialize)]
+    #[serde(deny_unknown_fields)]
     pub struct Entry {
         pub id: SimpleId,
         pub alpha: Option<f64>,

@@ -10,6 +10,7 @@ parsing:
   edges:
   - meta: { info: 'SrcId', id: 'src-id' }
   - meta: { info: 'DstId', id: 'dst-id' }
+  - ignored
   # - category: 'Meters'
   #   is-provided: false
   - metric: { unit: 'KilometersPerHour', id: 'kmph' }
@@ -17,3 +18,33 @@ parsing:
   #   is-provided: false
   #   calc-rules: ['Meters', 'KilometersPerHour']
   - metric: { unit: 'LaneCount', id: 'lanecount' }
+  generating:
+    nodes:
+    - meta: { info: 'NodeIdx', id: 'node-idx' }
+    edges:
+    - meta: { info: 'SrcIdx', id: 'src-idx' }
+    - meta: { info: 'DstIdx', id: 'dst-idx' }
+    - meta: { info: 'ShortcutIdx0', id: 'sc-idx0' }
+    - meta: { info: 'ShortcutIdx1', id: 'sc-idx1' }
+    # - metric:
+    #     from: { unit: 'Meters', id: 'meters' }
+    #     to: { unit: 'Kilometers', id: 'km' }
+
+writing:
+  # map-file: 'resources/maps/isle-of-man_2020-03-14.fmi'
+  map-file: 'resources/maps/foo.fmi'
+  nodes:
+  - id: 'node-idx'
+  - id: 'node-id'
+  - id: 'latitude'
+  - id: 'longitude'
+  - ignored # height
+  - ignored # level for contraction-hierarchies
+  edges:
+  - id: 'src-idx'
+  - id: 'dst-idx'
+  # - id: 'meters'
+  # - id: 'kmph' # nope because addition (in ch) makes no sense
+  # - id: 'seconds'
+  - id: 'sc-idx0'
+  - id: 'sc-idx1'

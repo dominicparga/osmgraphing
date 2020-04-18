@@ -165,7 +165,7 @@ fn check_config(cfg: &parsing::Config) -> Result<(), String> {
         .iter()
         .filter(|category| match category {
             edges::Category::Meta { info, id: _ } => match info {
-                edges::MetaInfo::ShortcutEdgeIdx0 | edges::MetaInfo::ShortcutEdgeIdx1 => true,
+                edges::MetaInfo::ShortcutIdx0 | edges::MetaInfo::ShortcutIdx1 => true,
                 edges::MetaInfo::SrcId
                 | edges::MetaInfo::SrcIdx
                 | edges::MetaInfo::DstId

@@ -1,5 +1,5 @@
 pub mod nodes {
-    use crate::configs::{raw::parsing::nodes as raw, SimpleId};
+    use crate::configs::{raw, SimpleId};
     use serde::Deserialize;
     use std::fmt::{self, Display};
 
@@ -16,18 +16,29 @@ pub mod nodes {
         }
     }
 
-    impl From<raw::Category> for Category {
-        fn from(raw_category: raw::Category) -> Category {
+    impl From<raw::parsing::nodes::Category> for Category {
+        fn from(raw_category: raw::parsing::nodes::Category) -> Category {
             match raw_category {
-                raw::Category::Meta { info, id } => Category::Meta {
+                raw::parsing::nodes::Category::Meta { info, id } => Category::Meta {
                     info: info.into(),
                     id,
                 },
-                raw::Category::Metric { unit, id } => Category::Metric {
+                raw::parsing::nodes::Category::Metric { unit, id } => Category::Metric {
                     unit: unit.into(),
                     id,
                 },
-                raw::Category::Ignored => Category::Ignored,
+                raw::parsing::nodes::Category::Ignored => Category::Ignored,
+            }
+        }
+    }
+
+    impl From<raw::parsing::generating::nodes::Category> for Category {
+        fn from(raw_category: raw::parsing::generating::nodes::Category) -> Category {
+            match raw_category {
+                raw::parsing::generating::nodes::Category::Meta { info, id } => Category::Meta {
+                    info: info.into(),
+                    id,
+                },
             }
         }
     }
@@ -45,11 +56,19 @@ pub mod nodes {
         }
     }
 
-    impl From<raw::MetaInfo> for MetaInfo {
-        fn from(raw_info: raw::MetaInfo) -> MetaInfo {
+    impl From<raw::parsing::nodes::MetaInfo> for MetaInfo {
+        fn from(raw_info: raw::parsing::nodes::MetaInfo) -> MetaInfo {
             match raw_info {
-                raw::MetaInfo::NodeId => MetaInfo::NodeId,
-                raw::MetaInfo::Level => MetaInfo::Level,
+                raw::parsing::nodes::MetaInfo::NodeId => MetaInfo::NodeId,
+                raw::parsing::nodes::MetaInfo::Level => MetaInfo::Level,
+            }
+        }
+    }
+
+    impl From<raw::parsing::generating::nodes::MetaInfo> for MetaInfo {
+        fn from(raw_info: raw::parsing::generating::nodes::MetaInfo) -> MetaInfo {
+            match raw_info {
+                raw::parsing::generating::nodes::MetaInfo::NodeIdx => MetaInfo::NodeIdx,
             }
         }
     }
@@ -67,18 +86,18 @@ pub mod nodes {
         }
     }
 
-    impl From<raw::UnitInfo> for UnitInfo {
-        fn from(raw_unit: raw::UnitInfo) -> UnitInfo {
+    impl From<raw::parsing::nodes::UnitInfo> for UnitInfo {
+        fn from(raw_unit: raw::parsing::nodes::UnitInfo) -> UnitInfo {
             match raw_unit {
-                raw::UnitInfo::Latitude => UnitInfo::Latitude,
-                raw::UnitInfo::Longitude => UnitInfo::Longitude,
+                raw::parsing::nodes::UnitInfo::Latitude => UnitInfo::Latitude,
+                raw::parsing::nodes::UnitInfo::Longitude => UnitInfo::Longitude,
             }
         }
     }
 }
 
 pub mod edges {
-    use crate::configs::{raw::parsing::edges as raw, SimpleId};
+    use crate::configs::{raw, SimpleId};
     use kissunits::{
         distance::{Kilometers, Meters},
         time::{Hours, Minutes, Seconds},
@@ -99,18 +118,29 @@ pub mod edges {
         }
     }
 
-    impl From<raw::Category> for Category {
-        fn from(raw_category: raw::Category) -> Category {
+    impl From<raw::parsing::edges::Category> for Category {
+        fn from(raw_category: raw::parsing::edges::Category) -> Category {
             match raw_category {
-                raw::Category::Meta { info, id } => Category::Meta {
+                raw::parsing::edges::Category::Meta { info, id } => Category::Meta {
                     info: info.into(),
                     id,
                 },
-                raw::Category::Metric { unit, id } => Category::Metric {
+                raw::parsing::edges::Category::Metric { unit, id } => Category::Metric {
                     unit: unit.into(),
                     id,
                 },
-                raw::Category::Ignored => Category::Ignored,
+                raw::parsing::edges::Category::Ignored => Category::Ignored,
+            }
+        }
+    }
+
+    impl From<raw::parsing::generating::edges::Category> for Category {
+        fn from(raw_category: raw::parsing::generating::edges::Category) -> Category {
+            match raw_category {
+                raw::parsing::generating::edges::Category::Meta { info, id } => Category::Meta {
+                    info: info.into(),
+                    id,
+                },
             }
         }
     }
@@ -121,8 +151,8 @@ pub mod edges {
         SrcIdx,
         DstId,
         DstIdx,
-        ShortcutEdgeIdx0,
-        ShortcutEdgeIdx1,
+        ShortcutIdx0,
+        ShortcutIdx1,
     }
 
     impl Display for MetaInfo {
@@ -131,13 +161,24 @@ pub mod edges {
         }
     }
 
-    impl From<raw::MetaInfo> for MetaInfo {
-        fn from(raw_info: raw::MetaInfo) -> MetaInfo {
+    impl From<raw::parsing::edges::MetaInfo> for MetaInfo {
+        fn from(raw_info: raw::parsing::edges::MetaInfo) -> MetaInfo {
             match raw_info {
-                raw::MetaInfo::SrcId => MetaInfo::SrcId,
-                raw::MetaInfo::DstId => MetaInfo::DstId,
-                raw::MetaInfo::ShortcutEdgeIdx0 => MetaInfo::ShortcutEdgeIdx0,
-                raw::MetaInfo::ShortcutEdgeIdx1 => MetaInfo::ShortcutEdgeIdx1,
+                raw::parsing::edges::MetaInfo::SrcId => MetaInfo::SrcId,
+                raw::parsing::edges::MetaInfo::DstId => MetaInfo::DstId,
+                raw::parsing::edges::MetaInfo::ShortcutEdgeIdx0 => MetaInfo::ShortcutIdx0,
+                raw::parsing::edges::MetaInfo::ShortcutEdgeIdx1 => MetaInfo::ShortcutIdx1,
+            }
+        }
+    }
+
+    impl From<raw::parsing::generating::edges::MetaInfo> for MetaInfo {
+        fn from(raw_info: raw::parsing::generating::edges::MetaInfo) -> MetaInfo {
+            match raw_info {
+                raw::parsing::generating::edges::MetaInfo::SrcIdx => MetaInfo::SrcIdx,
+                raw::parsing::generating::edges::MetaInfo::DstIdx => MetaInfo::DstIdx,
+                raw::parsing::generating::edges::MetaInfo::ShortcutIdx0 => MetaInfo::ShortcutIdx0,
+                raw::parsing::generating::edges::MetaInfo::ShortcutIdx1 => MetaInfo::ShortcutIdx1,
             }
         }
     }
@@ -160,17 +201,17 @@ pub mod edges {
         }
     }
 
-    impl From<raw::UnitInfo> for UnitInfo {
-        fn from(raw_unit: raw::UnitInfo) -> UnitInfo {
+    impl From<raw::parsing::edges::UnitInfo> for UnitInfo {
+        fn from(raw_unit: raw::parsing::edges::UnitInfo) -> UnitInfo {
             match raw_unit {
-                raw::UnitInfo::Meters => UnitInfo::Meters,
-                raw::UnitInfo::Kilometers => UnitInfo::Kilometers,
-                raw::UnitInfo::Seconds => UnitInfo::Seconds,
-                raw::UnitInfo::Minutes => UnitInfo::Minutes,
-                raw::UnitInfo::Hours => UnitInfo::Hours,
-                raw::UnitInfo::KilometersPerHour => UnitInfo::KilometersPerHour,
-                raw::UnitInfo::LaneCount => UnitInfo::LaneCount,
-                raw::UnitInfo::F64 => UnitInfo::F64,
+                raw::parsing::edges::UnitInfo::Meters => UnitInfo::Meters,
+                raw::parsing::edges::UnitInfo::Kilometers => UnitInfo::Kilometers,
+                raw::parsing::edges::UnitInfo::Seconds => UnitInfo::Seconds,
+                raw::parsing::edges::UnitInfo::Minutes => UnitInfo::Minutes,
+                raw::parsing::edges::UnitInfo::Hours => UnitInfo::Hours,
+                raw::parsing::edges::UnitInfo::KilometersPerHour => UnitInfo::KilometersPerHour,
+                raw::parsing::edges::UnitInfo::LaneCount => UnitInfo::LaneCount,
+                raw::parsing::edges::UnitInfo::F64 => UnitInfo::F64,
             }
         }
     }

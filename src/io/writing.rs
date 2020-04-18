@@ -74,8 +74,32 @@ pub mod fmi {
                 writeln!(writer, "# edge-metric-count")?;
                 writeln!(writer, "# node-count")?;
                 writeln!(writer, "# edge-count")?;
-                writeln!(writer, "# nodes: {:?}", writer_cfg.nodes.ids)?;
-                writeln!(writer, "# edges: {:?}", writer_cfg.edges.ids)?;
+                writeln!(
+                    writer,
+                    "# nodes: {:?}",
+                    writer_cfg
+                        .nodes
+                        .ids
+                        .iter()
+                        .map(|id| match id {
+                            Some(id) => format!("{}", id.0),
+                            None => format!("{}", defaults::writer::IGNORE_STR),
+                        })
+                        .collect::<Vec<_>>()
+                )?;
+                writeln!(
+                    writer,
+                    "# edges: {:?}",
+                    writer_cfg
+                        .edges
+                        .ids
+                        .iter()
+                        .map(|id| match id {
+                            Some(id) => format!("{}", id.0),
+                            None => format!("{}", defaults::writer::IGNORE_STR),
+                        })
+                        .collect::<Vec<_>>()
+                )?;
 
                 writeln!(writer, "")?;
 
@@ -85,7 +109,8 @@ pub mod fmi {
                     .edges
                     .ids
                     .iter()
-                    .filter(|id| id.is_some())
+                    .filter_map(|id| id.as_ref())
+                    .filter(|id| graph.cfg().edges.metrics.ids.contains(id))
                     .count();
                 let node_count = nodes.count();
                 let edge_count = fwd_edges.count();
@@ -243,7 +268,7 @@ pub mod fmi {
                                                 let dst_idx = fwd_edges.dst_idx(edge_idx);
                                                 write!(writer, "{}", dst_idx)?;
                                             }
-                                            edges::MetaInfo::ShortcutEdgeIdx0 => {
+                                            edges::MetaInfo::ShortcutIdx0 => {
                                                 match fwd_edges.sc_edges(edge_idx) {
                                                     Some(sc_edges) => {
                                                         write!(writer, "{}", sc_edges[0])?
@@ -255,7 +280,7 @@ pub mod fmi {
                                                     )?,
                                                 }
                                             }
-                                            edges::MetaInfo::ShortcutEdgeIdx1 => {
+                                            edges::MetaInfo::ShortcutIdx1 => {
                                                 match fwd_edges.sc_edges(edge_idx) {
                                                     Some(sc_edges) => {
                                                         write!(writer, "{}", sc_edges[1])?

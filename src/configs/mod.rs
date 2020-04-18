@@ -100,6 +100,7 @@ pub mod parsing {
         pub vehicles: vehicles::Config,
         pub nodes: nodes::Config,
         pub edges: edges::Config,
+        pub generating: Option<generating::Config>,
     }
 
     impl From<raw::Config> for Config {
@@ -109,6 +110,10 @@ pub mod parsing {
                 vehicles: raw_cfg.vehicles.into(),
                 nodes: raw_cfg.nodes.into(),
                 edges: raw_cfg.edges.into(),
+                generating: match raw_cfg.generating {
+                    Some(generating_cfg) => Some(generating_cfg.into()),
+                    None => None,
+                },
             }
         }
     }
@@ -253,6 +258,61 @@ pub mod parsing {
             }
         }
     }
+
+    pub mod generating {
+        use crate::configs::raw::parsing::generating as raw;
+        use serde::Deserialize;
+
+        #[derive(Debug, Deserialize)]
+        #[serde(rename_all = "kebab-case")]
+        pub struct Config {
+            pub nodes: nodes::Config,
+            pub edges: edges::Config,
+        }
+
+        impl From<raw::Config> for Config {
+            fn from(raw_cfg: raw::Config) -> Config {
+                Config {
+                    nodes: nodes::Config {
+                        categories: raw_cfg
+                            .nodes
+                            .0
+                            .into_iter()
+                            .map(|raw_category| raw_category.into())
+                            .collect(),
+                    },
+                    edges: edges::Config {
+                        categories: raw_cfg
+                            .edges
+                            .0
+                            .into_iter()
+                            .map(|raw_category| raw_category.into())
+                            .collect(),
+                    },
+                }
+            }
+        }
+
+        pub mod nodes {
+            use crate::configs::categories::nodes;
+            use serde::Deserialize;
+
+            #[derive(Debug, Deserialize)]
+            pub struct Config {
+                pub categories: Vec<nodes::Category>,
+            }
+        }
+
+        pub mod edges {
+            use crate::configs::categories::edges;
+            use serde::Deserialize;
+
+            #[derive(Debug, Deserialize)]
+            pub struct Config {
+                pub categories: Vec<edges::Category>,
+            }
+        }
+    }
 }
 
 pub mod writing {
@@ -288,7 +348,7 @@ pub mod writing {
             fn from(raw_cfg: raw::Config) -> Config {
                 Config {
                     ids: raw_cfg
-                        .categories
+                        .0
                         .into_iter()
                         .map(|category| match category {
                             raw::Category::Id(id) => Some(id),
@@ -312,7 +372,7 @@ pub mod writing {
             fn from(raw_cfg: raw::Config) -> Config {
                 Config {
                     ids: raw_cfg
-                        .categories
+                        .0
                         .into_iter()
                         .map(|category| match category {
                             raw::Category::Id(id) => Some(id),

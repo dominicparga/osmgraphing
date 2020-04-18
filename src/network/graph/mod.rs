@@ -147,6 +147,10 @@ impl Display for Graph {
 
         writeln!(f, "")?;
 
+        writeln!(f, "Config: {:?}", self.cfg)?;
+
+        writeln!(f, "")?;
+
         let n = 20;
         let m = 20;
 

@@ -196,7 +196,7 @@ impl ProtoShortcut {
                             ));
                         }
                     }
-                    edges::MetaInfo::ShortcutEdgeIdx0 => {
+                    edges::MetaInfo::ShortcutIdx0 => {
                         if param != defaults::parser::NO_SHORTCUT_IDX {
                             let sc_edge_idx = {
                                 param.parse::<usize>().ok().ok_or(format!(
@@ -215,7 +215,7 @@ impl ProtoShortcut {
                             }
                         }
                     }
-                    edges::MetaInfo::ShortcutEdgeIdx1 => {
+                    edges::MetaInfo::ShortcutIdx1 => {
                         if param != defaults::parser::NO_SHORTCUT_IDX {
                             let sc_edge_idx = {
                                 param.parse::<usize>().ok().ok_or(format!(
