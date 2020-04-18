@@ -2,7 +2,10 @@ pub mod fmi;
 pub mod pbf;
 
 use crate::{
-    configs::parser::{self, EdgeCategory, NodeCategory},
+    configs::{
+        categories::{edges, nodes},
+        parsing,
+    },
     defaults::capacity,
     io::{MapFileExt, SupportingFileExts, SupportingMapFileExts},
     network::{EdgeBuilder, Graph, GraphBuilder, NodeBuilder},
@@ -44,14 +47,14 @@ use std::path::Path;
 pub struct Parser;
 
 impl Parser {
-    pub fn parse(cfg: parser::Config) -> Result<GraphBuilder, String> {
+    pub fn parse(cfg: parsing::Config) -> Result<GraphBuilder, String> {
         match Parser::from_path(&cfg.map_file)? {
             MapFileExt::PBF => pbf::Parser::new().parse(cfg),
             MapFileExt::FMI => fmi::Parser::new().parse(cfg),
         }
     }
 
-    pub fn parse_and_finalize(cfg: parser::Config) -> Result<Graph, String> {
+    pub fn parse_and_finalize(cfg: parsing::Config) -> Result<Graph, String> {
         match Parser::from_path(&cfg.map_file)? {
             MapFileExt::PBF => pbf::Parser::new().parse_and_finalize(cfg),
             MapFileExt::FMI => fmi::Parser::new().parse_and_finalize(cfg),
@@ -67,11 +70,11 @@ impl SupportingFileExts for Parser {
 }
 
 trait Parsing {
-    fn preprocess(&mut self, cfg: &parser::Config) -> Result<(), String> {
-        check_parser_config(cfg)
+    fn preprocess(&mut self, cfg: &parsing::Config) -> Result<(), String> {
+        check_config(cfg)
     }
 
-    fn parse(&mut self, cfg: parser::Config) -> Result<GraphBuilder, String> {
+    fn parse(&mut self, cfg: parsing::Config) -> Result<GraphBuilder, String> {
         let mut builder = GraphBuilder::new(cfg);
 
         info!("START Process given file");
@@ -89,7 +92,7 @@ trait Parsing {
 
     fn parse_nodes(&self, builder: &mut NodeBuilder) -> Result<(), String>;
 
-    fn parse_and_finalize(&mut self, cfg: parser::Config) -> Result<Graph, String> {
+    fn parse_and_finalize(&mut self, cfg: parsing::Config) -> Result<Graph, String> {
         let path = Path::new(&cfg.map_file);
         info!("START Parse from given path {}", path.display());
 
@@ -102,26 +105,34 @@ trait Parsing {
     }
 }
 
-fn check_parser_config(cfg: &parser::Config) -> Result<(), String> {
-    // check if yaml-config is correct
+/// check if yaml-config is correct
+fn check_config(cfg: &parsing::Config) -> Result<(), String> {
+    // check nodes
 
-    // check nodes' meta-info
-
-    if !cfg.nodes.categories().contains(&NodeCategory::NodeId) {
+    // is NodeId in config?
+    if !cfg.nodes.categories.iter().any(|category| match category {
+        nodes::Category::Meta { info, id: _ } => info == &nodes::MetaInfo::NodeId,
+        nodes::Category::Metric { unit: _, id: _ } | nodes::Category::Ignored => false,
+    }) {
         return Err(String::from(
             "The provided config-file doesn't contain a NodeId, but needs to.",
         ));
     }
 
     // check nodes' coordinates
-
-    if !cfg.nodes.categories().contains(&NodeCategory::Latitude) {
+    if !cfg.nodes.categories.iter().any(|category| match category {
+        nodes::Category::Metric { unit, id: _ } => unit == &nodes::UnitInfo::Latitude,
+        nodes::Category::Meta { info: _, id: _ } | nodes::Category::Ignored => false,
+    }) {
         return Err(String::from(
             "The provided config-file doesn't contain a latitude, but needs to.",
         ));
     }
 
-    if !cfg.nodes.categories().contains(&NodeCategory::Longitude) {
+    if !cfg.nodes.categories.iter().any(|category| match category {
+        nodes::Category::Metric { unit, id: _ } => unit == &nodes::UnitInfo::Longitude,
+        nodes::Category::Meta { info: _, id: _ } | nodes::Category::Ignored => false,
+    }) {
         return Err(String::from(
             "The provided config-file doesn't contain a longitude, but needs to.",
         ));
@@ -129,19 +140,19 @@ fn check_parser_config(cfg: &parser::Config) -> Result<(), String> {
 
     // check edges' metric-memory-capacity
 
-    if cfg.edges.metrics.dim() > capacity::SMALL_VEC_INLINE_SIZE {
+    if cfg.edges.metrics.units.len() > capacity::SMALL_VEC_INLINE_SIZE {
         return Err(format!(
             "The provided config-file has more metrics for the graph ({}) \
              than the parser has been compiled to ({}).",
-            cfg.edges.metrics.dim(),
+            cfg.edges.metrics.units.len(),
             capacity::SMALL_VEC_INLINE_SIZE
         ));
-    } else if cfg.edges.metrics.dim() < capacity::SMALL_VEC_INLINE_SIZE {
+    } else if cfg.edges.metrics.units.len() < capacity::SMALL_VEC_INLINE_SIZE {
         warn!(
             "The provided config-file has less metrics for the graph ({}) \
              than the parser has been compiled to ({}). \
              Compiling accordingly saves memory.",
-            cfg.edges.metrics.dim(),
+            cfg.edges.metrics.units.len(),
             capacity::SMALL_VEC_INLINE_SIZE
         );
     }
@@ -152,12 +163,21 @@ fn check_parser_config(cfg: &parser::Config) -> Result<(), String> {
         .edges
         .categories
         .iter()
-        .filter(|&category| category == &EdgeCategory::ShortcutEdgeIdx)
+        .filter(|category| match category {
+            edges::Category::Meta { info, id: _ } => match info {
+                edges::MetaInfo::ShortcutEdgeIdx0 | edges::MetaInfo::ShortcutEdgeIdx1 => true,
+                edges::MetaInfo::SrcId
+                | edges::MetaInfo::SrcIdx
+                | edges::MetaInfo::DstId
+                | edges::MetaInfo::DstIdx => false,
+            },
+            edges::Category::Metric { unit: _, id: _ } | edges::Category::Ignored => false,
+        })
         .count();
     if count > 0 && count != 2 {
         return Err(format!(
-            "The config-file has a different number than 0 or 2 of edge-category '{}'",
-            EdgeCategory::ShortcutEdgeIdx
+            "The config-file has {} shortcut-indices, but should have 0 or 2.",
+            count
         ));
     }
 

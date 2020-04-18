@@ -2,6 +2,7 @@ use crate::{helpers, io::SupportingFileExts};
 use serde::Deserialize;
 use std::{fmt, fmt::Display, path::Path};
 
+pub mod categories;
 mod raw;
 
 /// Storing (default) settings for parsing the graph.
@@ -39,8 +40,8 @@ mod raw;
 #[derive(Debug, Deserialize)]
 #[serde(from = "raw::Config")]
 pub struct Config {
-    pub parser: parser::Config,
-    pub generator: Option<generator::Config>,
+    pub parsing: parsing::Config,
+    pub writing: Option<writing::Config>,
     pub routing: Option<routing::Config>,
 }
 
@@ -63,9 +64,34 @@ impl Config {
     }
 }
 
-pub mod parser {
-    pub use edges::Category as EdgeCategory;
-    pub use nodes::Category as NodeCategory;
+impl From<raw::Config> for Config {
+    fn from(raw_cfg: raw::Config) -> Config {
+        // build sub-cfgs
+
+        let parsing_cfg = parsing::Config::from(raw_cfg.parsing);
+
+        let writing_cfg = match raw_cfg.writing {
+            Some(raw_writing_cfg) => Some(writing::Config::from(raw_writing_cfg)),
+            None => None,
+        };
+
+        let routing_cfg = match raw_cfg.routing {
+            Some(raw_routing_cfg) => Some(routing::Config::from_raw(raw_routing_cfg, &parsing_cfg)),
+            None => None,
+        };
+
+        // finish cfg
+
+        Config {
+            parsing: parsing_cfg,
+            writing: writing_cfg,
+            routing: routing_cfg,
+        }
+    }
+}
+
+pub mod parsing {
+    use crate::configs::raw::parsing as raw;
     use std::path::PathBuf;
 
     #[derive(Debug)]
@@ -76,231 +102,234 @@ pub mod parser {
         pub edges: edges::Config,
     }
 
+    impl From<raw::Config> for Config {
+        fn from(raw_cfg: raw::Config) -> Config {
+            Config {
+                map_file: raw_cfg.map_file,
+                vehicles: raw_cfg.vehicles.into(),
+                nodes: raw_cfg.nodes.into(),
+                edges: raw_cfg.edges.into(),
+            }
+        }
+    }
+
     pub mod vehicles {
-        use crate::network::VehicleCategory;
+        use crate::configs::raw::parsing::vehicles as raw;
+        use crate::network::vehicles::Category as VehicleCategory;
 
         #[derive(Debug)]
         pub struct Config {
             pub category: VehicleCategory,
             pub are_drivers_picky: bool,
         }
+
+        impl From<raw::Config> for Config {
+            fn from(raw_cfg: raw::Config) -> Self {
+                Config {
+                    category: raw_cfg.category,
+                    are_drivers_picky: raw_cfg.are_drivers_picky,
+                }
+            }
+        }
     }
 
     pub mod nodes {
-        use serde::Deserialize;
-
-        #[derive(Copy, Clone, Debug, Deserialize, Eq, PartialEq)]
-        pub enum Category {
-            NodeId,
-            Latitude,
-            Longitude,
-            Level,
-            Ignore,
-        }
+        use crate::configs::{categories::nodes, raw::parsing::nodes as raw};
 
         #[derive(Debug)]
         pub struct Config {
-            categories: Vec<Category>,
+            pub categories: Vec<nodes::Category>,
         }
 
-        impl Config {
-            pub fn new(categories: Vec<Category>) -> Config {
-                Config { categories }
-            }
+        impl From<raw::Config> for Config {
+            fn from(raw_cfg: raw::Config) -> Config {
+                let mut categories: Vec<nodes::Category> = Vec::new();
 
-            pub fn categories(&self) -> &Vec<Category> {
-                &self.categories
+                for category in raw_cfg.0.into_iter() {
+                    categories.push(category.into());
+                }
+
+                Config { categories }
             }
         }
     }
 
     pub mod edges {
-        use crate::{configs::SimpleId, defaults::capacity::DimVec};
-        use serde::Deserialize;
-        use smallvec::smallvec;
-        use std::fmt::{self, Display};
-
-        pub mod metrics {
-            use crate::{configs::SimpleId, defaults::capacity::DimVec};
-            use serde::Deserialize;
-
-            #[derive(Debug)]
-            pub struct Config {
-                pub categories: DimVec<super::Category>, // TODO replace by Unit
-                pub ids: DimVec<SimpleId>,
-                // metric_categories: DimVec<Category>,
-                // are_metrics_provided: DimVec<bool>,
-                // metric_ids: DimVec<SimpleId>,
-                // metric_indices: BTreeMap<SimpleId, MetricIdx>,
-                // calc_rules: DimVec<DimVec<(Category, MetricIdx)>>,
-            }
-
-            #[derive(Copy, Clone, Debug, Deserialize, Eq, PartialEq)]
-            pub enum Unit {
-                Meters,
-                Kilometers,
-                Seconds,
-                Minutes,
-                Hours,
-                KilometersPerHour,
-                LaneCount,
-                F64,
-            }
-
-            impl Config {
-                pub fn dim(&self) -> usize {
-                    self.categories.len()
-                }
-            }
-        }
+        use crate::{
+            configs::{categories::edges, raw::parsing::edges as raw},
+            defaults::capacity::DimVec,
+        };
 
         #[derive(Debug)]
         pub struct Config {
             // store all for order
-            pub categories: Vec<Category>,
-            pub ids: Vec<SimpleId>,
+            pub categories: Vec<edges::Category>,
 
             // store only metrics for quick access
             pub metrics: metrics::Config,
         }
 
-        impl Config {
-            pub fn new(
-                categories: Vec<Category>,
-                ids: Vec<SimpleId>,
-                metrics: metrics::Config,
-            ) -> Config {
+        pub mod metrics {
+            use crate::{
+                configs::{categories::edges, SimpleId},
+                defaults::capacity::DimVec,
+            };
+
+            #[derive(Debug)]
+            pub struct Config {
+                pub units: DimVec<edges::UnitInfo>,
+                pub ids: DimVec<SimpleId>,
+                // are_metrics_provided: DimVec<bool>,
+                // calc_rules: DimVec<DimVec<(Category, MetricIdx)>>,
+            }
+        }
+
+        impl From<raw::Config> for Config {
+            fn from(raw_cfg: raw::Config) -> Config {
+                // init datastructures
+
+                let mut categories = Vec::with_capacity(raw_cfg.0.len());
+                let mut metric_units = DimVec::new();
+                let mut metric_ids = DimVec::new();
+
+                // check if any id is duplicate
+
+                for i in 0..raw_cfg.0.len() {
+                    // get i-th id
+
+                    let id_i = {
+                        match &raw_cfg.0[i] {
+                            raw::Category::Ignored => continue,
+                            raw::Category::Meta { info: _, id: id_i }
+                            | raw::Category::Metric { unit: _, id: id_i } => id_i,
+                        }
+                    };
+
+                    for j in (i + 1)..raw_cfg.0.len() {
+                        // get j-th id
+
+                        let id_j = {
+                            match &raw_cfg.0[j] {
+                                raw::Category::Ignored => continue,
+                                raw::Category::Meta { info: _, id: id_j }
+                                | raw::Category::Metric { unit: _, id: id_j } => id_j,
+                            }
+                        };
+
+                        // compare both ids
+
+                        if id_i == id_j {
+                            panic!("Config has duplicate id: {}", id_i);
+                        }
+                    }
+                }
+
+                // Fill categories, ids and create mapping: id -> idx
+
+                for category in raw_cfg.0.into_iter() {
+                    // add category
+
+                    match &category {
+                        // add metrics separatedly
+                        // for better access-performance through metric-indices
+                        raw::Category::Metric { unit, id } => {
+                            categories.push(category.clone().into());
+                            metric_units.push(unit.clone().into());
+                            metric_ids.push(id.clone());
+                        }
+                        raw::Category::Meta { info: _, id: _ } | raw::Category::Ignored => {
+                            categories.push(category.clone().into())
+                        }
+                    }
+                }
+
                 Config {
                     categories,
-                    ids,
-                    metrics,
-                }
-            }
-        }
-
-        /// Types of metrics to consider when parsing a map.
-        ///
-        /// - `SrcId`/`DstId`, which is not a metric per se and stored differently, but needed for `csv`-like `fmi`-format.
-        /// - `Ignore - SrcIdx`/`Ignore - DstIdx`, which are needed to be defined here for using their id in a generator afterwards.
-        /// - `Meters` provided in meters, but internally stored as kilometers
-        /// - `KilometersPerHour` in km/h
-        /// - `Seconds`
-        /// - `LaneCount`
-        /// - `F64`, which is just the plain f64-value
-        /// - `Ignore`, which is used in `csv`-like `fmi`-maps to jump over columns
-        #[derive(Copy, Clone, Debug, Deserialize, Eq, PartialEq)]
-        pub enum Category {
-            Meters,
-            KilometersPerHour,
-            Seconds,
-            LaneCount,
-            F64,
-            SrcId,
-            DstId,
-            ShortcutEdgeIdx,
-            Ignore,
-        }
-
-        impl Display for Category {
-            fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-                fmt::Debug::fmt(self, f)
-            }
-        }
-
-        impl Category {
-            pub fn must_be_positive(&self) -> bool {
-                match self {
-                    Category::Meters
-                    | Category::KilometersPerHour
-                    | Category::Seconds
-                    | Category::LaneCount => true,
-                    Category::F64
-                    | Category::ShortcutEdgeIdx
-                    | Category::SrcId
-                    | Category::DstId
-                    | Category::Ignore => false,
-                }
-            }
-
-            pub fn is_metric(&self) -> bool {
-                match self {
-                    Category::SrcId
-                    | Category::DstId
-                    | Category::ShortcutEdgeIdx
-                    | Category::Ignore => false,
-                    Category::Meters
-                    | Category::KilometersPerHour
-                    | Category::Seconds
-                    | Category::LaneCount
-                    | Category::F64 => true,
-                }
-            }
-
-            pub fn expected_calc_rules(&self) -> DimVec<Category> {
-                match self {
-                    Category::KilometersPerHour => smallvec![Category::Meters, Category::Seconds],
-                    Category::Seconds => smallvec![Category::Meters, Category::KilometersPerHour],
-                    Category::Meters
-                    | Category::LaneCount
-                    | Category::F64
-                    | Category::ShortcutEdgeIdx
-                    | Category::SrcId
-                    | Category::DstId
-                    | Category::Ignore => smallvec![],
+                    metrics: metrics::Config {
+                        units: metric_units,
+                        ids: metric_ids,
+                    },
                 }
             }
         }
     }
 }
 
-pub mod generator {
-    use super::SimpleId;
-    pub use edges::Category as EdgeCategory;
-    pub use nodes::Category as NodeCategory;
+pub mod writing {
+    use crate::configs::raw::writing as raw;
     use std::path::PathBuf;
-
-    pub mod nodes {
-        use serde::Deserialize;
-
-        #[derive(Copy, Clone, Debug, Deserialize, Eq, PartialEq)]
-        pub enum Category {
-            NodeId,
-            NodeIdx,
-            Latitude,
-            Longitude,
-            Level,
-            Ignore,
-        }
-    }
-
-    pub mod edges {
-        use serde::Deserialize;
-
-        #[derive(Copy, Clone, Debug, Deserialize, Eq, PartialEq)]
-        pub enum Category {
-            Meters,
-            KilometersPerHour,
-            Seconds,
-            LaneCount,
-            F64,
-            SrcId,
-            SrcIdx,
-            DstId,
-            DstIdx,
-            Ignore,
-        }
-    }
 
     #[derive(Debug)]
     pub struct Config {
         pub map_file: PathBuf,
-        pub nodes: Vec<NodeCategory>,
-        pub edges: Vec<SimpleId>,
+        pub nodes: nodes::Config,
+        pub edges: edges::Config,
+    }
+
+    impl From<raw::Config> for Config {
+        fn from(raw_cfg: raw::Config) -> Config {
+            Config {
+                map_file: raw_cfg.map_file,
+                nodes: nodes::Config::from(raw_cfg.nodes),
+                edges: edges::Config::from(raw_cfg.edges),
+            }
+        }
+    }
+
+    pub mod nodes {
+        use crate::configs::{raw::writing::nodes as raw, SimpleId};
+
+        #[derive(Debug)]
+        pub struct Config {
+            pub ids: Vec<Option<SimpleId>>,
+        }
+
+        impl From<raw::Config> for Config {
+            fn from(raw_cfg: raw::Config) -> Config {
+                Config {
+                    ids: raw_cfg
+                        .categories
+                        .into_iter()
+                        .map(|category| match category {
+                            raw::Category::Id(id) => Some(id),
+                            raw::Category::Ignored => None,
+                        })
+                        .collect(),
+                }
+            }
+        }
+    }
+
+    pub mod edges {
+        use crate::configs::{raw::writing::edges as raw, SimpleId};
+
+        #[derive(Debug)]
+        pub struct Config {
+            pub ids: Vec<Option<SimpleId>>,
+        }
+
+        impl From<raw::Config> for Config {
+            fn from(raw_cfg: raw::Config) -> Config {
+                Config {
+                    ids: raw_cfg
+                        .categories
+                        .into_iter()
+                        .map(|category| match category {
+                            raw::Category::Id(id) => Some(id),
+                            raw::Category::Ignored => None,
+                        })
+                        .collect(),
+                }
+            }
+        }
     }
 }
 
 pub mod routing {
-    use crate::defaults::{self, capacity::DimVec};
+    use crate::{
+        configs::{parsing, raw::routing as raw},
+        defaults::{self, capacity::DimVec},
+    };
     use smallvec::smallvec;
 
     #[derive(Clone, Debug)]
@@ -310,24 +339,18 @@ pub mod routing {
     }
 
     impl Config {
-        pub fn from_str(
-            yaml_str: &str,
-            cfg_graph: &super::parser::Config,
-        ) -> Result<Config, String> {
-            let raw_cfg = super::raw::routing::Config::from_str(yaml_str)?;
-            Ok(Config::from_raw(raw_cfg, cfg_graph))
+        pub fn from_str(yaml_str: &str, parsing_cfg: &parsing::Config) -> Result<Config, String> {
+            let raw_cfg = raw::Config::from_str(yaml_str)?;
+            Ok(Config::from_raw(raw_cfg, parsing_cfg))
         }
 
-        pub fn from_raw(
-            raw_cfg: super::raw::routing::Config,
-            parser_cfg: &super::parser::Config,
-        ) -> Config {
-            let mut alphas = smallvec![0.0; parser_cfg.edges.metrics.dim()];
+        pub fn from_raw(raw_cfg: raw::Config, parsing_cfg: &parsing::Config) -> Config {
+            let mut alphas = smallvec![0.0; parsing_cfg.edges.metrics.units.len()];
 
             for entry in raw_cfg.metrics.into_iter() {
                 let alpha = entry.alpha.unwrap_or(defaults::routing::ALPHA);
 
-                if let Some(metric_idx) = parser_cfg
+                if let Some(metric_idx) = parsing_cfg
                     .edges
                     .metrics
                     .ids

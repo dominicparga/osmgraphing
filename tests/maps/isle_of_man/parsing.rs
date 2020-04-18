@@ -28,7 +28,7 @@ fn yaml_str() {
 #[test]
 fn pbf_graph() {
     let cfg = Config::from_yaml(PBF_CONFIG).unwrap();
-    let graph = parse(cfg.parser);
+    let graph = parse(cfg.parsing);
 
     let nodes = graph.nodes();
     let expected = 52_803;
@@ -53,7 +53,7 @@ fn pbf_graph() {
 #[test]
 fn fmi_graph() {
     let cfg = Config::from_yaml(defaults::paths::resources::configs::ISLE_OF_MAN_FMI).unwrap();
-    let graph = parse(cfg.parser);
+    let graph = parse(cfg.parsing);
 
     let nodes = graph.nodes();
     let expected = 52_803;
@@ -78,7 +78,7 @@ fn fmi_graph() {
 #[test]
 fn ch_fmi_graph() {
     let cfg = Config::from_yaml(defaults::paths::resources::configs::ISLE_OF_MAN_CH_FMI).unwrap();
-    let graph = parse(cfg.parser);
+    let graph = parse(cfg.parsing);
 
     let nodes = graph.nodes();
     let expected = 52_803;

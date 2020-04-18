@@ -39,7 +39,7 @@ pub mod defaults {
 mod components;
 pub use components::{TestEdge, TestNode, TestPath};
 
-pub fn parse(cfg: configs::parser::Config) -> Graph {
+pub fn parse(cfg: configs::parsing::Config) -> Graph {
     let map_file = cfg.map_file.clone();
     match Parser::parse_and_finalize(cfg) {
         Ok(graph) => graph,
@@ -56,7 +56,7 @@ pub fn test_dijkstra(
     is_ch_dijkstra: bool,
     expected_paths: Box<
         dyn Fn(
-            &configs::parser::Config,
+            &configs::parsing::Config,
         ) -> Vec<(
             TestNode,
             TestNode,
@@ -72,12 +72,12 @@ pub fn test_dijkstra(
             metric_id,
             if is_ch_dijkstra { "true" } else { "false" }
         ),
-        &cfg.parser,
+        &cfg.parsing,
     )
     .ok();
 
     let mut dijkstra = routing::Dijkstra::new();
-    let expected_paths = expected_paths(&cfg.parser);
+    let expected_paths = expected_paths(&cfg.parsing);
 
     assert_path(&mut dijkstra, expected_paths, cfg);
 }
@@ -88,7 +88,7 @@ pub fn compare_dijkstras(ch_fmi_config_file: &str, metric_id: &str) {
     let mut cfg = Config::from_yaml(ch_fmi_config_file).unwrap();
     cfg.routing = configs::routing::Config::from_str(
         &format!("routing: {{ metrics: [{{ id: '{}' }}] }}", metric_id),
-        &cfg.parser,
+        &cfg.parsing,
     )
     .ok();
     let mut cfg_routing = cfg.routing.unwrap();
@@ -97,7 +97,7 @@ pub fn compare_dijkstras(ch_fmi_config_file: &str, metric_id: &str) {
     cfg_routing_ch.is_ch_dijkstra = true;
 
     // parse graph and init dijkstra
-    let graph = Parser::parse_and_finalize(cfg.parser).unwrap();
+    let graph = Parser::parse_and_finalize(cfg.parsing).unwrap();
 
     let nodes = graph.nodes();
     let mut dijkstra = routing::Dijkstra::new();
@@ -271,7 +271,7 @@ pub fn assert_path(
     )>,
     cfg: Config,
 ) {
-    let graph = parse(cfg.parser);
+    let graph = parse(cfg.parsing);
     for (src, dst, metric_indices, option_specs) in expected_paths {
         let option_path = dijkstra.compute_best_path(
             src.idx,

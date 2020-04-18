@@ -1,6 +1,6 @@
 use super::{EdgeIdx, Graph, NodeIdx};
 use crate::{
-    configs::parser::Config,
+    configs::parsing::Config,
     defaults::capacity::{self, DimVec},
     helpers::{ApproxEq, MemSize},
 };
@@ -52,7 +52,6 @@ impl Graph {
     /// The provided edge is interpreted as forward-edge.
     fn add_metrics(&mut self, proto_edge: &mut ProtoEdgeB) -> Result<(), String> {
         let cfg = &self.cfg;
-        let dim = cfg.edges.metrics.dim();
 
         for (metric_idx, raw_value) in proto_edge.metrics.iter_mut().enumerate() {
             if raw_value.approx_eq(&0.0) {
@@ -524,7 +523,7 @@ impl GraphBuilder {
         // If metrics are built before indices and offsets are built, the need of memory while
         // building is reduced.
 
-        info!("START Create/store/filter metrics.");
+        info!("START Store metrics.");
         let mut new_sc_edges = Vec::with_capacity(sc_count);
         let mut proto_edges = {
             let mut new_proto_edges = vec![];
@@ -742,6 +741,63 @@ impl GraphBuilder {
             // reduce and optimize memory-usage
             graph.shrink_to_fit();
         }
+
+        //----------------------------------------------------------------------------------------//
+        // generate new metrics
+
+        info!("START Create and convert metrics.");
+        // if let Some(generator_cfg) = self.cfg.generator {
+        //     // nodes
+
+        //     for category in generator_cfg.nodes.categories {
+        //         match category {
+        //             nodes::Category::Meta(info) => match info {
+        //                 nodes::MetaInfo::NodeIdx => {
+        //                     self.cfg.nodes.push(category);
+        //                 }
+        //                 nodes::MetaInfo::NodeId | nodes::MetaInfo::Level => {
+        //                     return Err(format!(
+        //                         "Node-meta-info {} cannot be created and has to be provided.",
+        //                         info
+        //                     ))
+        //                 }
+        //             },
+        //             nodes::Category::Metric(unit) => match unit {
+        //                 nodes::UnitInfo::Latitude
+        //                 | nodes::UnitInfo::Longitude
+        //                 | nodes::UnitInfo::Height => {
+        //                     return Err(format!(
+        //                         "Node-metric {} can't be created and has to be provided.",
+        //                         unit
+        //                     ))
+        //                 }
+        //             },
+        //             nodes::Category::Ignore(_) | nodes::Category::Ignored => (),
+        //         }
+        //     }
+
+        //     // edges
+        //     // TODO
+
+        //     for (id, category) in generator_cfg
+        //         .edges
+        //         .ids
+        //         .iter()
+        //         .zip(generator_cfg.edges.categories)
+        //     {
+        //         match category {
+        //             edges::Category::Meta(info) => match info {
+        //                 edges::MetaInfo::SrcIdx | edges::MetaInfo::DstIdx => {
+        //                     self.cfg.edges.push(id.clone(), category)?;
+        //                 }
+        //             },
+        //             edges::Category::Metric(_) => (),
+        //             edges::Category::Convert { from: _, to: _ } => (),
+        //             edges::Category::Ignore(_) => (),
+        //             edges::Category::Ignored => (),
+        //         }
+        //     }
+        // }
 
         info!("FINISHED Finalizing graph has finished.");
         Ok(graph)

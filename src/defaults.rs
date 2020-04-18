@@ -32,8 +32,9 @@ pub mod parser {
     pub const NO_SHORTCUT_IDX: &str = "-1";
 }
 
-pub mod generator {
+pub mod writer {
     pub use super::parser::NO_SHORTCUT_IDX;
+    pub const IGNORE_STR: &str = "_";
 }
 
 pub mod routing {
@@ -43,7 +44,7 @@ pub mod routing {
 pub mod network {
     use crate::{
         defaults,
-        network::{StreetCategory, VehicleCategory},
+        network::{vehicles::Category as VehicleCategory, StreetCategory},
     };
     use kissunits::speed::KilometersPerHour;
     use log::warn;

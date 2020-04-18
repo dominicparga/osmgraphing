@@ -2,7 +2,7 @@ use log::{error, info};
 use osmgraphing::{
     configs::Config,
     helpers,
-    io::{Generator, Parser, SupportingFileExts},
+    io::{Parser, SupportingFileExts, Writer},
 };
 use std::{path::PathBuf, time::Instant};
 
@@ -36,22 +36,22 @@ fn main() {
     };
 
     // check if config is correct
-    let cfg_generator = match cfg.generator {
-        Some(cfg_generator) => cfg_generator,
+    let writing_cfg = match cfg.writing {
+        Some(writing_cfg) => writing_cfg,
         None => {
             error!("No generator specified.");
             return;
         }
     };
     // Parser checks when parsing, but here is nicer for user
-    match Parser::find_supported_ext(&cfg.parser.map_file) {
+    match Parser::find_supported_ext(&cfg.parsing.map_file) {
         Ok(_) => (),
         Err(msg) => {
             error!("Wrong parser-map-file: {}", msg);
             return;
         }
     };
-    match Generator::find_supported_ext(&cfg_generator.map_file) {
+    match Writer::find_supported_ext(&writing_cfg.map_file) {
         Ok(_) => (),
         Err(msg) => {
             error!("Wrong generator-map-file: {}", msg);
@@ -59,10 +59,10 @@ fn main() {
         }
     };
     // check if new file does already exist
-    if cfg_generator.map_file.exists() {
+    if writing_cfg.map_file.exists() {
         error!(
             "New map-file {} does already exist. Please remove it.",
-            cfg_generator.map_file.display()
+            writing_cfg.map_file.display()
         );
         return;
     }
@@ -73,7 +73,7 @@ fn main() {
     // measure parsing-time
     let now = Instant::now();
     // parse and create graph
-    let graph = match Parser::parse_and_finalize(cfg.parser) {
+    let graph = match Parser::parse_and_finalize(cfg.parsing) {
         Ok(graph) => graph,
         Err(msg) => {
             error!("Wrong parser-map-file: {}", msg);
@@ -91,7 +91,7 @@ fn main() {
 
     // measure writing-time
     let now = Instant::now();
-    match Generator::generate(&graph, &cfg_generator) {
+    match Writer::write(&graph, &writing_cfg) {
         Ok(()) => (),
         Err(msg) => {
             error!("{}", msg);

@@ -79,7 +79,7 @@ fn dijkstra_on_pbf_map() {
 }
 
 fn expected_paths(
-    _cfg_parser: &configs::parser::Config,
+    _cfg_parser: &configs::parsing::Config,
 ) -> Vec<(
     TestNode,
     TestNode,

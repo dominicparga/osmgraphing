@@ -2,7 +2,7 @@ pub mod building;
 mod indexing;
 pub use indexing::{EdgeIdx, MetricIdx, NodeIdx};
 
-use crate::{configs::parser::Config, defaults::capacity::DimVec};
+use crate::{configs::parsing::Config, defaults::capacity::DimVec};
 use kissunits::geo::Coordinate;
 use std::{fmt, fmt::Display, iter::Iterator, ops::Index};
 
@@ -538,7 +538,7 @@ impl<'a> Display for MetricAccessor<'a> {
 
 impl<'a> MetricAccessor<'a> {
     pub fn dim(&self) -> usize {
-        self.cfg.edges.metrics.dim()
+        self.cfg.edges.metrics.units.len()
     }
 }
 

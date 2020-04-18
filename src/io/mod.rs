@@ -1,7 +1,7 @@
-mod generating;
 mod parsing;
-pub use generating::Generator;
+mod writing;
 pub use parsing::Parser;
+pub use writing::Writer;
 
 use std::path::Path;
 

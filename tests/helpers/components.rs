@@ -1,6 +1,6 @@
-use kissunits::{geo::Coordinate, speed::KilometersPerHour};
+use kissunits::{distance::Kilometers, geo::Coordinate, speed::KilometersPerHour, time::Minutes};
 use osmgraphing::{
-    defaults::{self, capacity::DimVec},
+    defaults::capacity::DimVec,
     helpers::ApproxEq,
     network::{EdgeIdx, Graph, MetricIdx, Node, NodeIdx},
     routing::{self},
@@ -73,50 +73,42 @@ pub struct TestEdge {
 
 impl TestEdge {
     #[allow(dead_code)]
-    pub fn new_fwd<D, T>(
+    pub fn new_fwd(
         name: Option<&str>,
         edge_idx: EdgeIdx,
         src: &TestNode,
         dst: &TestNode,
-        distance: D,
+        distance: Kilometers,
         maxspeed: KilometersPerHour,
-        duration: T,
-    ) -> TestEdge
-    where
-        D: Into<defaults::distance::TYPE>,
-        T: Into<defaults::time::TYPE>,
-    {
+        duration: Minutes,
+    ) -> TestEdge {
         TestEdge {
             name: (name.unwrap_or(&format!("{}->{}", src.name, dst.name))).to_owned(),
             edge_idx: edge_idx,
             is_fwd: true,
             src_idx: src.idx.into(),
             dst_idx: dst.idx.into(),
-            metrics: smallvec![*distance.into(), *maxspeed, *duration.into()],
+            metrics: smallvec![*distance, *maxspeed, *duration],
         }
     }
 
     #[allow(dead_code)]
-    pub fn new_bwd<D, T>(
+    pub fn new_bwd(
         name: Option<&str>,
         edge_idx: EdgeIdx,
         src: &TestNode,
         dst: &TestNode,
-        distance: D,
+        distance: Kilometers,
         maxspeed: KilometersPerHour,
-        duration: T,
-    ) -> TestEdge
-    where
-        D: Into<defaults::distance::TYPE>,
-        T: Into<defaults::time::TYPE>,
-    {
+        duration: Minutes,
+    ) -> TestEdge {
         TestEdge {
             name: (name.unwrap_or(&format!("{}->{}", src.name, dst.name))).to_owned(),
             edge_idx: edge_idx,
             is_fwd: false,
             src_idx: src.idx.into(),
             dst_idx: dst.idx.into(),
-            metrics: smallvec![*distance.into(), *maxspeed, *duration.into()],
+            metrics: smallvec![*distance, *maxspeed, *duration],
         }
     }
 

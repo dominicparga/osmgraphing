@@ -9,9 +9,9 @@ pub mod parsing {
     #[test]
     fn wrong_extension() {
         let mut cfg = Config::from_yaml(defaults::paths::resources::configs::SMALL_FMI).unwrap();
-        cfg.parser.map_file = PathBuf::from("foo.asdf");
+        cfg.parsing.map_file = PathBuf::from("foo.asdf");
         assert!(
-            Parser::parse(cfg.parser).is_err(),
+            Parser::parse(cfg.parsing).is_err(),
             "File-extension 'asdf' should not be supported."
         );
     }
@@ -21,7 +21,7 @@ pub mod parsing {
         let cfg = Config::from_yaml(defaults::paths::resources::configs::SMALL_FMI).unwrap();
         configs::routing::Config::from_str(
             "routing: { metrics: [{ id: 'Meters' }, { id: 'Seconds' }] }",
-            &cfg.parser,
+            &cfg.parsing,
         )
         .expect("Routing-config is wrong.");
 
@@ -29,7 +29,7 @@ pub mod parsing {
             "routing: {{ metrics: [{{ id: '{}' }}], is-ch-dijkstra: true }}",
             defaults::DURATION_ID
         );
-        let routing_cfg = configs::routing::Config::from_str(yaml_str, &cfg.parser).unwrap();
+        let routing_cfg = configs::routing::Config::from_str(yaml_str, &cfg.parsing).unwrap();
         assert!(
             routing_cfg.is_ch_dijkstra,
             "Routing-config should specify ch-dijkstra."
@@ -39,7 +39,7 @@ pub mod parsing {
             "routing: {{ metrics: [{{ id: '{}' }}], is-ch-dijkstra: false }}",
             defaults::DISTANCE_ID
         );
-        let routing_cfg = configs::routing::Config::from_str(yaml_str, &cfg.parser).unwrap();
+        let routing_cfg = configs::routing::Config::from_str(yaml_str, &cfg.parsing).unwrap();
         assert!(
             !routing_cfg.is_ch_dijkstra,
             "Routing-config should specify normal dijkstra."

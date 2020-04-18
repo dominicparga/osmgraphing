@@ -1,19 +1,19 @@
-parser:
+parsing:
   map-file: 'resources/maps/isle-of-man_2020-03-14.osm.pbf'
   vehicles:
     category: 'Car'
     are-drivers-picky: false
   nodes:
-  - category: 'NodeId'
-  - category: 'Latitude'
-  - category: 'Longitude'
+  - meta: { info: 'NodeId', id: 'node-id' }
+  - metric: { unit: 'Latitude', id: 'latitude' }
+  - metric: { unit: 'Longitude', id: 'longitude' }
   edges:
-  - category: 'SrcId'
-  - category: 'DstId'
-  - category: 'Meters'
-    is-provided: false
-  - category: 'KilometersPerHour'
-  - category: 'Seconds'
-    is-provided: false
-    calc-rules: ['Meters', 'KilometersPerHour']
-  - category: 'LaneCount'
+  - meta: { info: 'SrcId', id: 'src-id' }
+  - meta: { info: 'DstId', id: 'dst-id' }
+  # - category: 'Meters'
+  #   is-provided: false
+  - metric: { unit: 'KilometersPerHour', id: 'kmph' }
+  # - category: 'Seconds'
+  #   is-provided: false
+  #   calc-rules: ['Meters', 'KilometersPerHour']
+  - metric: { unit: 'LaneCount', id: 'lanecount' }

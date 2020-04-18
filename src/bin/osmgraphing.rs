@@ -69,7 +69,7 @@ fn main() {
     // measure parsing-time
     let now = Instant::now();
     // parse and create graph
-    let graph = match Parser::parse_and_finalize(cfg.parser) {
+    let graph = match Parser::parse_and_finalize(cfg.parsing) {
         Ok(graph) => graph,
         Err(msg) => {
             error!("{}", msg);

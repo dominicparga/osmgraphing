@@ -1,5 +1,10 @@
 use crate::helpers::{assert_graph, defaults, parse, TestEdge, TestNode};
-use kissunits::{distance::Kilometers, geo::Coordinate, speed::KilometersPerHour, time::Seconds};
+use kissunits::{
+    distance::Kilometers,
+    geo::Coordinate,
+    speed::KilometersPerHour,
+    time::{Minutes, Seconds},
+};
 use osmgraphing::{configs::Config, network::EdgeIdx};
 
 const CONFIG: &str = defaults::paths::resources::configs::SMALL_FMI;
@@ -23,7 +28,7 @@ fn yaml_str() {
 #[test]
 fn fmi_graph() {
     let cfg = Config::from_yaml(CONFIG).unwrap();
-    let graph = parse(cfg.parser);
+    let graph = parse(cfg.parsing);
 
     //--------------------------------------------------------------------------------------------//
     // setup correct data
@@ -80,7 +85,7 @@ fn fmi_graph() {
             dst,
             Kilometers(meters / 1_000.0),
             KilometersPerHour(kmph),
-            Seconds(s),
+            Minutes::from(Seconds(s)),
         )
     })
     .collect();
@@ -117,7 +122,7 @@ fn fmi_graph() {
             dst,
             Kilometers(meters / 1_000.0),
             KilometersPerHour(kmph),
-            Seconds(s),
+            Minutes::from(Seconds(s)),
         )
     })
     .collect();

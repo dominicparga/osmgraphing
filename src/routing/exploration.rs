@@ -5,11 +5,10 @@
 
 use crate::{
     configs::routing::Config,
-    defaults::capacity::DimVec,
-    network::{Graph, MetricIdx, NodeIdx},
+    network::{Graph, NodeIdx},
     routing::Dijkstra,
 };
-use log::{debug, info};
+use log::debug;
 use nd_triangulation::Triangulation;
 use smallvec::smallvec;
 
@@ -60,7 +59,7 @@ impl ConvexHullExplorator {
         // init query
 
         let mut cfg_routing = cfg_routing.clone();
-        let dim = graph.cfg().edges.dim();
+        let dim = graph.metrics().dim();
 
         //----------------------------------------------------------------------------------------//
         // find initial convex-hull
