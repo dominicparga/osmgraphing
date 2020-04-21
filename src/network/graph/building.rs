@@ -799,9 +799,26 @@ impl GraphBuilder {
                         info: _,
                         id: new_id,
                     }
+                    | generating::edges::Category::Copy {
+                        from: _,
+                        to:
+                            generating::edges::metrics::Category {
+                                unit: _,
+                                id: new_id,
+                            },
+                    }
                     | generating::edges::Category::Convert {
                         from: _,
                         to:
+                            generating::edges::metrics::Category {
+                                unit: _,
+                                id: new_id,
+                            },
+                    }
+                    | generating::edges::Category::Calc {
+                        a: _,
+                        b: _,
+                        result:
                             generating::edges::metrics::Category {
                                 unit: _,
                                 id: new_id,
@@ -887,13 +904,9 @@ impl GraphBuilder {
                         graph.cfg.edges.metrics.units.push((*unit).into());
                         graph.cfg.edges.metrics.ids.push(id.clone());
                     }
-                    generating::edges::Category::Convert { from, to } => {
-                        // check metric-size
-
-                        if graph.cfg.edges.metrics.units.len() == capacity::SMALL_VEC_INLINE_SIZE {}
-
+                    generating::edges::Category::Copy { from, to } => {
                         // loop over all edges
-                        // and update their metrics
+                        // and add to their metrics
 
                         let metric_idx = graph
                             .cfg
@@ -925,6 +938,105 @@ impl GraphBuilder {
                         graph.cfg.edges.categories.push(category.clone().into());
                         graph.cfg.edges.metrics.units.push(to.unit.into());
                         graph.cfg.edges.metrics.ids.push(to.id.clone());
+                    }
+                    generating::edges::Category::Convert { from, to } => {
+                        // loop over all edges
+                        // and replace their existing metrics
+
+                        let metric_idx = graph
+                            .cfg
+                            .edges
+                            .metrics
+                            .ids
+                            .iter()
+                            .position(|id| id == &from.id)
+                            .expect(&format!(
+                                "Id {} is expected in graph, but doesn't exist.",
+                                from.id
+                            ));
+                        for edge_idx in 0..graph.metrics.len() {
+                            // get old value
+                            // and generate new value
+
+                            let new_raw_value = {
+                                let old_raw_value = graph.metrics[edge_idx][metric_idx];
+                                from.unit.convert(&to.unit, old_raw_value)
+                            };
+
+                            // update graph
+
+                            graph.metrics[edge_idx][metric_idx] = new_raw_value;
+                        }
+
+                        // update config
+
+                        graph
+                            .cfg
+                            .edges
+                            .categories
+                            .iter_mut()
+                            .for_each(|category| match category {
+                                parsing::edges::Category::Metric {
+                                    unit: old_unit,
+                                    id: old_id,
+                                } => {
+                                    if old_id == &from.id {
+                                        *old_unit = to.unit.into();
+                                        *old_id = to.id.clone();
+                                    }
+                                }
+                                parsing::edges::Category::Meta { info: _, id: _ }
+                                | parsing::edges::Category::Ignored => (),
+                            });
+                        graph.cfg.edges.metrics.units[metric_idx] = to.unit.into();
+                        graph.cfg.edges.metrics.ids[metric_idx] = to.id.clone();
+                    }
+                    generating::edges::Category::Calc { result, a, b } => {
+                        // loop over all edges
+                        // and replace their existing metrics
+
+                        let idx_a = graph
+                            .cfg
+                            .edges
+                            .metrics
+                            .ids
+                            .iter()
+                            .position(|id| id == &a.id)
+                            .expect(&format!(
+                                "Id {} is expected in graph, but doesn't exist.",
+                                a.id
+                            ));
+                        let idx_b = graph
+                            .cfg
+                            .edges
+                            .metrics
+                            .ids
+                            .iter()
+                            .position(|id| id == &b.id)
+                            .expect(&format!(
+                                "Id {} is expected in graph, but doesn't exist.",
+                                b.id
+                            ));
+                        for edge_idx in 0..graph.metrics.len() {
+                            // get old value
+                            // and generate new value
+
+                            let new_raw_value = {
+                                let old_raw_a = graph.metrics[edge_idx][idx_a];
+                                let old_raw_b = graph.metrics[edge_idx][idx_b];
+                                result.unit.calc(&a.unit, old_raw_a, &b.unit, old_raw_b)
+                            };
+
+                            // update graph
+
+                            graph.metrics[edge_idx].push(new_raw_value);
+                        }
+
+                        // update config
+
+                        graph.cfg.edges.categories.push(category.clone().into());
+                        graph.cfg.edges.metrics.units.push(result.unit.into());
+                        graph.cfg.edges.metrics.ids.push(result.id.clone());
                     }
                 }
             }

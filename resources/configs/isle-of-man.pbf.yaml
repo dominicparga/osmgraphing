@@ -12,9 +12,6 @@ parsing:
   - meta: { info: 'DstId', id: 'dst-id' }
   - ignored
   - metric: { unit: 'KilometersPerHour', id: 'kmph' }
-  # - category: 'Seconds'
-  #   is-provided: false
-  #   calc-rules: ['Meters', 'KilometersPerHour']
   - metric: { unit: 'LaneCount', id: 'lanecount' }
   generating:
     nodes:
@@ -25,6 +22,10 @@ parsing:
     - meta: { info: 'ShortcutIdx0', id: 'sc-idx-0' }
     - meta: { info: 'ShortcutIdx1', id: 'sc-idx-1' }
     - haversine: { unit: 'Kilometers', id: 'km' }
+    - calc:
+        result: { unit: 'Minutes', id: 'min' }
+        a: { unit: 'Kilometers', id: 'km' }
+        b: { unit: 'KilometersPerHour', id: 'kmph' }
 
 writing:
   # map-file: 'resources/maps/isle-of-man_2020-03-14.fmi'
@@ -41,6 +42,6 @@ writing:
   - id: 'dst-idx'
   - id: 'km'
   # - id: 'kmph' # nope because addition (in ch) makes no sense
-  # - id: 'seconds'
+  - id: 'seconds'
   - id: 'sc-idx-0'
   - id: 'sc-idx-1'

@@ -156,8 +156,14 @@ fn check_config(cfg: &parsing::Config) -> Result<(), String> {
                 .iter()
                 .filter(|category| match category {
                     generating::edges::Category::Meta { info: _, id: _ } => false,
-                    generating::edges::Category::Convert { from: _, to: _ }
-                    | generating::edges::Category::Haversine { unit: _, id: _ } => true,
+                    generating::edges::Category::Convert { from: _, to: _ } => false,
+                    generating::edges::Category::Calc {
+                        result: _,
+                        a: _,
+                        b: _,
+                    } => true,
+                    generating::edges::Category::Copy { from: _, to: _ } => true,
+                    generating::edges::Category::Haversine { unit: _, id: _ } => true,
                 })
                 .count()
         } else {
