@@ -2,7 +2,7 @@ pub mod fmi;
 pub mod pbf;
 
 use crate::{
-    configs::parsing::{self, edges, nodes},
+    configs::parsing::{self, generating},
     defaults::capacity,
     io::{MapFileExt, SupportingFileExts, SupportingMapFileExts},
     network::{EdgeBuilder, Graph, GraphBuilder, NodeBuilder},
@@ -108,8 +108,10 @@ fn check_config(cfg: &parsing::Config) -> Result<(), String> {
 
     // is NodeId in config?
     if !cfg.nodes.categories.iter().any(|category| match category {
-        nodes::Category::Meta { info, id: _ } => info == &nodes::MetaInfo::NodeId,
-        nodes::Category::Metric { unit: _, id: _ } | nodes::Category::Ignored => false,
+        parsing::nodes::Category::Meta { info, id: _ } => info == &parsing::nodes::MetaInfo::NodeId,
+        parsing::nodes::Category::Metric { unit: _, id: _ } | parsing::nodes::Category::Ignored => {
+            false
+        }
     }) {
         return Err(String::from(
             "The provided config-file doesn't contain a NodeId, but needs to.",
@@ -117,9 +119,14 @@ fn check_config(cfg: &parsing::Config) -> Result<(), String> {
     }
 
     // check nodes' coordinates
+
     if !cfg.nodes.categories.iter().any(|category| match category {
-        nodes::Category::Metric { unit, id: _ } => unit == &nodes::metrics::UnitInfo::Latitude,
-        nodes::Category::Meta { info: _, id: _ } | nodes::Category::Ignored => false,
+        parsing::nodes::Category::Metric { unit, id: _ } => {
+            unit == &parsing::nodes::metrics::UnitInfo::Latitude
+        }
+        parsing::nodes::Category::Meta { info: _, id: _ } | parsing::nodes::Category::Ignored => {
+            false
+        }
     }) {
         return Err(String::from(
             "The provided config-file doesn't contain a latitude, but needs to.",
@@ -127,8 +134,12 @@ fn check_config(cfg: &parsing::Config) -> Result<(), String> {
     }
 
     if !cfg.nodes.categories.iter().any(|category| match category {
-        nodes::Category::Metric { unit, id: _ } => unit == &nodes::metrics::UnitInfo::Longitude,
-        nodes::Category::Meta { info: _, id: _ } | nodes::Category::Ignored => false,
+        parsing::nodes::Category::Metric { unit, id: _ } => {
+            unit == &parsing::nodes::metrics::UnitInfo::Longitude
+        }
+        parsing::nodes::Category::Meta { info: _, id: _ } | parsing::nodes::Category::Ignored => {
+            false
+        }
     }) {
         return Err(String::from(
             "The provided config-file doesn't contain a longitude, but needs to.",
@@ -137,40 +148,58 @@ fn check_config(cfg: &parsing::Config) -> Result<(), String> {
 
     // check edges' metric-memory-capacity
 
-    if cfg.edges.metrics.units.len() > capacity::SMALL_VEC_INLINE_SIZE {
+    let dim = cfg.edges.metrics.units.len()
+        + if let Some(generating_cfg) = &cfg.generating {
+            generating_cfg
+                .edges
+                .categories
+                .iter()
+                .filter(|category| match category {
+                    generating::edges::Category::Meta { info: _, id: _ } => false,
+                    generating::edges::Category::Convert { from: _, to: _ }
+                    | generating::edges::Category::Haversine { unit: _, id: _ } => true,
+                })
+                .count()
+        } else {
+            0
+        };
+
+    if dim > capacity::SMALL_VEC_INLINE_SIZE {
         return Err(format!(
             "The provided config-file has more metrics for the graph ({}) \
              than the parser has been compiled to ({}).",
-            cfg.edges.metrics.units.len(),
+            dim,
             capacity::SMALL_VEC_INLINE_SIZE
         ));
-    } else if cfg.edges.metrics.units.len() < capacity::SMALL_VEC_INLINE_SIZE {
+    } else if dim < capacity::SMALL_VEC_INLINE_SIZE {
         warn!(
             "The provided config-file has less metrics for the graph ({}) \
              than the parser has been compiled to ({}). \
              Compiling accordingly saves memory.",
-            cfg.edges.metrics.units.len(),
+            dim,
             capacity::SMALL_VEC_INLINE_SIZE
         );
     }
 
     // check count of shortcut-edge-indices
 
-    let count = cfg
-        .edges
-        .categories
-        .iter()
-        .filter(|category| match category {
-            edges::Category::Meta { info, id: _ } => match info {
-                edges::MetaInfo::ShortcutIdx0 | edges::MetaInfo::ShortcutIdx1 => true,
-                edges::MetaInfo::SrcId
-                | edges::MetaInfo::SrcIdx
-                | edges::MetaInfo::DstId
-                | edges::MetaInfo::DstIdx => false,
-            },
-            edges::Category::Metric { unit: _, id: _ } | edges::Category::Ignored => false,
-        })
-        .count();
+    let count =
+        cfg.edges
+            .categories
+            .iter()
+            .filter(|category| match category {
+                parsing::edges::Category::Meta { info, id: _ } => match info {
+                    parsing::edges::MetaInfo::ShortcutIdx0
+                    | parsing::edges::MetaInfo::ShortcutIdx1 => true,
+                    parsing::edges::MetaInfo::SrcId
+                    | parsing::edges::MetaInfo::SrcIdx
+                    | parsing::edges::MetaInfo::DstId
+                    | parsing::edges::MetaInfo::DstIdx => false,
+                },
+                parsing::edges::Category::Metric { unit: _, id: _ }
+                | parsing::edges::Category::Ignored => false,
+            })
+            .count();
     if count > 0 && count != 2 {
         return Err(format!(
             "The config-file has {} shortcut-indices, but should have 0 or 2.",

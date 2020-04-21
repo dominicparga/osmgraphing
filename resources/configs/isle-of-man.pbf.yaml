@@ -11,8 +11,6 @@ parsing:
   - meta: { info: 'SrcId', id: 'src-id' }
   - meta: { info: 'DstId', id: 'dst-id' }
   - ignored
-  # - category: 'Meters'
-  #   is-provided: false
   - metric: { unit: 'KilometersPerHour', id: 'kmph' }
   # - category: 'Seconds'
   #   is-provided: false
@@ -26,9 +24,7 @@ parsing:
     - meta: { info: 'DstIdx', id: 'dst-idx' }
     - meta: { info: 'ShortcutIdx0', id: 'sc-idx-0' }
     - meta: { info: 'ShortcutIdx1', id: 'sc-idx-1' }
-    # - metric:
-    #     from: { unit: 'Meters', id: 'meters' }
-    #     to: { unit: 'Kilometers', id: 'km' }
+    - haversine: { unit: 'Kilometers', id: 'km' }
 
 writing:
   # map-file: 'resources/maps/isle-of-man_2020-03-14.fmi'
@@ -43,7 +39,7 @@ writing:
   edges:
   - id: 'src-idx'
   - id: 'dst-idx'
-  # - id: 'meters'
+  - id: 'km'
   # - id: 'kmph' # nope because addition (in ch) makes no sense
   # - id: 'seconds'
   - id: 'sc-idx-0'

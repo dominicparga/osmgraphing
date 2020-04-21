@@ -36,7 +36,9 @@ pub mod parsing {
             pub use crate::configs::lib::parsing::generating::edges::{Category, Config, MetaInfo};
 
             pub mod metrics {
-                pub use crate::configs::lib::parsing::generating::edges::metrics::UnitInfo;
+                pub use crate::configs::lib::parsing::generating::edges::metrics::{
+                    Category, UnitInfo,
+                };
             }
         }
     }

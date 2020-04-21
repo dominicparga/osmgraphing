@@ -791,37 +791,140 @@ impl GraphBuilder {
 
             // edges
 
+            // check duplicated id
+
             for category in generating_cfg.edges.categories.iter() {
                 match category {
-                    generating::edges::Category::Meta { info, id: new_id } => {
+                    generating::edges::Category::Meta {
+                        info: _,
+                        id: new_id,
+                    }
+                    | generating::edges::Category::Convert {
+                        from: _,
+                        to:
+                            generating::edges::metrics::Category {
+                                unit: _,
+                                id: new_id,
+                            },
+                    }
+                    | generating::edges::Category::Haversine {
+                        unit: _,
+                        id: new_id,
+                    } => {
+                        // if id does already exist
+                        // -> error
+
+                        if graph
+                            .cfg
+                            .edges
+                            .categories
+                            .iter()
+                            .any(|category| match category {
+                                parsing::edges::Category::Meta { info: _, id }
+                                | parsing::edges::Category::Metric { unit: _, id } => new_id == id,
+                                parsing::edges::Category::Ignored => false,
+                            })
+                        {
+                            return Err(format!(
+                                "Id {} should be generated, but does already exist.",
+                                new_id
+                            ));
+                        }
+                    }
+                }
+            }
+
+            // add new data
+
+            for category in generating_cfg.edges.categories.iter() {
+                match category {
+                    generating::edges::Category::Meta { info, id: _ } => {
                         match info {
                             generating::edges::MetaInfo::SrcIdx
                             | generating::edges::MetaInfo::DstIdx
                             | generating::edges::MetaInfo::ShortcutIdx0
                             | generating::edges::MetaInfo::ShortcutIdx1 => {
-                                // if id does already exist
-                                // -> error
+                                // update graph
+                                //
+                                // -> already done
 
-                                if graph.cfg.edges.categories.iter().any(
-                                    |category| match category {
-                                        parsing::edges::Category::Meta { info: _, id }
-                                        | parsing::edges::Category::Metric { unit: _, id } => {
-                                            new_id == id
-                                        }
-                                        parsing::edges::Category::Ignored => false,
-                                    },
-                                ) {
-                                    return Err(format!(
-                                        "Edge-meta-info {:?} has id {}, which does already exist.",
-                                        info, new_id
-                                    ));
-                                }
-
-                                // add new category
+                                // update config
 
                                 graph.cfg.edges.categories.push(category.clone().into());
                             }
                         }
+                    }
+                    generating::edges::Category::Haversine { unit, id } => {
+                        // check unit
+
+                        // calculate haversine-distance and update graph and config
+
+                        for edge_idx in (0..graph.metrics.len()).map(EdgeIdx) {
+                            // get positions
+
+                            let (src_coord, dst_coord) = {
+                                let src_idx = graph.bwd_edges().dst_idx(edge_idx);
+                                let dst_idx = graph.fwd_edges().dst_idx(edge_idx);
+                                let nodes = graph.nodes();
+                                (nodes.coord(src_idx), nodes.coord(dst_idx))
+                            };
+
+                            // calculate distance
+                            let distance = {
+                                let km =
+                                    kissunits::geo::haversine_distance_km(&src_coord, &dst_coord);
+                                generating::edges::metrics::UnitInfo::Kilometers.convert(unit, *km)
+                            };
+
+                            // update graph
+
+                            graph.metrics[*edge_idx].push(distance);
+                        }
+
+                        // update config
+
+                        graph.cfg.edges.categories.push(category.clone().into());
+                        graph.cfg.edges.metrics.units.push((*unit).into());
+                        graph.cfg.edges.metrics.ids.push(id.clone());
+                    }
+                    generating::edges::Category::Convert { from, to } => {
+                        // check metric-size
+
+                        if graph.cfg.edges.metrics.units.len() == capacity::SMALL_VEC_INLINE_SIZE {}
+
+                        // loop over all edges
+                        // and update their metrics
+
+                        let metric_idx = graph
+                            .cfg
+                            .edges
+                            .metrics
+                            .ids
+                            .iter()
+                            .position(|id| id == &from.id)
+                            .expect(&format!(
+                                "Id {} is expected in graph, but doesn't exist.",
+                                from.id
+                            ));
+                        for edge_idx in 0..graph.metrics.len() {
+                            // get old value
+                            // and generate new value
+
+                            let new_raw_value = {
+                                let old_raw_value = graph.metrics[edge_idx][metric_idx];
+                                from.unit.convert(&to.unit, old_raw_value)
+                            };
+
+                            // update graph
+
+                            graph.metrics[edge_idx].push(new_raw_value);
+                        }
+
+                        // update config
+
+                        graph.cfg.edges.categories.push(category.clone().into());
+                        graph.cfg.edges.metrics.units.push(to.unit.into());
+                        graph.cfg.edges.metrics.ids.push(to.id.clone());
                     }
                 }
             }
