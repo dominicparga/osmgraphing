@@ -1,7 +1,7 @@
 use crate::{
     configs::{
-        categories::{edges, nodes},
-        parsing,
+        parsing::edges,
+        parsing::{self, nodes},
     },
     defaults::{self, capacity::DimVec},
     helpers,
@@ -173,7 +173,7 @@ impl ProtoShortcut {
                     edges::MetaInfo::SrcId => {
                         if src_id.is_none() {
                             src_id = Some(param.parse::<i64>().ok().ok_or(format!(
-                                "Parsing {} (for edge-src) '{:?}' from fmi-file, which is not i64.",
+                                "Parsing {:?} (for edge-src) '{:?}' from fmi-file, which is not i64.",
                                 category, param
                             ))?);
                         } else {
@@ -186,7 +186,7 @@ impl ProtoShortcut {
                     edges::MetaInfo::DstId => {
                         if dst_id.is_none() {
                             dst_id = Some(param.parse::<i64>().ok().ok_or(format!(
-                                "Parsing {} (for edge-dst) '{:?}' from fmi-file, which is not i64.",
+                                "Parsing {:?} (for edge-dst) '{:?}' from fmi-file, which is not i64.",
                                 category, param
                             ))?);
                         } else {
@@ -200,7 +200,7 @@ impl ProtoShortcut {
                         if param != defaults::parser::NO_SHORTCUT_IDX {
                             let sc_edge_idx = {
                                 param.parse::<usize>().ok().ok_or(format!(
-                                    "Parsing {} '{}' of edge-param #{} didn't work.",
+                                    "Parsing {:?} '{}' of edge-param #{} didn't work.",
                                     category, param, param_idx
                                 ))?
                             };
@@ -209,7 +209,7 @@ impl ProtoShortcut {
                                 sc_edge_0 = Some(sc_edge_idx);
                             } else {
                                 return Err(format!(
-                                    "Too many {}: parsing '{}' of edge-param #{}",
+                                    "Too many {:?}: parsing '{}' of edge-param #{}",
                                     category, param, param_idx
                                 ));
                             }
@@ -219,7 +219,7 @@ impl ProtoShortcut {
                         if param != defaults::parser::NO_SHORTCUT_IDX {
                             let sc_edge_idx = {
                                 param.parse::<usize>().ok().ok_or(format!(
-                                    "Parsing {} '{}' of edge-param #{} didn't work.",
+                                    "Parsing {:?} '{}' of edge-param #{} didn't work.",
                                     category, param, param_idx
                                 ))?
                             };
@@ -228,14 +228,14 @@ impl ProtoShortcut {
                                 sc_edge_1 = Some(sc_edge_idx);
                             } else {
                                 return Err(format!(
-                                    "Too many {}: parsing '{}' of edge-param #{}",
+                                    "Too many {:?}: parsing '{}' of edge-param #{}",
                                     category, param, param_idx
                                 ));
                             }
                         }
                     }
                     edges::MetaInfo::SrcIdx | edges::MetaInfo::DstIdx => {
-                        return Err(format!("Unsupported category {}", category))
+                        return Err(format!("Unsupported category {:?}", category))
                     }
                 },
                 edges::Category::Metric { unit: _, id: _ } => {
@@ -243,7 +243,7 @@ impl ProtoShortcut {
                         metric_values.push(raw_value);
                     } else {
                         return Err(format!(
-                            "Parsing {} '{}' of edge-param #{} didn't work.",
+                            "Parsing {:?} '{}' of edge-param #{} didn't work.",
                             category, param, param_idx
                         ));
                     };
@@ -320,11 +320,11 @@ impl ProtoNode {
                         };
                     }
                     nodes::MetaInfo::NodeIdx => {
-                        return Err(format!("Unsupported category {}", category))
+                        return Err(format!("Unsupported category {:?}", category))
                     }
                 },
                 nodes::Category::Metric { unit, id: _ } => match unit {
-                    nodes::UnitInfo::Latitude => {
+                    nodes::metrics::UnitInfo::Latitude => {
                         lat = match param.parse::<f64>() {
                             Ok(lat) => Some(lat),
                             Err(_) => {
@@ -335,7 +335,7 @@ impl ProtoNode {
                             }
                         };
                     }
-                    nodes::UnitInfo::Longitude => {
+                    nodes::metrics::UnitInfo::Longitude => {
                         lon = match param.parse::<f64>() {
                             Ok(lon) => Some(lon),
                             Err(_) => {
@@ -346,8 +346,8 @@ impl ProtoNode {
                             }
                         };
                     }
-                    nodes::UnitInfo::Height => {
-                        return Err(format!("Unsupported category {}", category))
+                    nodes::metrics::UnitInfo::Height => {
+                        return Err(format!("Unsupported category {:?}", category))
                     }
                 },
                 nodes::Category::Ignored => (),

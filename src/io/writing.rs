@@ -35,7 +35,7 @@ trait Writing {
 pub mod fmi {
     use crate::{
         configs::{
-            categories::{edges, nodes},
+            parsing::{edges, nodes},
             writing,
         },
         defaults::{self, accuracy},
@@ -168,19 +168,19 @@ pub mod fmi {
 
                                         let node = graph.nodes().create(node_idx);
                                         match unit {
-                                            nodes::UnitInfo::Latitude => write!(
+                                            nodes::metrics::UnitInfo::Latitude => write!(
                                                 writer,
                                                 "{:.digits$}",
                                                 node.coord().lat.approx(),
                                                 digits = accuracy::F64_FMT_DIGITS,
                                             )?,
-                                            nodes::UnitInfo::Longitude => write!(
+                                            nodes::metrics::UnitInfo::Longitude => write!(
                                                 writer,
                                                 "{:.digits$}",
                                                 node.coord().lon.approx(),
                                                 digits = accuracy::F64_FMT_DIGITS,
                                             )?,
-                                            nodes::UnitInfo::Height => unimplemented!(
+                                            nodes::metrics::UnitInfo::Height => unimplemented!(
                                                 "Nodes' height is not supported yet."
                                             ),
                                         }

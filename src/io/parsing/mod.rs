@@ -2,10 +2,7 @@ pub mod fmi;
 pub mod pbf;
 
 use crate::{
-    configs::{
-        categories::{edges, nodes},
-        parsing,
-    },
+    configs::parsing::{self, edges, nodes},
     defaults::capacity,
     io::{MapFileExt, SupportingFileExts, SupportingMapFileExts},
     network::{EdgeBuilder, Graph, GraphBuilder, NodeBuilder},
@@ -121,7 +118,7 @@ fn check_config(cfg: &parsing::Config) -> Result<(), String> {
 
     // check nodes' coordinates
     if !cfg.nodes.categories.iter().any(|category| match category {
-        nodes::Category::Metric { unit, id: _ } => unit == &nodes::UnitInfo::Latitude,
+        nodes::Category::Metric { unit, id: _ } => unit == &nodes::metrics::UnitInfo::Latitude,
         nodes::Category::Meta { info: _, id: _ } | nodes::Category::Ignored => false,
     }) {
         return Err(String::from(
@@ -130,7 +127,7 @@ fn check_config(cfg: &parsing::Config) -> Result<(), String> {
     }
 
     if !cfg.nodes.categories.iter().any(|category| match category {
-        nodes::Category::Metric { unit, id: _ } => unit == &nodes::UnitInfo::Longitude,
+        nodes::Category::Metric { unit, id: _ } => unit == &nodes::metrics::UnitInfo::Longitude,
         nodes::Category::Meta { info: _, id: _ } | nodes::Category::Ignored => false,
     }) {
         return Err(String::from(

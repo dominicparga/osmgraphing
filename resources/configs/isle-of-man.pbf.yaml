@@ -24,8 +24,8 @@ parsing:
     edges:
     - meta: { info: 'SrcIdx', id: 'src-idx' }
     - meta: { info: 'DstIdx', id: 'dst-idx' }
-    - meta: { info: 'ShortcutIdx0', id: 'sc-idx0' }
-    - meta: { info: 'ShortcutIdx1', id: 'sc-idx1' }
+    - meta: { info: 'ShortcutIdx0', id: 'sc-idx-0' }
+    - meta: { info: 'ShortcutIdx1', id: 'sc-idx-1' }
     # - metric:
     #     from: { unit: 'Meters', id: 'meters' }
     #     to: { unit: 'Kilometers', id: 'km' }
@@ -46,5 +46,5 @@ writing:
   # - id: 'meters'
   # - id: 'kmph' # nope because addition (in ch) makes no sense
   # - id: 'seconds'
-  - id: 'sc-idx0'
-  - id: 'sc-idx1'
+  - id: 'sc-idx-0'
+  - id: 'sc-idx-1'

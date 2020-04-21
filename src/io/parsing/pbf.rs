@@ -1,5 +1,5 @@
 use crate::{
-    configs::{categories::edges, parsing},
+    configs::parsing::{self, edges},
     defaults::capacity::DimVec,
     helpers,
     network::{EdgeBuilder, NodeBuilder, ProtoEdge, ProtoNode, StreetCategory},
@@ -32,23 +32,24 @@ impl super::Parsing for Parser {
                     | edges::MetaInfo::DstIdx
                     | edges::MetaInfo::ShortcutIdx0
                     | edges::MetaInfo::ShortcutIdx1 => {
-                        return Err(format!("{} are not supported in pbf-files.", category))
+                        return Err(format!("{:?} are not supported in pbf-files.", category))
                     }
                 },
                 edges::Category::Metric { unit, id: _ } => match unit {
-                    edges::UnitInfo::Meters
-                    | edges::UnitInfo::Kilometers
-                    | edges::UnitInfo::Seconds
-                    | edges::UnitInfo::Minutes
-                    | edges::UnitInfo::Hours
-                    | edges::UnitInfo::F64 => {
+                    edges::metrics::UnitInfo::Meters
+                    | edges::metrics::UnitInfo::Kilometers
+                    | edges::metrics::UnitInfo::Seconds
+                    | edges::metrics::UnitInfo::Minutes
+                    | edges::metrics::UnitInfo::Hours
+                    | edges::metrics::UnitInfo::F64 => {
                         return Err(format!(
-                            "The {} of an edge in a pbf-file has to be calculated, \
+                            "The {:?} of an edge in a pbf-file has to be calculated, \
                              but is expected to be provided.",
                             category
                         ));
                     }
-                    edges::UnitInfo::KilometersPerHour | edges::UnitInfo::LaneCount => {
+                    edges::metrics::UnitInfo::KilometersPerHour
+                    | edges::metrics::UnitInfo::LaneCount => {
                         // irrelevant
                     }
                 },
@@ -117,20 +118,20 @@ impl super::Parsing for Parser {
                         // already checked in preprocessing
                     }
                     edges::Category::Metric { unit, id: _ } => match unit {
-                        edges::UnitInfo::KilometersPerHour => {
+                        edges::metrics::UnitInfo::KilometersPerHour => {
                             let maxspeed = highway_tag.parse_maxspeed(&way);
                             metrics.push(*maxspeed);
                         }
-                        edges::UnitInfo::LaneCount => {
+                        edges::metrics::UnitInfo::LaneCount => {
                             let lane_count = highway_tag.parse_lane_count(&way);
                             metrics.push(lane_count as f64);
                         }
-                        edges::UnitInfo::Meters
-                        | edges::UnitInfo::Kilometers
-                        | edges::UnitInfo::Seconds
-                        | edges::UnitInfo::Minutes
-                        | edges::UnitInfo::Hours
-                        | edges::UnitInfo::F64 => {
+                        edges::metrics::UnitInfo::Meters
+                        | edges::metrics::UnitInfo::Kilometers
+                        | edges::metrics::UnitInfo::Seconds
+                        | edges::metrics::UnitInfo::Minutes
+                        | edges::metrics::UnitInfo::Hours
+                        | edges::metrics::UnitInfo::F64 => {
                             // already checked in preprocessing
                         }
                     },

@@ -15,7 +15,7 @@ fn criterion_benchmark(c: &mut Criterion) {
     let cfg = Config::from_yaml("resources/configs/isle-of-man.pbf.yaml").unwrap();
 
     // create graph
-    let graph = match Parser::parse_and_finalize(cfg.parser) {
+    let graph = match Parser::parse_and_finalize(cfg.parsing) {
         Ok(graph) => graph,
         Err(msg) => {
             error!("{}", msg);
@@ -109,7 +109,6 @@ fn bidir_shortest_dijkstra(
 ) {
     let mut dijkstra = routing::Dijkstra::new();
 
-    let nodes = graph.nodes();
     for &(src_idx, dst_idx) in routes.iter() {
         let _option_path = dijkstra.compute_best_path(src_idx, dst_idx, graph, cfg);
     }
@@ -122,7 +121,6 @@ fn bidir_fastest_dijkstra(
 ) {
     let mut dijkstra = routing::Dijkstra::new();
 
-    let nodes = graph.nodes();
     for &(src_idx, dst_idx) in routes.iter() {
         let _option_path = dijkstra.compute_best_path(src_idx, dst_idx, graph, cfg);
     }
