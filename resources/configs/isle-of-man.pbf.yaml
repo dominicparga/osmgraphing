@@ -10,7 +10,7 @@ parsing:
   edges:
   - meta: { info: 'SrcId', id: 'src-id' }
   - meta: { info: 'DstId', id: 'dst-id' }
-  - ignored
+  - ignored # doesn't matter
   - metric: { unit: 'KilometersPerHour', id: 'kmph' }
   - metric: { unit: 'LaneCount', id: 'lanecount' }
   generating:
