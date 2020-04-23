@@ -78,6 +78,7 @@ pub struct Graph {
     // node-metrics
     node_coords: Vec<Coordinate>,
     node_levels: Vec<usize>,
+    // node_heights: Vec<f64>,
     // edges: offset-graph and mappings, e.g. for metrics
     fwd_dsts: Vec<NodeIdx>,
     fwd_offsets: Vec<usize>,

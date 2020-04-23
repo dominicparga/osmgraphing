@@ -19,11 +19,13 @@ pub mod parsing {
     #[test]
     fn routing_config_from_str() {
         let cfg = Config::from_yaml(defaults::paths::resources::configs::SMALL_FMI).unwrap();
-        configs::routing::Config::from_str(
-            "routing: { metrics: [{ id: 'Meters' }, { id: 'Seconds' }] }",
-            &cfg.parsing,
-        )
-        .expect("Routing-config is wrong.");
+        let yaml_str = &format!(
+            "routing: {{ metrics: [{{ id: '{}' }}, {{ id: '{}' }}] }}",
+            defaults::DISTANCE_ID,
+            defaults::DURATION_ID
+        );
+        configs::routing::Config::from_str(yaml_str, &cfg.parsing)
+            .expect("Routing-config is wrong.");
 
         let yaml_str = &format!(
             "routing: {{ metrics: [{{ id: '{}' }}], is-ch-dijkstra: true }}",

@@ -1,40 +1,43 @@
-parser:
+parsing:
   map-file: 'resources/maps/isle-of-man_2020-03-14.osm.pbf'
   vehicles:
     category: 'Car'
     are-drivers-picky: false
   nodes:
-  - category: 'NodeId'
-  - category: 'Latitude'
-  - category: 'Longitude'
+  - meta: { info: 'NodeId', id: 'node-id' }
+  - metric: { unit: 'Latitude', id: 'latitude' }
+  - metric: { unit: 'Longitude', id: 'longitude' }
   edges:
-  - category: 'SrcId'
-  - category: 'DstId'
-  - category: 'Meters'
-    is-provided: false
-  - category: 'KilometersPerHour'
-  - category: 'Seconds'
-    is-provided: false
-    calc-rules: ['Meters', 'KilometersPerHour']
-  - category: 'Ignore - SrcIdx'
-    id: 'SrcIdx'
-  - category: 'Ignore - DstIdx'
-    id: 'DstIdx'
+  - meta: { info: 'SrcId', id: 'src-id' }
+  - meta: { info: 'DstId', id: 'dst-id' }
+  - metric: { unit: 'KilometersPerHour', id: 'kmph' }
+  generating:
+    nodes:
+    edges:
+    - meta: { info: 'SrcIdx', id: 'src-idx' }
+    - meta: { info: 'DstIdx', id: 'dst-idx' }
+    - meta: { info: 'ShortcutIdx0', id: 'sc-idx-0' }
+    - meta: { info: 'ShortcutIdx1', id: 'sc-idx-1' }
+    - haversine: { unit: 'Kilometers', id: 'km' }
+    - calc:
+        result: { unit: 'Minutes', id: 'min' }
+        a: { unit: 'Kilometers', id: 'km' }
+        b: { unit: 'KilometersPerHour', id: 'kmph' }
 
-generator:
+writing:
   map-file: 'resources/maps/isle-of-man_2020-03-14.fmi'
   nodes:
-  - category: 'NodeIdx'
-  - category: 'NodeId'
-  - category: 'Latitude'
-  - category: 'Longitude'
-  - category: 'Ignore' # height
-  - category: 'Ignore' # level for contraction-hierarchies
+  - id: 'node-idx'
+  - id: 'node-id'
+  - id: 'latitude'
+  - id: 'longitude'
+  - ignored # height
+  - ignored # level for contraction-hierarchies
   edges:
-  - id: 'SrcIdx'
-  - id: 'DstIdx'
-  - id: 'Meters'
-  # - id: 'KilometersPerHour' # nope because addition (in ch) makes no sense
-  - id: 'Seconds'
-  - id: 'Ignore' # shortcut-edge-0
-  - id: 'Ignore' # shortcut-edge-1
+  - id: 'src-idx'
+  - id: 'dst-idx'
+  - id: 'km'
+  # - id: 'kmph' # nope because addition (in ch) makes no sense
+  - id: 'seconds'
+  - id: 'sc-idx-0'
+  - id: 'sc-idx-1'

@@ -1,7 +1,6 @@
 use crate::{
     configs::parsing,
     defaults::{self, capacity::DimVec},
-    io::SupportingFileExts,
 };
 use smallvec::smallvec;
 pub mod raw;
@@ -16,12 +15,6 @@ pub mod raw;
 pub struct Config {
     pub is_ch_dijkstra: bool,
     pub alphas: DimVec<f64>,
-}
-
-impl SupportingFileExts for Config {
-    fn supported_exts<'a>() -> &'a [&'a str] {
-        &["yaml"]
-    }
 }
 
 impl Config {

@@ -1,42 +1,46 @@
-mod lib;
+mod implementation;
 
-pub use lib::{Config, SimpleId};
+pub use implementation::SimpleId;
 
 pub mod parsing {
-    pub use crate::configs::lib::parsing::Config;
+    pub use crate::configs::implementation::parsing::Config;
 
     pub mod nodes {
-        pub use crate::configs::lib::parsing::nodes::{Category, Config, MetaInfo};
+        pub use crate::configs::implementation::parsing::nodes::{Category, Config, MetaInfo};
 
         pub mod metrics {
-            pub use crate::configs::lib::parsing::nodes::metrics::UnitInfo;
+            pub use crate::configs::implementation::parsing::nodes::metrics::UnitInfo;
         }
     }
 
     pub mod edges {
-        pub use crate::configs::lib::parsing::edges::{Category, Config, MetaInfo};
+        pub use crate::configs::implementation::parsing::edges::{Category, Config, MetaInfo};
 
         pub mod metrics {
-            pub use crate::configs::lib::parsing::edges::metrics::UnitInfo;
+            pub use crate::configs::implementation::parsing::edges::metrics::UnitInfo;
         }
     }
 
     pub mod generating {
-        pub use crate::configs::lib::parsing::generating::Config;
+        pub use crate::configs::implementation::parsing::generating::Config;
 
         pub mod nodes {
-            pub use crate::configs::lib::parsing::generating::nodes::{Category, Config, MetaInfo};
+            pub use crate::configs::implementation::parsing::generating::nodes::{
+                Category, Config, MetaInfo,
+            };
 
             pub mod metrics {
-                pub use crate::configs::lib::parsing::generating::nodes::metrics::UnitInfo;
+                pub use crate::configs::implementation::parsing::generating::nodes::metrics::UnitInfo;
             }
         }
 
         pub mod edges {
-            pub use crate::configs::lib::parsing::generating::edges::{Category, Config, MetaInfo};
+            pub use crate::configs::implementation::parsing::generating::edges::{
+                Category, Config, MetaInfo,
+            };
 
             pub mod metrics {
-                pub use crate::configs::lib::parsing::generating::edges::metrics::{
+                pub use crate::configs::implementation::parsing::generating::edges::metrics::{
                     Category, UnitInfo,
                 };
             }
@@ -45,9 +49,9 @@ pub mod parsing {
 }
 
 pub mod writing {
-    pub use crate::configs::lib::writing::Config;
+    pub use crate::configs::implementation::writing::Config;
 }
 
 pub mod routing {
-    pub use crate::configs::lib::routing::Config;
+    pub use crate::configs::implementation::routing::Config;
 }

@@ -1,5 +1,6 @@
-use crate::io::SupportingFileExts;
-use std::path::PathBuf;
+use crate::{helpers, io::SupportingFileExts};
+use serde::Deserialize;
+use std::path::{Path, PathBuf};
 
 pub mod edges;
 pub mod generating;
@@ -18,7 +19,8 @@ pub mod vehicles;
 /// Internally, a default-metric uses provided calculation-rules to be calculated by other default-categories as well (like the duration from distance and maxspeed).
 ///
 /// Keep in mind, that metrics (except for id) are stored as `f64` for better maintainability and efficiency.
-#[derive(Debug)]
+#[derive(Debug, Deserialize)]
+#[serde(from = "raw::Config")]
 pub struct Config {
     pub map_file: PathBuf,
     pub vehicles: vehicles::Config,
@@ -44,6 +46,19 @@ impl From<raw::Config> for Config {
                 Some(generating_cfg) => Some(generating_cfg.into()),
                 None => None,
             },
+        }
+    }
+}
+
+impl Config {
+    pub fn from_yaml<P: AsRef<Path> + ?Sized>(path: &P) -> Result<Self, String> {
+        let file = {
+            Self::find_supported_ext(path)?;
+            helpers::open_file(path)?
+        };
+        match serde_yaml::from_reader(file) {
+            Ok(cfg) => Ok(cfg),
+            Err(msg) => Err(format!("{}", msg)),
         }
     }
 }

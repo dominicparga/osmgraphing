@@ -13,6 +13,10 @@ fn criterion_benchmark(c: &mut Criterion) {
 
     // parsing
     let cfg = Config::from_yaml("resources/configs/isle-of-man.pbf.yaml").unwrap();
+    let routing_strs = vec![
+        "routing: { metrics: [{ id: 'km' }] }",
+        "routing: { metrics: [{ id: 'km' }, { id: 'min' }] }",
+    ];
 
     // create graph
     let graph = match Parser::parse_and_finalize(cfg.parsing) {
@@ -56,10 +60,6 @@ fn criterion_benchmark(c: &mut Criterion) {
     ];
 
     // benchmarking shortest routing
-    let routing_strs = vec![
-        "routing: { metrics: [{ id: 'Meters' }] }",
-        "routing: { metrics: [{ id: 'Meters' }, { id: 'Seconds' }] }",
-    ];
     for routing_str in routing_strs {
         let routing_cfg = configs::routing::Config::from_str(routing_str, graph.cfg())
             .expect("Routing-config is wrong.");

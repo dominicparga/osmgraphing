@@ -42,6 +42,10 @@ pub mod routing {
 }
 
 pub mod network {
+    pub mod nodes {
+        pub const LEVEL: usize = 0;
+    }
+
     use crate::{
         defaults,
         network::{vehicles::Category as VehicleCategory, StreetCategory},

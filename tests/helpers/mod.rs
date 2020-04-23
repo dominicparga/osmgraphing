@@ -16,8 +16,8 @@ use rand::{
 
 #[allow(dead_code)]
 pub mod defaults {
-    pub const DISTANCE_ID: &str = "Meters";
-    pub const DURATION_ID: &str = "Seconds";
+    pub const DISTANCE_ID: &str = "kilometers";
+    pub const DURATION_ID: &str = "minutes";
 
     pub mod paths {
         pub mod resources {

@@ -1,7 +1,10 @@
 use super::{EdgeIdx, Graph, NodeIdx};
 use crate::{
     configs::parsing::{self, generating},
-    defaults::capacity::{self, DimVec},
+    defaults::{
+        self,
+        capacity::{self, DimVec},
+    },
     helpers::{ApproxEq, MemSize},
 };
 use kissunits::geo::Coordinate;
@@ -235,7 +238,7 @@ impl EdgeBuilder {
 
         let mut node_coords = vec![None; self.node_ids.len()];
         node_coords.shrink_to_fit();
-        let mut node_levels = vec![0; self.node_ids.len()];
+        let mut node_levels = vec![defaults::network::nodes::LEVEL; self.node_ids.len()];
         node_levels.shrink_to_fit();
         NodeBuilder {
             cfg: self.cfg,
@@ -807,14 +810,6 @@ impl GraphBuilder {
                                 id: new_id,
                             },
                     }
-                    | generating::edges::Category::Convert {
-                        from: _,
-                        to:
-                            generating::edges::metrics::Category {
-                                unit: _,
-                                id: new_id,
-                            },
-                    }
                     | generating::edges::Category::Calc {
                         a: _,
                         b: _,
@@ -847,6 +842,9 @@ impl GraphBuilder {
                                 new_id
                             ));
                         }
+                    }
+                    generating::edges::Category::Convert { from: _, to: _ } => {
+                        // do not check because it's in-place, so duplicates would be removed.
                     }
                 }
             }
