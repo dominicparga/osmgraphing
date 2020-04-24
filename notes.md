@@ -18,9 +18,14 @@ Maybe, it is concept for later documentation, or just keep-up-the-good-work (`ku
   - Set population of specific spots and interpolate somehow
     - [worldometers][worldometers/germany]
     - [German Federal Statistical Office][destatis]
-  - Get population from osm-data and interpolate somehow
-    - Take nodes/ways and distribute according to max-speed (low speed <-> high population-density).
-    - Take city-level and let routes go from lower to higher levels.
+      - [different population-data of Baden-Württemberg][statistik-bw]
+      - [different population-data of Germany, but per mini-square][atlas.zensus2011.de]
+        - Zensus: `10 %` of population every 10 years
+        - Mikrozensus: `1 %` of population every year
+      - [area-statistics (e.g. traffic-area in percent)][statistikportal]
+    - Get population from osm-data
+      - Take nodes/ways and distribute according to max-speed (low speed <-> high population-density).
+      - Take city-level and let routes go from lower to higher levels.
 
 
 ### Build-script
@@ -119,6 +124,9 @@ To correct this issue, stop the query after polling a node of a sub-distance, wh
 
 [acm/micro-travel-demand]: https://dl.acm.org/doi/10.1145/3347146.3359361
 [destatis]: https://www.destatis.de/DE/Service/Statistik-Visualisiert/RegionalatlasAktuell.html
+[statistik-bw]: https://www.statistik-bw.de/Intermaptiv/?re=gemeinde&ags=08317057&i=01202&r=0&g=0001&afk=5&fkt=besetzung&fko=mittel
+[atlas.zensus2011.de]: https://atlas.zensus2011.de/
+[statistikportal]: https://www.statistikportal.de/de/flaechenatlas
 [github/rust-lang/cargo/issues/5624]: https://github.com/rust-lang/cargo/issues/5624
 [github/vbuchhold/routing-framework]: https://github.com/vbuchhold/routing-framework
 [gnu/licenses/gpl-faq/gplplugins]: https://www.gnu.org/licenses/gpl-faq.html#GPLPlugins
