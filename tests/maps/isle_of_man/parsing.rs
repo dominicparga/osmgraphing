@@ -1,5 +1,5 @@
 use crate::helpers::{defaults, parse};
-use osmgraphing::configs::Config;
+use osmgraphing::configs;
 
 const PBF_CONFIG: &str = defaults::paths::resources::configs::ISLE_OF_MAN_PBF;
 const CH_FMI_CONFIG: &str = defaults::paths::resources::configs::ISLE_OF_MAN_CH_FMI;
@@ -7,28 +7,33 @@ const FMI_CONFIG: &str = defaults::paths::resources::configs::ISLE_OF_MAN_FMI;
 
 #[test]
 fn pbf_yaml() {
-    Config::from_yaml(PBF_CONFIG).unwrap();
+    let parsing_cfg = configs::parsing::Config::from_yaml(PBF_CONFIG);
+    assert!(configs::writing::Config::try_from_yaml(PBF_CONFIG).is_err());
+    assert!(configs::routing::Config::try_from_yaml(PBF_CONFIG, &parsing_cfg).is_err());
 }
 
 #[test]
 fn fmi_yaml() {
-    Config::from_yaml(FMI_CONFIG).unwrap();
+    let parsing_cfg = configs::parsing::Config::from_yaml(FMI_CONFIG);
+    assert!(configs::writing::Config::try_from_yaml(FMI_CONFIG).is_err());
+    assert!(configs::routing::Config::try_from_yaml(FMI_CONFIG, &parsing_cfg).is_err());
 }
 
 #[test]
 fn ch_fmi_yaml() {
-    Config::from_yaml(CH_FMI_CONFIG).unwrap();
+    configs::parsing::Config::from_yaml(CH_FMI_CONFIG);
 }
 
 #[test]
 fn yaml_str() {
-    Config::from_yaml(PBF_CONFIG).unwrap();
+    // TODO
+    pbf_yaml();
 }
 
 #[test]
 fn pbf_graph() {
-    let cfg = Config::from_yaml(PBF_CONFIG).unwrap();
-    let graph = parse(cfg.parsing);
+    let parsing_cfg = configs::parsing::Config::from_yaml(PBF_CONFIG);
+    let graph = parse(parsing_cfg);
 
     let nodes = graph.nodes();
     let expected = 52_803;
@@ -52,8 +57,9 @@ fn pbf_graph() {
 
 #[test]
 fn fmi_graph() {
-    let cfg = Config::from_yaml(defaults::paths::resources::configs::ISLE_OF_MAN_FMI).unwrap();
-    let graph = parse(cfg.parsing);
+    let parsing_cfg =
+        configs::parsing::Config::from_yaml(defaults::paths::resources::configs::ISLE_OF_MAN_FMI);
+    let graph = parse(parsing_cfg);
 
     let nodes = graph.nodes();
     let expected = 52_803;
@@ -77,8 +83,10 @@ fn fmi_graph() {
 
 #[test]
 fn ch_fmi_graph() {
-    let cfg = Config::from_yaml(defaults::paths::resources::configs::ISLE_OF_MAN_CH_FMI).unwrap();
-    let graph = parse(cfg.parsing);
+    let parsing_cfg = configs::parsing::Config::from_yaml(
+        defaults::paths::resources::configs::ISLE_OF_MAN_CH_FMI,
+    );
+    let graph = parse(parsing_cfg);
 
     let nodes = graph.nodes();
     let expected = 52_803;

@@ -28,9 +28,6 @@ license = "Apache-2.0 WITH GPL-3.0-or-later"
 name = 'osmgraphing' # bin/osmgraphing.rs
 
 [[bin]]
-name = 'mapgenerator' # bin/mapgenerator.rs
-
-[[bin]]
 name = 'balancer' # bin/balancer.rs
 required-features = ["gpl-3.0"]
 

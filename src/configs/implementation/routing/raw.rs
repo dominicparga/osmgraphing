@@ -1,26 +1,17 @@
 use crate::configs::SimpleId;
 use serde::Deserialize;
 
+/// Don't deny unknown fields to allow multiple configs in one yaml-file.
 #[derive(Debug, Deserialize)]
-#[serde(rename_all = "kebab-case", deny_unknown_fields)]
 pub struct Config {
-    pub is_ch_dijkstra: Option<bool>,
-    pub metrics: Vec<Entry>,
+    pub routing: Content,
 }
 
-impl Config {
-    pub fn from_str(yaml_str: &str) -> Result<Config, String> {
-        #[derive(Deserialize)]
-        struct Wrapper {
-            routing: Config,
-        }
-
-        let wrapper: Result<Wrapper, _> = serde_yaml::from_str(yaml_str);
-        match wrapper {
-            Ok(wrapper) => Ok(wrapper.routing),
-            Err(e) => Err(format!("{}", e)),
-        }
-    }
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "kebab-case", deny_unknown_fields)]
+pub struct Content {
+    pub is_ch_dijkstra: Option<bool>,
+    pub metrics: Vec<Entry>,
 }
 
 #[derive(Debug, Deserialize)]

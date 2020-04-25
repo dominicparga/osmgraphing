@@ -2,12 +2,12 @@
 // March 6th, 2020
 
 use osmgraphing::{
-    configs::{self, Config},
+    configs,
     defaults::capacity::DimVec,
     helpers,
     io::Parser,
     network::{Graph, MetricIdx, NodeIdx},
-    routing::{self},
+    routing,
 };
 use rand::{
     distributions::{Distribution, Uniform},
@@ -18,6 +18,7 @@ use rand::{
 pub mod defaults {
     pub const DISTANCE_ID: &str = "kilometers";
     pub const DURATION_ID: &str = "minutes";
+    pub const SPEED_ID: &str = "kmph";
 
     pub mod paths {
         pub mod resources {
@@ -65,39 +66,37 @@ pub fn test_dijkstra(
         )>,
     >,
 ) {
-    let mut cfg = Config::from_yaml(config_file).unwrap();
-    cfg.routing = configs::routing::Config::from_str(
+    let parsing_cfg = configs::parsing::Config::from_yaml(config_file);
+    let routing_cfg = configs::routing::Config::from_str(
         &format!(
             "routing: {{ metrics: [{{ id: '{}' }}], is-ch-dijkstra: {} }}",
             metric_id,
             if is_ch_dijkstra { "true" } else { "false" }
         ),
-        &cfg.parsing,
-    )
-    .ok();
+        &parsing_cfg,
+    );
 
     let mut dijkstra = routing::Dijkstra::new();
-    let expected_paths = expected_paths(&cfg.parsing);
+    let expected_paths = expected_paths(&parsing_cfg);
 
-    assert_path(&mut dijkstra, expected_paths, cfg);
+    assert_path(&mut dijkstra, expected_paths, parsing_cfg, routing_cfg);
 }
 
 #[allow(dead_code)]
 pub fn compare_dijkstras(ch_fmi_config_file: &str, metric_id: &str) {
     // build configs
-    let mut cfg = Config::from_yaml(ch_fmi_config_file).unwrap();
-    cfg.routing = configs::routing::Config::from_str(
+
+    let parsing_cfg = configs::parsing::Config::from_yaml(ch_fmi_config_file);
+    let mut routing_cfg = configs::routing::Config::from_str(
         &format!("routing: {{ metrics: [{{ id: '{}' }}] }}", metric_id),
-        &cfg.parsing,
-    )
-    .ok();
-    let mut cfg_routing = cfg.routing.unwrap();
-    cfg_routing.is_ch_dijkstra = false;
-    let mut cfg_routing_ch = cfg_routing.clone();
-    cfg_routing_ch.is_ch_dijkstra = true;
+        &parsing_cfg,
+    );
+    routing_cfg.is_ch_dijkstra = false;
+    let mut ch_routing_cfg = routing_cfg.clone();
+    ch_routing_cfg.is_ch_dijkstra = true;
 
     // parse graph and init dijkstra
-    let graph = Parser::parse_and_finalize(cfg.parsing).unwrap();
+    let graph = Parser::parse_and_finalize(parsing_cfg).unwrap();
 
     let nodes = graph.nodes();
     let mut dijkstra = routing::Dijkstra::new();
@@ -130,8 +129,8 @@ pub fn compare_dijkstras(ch_fmi_config_file: &str, metric_id: &str) {
         let dst = nodes.create(dst_idx);
 
         let option_ch_path =
-            dijkstra.compute_best_path(src.idx(), dst.idx(), &graph, &cfg_routing_ch);
-        let option_path = dijkstra.compute_best_path(src.idx(), dst.idx(), &graph, &cfg_routing);
+            dijkstra.compute_best_path(src.idx(), dst.idx(), &graph, &ch_routing_cfg);
+        let option_path = dijkstra.compute_best_path(src.idx(), dst.idx(), &graph, &routing_cfg);
 
         // check if both are none/not-none
         if option_ch_path.is_none() != option_path.is_none() {
@@ -269,18 +268,12 @@ pub fn assert_path(
         DimVec<MetricIdx>,
         Option<(DimVec<f64>, Vec<Vec<TestNode>>)>,
     )>,
-    cfg: Config,
+    parsing_cfg: configs::parsing::Config,
+    routing_cfg: configs::routing::Config,
 ) {
-    let graph = parse(cfg.parsing);
+    let graph = parse(parsing_cfg);
     for (src, dst, metric_indices, option_specs) in expected_paths {
-        let option_path = dijkstra.compute_best_path(
-            src.idx,
-            dst.idx,
-            &graph,
-            &cfg.routing
-                .as_ref()
-                .expect("Routing-config should be existent"),
-        );
+        let option_path = dijkstra.compute_best_path(src.idx, dst.idx, &graph, &routing_cfg);
         assert_eq!(
             option_path.is_some(),
             option_specs.is_some(),

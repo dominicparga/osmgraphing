@@ -1,8 +1,7 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use log::error;
 use osmgraphing::{
-    configs::{self, Config},
-    helpers,
+    configs, helpers,
     io::Parser,
     network::{Graph, NodeIdx},
     routing,
@@ -12,14 +11,15 @@ fn criterion_benchmark(c: &mut Criterion) {
     helpers::init_logging("WARN", vec![]).expect("No user-input, so this should be fine.");
 
     // parsing
-    let cfg = Config::from_yaml("resources/configs/isle-of-man.pbf.yaml").unwrap();
+    let parsing_cfg =
+        configs::parsing::Config::from_yaml("resources/configs/isle-of-man.pbf.yaml").unwrap();
     let routing_strs = vec![
         "routing: { metrics: [{ id: 'km' }] }",
         "routing: { metrics: [{ id: 'km' }, { id: 'min' }] }",
     ];
 
     // create graph
-    let graph = match Parser::parse_and_finalize(cfg.parsing) {
+    let graph = match Parser::parse_and_finalize(parsing_cfg) {
         Ok(graph) => graph,
         Err(msg) => {
             error!("{}", msg);

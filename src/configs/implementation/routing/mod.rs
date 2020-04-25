@@ -1,8 +1,11 @@
 use crate::{
     configs::parsing,
     defaults::{self, capacity::DimVec},
+    helpers,
+    io::SupportingFileExts,
 };
 use smallvec::smallvec;
+use std::path::Path;
 pub mod raw;
 
 /// # Specifying routing (TODO update text)
@@ -17,13 +20,36 @@ pub struct Config {
     pub alphas: DimVec<f64>,
 }
 
+impl SupportingFileExts for Config {
+    fn supported_exts<'a>() -> &'a [&'a str] {
+        &["yaml"]
+    }
+}
+
 impl Config {
-    pub fn from_str(yaml_str: &str, parsing_cfg: &parsing::Config) -> Result<Config, String> {
-        let raw_cfg = raw::Config::from_str(yaml_str)?;
-        Ok(Config::from_raw(raw_cfg, parsing_cfg))
+    pub fn try_from_str(yaml_str: &str, parsing_cfg: &parsing::Config) -> Result<Config, String> {
+        let raw_cfg = {
+            match serde_yaml::from_str(yaml_str) {
+                Ok(raw_cfg) => raw_cfg,
+                Err(e) => return Err(format!("{}", e)),
+            }
+        };
+        Config::try_from_raw(raw_cfg, parsing_cfg)
     }
 
-    pub fn from_raw(raw_cfg: raw::Config, parsing_cfg: &parsing::Config) -> Config {
+    pub fn from_str(yaml_str: &str, parsing_cfg: &parsing::Config) -> Config {
+        match Config::try_from_str(yaml_str, parsing_cfg) {
+            Ok(cfg) => cfg,
+            Err(msg) => panic!("{}", msg),
+        }
+    }
+
+    pub fn try_from_raw(
+        raw_cfg: raw::Config,
+        parsing_cfg: &parsing::Config,
+    ) -> Result<Config, String> {
+        let raw_cfg = raw_cfg.routing;
+
         // Alpha is 0.0 because non-mentioned id will not be considered.
         let mut alphas = smallvec![0.0; parsing_cfg.edges.metrics.units.len()];
 
@@ -39,16 +65,46 @@ impl Config {
             {
                 alphas[metric_idx] = alpha;
             } else {
-                panic!(
+                return Err(format!(
                     "The given id {} should get alpha {}, but doesn't exist.",
                     entry.id, alpha
-                );
+                ));
             }
         }
 
-        Config {
+        Ok(Config {
             is_ch_dijkstra: raw_cfg.is_ch_dijkstra.unwrap_or(false),
             alphas,
+        })
+    }
+
+    pub fn from_raw(raw_cfg: raw::Config, parsing_cfg: &parsing::Config) -> Config {
+        match Config::try_from_raw(raw_cfg, parsing_cfg) {
+            Ok(cfg) => cfg,
+            Err(msg) => panic!("{}", msg),
+        }
+    }
+
+    pub fn try_from_yaml<P: AsRef<Path> + ?Sized>(
+        path: &P,
+        parsing_cfg: &parsing::Config,
+    ) -> Result<Config, String> {
+        let file = {
+            Config::find_supported_ext(path)?;
+            helpers::open_file(path)?
+        };
+
+        let raw_cfg = match serde_yaml::from_reader(file) {
+            Ok(raw_cfg) => raw_cfg,
+            Err(e) => return Err(format!("{}", e)),
+        };
+        Config::try_from_raw(raw_cfg, parsing_cfg)
+    }
+
+    pub fn from_yaml<P: AsRef<Path> + ?Sized>(path: &P, parsing_cfg: &parsing::Config) -> Config {
+        match Config::try_from_yaml(path, parsing_cfg) {
+            Ok(cfg) => cfg,
+            Err(msg) => panic!("{}", msg),
         }
     }
 }

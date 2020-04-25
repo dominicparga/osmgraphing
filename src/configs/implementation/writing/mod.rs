@@ -1,4 +1,7 @@
-use crate::{helpers, io::SupportingFileExts};
+use crate::{
+    helpers,
+    io::{SupportingFileExts, Writer},
+};
 use serde::Deserialize;
 use std::path::{Path, PathBuf};
 pub mod edges;
@@ -21,6 +24,8 @@ impl SupportingFileExts for Config {
 
 impl From<raw::Config> for Config {
     fn from(raw_cfg: raw::Config) -> Config {
+        let raw_cfg = raw_cfg.writing;
+
         Config {
             map_file: raw_cfg.map_file,
             nodes: nodes::Config::from(raw_cfg.nodes),
@@ -30,14 +35,27 @@ impl From<raw::Config> for Config {
 }
 
 impl Config {
-    pub fn from_yaml<P: AsRef<Path> + ?Sized>(path: &P) -> Result<Self, String> {
+    pub fn try_from_yaml<P: AsRef<Path> + ?Sized>(path: &P) -> Result<Config, String> {
         let file = {
-            Self::find_supported_ext(path)?;
+            Config::find_supported_ext(path)?;
             helpers::open_file(path)?
         };
-        match serde_yaml::from_reader(file) {
-            Ok(cfg) => Ok(cfg),
-            Err(msg) => Err(format!("{}", msg)),
+
+        let cfg: Config = match serde_yaml::from_reader(file) {
+            Ok(cfg) => cfg,
+            Err(msg) => return Err(format!("{}", msg)),
+        };
+
+        match Writer::find_supported_ext(&cfg.map_file) {
+            Ok(_) => Ok(cfg),
+            Err(msg) => Err(format!("Wrong writer-map-file: {}", msg)),
+        }
+    }
+
+    pub fn from_yaml<P: AsRef<Path> + ?Sized>(path: &P) -> Config {
+        match Config::try_from_yaml(path) {
+            Ok(cfg) => cfg,
+            Err(msg) => panic!("{}", msg),
         }
     }
 }
