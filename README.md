@@ -19,7 +19,7 @@ All calculations should be done effectively on a single desktop instead of an ex
 ## Reason for `version < 1.0.0`
 
 I'm currently building this library for my master-thesis, leading to interface-changes with breaking changes (at least) every few weeks, why version `1.0.0` is not supported yet.
-However, the underlying parser and graph-structure are working very stable, efficiently, tested with different maps (see `resources/`), and will be used in `April 2020` to simulate different routing-scenarios, so version `1.0.0` should be reached soon. `:)`
+However, the underlying parser and graph-structure are working very stable, efficiently, tested with different maps (see `resources/`), and will be used in `May 2020` to simulate different routing-scenarios, so version `1.0.0` should be reached soon. `:)`
 
 
 ## Setup and usage
@@ -85,6 +85,8 @@ The `Ignore`s are important, because the `multi-ch-constructor` needs the placeh
 Besides that, the `multi-ch-constructor` uses node-indices as ids, leading to errors when the mapping `node -> indices [0; n]` is not surjective.
 
 ```yaml
+# Note: old syntax, will be replaced soon.
+
 parser:
   map-file: 'resources/maps/isle-of-man_2020-03-14.osm.pbf'
   vehicles:
