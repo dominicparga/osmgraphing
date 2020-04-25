@@ -66,11 +66,6 @@ Maybe, it is concept for later documentation, or just keep-up-the-good-work (`ku
   - tags: `lanes`, `lanes:backward` (`way-id: 33172848`)
 
 
-### Extend generating
-
-- Process `parser::EdgeCategory::ShortcutEdgeIdx`
-
-
 ### Extend routing
 
 - Implement little parser for a file containing routes.
