@@ -1,15 +1,25 @@
-parser:
+parsing:
   map-file: 'resources/maps/isle-of-man_2020-03-14.fmi'
   vehicles:
     category: 'Car'
     are-drivers-picky: false
   nodes:
-  - category: 'NodeId'
-  - category: 'Ignore'
-  - category: 'Latitude'
-  - category: 'Longitude'
+  - meta: { info: 'NodeId', id: 'node-id' }
+  - ignored # osm-id
+  - metric: { unit: 'Latitude', id: 'latitude' }
+  - metric: { unit: 'Longitude', id: 'longitude' }
   edges:
-  - category: 'SrcId'
-  - category: 'DstId'
-  - category: 'Meters'
-  - category: 'Seconds'
+  - meta: { info: 'SrcId', id: 'src-id' }
+  - meta: { info: 'DstId', id: 'dst-id' }
+  - metric: { unit: 'Meters', id: 'meters' }
+  - metric: { unit: 'Seconds', id: 'seconds' }
+  generating:
+    nodes: []
+    edges:
+    - convert:
+        from: { unit: 'Meters', id: 'meters' }
+        to: { unit: 'Kilometers', id: 'kilometers' }
+    - convert:
+        from: { unit: 'Seconds', id: 'seconds' }
+        to: { unit: 'Minutes', id: 'minutes' }
+

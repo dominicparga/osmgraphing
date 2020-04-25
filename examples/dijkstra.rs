@@ -7,33 +7,17 @@ use osmgraphing::{
 };
 use std::{path::PathBuf, time::Instant};
 
-fn main() {
+fn main() -> Result<(), String> {
     helpers::init_logging("INFO", vec!["dijkstra"]).expect("LogLevel 'INFO' does exist.");
     info!("Executing example: A*");
 
-    let map_file = "resources/configs/simple-stuttgart.fmi.yaml";
+    let raw_cfg = PathBuf::from("resources/configs/simple-stuttgart.fmi.yaml");
 
-    // get config by provided map-file
-    let (parsing_cfg, routing_cfg) = {
-        let raw_cfg = PathBuf::from(map_file);
+    // parsing
 
-        let parsing_cfg = match configs::parsing::Config::try_from_yaml(&raw_cfg) {
-            Ok(parsing_cfg) => parsing_cfg,
-            Err(msg) => {
-                error!("{}", msg);
-                return;
-            }
-        };
-
-        let routing_cfg = match configs::routing::Config::try_from_yaml(&raw_cfg, &parsing_cfg) {
-            Ok(routing_cfg) => routing_cfg,
-            Err(msg) => {
-                error!("{}", msg);
-                return;
-            }
-        };
-
-        (parsing_cfg, routing_cfg)
+    let parsing_cfg = match configs::parsing::Config::try_from_yaml(&raw_cfg) {
+        Ok(parsing_cfg) => parsing_cfg,
+        Err(msg) => return Err(format!("{}", msg)),
     };
 
     // measure parsing-time
@@ -43,10 +27,7 @@ fn main() {
 
     let graph = match Parser::parse_and_finalize(parsing_cfg) {
         Ok(graph) => graph,
-        Err(msg) => {
-            error!("{}", msg);
-            return;
-        }
+        Err(msg) => return Err(format!("{}", msg)),
     };
     info!(
         "Finished parsing in {} seconds ({} µs).",
@@ -56,10 +37,16 @@ fn main() {
     info!("");
     info!("{}", graph);
 
-    // init routing to reuse it
+    // routing
+
+    let routing_cfg = match configs::routing::Config::try_from_yaml(&raw_cfg, graph.cfg()) {
+        Ok(routing_cfg) => routing_cfg,
+        Err(msg) => return Err(format!("{}", msg)),
+    };
     let mut dijkstra = routing::Dijkstra::new();
 
     // generate route-pairs
+
     let nodes = graph.nodes();
     let src = nodes.create(NodeIdx(1));
     let dst = nodes.create(NodeIdx(5));
@@ -82,4 +69,6 @@ fn main() {
     } else {
         info!("No path from ({}) to ({}).", src, dst);
     }
+
+    Ok(())
 }

@@ -66,42 +66,71 @@ pub fn test_dijkstra(
         )>,
     >,
 ) {
+    // parse
+
     let parsing_cfg = configs::parsing::Config::from_yaml(config_file);
+    let graph = parse(parsing_cfg);
+
+    // set up routing
+
+    let mut dijkstra = routing::Dijkstra::new();
+    let expected_paths = expected_paths(graph.cfg());
+
     let routing_cfg = configs::routing::Config::from_str(
         &format!(
             "routing: {{ metrics: [{{ id: '{}' }}], is-ch-dijkstra: {} }}",
             metric_id,
             if is_ch_dijkstra { "true" } else { "false" }
         ),
-        &parsing_cfg,
+        graph.cfg(),
     );
 
-    let mut dijkstra = routing::Dijkstra::new();
-    let expected_paths = expected_paths(&parsing_cfg);
+    // test
 
-    assert_path(&mut dijkstra, expected_paths, parsing_cfg, routing_cfg);
+    for (src, dst, metric_indices, option_specs) in expected_paths {
+        let option_path = dijkstra.compute_best_path(src.idx, dst.idx, &graph, &routing_cfg);
+        assert_eq!(
+            option_path.is_some(),
+            option_specs.is_some(),
+            "Path from {} to {} should be {}",
+            src,
+            dst,
+            if option_specs.is_some() {
+                "Some"
+            } else {
+                "None"
+            }
+        );
+
+        if let (Some((cost, nodes)), Some(actual_path)) = (option_specs, option_path) {
+            TestPath::from_alternatives(src, dst, cost, metric_indices, nodes)
+                .assert_correct(&actual_path, &graph);
+        }
+    }
 }
 
 #[allow(dead_code)]
 pub fn compare_dijkstras(ch_fmi_config_file: &str, metric_id: &str) {
-    // build configs
+    // parse graph
 
     let parsing_cfg = configs::parsing::Config::from_yaml(ch_fmi_config_file);
+    let graph = Parser::parse_and_finalize(parsing_cfg).unwrap();
+
+    // init dijkstra for routing
+
+    let nodes = graph.nodes();
+    let mut dijkstra = routing::Dijkstra::new();
+
     let mut routing_cfg = configs::routing::Config::from_str(
         &format!("routing: {{ metrics: [{{ id: '{}' }}] }}", metric_id),
-        &parsing_cfg,
+        graph.cfg(),
     );
     routing_cfg.is_ch_dijkstra = false;
     let mut ch_routing_cfg = routing_cfg.clone();
     ch_routing_cfg.is_ch_dijkstra = true;
 
-    // parse graph and init dijkstra
-    let graph = Parser::parse_and_finalize(parsing_cfg).unwrap();
-
-    let nodes = graph.nodes();
-    let mut dijkstra = routing::Dijkstra::new();
-
     // generate random route-pairs
+
     let route_count = 100;
     let seed = 42;
 
@@ -123,6 +152,8 @@ pub fn compare_dijkstras(ch_fmi_config_file: &str, metric_id: &str) {
             }
         }
     };
+
+    // testing
 
     while let Some((src_idx, dst_idx)) = gen_route() {
         let src = nodes.create(src_idx);
@@ -256,40 +287,5 @@ pub fn assert_graph(
 
     for test_edge in fwd_test_edges.iter().chain(bwd_test_edges.iter()) {
         test_edge.assert_correct(&graph);
-    }
-}
-
-#[allow(dead_code)]
-pub fn assert_path(
-    dijkstra: &mut routing::Dijkstra,
-    expected_paths: Vec<(
-        TestNode,
-        TestNode,
-        DimVec<MetricIdx>,
-        Option<(DimVec<f64>, Vec<Vec<TestNode>>)>,
-    )>,
-    parsing_cfg: configs::parsing::Config,
-    routing_cfg: configs::routing::Config,
-) {
-    let graph = parse(parsing_cfg);
-    for (src, dst, metric_indices, option_specs) in expected_paths {
-        let option_path = dijkstra.compute_best_path(src.idx, dst.idx, &graph, &routing_cfg);
-        assert_eq!(
-            option_path.is_some(),
-            option_specs.is_some(),
-            "Path from {} to {} should be {}",
-            src,
-            dst,
-            if option_specs.is_some() {
-                "Some"
-            } else {
-                "None"
-            }
-        );
-
-        if let (Some((cost, nodes)), Some(actual_path)) = (option_specs, option_path) {
-            TestPath::from_alternatives(src, dst, cost, metric_indices, nodes)
-                .assert_correct(&actual_path, &graph);
-        }
     }
 }

@@ -1,4 +1,4 @@
-use log::{error, info, warn};
+use log::{info, warn};
 use osmgraphing::{
     configs, helpers,
     io::{Parser, Writer},
@@ -11,16 +11,13 @@ use rand::{
 };
 use std::{path::PathBuf, time::Instant};
 
-fn main() {
+fn main() -> Result<(), String> {
     // process user-input
 
     let matches = parse_cmdline();
     match helpers::init_logging(matches.value_of("log").unwrap(), vec!["balancer"]) {
         Ok(_) => (),
-        Err(msg) => {
-            error!("{}", msg);
-            return;
-        }
+        Err(msg) => return Err(format!("{}", msg)),
     };
 
     info!("EXECUTE {}", env!("CARGO_PKG_NAME"));
@@ -34,10 +31,7 @@ fn main() {
     let parsing_cfg = {
         match configs::parsing::Config::try_from_yaml(&raw_cfg) {
             Ok(cfg) => cfg,
-            Err(msg) => {
-                error!("{}", msg);
-                std::process::exit(1);
-            }
+            Err(msg) => return Err(format!("{}", msg)),
         }
     };
 
@@ -48,10 +42,7 @@ fn main() {
 
     let graph = match Parser::parse_and_finalize(parsing_cfg) {
         Ok(graph) => graph,
-        Err(msg) => {
-            error!("{}", msg);
-            std::process::exit(1);
-        }
+        Err(msg) => return Err(format!("{}", msg)),
     };
     info!(
         "Finished parsing in {} seconds ({} µs).",
@@ -71,21 +62,17 @@ fn main() {
         let writing_cfg = {
             match configs::writing::Config::try_from_yaml(&raw_cfg) {
                 Ok(cfg) => cfg,
-                Err(msg) => {
-                    error!("{}", msg);
-                    std::process::exit(1);
-                }
+                Err(msg) => return Err(format!("{}", msg)),
             }
         };
 
         // check if new file does already exist
 
         if writing_cfg.map_file.exists() {
-            error!(
+            return Err(format!(
                 "New map-file {} does already exist. Please remove it.",
                 writing_cfg.map_file.display()
-            );
-            std::process::exit(1);
+            ));
         }
 
         // writing to file
@@ -95,10 +82,7 @@ fn main() {
 
         match Writer::write(&graph, &writing_cfg) {
             Ok(()) => (),
-            Err(msg) => {
-                error!("{}", msg);
-                return;
-            }
+            Err(msg) => return Err(format!("{}", msg)),
         };
         info!(
             "Finished writing in {} seconds ({} µs).",
@@ -115,10 +99,7 @@ fn main() {
         let routing_cfg = {
             match configs::routing::Config::try_from_yaml(&raw_cfg, graph.cfg()) {
                 Ok(cfg) => cfg,
-                Err(msg) => {
-                    error!("{}", msg);
-                    std::process::exit(1);
-                }
+                Err(msg) => return Err(format!("{}", msg)),
             }
         };
 
@@ -187,6 +168,8 @@ fn main() {
             }
         }
     }
+
+    Ok(())
 }
 
 fn parse_cmdline<'a>() -> clap::ArgMatches<'a> {

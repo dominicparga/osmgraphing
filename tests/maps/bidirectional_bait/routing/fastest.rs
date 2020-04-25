@@ -11,17 +11,27 @@ use osmgraphing::{
 use smallvec::smallvec;
 
 const METRIC_ID: &str = defaults::DURATION_ID;
-const CONFIG: &str = defaults::paths::resources::configs::BIDIRECTIONAL_BAIT_FMI;
+const FMI_CONFIG: &str = defaults::paths::resources::configs::BIDIRECTIONAL_BAIT_FMI;
 const IS_CH_DIJKSTRA: bool = true;
 
 #[test]
 fn chdijkstra_on_map() {
-    test_dijkstra(CONFIG, METRIC_ID, IS_CH_DIJKSTRA, Box::new(expected_paths))
+    test_dijkstra(
+        FMI_CONFIG,
+        METRIC_ID,
+        IS_CH_DIJKSTRA,
+        Box::new(expected_paths),
+    )
 }
 
 #[test]
 fn dijkstra_on_map() {
-    test_dijkstra(CONFIG, METRIC_ID, !IS_CH_DIJKSTRA, Box::new(expected_paths))
+    test_dijkstra(
+        FMI_CONFIG,
+        METRIC_ID,
+        !IS_CH_DIJKSTRA,
+        Box::new(expected_paths),
+    )
 }
 
 fn expected_paths(

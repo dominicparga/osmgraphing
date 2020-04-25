@@ -1,91 +1,105 @@
-parser:
+# ---
+#
+# The following blueprint contains every possible information.
+# Note that ids have to be unique, which is not the case below.
+#
+# Besides that, a general info about storing the values in the graph:
+#
+# - Metrics are stored with the unit as provided, but the value itself is stored as f64.
+#   This allows you to use the metric in this config with another unit as it has been provided.
+#   For now, this doesn't make sense (e.g. converting seconds to meters), but their might be upcoming useful use-cases in the future.
+# - Note that conversions are executed for resulting values, not for incoming values.
+#   So converting a value from `Meters` to `Kilometers`, where the value has originally been provided in `Seconds`, does work.
+#   However, the used value will remain being stored in `Seconds`, if the used conversion-command doesn't convert it in-place (replacing it).
+#
+# ---
+
+# Reads in a graph and generates further information from the provided ones.
+# After generating metrics, the generating-sub-config will be deleted and added to the parsing-config directly.
+parsing:
   # relative to user, not to script
   map-file: 'relative-path-to-map-file'
   vehicles:
     category: 'Car' # | 'Bicycle' | 'Pedestrian'
-    # Value `false` leads to more edges,
-    # because edges are added, which are okay,
-    # but not suitable for this vehicle-category.
+    # Value `false` leads to more edges, because edges are added, which are okay, but not suitable for this vehicle-category.
     are-drivers-picky: false
-  # Order matters, if the map-file has a order, like `fmi`-files.
-  # Multiple occurences overwrites previous ones.
+  # With nodes, the order matters, if the map-file has a order, like `fmi`-files. Behaviour with multiple occurences is undefined, but it probably overwrites previous ones.
   nodes:
-  - category: 'NodeId'
-  - category: 'Ignore'
-  - category: 'Latitude'
-  - category: 'Longitude'
-  - category: 'Level'
-  - category: 'Ignore'
-  # Here, the order matters, if the map-file has a metric-order, like
-  # `fmi`-files. Each metric below will be stored in the graph. Metrics below,
-  # which have `provided=false`, will be calculated by other metrics and the
-  # result is being stored.
-  #
-  # Default-Ids are the category-name.
-  #
+  - meta: { info: 'NodeId', id: 'node-id' }
+  - meta: { info: 'Level', id: 'level' }
+  - metric: { unit: 'Latitude', id: 'latitude' }
+  - metric: { unit: 'Longitude', id: 'longitude' }
+  - ignored
+  # With edges, the order matters, if the map-file has a metric-order, like `fmi`-files. Each metric below will be stored in the graph.
   #
   # ATTENTION!!!
-  # In module 'defaults', set the inline-size accordingly for best performance
-  # and memory-usage.
+  # In module 'defaults', set the inline-size accordingly for best performance and memory-usage.
   edges:
-  - category: 'SrcId' # this category is allowed only once
-  - category: 'DstId' # this category is allowed only once
-  # Following categories can be used twice, but must have unique ids.
-  - category: 'Meters'
-    id: 'to-the-moon-and-back'
-    # Value `false` leads to calculate the value via coordinates and haversine.
-    is-provided: false
-  - category: 'Meters'
-    # is-provided: true # default is true
-  - category: 'KilometersPerHour'
-    id: 'faster-than-light'
-    # Value `false` leads to calculate the value via distance and duration.
-    is-provided: true
-    calc-rules: ['to-the-moon-and-back', 'Seconds']
-  - category: 'Seconds'
-    # Value `false` leads to calculate the value via distance and maxspeed.
-    is-provided: false
-    calc-rules: ['to-the-moon-and-back', 'faster-than-light']
-  - category: 'LaneCount'
-  - category: 'F64'
-    id: 'my-custom-value'
-    is-provided: true
-
-  # used for ch-graph, typically twice
-  - category: 'ShortcutEdgeIdx'
-  - category: 'ShortcutEdgeIdx'
-
-  # only this category is allowed to have duplicated ids
-  - category: 'Ignore'
-    id: 'unnecessary'
-  - category: 'Ignore'
-    id: 'unnecessary'
-
-generator:
+    # can be provided once
+  - meta: { info: 'SrcId', id: 'src-id'},
+  - meta: { info: 'DstId', id: 'dst-id'},
+    # used for ch-graph and can be provided once
+  - meta: { info: 'ShortcutIdx0', id: 'sc-idx-0'},
+  - meta: { info: 'ShortcutIdx1', id: 'sc-idx-1'},
+    # metrics, which can be used multiple times (with unique id)
+  - metric: { unit: 'Meters', id: 'meters' },
+  - metric: { unit: 'Kilometers', id: 'kilometers' },
+  - metric: { unit: 'Seconds', id: 'seconds' },
+  - metric: { unit: 'Minutes', id: 'minutes' },
+  - metric: { unit: 'Hours', id: 'hours' },
+  - metric: { unit: 'KilometersPerHour', id: 'kmph' },
+  - metric: { unit: 'LaneCount', id: 'lanecount' },
+  - metric: { unit: 'F64', id: 'f64' },
+  - ignored
+  # In case metrics can not be read from the graph directly, they may be generated or added here.
+  generating:
+    nodes:
+      # Register this id, so indices could be used as ids in a new graph-file.
+    - meta: { info: 'NodeIdx', id: 'node-idx' }
+    edges:
+      # Register these ids, so indices could be used as ids in a new graph-file.
+    - meta: { info: 'SrcIdx', id: 'src-idx'},
+    - meta: { info: 'DstIdx', id: 'dst-idx'},
+      # used for ch-graph, using a default-value, if no shortcut-idx exists yet
+    - meta: { info: 'ShortcutIdx0', id: 'sc-idx-0'},
+    - meta: { info: 'ShortcutIdx1', id: 'sc-idx-1'},
+      # Only distances are allowed, which are generated by the haversine directly.
+    - haversine: { unit: 'Kilometers', id: 'kilometers' }
+      # Converts from-value out-of-place, so value 'meters' won't be replaced.
+    - copy:
+        from: { unit: 'Meters', id: 'meters' }
+        to: { unit: 'Kilometers', id: 'kilometers' }
+      # Converts from-value in-place, so value 'seconds' will be replaced.
+    - convert:
+        from: { unit: 'Seconds', id: 'seconds' }
+        to: { unit: 'Hours', id: 'hours' }
+      # Creates a new value, using 'a' and 'b' according to the implementation of the unit of 'result', where 'a' is the first operand (e.g. divide 'a' by 'b').
+    - calc:
+        result: { unit: 'Minutes', id: 'minutes' }
+        a: { unit: 'Kilometers', id: 'kilometers' }
+        b: { unit: 'KilometersPerHour', id: 'kmph' }
+# After parsing and generating the graph, it may be written to an external fmi-file.
+# The following lines define the columns of the new fmi-file.
+writing:
+  # output-map-file
+  map-file: 'relative-path-to-map-file'
   nodes:
-  - category: 'NodeId'
-  - category: 'Ignore'
-  - category: 'Latitude'
-  - category: 'Longitude'
-  - category: 'Ignore'
-  - category: 'Level'
-  # mandatory convention: first node-id is src-id
+  - id: 'node-idx'
+  - id: 'latitude'
+  - ignored
+  - id: 'level'
+  - id: 'longitude'
   edges:
-  # mandatory convention: first node-id is src-id
   - id: 'src-id'
-  - id: 'dst-id'
-  - id: 'to-the-moon-and-back'
-  - id: 'unnecessary'
-  - id: 'faster-than-light'
-
+  - id: 'dst-idx'
+  - ignored
+  - id: 'meters'
 # The metrics, which should be considered in routing, are listed here.
 # The given alphas are used as scale.
 # The ch-flag specifies the routing-algorithm.
 # It doesn't change correctness, but effects performance positively and
 # negatively depending on the provided map.
 # It is recommended to set this properly.
-#
-# Optional, but will panic as soon as routing will try to use it
 routing:
   # optional; default is false
   is-ch-dijkstra: true

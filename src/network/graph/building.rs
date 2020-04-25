@@ -872,6 +872,23 @@ impl GraphBuilder {
                     generating::edges::Category::Haversine { unit, id } => {
                         // check unit
 
+                        if !match unit {
+                            generating::edges::metrics::UnitInfo::Meters => false,
+                            generating::edges::metrics::UnitInfo::Kilometers => true,
+                            generating::edges::metrics::UnitInfo::Seconds => false,
+                            generating::edges::metrics::UnitInfo::Minutes => false,
+                            generating::edges::metrics::UnitInfo::Hours => false,
+                            generating::edges::metrics::UnitInfo::KilometersPerHour => false,
+                            generating::edges::metrics::UnitInfo::LaneCount => false,
+                            generating::edges::metrics::UnitInfo::F64 => false,
+                        } {
+                            return Err(format!(
+                                "Haversine creates {:?}, but you may convert \
+                                the resulting value afterwards.",
+                                generating::edges::metrics::UnitInfo::Kilometers
+                            ));
+                        }
+
                         // calculate haversine-distance and update graph and config
 
                         for edge_idx in (0..graph.metrics.len()).map(EdgeIdx) {

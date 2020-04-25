@@ -18,12 +18,11 @@ parsing:
     - meta: { info: 'DstIdx', id: 'dst-idx' }
     - meta: { info: 'ShortcutIdx0', id: 'sc-idx-0' }
     - meta: { info: 'ShortcutIdx1', id: 'sc-idx-1' }
-    - haversine: { unit: 'Kilometers', id: 'km' }
+    - haversine: { unit: 'Kilometers', id: 'kilometers' }
     - calc:
-        result: { unit: 'Minutes', id: 'min' }
-        a: { unit: 'Kilometers', id: 'km' }
+        result: { unit: 'Minutes', id: 'minutes' }
+        a: { unit: 'Kilometers', id: 'kilometers' }
         b: { unit: 'KilometersPerHour', id: 'kmph' }
-
 writing:
   map-file: 'resources/maps/isle-of-man_2020-03-14.fmi'
   nodes:
@@ -36,8 +35,8 @@ writing:
   edges:
   - id: 'src-idx'
   - id: 'dst-idx'
-  - id: 'km'
+  - id: 'kilometers'
   # - id: 'kmph' # nope because addition (in ch) makes no sense
-  - id: 'seconds'
+  - id: 'minutes'
   - id: 'sc-idx-0'
   - id: 'sc-idx-1'
