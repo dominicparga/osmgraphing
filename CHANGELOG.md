@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 ## Table of contents
 
 1. [Unreleased](#unreleased)
+1. [v0.13.0](#v0.13.0)
 1. [v0.12.1](#v0.12.1)
     1. [v0.12.0](#v0.12.0)
 1. [v0.11.1](#v0.11.1)
@@ -42,6 +43,42 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 
 ### Added <a name="unreleased/added"></a>
 
+\-
+
+
+### Changed <a name="unreleased/changed"></a>
+
+\-
+
+
+### Deprecated <a name="unreleased/deprecated"></a>
+
+- Documentation is missing, though comments are very well.
+- `CHANGELOG.md` contains empty version-descriptions.
+  - Replace existing tags with ones referring to `CHANGELOG.md` and add old tag-texts to the `CHANGELOG.md`
+  - Inconsistent `semver` in old tags -> probably `cargo yank VERSION` needed
+- The link to `doc.rs` is hardcoded to `major.minor.patch=0.y.z` because `docs.rs` chooses version `1.0.0` though it's yanked..
+
+
+### Removed <a name="unreleased/removed"></a>
+
+\-
+
+
+### Fixed <a name="unreleased/fixed"></a>
+
+\-
+
+
+### Security <a name="unreleased/security"></a>
+
+\-
+
+
+## [v0.13.0][github/self/v0.13.0] <a name="v0.13.0"></a>
+
+### Added <a name="v0.13.0/added"></a>
+
 - Add __metric-access in graph__ to all metrics instead of working around it via unnecessary and non-performant access-methods.
 - Add licenses of all dependencies to new __license__ (see [changed](#unreleased/changed)).
 - Update __`README.md`__ by adding cgal-installation.
@@ -49,7 +86,7 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 - Add __balancer.rs__ and module __`exploration.rs`__, which are unfinished yet, but are causing the license-change to `GPL` when compiled with the __feature `gpl-3.0`__.
 
 
-### Changed <a name="unreleased/changed"></a>
+### Changed <a name="v0.13.0/changed"></a>
 
 - Improve __graph-access using Iterators__ more efficiently.
 - Improve routing- and cost-usage.
@@ -78,7 +115,7 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 - __Update tests__.
 
 
-### Deprecated <a name="unreleased/deprecated"></a>
+### Deprecated <a name="v0.13.0/deprecated"></a>
 
 - Documentation is missing, though comments are very well.
 - `CHANGELOG.md` contains empty version-descriptions.
@@ -87,7 +124,7 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 - The link to `doc.rs` is hardcoded to `major.minor.patch=0.y.z` because `docs.rs` chooses version `1.0.0` though it's yanked..
 
 
-### Removed <a name="unreleased/removed"></a>
+### Removed <a name="v0.13.0/removed"></a>
 
 - The binary __`mapgenerator`__ is now a part of the binary __`osmgraphing`__ using a flag.
 - Replace __`LICENSE`__ by `LICENSE.md`
@@ -95,14 +132,10 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 - Move code of module `units` into separate cargo-crate __`kissunits`__.
 
 
-### Fixed <a name="unreleased/fixed"></a>
+### Fixed <a name="v0.13.0/fixed"></a>
 
 - Fix __scripts__ (some bash-syntax has changed?).
-
-
-### Security <a name="unreleased/security"></a>
-
-\-
+- Add link for `v0.12.1` in `CHANGELOG.md`.
 
 
 ## [v0.12.1][github/self/v0.12.1] <a name="v0.12.1"></a>
@@ -119,6 +152,7 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
   - Replace existing tags with ones referring to `CHANGELOG.md` and add old tag-texts to the `CHANGELOG.md`
   - Inconsistent `semver` in old tags -> probably `cargo yank VERSION` needed
 - The link to `doc.rs` is hardcoded to `major.minor.patch=0.y.z` because `docs.rs` chooses version `1.0.0` though it's yanked..
+- `CHANGELOG.md` has a missing link for `v0.12.1`.
 
 
 ## [v0.12.0][github/self/v0.12.0] <a name="v0.12.0"></a>
@@ -725,7 +759,8 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 [keepachangelog]: https://keepachangelog.com/en/
 [semver]: https://semver.org/
 
-[github/self/unreleased]: https://github.com/dominicparga/osmgraphing/compare/v0.12.1...HEAD
+[github/self/unreleased]: https://github.com/dominicparga/osmgraphing/compare/v0.13.0...HEAD
+[github/self/v0.13.0]: https://github.com/dominicparga/osmgraphing/compare/v0.12.1...v0.13.0
 [github/self/v0.12.1]: https://github.com/dominicparga/osmgraphing/compare/v0.12.0...v0.12.1
 [github/self/v0.12.0]: https://github.com/dominicparga/osmgraphing/compare/v0.11.1...v0.12.0
 [github/self/v0.11.1]: https://github.com/dominicparga/osmgraphing/compare/v0.11.0...v0.11.1
