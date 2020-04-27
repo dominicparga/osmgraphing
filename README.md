@@ -131,7 +131,7 @@ generator:
 The `multi-ch`-tool needs 3 counts at the file-beginning: metric-count (dimension), node-count, edge-count.
 The `mapgenerator` does add these counts in this order.
 
-Before the `multi-ch`-tool can be used, it ehas to be built.
+Before the `multi-ch`-tool can be used, it has to be built.
 For the sake of optimization, you have to set the metric-count as dimension in [multi-ch-constructor/src/multi_lib/graph.hpp, line 49][github/lesstat/multi-ch-constructor/change-dim].
 Set this dimension according to the dimension in the previously generated `fmi`-file.
 
