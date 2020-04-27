@@ -694,7 +694,8 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 [keepachangelog]: https://keepachangelog.com/en/
 [semver]: https://semver.org/
 
-[github/self/unreleased]: https://github.com/dominicparga/osmgraphing/compare/v0.12.0...HEAD
+[github/self/unreleased]: https://github.com/dominicparga/osmgraphing/compare/v0.12.1...HEAD
+[github/self/v0.12.1]: https://github.com/dominicparga/osmgraphing/compare/v0.12.0...v0.12.1
 [github/self/v0.12.0]: https://github.com/dominicparga/osmgraphing/compare/v0.11.1...v0.12.0
 [github/self/v0.11.1]: https://github.com/dominicparga/osmgraphing/compare/v0.11.0...v0.11.1
 [github/self/v0.11.0]: https://github.com/dominicparga/osmgraphing/compare/v0.10.0...v0.11.0
