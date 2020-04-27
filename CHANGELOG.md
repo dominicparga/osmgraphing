@@ -42,12 +42,40 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 
 ### Added <a name="unreleased/added"></a>
 
-- Add __metric-access in graph__ to all metrics with one function (`get_all(...)`).
+- Add __metric-access in graph__ to all metrics instead of working around it via unnecessary and non-performant access-methods.
+- Add licenses of all dependencies to new __license__ (see [changed](#unreleased/changed)).
+- Update __`README.md`__ by adding cgal-installation.
+- Add __notes to `notes.md`__  about routing-heuristics via population-data and add some info from github-issues.
+- Add __balancer.rs__ and module __`exploration.rs`__, which are unfinished yet, but are causing the license-change to `GPL` when compiled with the __feature `gpl-3.0`__.
 
 
 ### Changed <a name="unreleased/changed"></a>
 
-- Improve __access to path-costs__ of a (shortest) path.
+- Improve __graph-access using Iterators__ more efficiently.
+- Improve routing- and cost-usage.
+  - Improve __access to path-costs__ of a (shortest) path.
+  - Implement __path-flattening__ to support unified shortcut-paths and to improve path's cost-accuracy.
+- Refactor `Cargo.toml` to support new licensing.
+- __Replace feature `osmgraphing` by feature `gpl-3.0`__ to support new licensing.
+- __Refactor configs__ completely, also differentiating between implementation, unaccessable from outside (like the __raw-configs__), and the module, accessable.
+  This makes the implementation more flexible and improves maintenance, especially when generating metrics from others.
+  - __Rename `generating` to `writing`__ and use the word `generating` for generating metrics.
+    Further, rewrite the `graph-writing-module`.
+  - Remove collected config and use __each sub-config__ (`parsing`, `writing`, `routing`) __separatedly__.
+  - __Routing-config__ has to be created __after the graph has been parsed__, to have the parsing-config being up-to-date.
+  - Change the __yaml-syntax__ to be much more (probably `100 %`) explicit and intuitive, leading to a very explicit and verbose implementation, which is easy to extend in complex manners.
+    - __Separate parsing__ graph-data __from generating__ graph-data.
+      This also includes refactoring the __graph-builder__ a lot.
+      - At first, the new approach creates the graph as provided, before the specified metrics will be generated.
+        The parsing-config in the graph is being updated during the generation-process.
+      - A new feature with this approach is the conversion of metrics (like `meters` to `kilometers`) and the __manipulation of the graph__ after it has been created.
+    - Update all existing __yaml-files__.
+    - Update the binary __`osmgraphing.rs`__ and merge the .
+    - __Update the parsers__ (`fmi` and `pbf`) accordingly.
+- Don't make things too abstract and use __node-indices for computing best paths__ (instead of created nodes).
+- __Return `Err(String)` in main-methods__ instead of printing the error and calling `std::process::exit(1)` to improve readability in certain cases, like testing, when the printed output is swallowed automatically.
+- Refactor __helpers__.
+- __Update tests__.
 
 
 ### Deprecated <a name="unreleased/deprecated"></a>
@@ -61,12 +89,15 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 
 ### Removed <a name="unreleased/removed"></a>
 
-\-
+- The binary __`mapgenerator`__ is now a part of the binary __`osmgraphing`__ using a flag.
+- Replace __`LICENSE`__ by `LICENSE.md`
+  - New license separating code relating to __Apache and GPL__.
+- Move code of module `units` into separate cargo-crate __`kissunits`__.
 
 
 ### Fixed <a name="unreleased/fixed"></a>
 
-\-
+- Fix __scripts__ (some bash-syntax has changed?).
 
 
 ### Security <a name="unreleased/security"></a>
