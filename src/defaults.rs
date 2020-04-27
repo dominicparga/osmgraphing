@@ -27,13 +27,13 @@ pub mod capacity {
     pub const MAX_BYTE_PER_CHUNK: usize = 200 * 1_000_000;
 }
 
-pub mod parser {
+pub mod parsing {
     // provided by multi-ch-constructor
     pub const NO_SHORTCUT_IDX: &str = "-1";
 }
 
-pub mod writer {
-    pub use super::parser::NO_SHORTCUT_IDX;
+pub mod writing {
+    pub use super::parsing::NO_SHORTCUT_IDX;
     pub const IGNORE_STR: &str = "_";
 }
 

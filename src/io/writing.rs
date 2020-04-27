@@ -83,7 +83,7 @@ pub mod fmi {
                         .iter()
                         .map(|id| match id {
                             Some(id) => format!("{}", id.0),
-                            None => format!("{}", defaults::writer::IGNORE_STR),
+                            None => format!("{}", defaults::writing::IGNORE_STR),
                         })
                         .collect::<Vec<_>>()
                 )?;
@@ -96,7 +96,7 @@ pub mod fmi {
                         .iter()
                         .map(|id| match id {
                             Some(id) => format!("{}", id.0),
-                            None => format!("{}", defaults::writer::IGNORE_STR),
+                            None => format!("{}", defaults::writing::IGNORE_STR),
                         })
                         .collect::<Vec<_>>()
                 )?;
@@ -205,7 +205,7 @@ pub mod fmi {
                         } else {
                             // if id is None
                             // -> ignore column
-                            write!(writer, "{}", defaults::writer::IGNORE_STR)?;
+                            write!(writer, "{}", defaults::writing::IGNORE_STR)?;
                         }
 
                         // Sth has been written, so
@@ -276,7 +276,7 @@ pub mod fmi {
                                                     None => write!(
                                                         writer,
                                                         "{}",
-                                                        defaults::writer::NO_SHORTCUT_IDX
+                                                        defaults::writing::NO_SHORTCUT_IDX
                                                     )?,
                                                 }
                                             }
@@ -288,7 +288,7 @@ pub mod fmi {
                                                     None => write!(
                                                         writer,
                                                         "{}",
-                                                        defaults::writer::NO_SHORTCUT_IDX
+                                                        defaults::writing::NO_SHORTCUT_IDX
                                                     )?,
                                                 }
                                             }
@@ -339,7 +339,7 @@ pub mod fmi {
                         } else {
                             // if id is None
                             // -> ignore column
-                            write!(writer, "{}", defaults::writer::IGNORE_STR)?;
+                            write!(writer, "{}", defaults::writing::IGNORE_STR)?;
                         }
 
                         // Sth has been written, so
