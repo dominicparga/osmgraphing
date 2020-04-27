@@ -1,32 +1,39 @@
 use crate::helpers::{assert_graph, defaults, parse, TestEdge, TestNode};
-use osmgraphing::{
-    configs::Config,
-    network::EdgeIdx,
-    units::{distance::Kilometers, geo::Coordinate, speed::KilometersPerHour, time::Seconds},
+use kissunits::{
+    distance::Kilometers,
+    geo::Coordinate,
+    speed::KilometersPerHour,
+    time::{Minutes, Seconds},
 };
+use osmgraphing::{configs, network::EdgeIdx};
 
-const CONFIG: &str = defaults::paths::resources::configs::SMALL_FMI;
-const CH_CONFIG: &str = defaults::paths::resources::configs::SMALL_CH_FMI;
+const FMI_CONFIG: &str = defaults::paths::resources::configs::SMALL_FMI;
+const CH_FMI_CONFIG: &str = defaults::paths::resources::configs::SMALL_CH_FMI;
 
 #[test]
 fn ch_fmi_yaml() {
-    Config::from_yaml(CH_CONFIG).unwrap();
+    let parsing_cfg = configs::parsing::Config::from_yaml(CH_FMI_CONFIG);
+    assert!(configs::writing::Config::try_from_yaml(CH_FMI_CONFIG).is_err());
+    assert!(configs::routing::Config::try_from_yaml(CH_FMI_CONFIG, &parsing_cfg).is_err());
 }
 
 #[test]
 fn fmi_yaml() {
-    Config::from_yaml(CONFIG).unwrap();
+    let parsing_cfg = configs::parsing::Config::from_yaml(FMI_CONFIG);
+    assert!(configs::writing::Config::try_from_yaml(FMI_CONFIG).is_err());
+    assert!(configs::routing::Config::try_from_yaml(FMI_CONFIG, &parsing_cfg).is_err());
 }
 
 #[test]
 fn yaml_str() {
-    Config::from_yaml(CONFIG).unwrap();
+    // TODO
+    fmi_yaml();
 }
 
 #[test]
 fn fmi_graph() {
-    let cfg = Config::from_yaml(CONFIG).unwrap();
-    let graph = parse(cfg.parser);
+    let parsing_cfg = configs::parsing::Config::from_yaml(FMI_CONFIG);
+    let graph = parse(parsing_cfg);
 
     //--------------------------------------------------------------------------------------------//
     // setup correct data
@@ -83,7 +90,7 @@ fn fmi_graph() {
             dst,
             Kilometers(meters / 1_000.0),
             KilometersPerHour(kmph),
-            Seconds(s),
+            Minutes::from(Seconds(s)),
         )
     })
     .collect();
@@ -120,7 +127,7 @@ fn fmi_graph() {
             dst,
             Kilometers(meters / 1_000.0),
             KilometersPerHour(kmph),
-            Seconds(s),
+            Minutes::from(Seconds(s)),
         )
     })
     .collect();

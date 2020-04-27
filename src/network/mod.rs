@@ -3,7 +3,6 @@ pub use graph::{
     building::{EdgeBuilder, GraphBuilder, NodeBuilder, ProtoEdge, ProtoNode, ProtoShortcut},
     EdgeAccessor, EdgeIdx, Graph, HalfEdge, MetricAccessor, MetricIdx, Node, NodeAccessor, NodeIdx,
 };
-use serde::Deserialize;
 
 //------------------------------------------------------------------------------------------------//
 
@@ -82,9 +81,13 @@ pub enum StreetCategory {
     Path,
 }
 
-#[derive(Copy, Clone, Debug, Deserialize)]
-pub enum VehicleCategory {
-    Car,
-    Bicycle,
-    Pedestrian,
+pub mod vehicles {
+    use serde::Deserialize;
+
+    #[derive(Copy, Clone, Debug, Deserialize)]
+    pub enum Category {
+        Car,
+        Bicycle,
+        Pedestrian,
+    }
 }

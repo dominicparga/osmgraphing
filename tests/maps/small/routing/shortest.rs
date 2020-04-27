@@ -1,9 +1,9 @@
 use crate::helpers::{compare_dijkstras, defaults, test_dijkstra, TestNode};
+use kissunits::{distance::Kilometers, geo::Coordinate};
 use osmgraphing::{
     configs::{self, SimpleId},
     defaults::capacity::DimVec,
     network::{MetricIdx, NodeIdx},
-    units::{distance::Kilometers, geo::Coordinate},
 };
 use smallvec::smallvec;
 
@@ -48,7 +48,7 @@ fn dijkstra_on_map() {
 }
 
 fn expected_paths(
-    cfg_parser: &configs::parser::Config,
+    parsing_cfg: &configs::parsing::Config,
 ) -> Vec<(
     TestNode,
     TestNode,
@@ -195,7 +195,15 @@ fn expected_paths(
             (
                 src,
                 dst,
-                smallvec![cfg_parser.edges.metric_idx(&SimpleId::from(METRIC_ID))],
+                smallvec![MetricIdx(
+                    parsing_cfg
+                        .edges
+                        .metrics
+                        .ids
+                        .iter()
+                        .position(|id| id == &SimpleId::from(METRIC_ID))
+                        .unwrap()
+                )],
                 path_info,
             )
         })

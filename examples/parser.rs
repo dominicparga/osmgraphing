@@ -1,5 +1,5 @@
 use log::{error, info};
-use osmgraphing::{configs::Config, helpers, io::Parser};
+use osmgraphing::{configs, helpers, io::Parser};
 use std::{path::PathBuf, time::Instant};
 
 fn main() {
@@ -7,10 +7,10 @@ fn main() {
     info!("Executing example: parser");
 
     // get config by provided map-file
-    let cfg = {
-        let cfg_file = PathBuf::from("resources/configs/isle-of-man.pbf.yaml");
-        match Config::from_yaml(&cfg_file) {
-            Ok(cfg) => cfg,
+    let parsing_cfg = {
+        let raw_cfg = PathBuf::from("resources/configs/isle-of-man.pbf.yaml");
+        match configs::parsing::Config::try_from_yaml(&raw_cfg) {
+            Ok(parsing_cfg) => parsing_cfg,
             Err(msg) => {
                 error!("{}", msg);
                 return;
@@ -21,7 +21,7 @@ fn main() {
     // measure parsing-time
     let now = Instant::now();
     // parse and create graph
-    let graph = match Parser::parse_and_finalize(cfg.parser) {
+    let graph = match Parser::parse_and_finalize(parsing_cfg) {
         Ok(graph) => graph,
         Err(msg) => {
             error!("{}", msg);

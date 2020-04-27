@@ -1,21 +1,28 @@
-parser:
+parsing:
   map-file: 'resources/maps/isle-of-man_2020-03-14.ch.fmi'
   vehicles:
     category: 'Car'
     are-drivers-picky: false
   nodes:
-  - category: 'NodeId' # node-idx
-  - category: 'Ignore' # osm-id
-  - category: 'Latitude'
-  - category: 'Longitude'
-  - category: 'Ignore' # height
-  - category: 'Level'
+  - meta: { info: 'NodeId', id: 'node-id' } # node-idx
+  - ignored # osm-id
+  - metric: { unit: 'Latitude', id: 'latitude' }
+  - metric: { unit: 'Longitude', id: 'longitude' }
+  - ignored # height
+  - meta: { info: 'Level', id: 'level' }
   edges:
-  - category: 'SrcId'
-  - category: 'DstId'
-  - category: 'Meters'
-  - category: 'Seconds'
-  - category: 'ShortcutEdgeIdx'
-    id: 'ShortcutEdgeIdx0'
-  - category: 'ShortcutEdgeIdx'
-    id: 'ShortcutEdgeIdx1'
+  - meta: { info: 'SrcId', id: 'src-id' }
+  - meta: { info: 'DstId', id: 'dst-id' }
+  - metric: { unit: 'Meters', id: 'meters' }
+  - metric: { unit: 'Seconds', id: 'seconds' }
+  - meta: { info: 'ShortcutIdx0', id: 'sc-idx-0' }
+  - meta: { info: 'ShortcutIdx1', id: 'sc-idx-1' }
+  generating:
+    nodes: []
+    edges:
+    - convert:
+        from: { unit: 'Meters', id: 'meters' }
+        to: { unit: 'Kilometers', id: 'kilometers' }
+    - convert:
+        from: { unit: 'Seconds', id: 'seconds' }
+        to: { unit: 'Minutes', id: 'minutes' }

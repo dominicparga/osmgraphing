@@ -2,7 +2,7 @@ pub mod fmi;
 pub mod pbf;
 
 use crate::{
-    configs::parser::{self, EdgeCategory, NodeCategory},
+    configs::parsing::{self, generating},
     defaults::capacity,
     io::{MapFileExt, SupportingFileExts, SupportingMapFileExts},
     network::{EdgeBuilder, Graph, GraphBuilder, NodeBuilder},
@@ -44,14 +44,14 @@ use std::path::Path;
 pub struct Parser;
 
 impl Parser {
-    pub fn parse(cfg: parser::Config) -> Result<GraphBuilder, String> {
+    pub fn parse(cfg: parsing::Config) -> Result<GraphBuilder, String> {
         match Parser::from_path(&cfg.map_file)? {
             MapFileExt::PBF => pbf::Parser::new().parse(cfg),
             MapFileExt::FMI => fmi::Parser::new().parse(cfg),
         }
     }
 
-    pub fn parse_and_finalize(cfg: parser::Config) -> Result<Graph, String> {
+    pub fn parse_and_finalize(cfg: parsing::Config) -> Result<Graph, String> {
         match Parser::from_path(&cfg.map_file)? {
             MapFileExt::PBF => pbf::Parser::new().parse_and_finalize(cfg),
             MapFileExt::FMI => fmi::Parser::new().parse_and_finalize(cfg),
@@ -67,11 +67,11 @@ impl SupportingFileExts for Parser {
 }
 
 trait Parsing {
-    fn preprocess(&mut self, cfg: &parser::Config) -> Result<(), String> {
-        check_parser_config(cfg)
+    fn preprocess(&mut self, cfg: &parsing::Config) -> Result<(), String> {
+        check_config(cfg)
     }
 
-    fn parse(&mut self, cfg: parser::Config) -> Result<GraphBuilder, String> {
+    fn parse(&mut self, cfg: parsing::Config) -> Result<GraphBuilder, String> {
         let mut builder = GraphBuilder::new(cfg);
 
         info!("START Process given file");
@@ -89,7 +89,7 @@ trait Parsing {
 
     fn parse_nodes(&self, builder: &mut NodeBuilder) -> Result<(), String>;
 
-    fn parse_and_finalize(&mut self, cfg: parser::Config) -> Result<Graph, String> {
+    fn parse_and_finalize(&mut self, cfg: parsing::Config) -> Result<Graph, String> {
         let path = Path::new(&cfg.map_file);
         info!("START Parse from given path {}", path.display());
 
@@ -102,53 +102,115 @@ trait Parsing {
     }
 }
 
-fn check_parser_config(cfg: &parser::Config) -> Result<(), String> {
-    // check if yaml-config is correct
-    if !cfg.nodes.categories().contains(&NodeCategory::NodeId) {
+/// check if yaml-config is correct
+fn check_config(cfg: &parsing::Config) -> Result<(), String> {
+    // check nodes
+
+    // is NodeId in config?
+    if !cfg.nodes.categories.iter().any(|category| match category {
+        parsing::nodes::Category::Meta { info, id: _ } => info == &parsing::nodes::MetaInfo::NodeId,
+        parsing::nodes::Category::Metric { unit: _, id: _ } | parsing::nodes::Category::Ignored => {
+            false
+        }
+    }) {
         return Err(String::from(
             "The provided config-file doesn't contain a NodeId, but needs to.",
         ));
     }
-    if !cfg.nodes.categories().contains(&NodeCategory::Latitude) {
+
+    // check nodes' coordinates
+
+    if !cfg.nodes.categories.iter().any(|category| match category {
+        parsing::nodes::Category::Metric { unit, id: _ } => {
+            unit == &parsing::nodes::metrics::UnitInfo::Latitude
+        }
+        parsing::nodes::Category::Meta { info: _, id: _ } | parsing::nodes::Category::Ignored => {
+            false
+        }
+    }) {
         return Err(String::from(
             "The provided config-file doesn't contain a latitude, but needs to.",
         ));
     }
-    if !cfg.nodes.categories().contains(&NodeCategory::Longitude) {
+
+    if !cfg.nodes.categories.iter().any(|category| match category {
+        parsing::nodes::Category::Metric { unit, id: _ } => {
+            unit == &parsing::nodes::metrics::UnitInfo::Longitude
+        }
+        parsing::nodes::Category::Meta { info: _, id: _ } | parsing::nodes::Category::Ignored => {
+            false
+        }
+    }) {
         return Err(String::from(
             "The provided config-file doesn't contain a longitude, but needs to.",
         ));
     }
-    if cfg.edges.dim() > capacity::SMALL_VEC_INLINE_SIZE {
+
+    // check edges' metric-memory-capacity
+
+    let dim = cfg.edges.metrics.units.len()
+        + if let Some(generating_cfg) = &cfg.generating {
+            generating_cfg
+                .edges
+                .categories
+                .iter()
+                .filter(|category| match category {
+                    generating::edges::Category::Meta { info: _, id: _ } => false,
+                    generating::edges::Category::Convert { from: _, to: _ } => false,
+                    generating::edges::Category::Calc {
+                        result: _,
+                        a: _,
+                        b: _,
+                    } => true,
+                    generating::edges::Category::Copy { from: _, to: _ } => true,
+                    generating::edges::Category::Haversine { unit: _, id: _ } => true,
+                })
+                .count()
+        } else {
+            0
+        };
+
+    if dim > capacity::SMALL_VEC_INLINE_SIZE {
         return Err(format!(
             "The provided config-file has more metrics for the graph ({}) \
              than the parser has been compiled to ({}).",
-            cfg.edges.dim(),
+            dim,
             capacity::SMALL_VEC_INLINE_SIZE
         ));
-    }
-
-    let count = cfg
-        .edges
-        .edge_categories()
-        .iter()
-        .filter(|category| category == &&EdgeCategory::ShortcutEdgeIdx)
-        .count();
-    if count > 0 && count != 2 {
-        return Err(format!(
-            "The config-file has a different number than 0 or 2 of edge-category '{}'",
-            EdgeCategory::ShortcutEdgeIdx
-        ));
-    }
-
-    if cfg.edges.dim() < capacity::SMALL_VEC_INLINE_SIZE {
+    } else if dim < capacity::SMALL_VEC_INLINE_SIZE {
         warn!(
             "The provided config-file has less metrics for the graph ({}) \
              than the parser has been compiled to ({}). \
              Compiling accordingly saves memory.",
-            cfg.edges.dim(),
+            dim,
             capacity::SMALL_VEC_INLINE_SIZE
         );
+    }
+
+    // check count of shortcut-edge-indices
+
+    let count =
+        cfg.edges
+            .categories
+            .iter()
+            .filter(|category| match category {
+                parsing::edges::Category::Meta { info, id: _ } => match info {
+                    parsing::edges::MetaInfo::ShortcutIdx0
+                    | parsing::edges::MetaInfo::ShortcutIdx1 => true,
+                    parsing::edges::MetaInfo::SrcId
+                    | parsing::edges::MetaInfo::SrcIdx
+                    | parsing::edges::MetaInfo::DstId
+                    | parsing::edges::MetaInfo::DstIdx => false,
+                },
+                parsing::edges::Category::Metric { unit: _, id: _ }
+                | parsing::edges::Category::Ignored => false,
+            })
+            .count();
+    if count > 0 && count != 2 {
+        return Err(format!(
+            "The config-file has {} shortcut-indices, but should have 0 or 2.",
+            count
+        ));
     }
 
     Ok(())

@@ -17,19 +17,19 @@ repository = "https://github.com/dominicparga/osmgraphing"
 readme = "README.md"
 keywords = ["osm", "route", "routing", "pbf", "xml"]
 categories = ["algorithms", "data-structures", "parser-implementations", "parsing"]
-license = "Apache-2.0"
+license = "Apache-2.0 WITH GPL-3.0-or-later"
 
 
 [features]
-osmgraphing = ["rand", "rand_pcg"]
+"gpl-3.0" = ["nd-triangulation"]
 
 
 [[bin]]
 name = 'osmgraphing' # bin/osmgraphing.rs
-required-features = ["osmgraphing"]
 
 [[bin]]
-name = 'mapgenerator' # bin/mapgenerator.rs
+name = 'balancer' # bin/balancer.rs
+required-features = ["gpl-3.0"]
 
 
 [[example]]
@@ -75,29 +75,24 @@ harness = false
 
 
 [dependencies]
-chrono = "0.4" # pretty date and time
 clap = "2.33" # cmdline-parsing
 env_logger = "0.6" # logging for external use, e.g. main.rs and examples
+kissunits = "1" # units like Meters or Coordinate
 log = "0.4"        # logging for internal use, e.g. lib.rs
 osmpbfreader = "0.13" # read osm.pbf-files
 progressing = "2" # progress-bar
+rand = "0.7" # generate random numbers
+rand_pcg = "0.2" # generate random numbers
 serde = "1" # serialization
 serde_yaml = "0.8" # (de-)serialization
 smallvec = "1" # inlining small vecs
 
-# generate random numbers
-# bin/osmgraphing
-rand = { version = "0.7", optional = true }
-# generate random numbers
-# bin/osmgraphing
-rand_pcg = { version = "0.2", optional = true }
+nd-triangulation = { version = "0.3", optional = true } # CGAL-interface
 
 
 [dev-dependencies]
-actix-web = "1" # backend-server
 actix-rt = "0.2" # backend-server
+actix-web = "1" # backend-server
+criterion = "0.3" # benchmarking
 futures = "0.1" # backend-server
 quick-xml = "0.14" # read xml-files
-rand = "0.7" # generate random numbers
-rand_pcg = "0.2" # generate random numbers
-criterion = "0.3" # benchmarking

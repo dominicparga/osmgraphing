@@ -1,7 +1,7 @@
 use crate::{
     defaults::capacity::DimVec,
     helpers,
-    network::{EdgeIdx, Graph, MetricIdx, NodeIdx},
+    network::{EdgeIdx, Graph, NodeIdx},
 };
 use smallvec::smallvec;
 use std::{
@@ -15,6 +15,7 @@ pub struct Path {
     src_idx: NodeIdx,
     dst_idx: NodeIdx,
     edges: Vec<EdgeIdx>,
+    costs: Option<DimVec<f64>>,
 }
 
 impl Display for Path {
@@ -22,18 +23,22 @@ impl Display for Path {
         let prettier_edges: Vec<_> = self.edges.iter().map(|edge_idx| **edge_idx).collect();
         write!(
             f,
-            "{{ src-idx: {}, dst-idx: {}, edges: {:?} }}",
-            self.src_idx, self.dst_idx, prettier_edges
+            "{{ src-idx: {}, dst-idx: {}, costs: {:?}, edges: {:?} }}",
+            self.src_idx, self.dst_idx, self.costs, prettier_edges
         )
     }
 }
 
 impl Path {
+    /// ATTENTION! This method does not calculate the path's cost.
+    /// This can be done, e.g., with `calc_cost(...)` or `flatten(...)`.
+    /// Accessing the costs without calculating them will lead to panics.
     pub fn new(src_idx: NodeIdx, dst_idx: NodeIdx, edges: Vec<EdgeIdx>) -> Path {
         Path {
             src_idx,
             dst_idx,
             edges,
+            costs: None,
         }
     }
 
@@ -49,13 +54,37 @@ impl Path {
         self.edges.len()
     }
 
-    /// Flattens shortcuts, out-of-place
+    /// ATTENTION! This method panics if the costs hasn't been calculated (e.g. `calc_cost(...)` or `flatten(...)`).
+    pub fn costs(&self) -> &DimVec<f64> {
+        self.costs
+            .as_ref()
+            .expect("Path's cost has to be calculated.")
+    }
+
+    /// Calculates the path's cost, but only if not existent.
+    pub fn calc_costs(&mut self, graph: &Graph) -> &DimVec<f64> {
+        if self.costs.is_none() {
+            let graph_metrics = graph.metrics();
+            self.costs = Some(
+                self.edges
+                    .iter()
+                    .map(|edge_idx| &graph_metrics[edge_idx])
+                    .fold(smallvec![0.0; graph_metrics.dim()], |acc, m| {
+                        helpers::add(&acc, m)
+                    }),
+            );
+        }
+        self.costs.as_ref().unwrap()
+    }
+
+    /// Flattens shortcuts, out-of-place, and calculates the flattened path's cost.
     pub fn flatten(self, graph: &Graph) -> Path {
         // setup new edges
         let mut flattened_path = Path {
             src_idx: self.src_idx,
             dst_idx: self.dst_idx,
             edges: Vec::with_capacity(self.edges.capacity()),
+            costs: Some(smallvec![0.0; graph.metrics().dim()]),
         };
 
         // interpret old edges as stack, beginning with src
@@ -74,19 +103,14 @@ impl Path {
             // edge-idx is not a shortcut
             // -> push to flattened path
             flattened_path.edges.push(edge_idx);
+            helpers::add_assign(
+                flattened_path.costs.as_mut().unwrap(),
+                &graph.metrics()[edge_idx],
+            );
         }
 
         flattened_path.edges.shrink_to_fit();
         flattened_path
-    }
-
-    pub fn calc_cost(&self, metric_indices: &[MetricIdx], graph: &Graph) -> DimVec<f64> {
-        self.edges
-            .iter()
-            .map(|edge_idx| graph.metrics().get_more(metric_indices, *edge_idx))
-            .fold(smallvec![0.0; metric_indices.len()], |acc, m| {
-                helpers::add(&acc, &m)
-            })
     }
 }
 

@@ -19,7 +19,7 @@ All calculations should be done effectively on a single desktop instead of an ex
 ## Reason for `version < 1.0.0`
 
 I'm currently building this library for my master-thesis, leading to interface-changes with breaking changes (at least) every few weeks, why version `1.0.0` is not supported yet.
-However, the underlying parser and graph-structure are working very stable, efficiently, tested with different maps (see `resources/`), and will be used in `April 2020` to simulate different routing-scenarios, so version `1.0.0` should be reached soon. `:)`
+However, the underlying parser and graph-structure are working very stable, efficiently, tested with different maps (see `resources/`), and will be used in `May 2020` to simulate different routing-scenarios, so version `1.0.0` should be reached soon. `:)`
 
 
 ## Setup and usage
@@ -29,8 +29,8 @@ However, the underlying parser and graph-structure are working very stable, effi
 Rust has a build-tool called `cargo`, which can be used to run everything except scripts in `scripts/`.
 
 ```zsh
-# Just executing some easy cargo-build-commands
-./scripts/build.sh
+# Build the binary for parsing maps and do routing
+cargo build --release
 # Parse isle-of-man
 ./target/release/osmgraphing --config resources/config/isle-of-man.pbf.yaml
 ```
@@ -85,6 +85,8 @@ The `Ignore`s are important, because the `multi-ch-constructor` needs the placeh
 Besides that, the `multi-ch-constructor` uses node-indices as ids, leading to errors when the mapping `node -> indices [0; n]` is not surjective.
 
 ```yaml
+# Note: old syntax, will be replaced soon.
+
 parser:
   map-file: 'resources/maps/isle-of-man_2020-03-14.osm.pbf'
   vehicles:
@@ -147,10 +149,26 @@ cmake --build build
 > Using it does only speedup your queries, but due to a different resulting order in the priority or rounding-errors, it could lead to different paths of same weight.
 
 
+## CGAL-interface with nd-triangulation
+
+For the graph-exploration and balancer, the crate [`nd-triangulation`][github/lesstat/nd-triangulation] is used, which is an interface to [`CGAL`][cgal]'s `c++`-implementation (licensed with `GPL-3.0`).
+Hence, you need the respective dependencies installed, as described in `nd-triangulation`.
+Maybe, [`CGAL`'s manual][cgal/manual/intro] helps.
+
+In case you are using `archlinux`: Following commands install the dependencies for `archlinux` and you are done.
+
+```zsh
+yay -S cgal
+yay -S eigen
+```
+
+For building accordingly, execute `cargo build --features "gpl-3.0"`.
+
+
 ## Credits
 
 The project started in the mid of 2019 as a student project.
-This page honors the workers and helpers of this project, sorted by their last names.
+This section honors the workers and helpers of this project, sorted by their last names.
 
 __[Florian Barth][github/lesstat]__  
 is the supervisor of the project since beginning and is always helping immediately with his experience and advice.
@@ -164,6 +182,8 @@ has been part of the project's first weeks when project-planning and learning Ru
 He has implemented the first (and running) approach of the `A*`-algorithm.
 
 
+[cgal]: https://www.cgal.org/
+[cgal/manual/intro]: https://doc.cgal.org/latest/Manual/general_intro.html
 [crates.io/self]: https://crates.io/crates/osmgraphing
 [crates.io/self/badge]: https://img.shields.io/crates/v/osmgraphing?style=for-the-badge
 [docs.rs/self]: https://docs.rs/osmgraphing/0/
@@ -175,6 +195,7 @@ He has implemented the first (and running) approach of the `A*`-algorithm.
 [github/lesstat/cyclops/blob/README]: https://github.com/Lesstat/cyclops/blob/master/README.md#graph-data
 [github/lesstat/multi-ch-constructor]: https://github.com/Lesstat/multi-ch-constructor
 [github/lesstat/multi-ch-constructor/change-dim]: https://github.com/Lesstat/multi-ch-constructor/blob/bec548c1a1ebeae7ac19d3250d5473199336d6fe/src/multi_lib/graph.hpp#L49
+[github/lesstat/nd-triangulation]: https://github.com/Lesstat/nd-triangulation
 [github/self/actions]: https://github.com/dominicparga/osmgraphing/actions
 [github/self/actions/badge]: https://img.shields.io/github/workflow/status/dominicparga/osmgraphing/Rust?label=nightly-build&style=for-the-badge
 [github/self/blob/changelog]: https://github.com/dominicparga/osmgraphing/blob/nightly/CHANGELOG.md
@@ -182,7 +203,7 @@ He has implemented the first (and running) approach of the `A*`-algorithm.
 [github/self/last-commit]: https://github.com/dominicparga/osmgraphing/commits
 [github/self/last-commit/badge]: https://img.shields.io/github/last-commit/dominicparga/osmgraphing?style=for-the-badge
 [github/self/license]: https://github.com/dominicparga/osmgraphing/blob/nightly/LICENSE.md
-[github/self/license/badge]: https://img.shields.io/badge/license-Apache--2.0-green?style=for-the-badge
+[github/self/license/badge]: https://img.shields.io/badge/LICENSE-Apache--2.0-green?style=for-the-badge
 [github/self/tags]: https://github.com/dominicparga/osmgraphing/tags
 [github/self/tags/badge]: https://img.shields.io/github/v/tag/dominicparga/osmgraphing?sort=semver&style=for-the-badge
 [github/self/tree/examples]: https://github.com/dominicparga/osmgraphing/tree/nightly/examples

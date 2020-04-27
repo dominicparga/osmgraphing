@@ -1,14 +1,14 @@
+use kissunits::{distance::Kilometers, geo::Coordinate, speed::KilometersPerHour, time::Minutes};
 use osmgraphing::{
-    defaults::{self, capacity::DimVec},
+    defaults::capacity::DimVec,
     helpers::ApproxEq,
     network::{EdgeIdx, Graph, MetricIdx, Node, NodeIdx},
     routing::{self},
-    units::{geo::Coordinate, speed::KilometersPerHour},
 };
-use smallvec::SmallVec;
+use smallvec::{smallvec, SmallVec};
 use std::fmt::{self, Display};
 
-#[derive(Clone, Debug, Eq)]
+#[derive(Clone, Debug)]
 pub struct TestNode {
     pub name: String,
     pub id: i64,
@@ -39,7 +39,7 @@ impl PartialEq for TestNode {
     fn eq(&self, other: &Self) -> bool {
         self.id == other.id
             && self.idx == other.idx
-            && self.coord == other.coord
+            && self.coord.approx_eq(&other.coord)
             && self.level == other.level
     }
 }
@@ -68,55 +68,47 @@ pub struct TestEdge {
     is_fwd: bool,
     src_idx: NodeIdx,
     dst_idx: NodeIdx,
-    metrics: Vec<f64>,
+    metrics: DimVec<f64>,
 }
 
 impl TestEdge {
     #[allow(dead_code)]
-    pub fn new_fwd<D, T>(
+    pub fn new_fwd(
         name: Option<&str>,
         edge_idx: EdgeIdx,
         src: &TestNode,
         dst: &TestNode,
-        distance: D,
+        distance: Kilometers,
         maxspeed: KilometersPerHour,
-        duration: T,
-    ) -> TestEdge
-    where
-        D: Into<defaults::distance::TYPE>,
-        T: Into<defaults::time::TYPE>,
-    {
+        duration: Minutes,
+    ) -> TestEdge {
         TestEdge {
             name: (name.unwrap_or(&format!("{}->{}", src.name, dst.name))).to_owned(),
             edge_idx: edge_idx,
             is_fwd: true,
             src_idx: src.idx.into(),
             dst_idx: dst.idx.into(),
-            metrics: vec![*distance.into(), *maxspeed, *duration.into()],
+            metrics: smallvec![*distance, *maxspeed, *duration],
         }
     }
 
     #[allow(dead_code)]
-    pub fn new_bwd<D, T>(
+    pub fn new_bwd(
         name: Option<&str>,
         edge_idx: EdgeIdx,
         src: &TestNode,
         dst: &TestNode,
-        distance: D,
+        distance: Kilometers,
         maxspeed: KilometersPerHour,
-        duration: T,
-    ) -> TestEdge
-    where
-        D: Into<defaults::distance::TYPE>,
-        T: Into<defaults::time::TYPE>,
-    {
+        duration: Minutes,
+    ) -> TestEdge {
         TestEdge {
             name: (name.unwrap_or(&format!("{}->{}", src.name, dst.name))).to_owned(),
             edge_idx: edge_idx,
             is_fwd: false,
             src_idx: src.idx.into(),
             dst_idx: dst.idx.into(),
-            metrics: vec![*distance.into(), *maxspeed, *duration.into()],
+            metrics: smallvec![*distance, *maxspeed, *duration],
         }
     }
 
@@ -125,7 +117,7 @@ impl TestEdge {
         // get graph-components dependent on own direction
         let fwd_edges = graph.fwd_edges();
         let bwd_edges = graph.bwd_edges();
-        let (edge, edge_idx) = {
+        let edge = {
             if self.is_fwd {
                 fwd_edges
                     .between(self.src_idx, self.dst_idx)
@@ -151,9 +143,12 @@ impl TestEdge {
         };
 
         assert_eq!(
-            edge_idx, self.edge_idx,
+            edge.idx(),
+            self.edge_idx,
             "Wrong {}edge-idx={} for {}",
-            prefix, edge_idx, self.name
+            prefix,
+            edge.idx(),
+            self.name
         );
         assert_eq!(
             edge.dst_idx(),
@@ -164,13 +159,11 @@ impl TestEdge {
             self.name
         );
 
-        let metric_indices = &[MetricIdx(0), MetricIdx(1), MetricIdx(2)];
-        let value = edge.metrics(metric_indices);
         let expected = SmallVec::from_slice(&self.metrics);
         assert!(
-            value.approx_eq(&expected),
+            edge.metrics().approx_eq(&expected),
             "Wrong metrics {:?} for {}edge {}. Expected: {:?}",
-            value,
+            edge.metrics(),
             prefix,
             self.name,
             expected
@@ -181,7 +174,7 @@ impl TestEdge {
 pub struct TestPath {
     src: TestNode,
     dst: TestNode,
-    cost: DimVec<f64>,
+    costs: DimVec<f64>,
     metric_indices: DimVec<MetricIdx>,
     alternative_nodes: Vec<Vec<TestNode>>,
 }
@@ -190,14 +183,14 @@ impl TestPath {
     pub fn from_alternatives(
         src: TestNode,
         dst: TestNode,
-        cost: DimVec<f64>,
+        costs: DimVec<f64>,
         metric_indices: DimVec<MetricIdx>,
         alternative_nodes: Vec<Vec<TestNode>>,
     ) -> TestPath {
         TestPath {
             src,
             dst,
-            cost,
+            costs,
             metric_indices,
             alternative_nodes,
         }
@@ -242,7 +235,7 @@ impl TestPath {
                             "Edge expected between idx={} and idx={}. Path is from idx={} to idx={}",
                             test_src.idx, test_dst.idx, path_src.idx, path_dst.idx
                         ))
-                        .1,
+                        .idx(),
                 );
             }
 
@@ -260,8 +253,11 @@ impl TestPath {
             // check path-cost
 
             let (expected_cost, actual_cost) = (
-                &self.cost,
-                flattened_actual_path.calc_cost(&self.metric_indices, graph),
+                &self.costs,
+                self.metric_indices
+                    .iter()
+                    .map(|&metric_idx| flattened_actual_path.costs()[*metric_idx])
+                    .collect(),
             );
             if !expected_cost.approx_eq(&actual_cost) {
                 wrong_cost_result = Some((expected_cost, actual_cost));

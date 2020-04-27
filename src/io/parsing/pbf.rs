@@ -1,10 +1,10 @@
 use crate::{
-    configs::parser::{self, EdgeCategory},
-    defaults::{self, capacity::DimVec},
+    configs::parsing::{self, edges},
+    defaults::capacity::DimVec,
     helpers,
-    network::{EdgeBuilder, MetricIdx, NodeBuilder, ProtoEdge, ProtoNode, StreetCategory},
-    units::geo::Coordinate,
+    network::{EdgeBuilder, NodeBuilder, ProtoEdge, ProtoNode, StreetCategory},
 };
+use kissunits::geo::Coordinate;
 use log::info;
 use osmpbfreader::{reader::OsmPbfReader, OsmObj};
 use smallvec::smallvec;
@@ -18,9 +18,45 @@ impl Parser {
 }
 
 impl super::Parsing for Parser {
-    fn preprocess(&mut self, cfg: &parser::Config) -> Result<(), String> {
+    fn preprocess(&mut self, cfg: &parsing::Config) -> Result<(), String> {
         info!("START Start preprocessing pbf-parser.");
-        super::check_parser_config(cfg)?;
+        super::check_config(cfg)?;
+
+        for category in cfg.edges.categories.iter() {
+            match category {
+                edges::Category::Meta { info, id: _ } => match info {
+                    edges::MetaInfo::SrcId | edges::MetaInfo::DstId => {
+                        // already checked in check_config(...)
+                    }
+                    edges::MetaInfo::SrcIdx
+                    | edges::MetaInfo::DstIdx
+                    | edges::MetaInfo::ShortcutIdx0
+                    | edges::MetaInfo::ShortcutIdx1 => {
+                        return Err(format!("{:?} are not supported in pbf-files.", category))
+                    }
+                },
+                edges::Category::Metric { unit, id: _ } => match unit {
+                    edges::metrics::UnitInfo::Meters
+                    | edges::metrics::UnitInfo::Kilometers
+                    | edges::metrics::UnitInfo::Seconds
+                    | edges::metrics::UnitInfo::Minutes
+                    | edges::metrics::UnitInfo::Hours
+                    | edges::metrics::UnitInfo::F64 => {
+                        return Err(format!(
+                            "The {:?} of an edge in a pbf-file has to be calculated, \
+                             but is expected to be provided.",
+                            category
+                        ));
+                    }
+                    edges::metrics::UnitInfo::KilometersPerHour
+                    | edges::metrics::UnitInfo::LaneCount => {
+                        // irrelevant
+                    }
+                },
+                edges::Category::Ignored => (),
+            }
+        }
+
         info!("FINISHED");
         Ok(())
     }
@@ -73,52 +109,35 @@ impl super::Parsing for Parser {
 
             // Collect metrics as expected by user-config
             // ATTENTION: A way contains multiple edges, thus be careful when adding new metrics.
-            let mut metrics: DimVec<_> = smallvec![None; builder.cfg().edges.dim()];
-            for metric_idx in (0..builder.cfg().edges.dim()).map(MetricIdx) {
-                let category = builder.cfg().edges.metric_category(metric_idx);
-                let is_provided = builder.cfg().edges.is_metric_provided(metric_idx);
 
+            let mut metrics: DimVec<_> = smallvec![];
+
+            for category in builder.cfg().edges.categories.iter() {
                 match category {
-                    EdgeCategory::Meters | EdgeCategory::Seconds | EdgeCategory::Custom => {
-                        if is_provided {
-                            return Err(format!(
-                                "The {} of an edge in a pbf-file has to be calculated, \
-                                 but is expected to be provided.",
-                                category
-                            ));
-                        }
+                    edges::Category::Meta { info: _, id: _ } => {
+                        // already checked in preprocessing
                     }
-                    EdgeCategory::KilometersPerHour => {
-                        if is_provided {
-                            let maxspeed =
-                                defaults::speed::TYPE::from(highway_tag.parse_maxspeed(&way));
-                            metrics[*metric_idx] = Some(*maxspeed);
-                        } else {
-                            return Err(format!(
-                                "The {} of an edge in a pbf-file has to be provided, \
-                                 but is expected to be calculated.",
-                                category
-                            ));
+                    edges::Category::Metric { unit, id: _ } => match unit {
+                        edges::metrics::UnitInfo::KilometersPerHour => {
+                            let maxspeed = highway_tag.parse_maxspeed(&way);
+                            metrics.push(*maxspeed);
                         }
-                    }
-                    EdgeCategory::LaneCount => {
-                        if is_provided {
+                        edges::metrics::UnitInfo::LaneCount => {
                             let lane_count = highway_tag.parse_lane_count(&way);
-                            metrics[*metric_idx] = Some(lane_count as f64);
-                        } else {
-                            return Err(format!(
-                                "The {} of an edge in a pbf-file has to be provided, \
-                                 but is expected to be calculated.",
-                                category
-                            ));
+                            metrics.push(lane_count as f64);
                         }
+                        edges::metrics::UnitInfo::Meters
+                        | edges::metrics::UnitInfo::Kilometers
+                        | edges::metrics::UnitInfo::Seconds
+                        | edges::metrics::UnitInfo::Minutes
+                        | edges::metrics::UnitInfo::Hours
+                        | edges::metrics::UnitInfo::F64 => {
+                            // already checked in preprocessing
+                        }
+                    },
+                    edges::Category::Ignored => {
+                        // already checked in preprocessing
                     }
-                    EdgeCategory::SrcId
-                    | EdgeCategory::IgnoredSrcIdx
-                    | EdgeCategory::DstId
-                    | EdgeCategory::IgnoredDstIdx
-                    | EdgeCategory::ShortcutEdgeIdx
-                    | EdgeCategory::Ignore => (),
                 }
             }
 

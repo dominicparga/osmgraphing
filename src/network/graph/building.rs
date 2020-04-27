@@ -1,21 +1,20 @@
 use super::{EdgeIdx, Graph, NodeIdx};
 use crate::{
-    configs::parser::{Config, EdgeCategory},
+    configs::parsing::{self, generating},
     defaults::{
         self,
         capacity::{self, DimVec},
     },
     helpers::{ApproxEq, MemSize},
-    network::MetricIdx,
-    units::geo::{self, Coordinate},
 };
+use kissunits::geo::Coordinate;
 use log::{debug, info};
 use progressing::{self, Bar};
 use std::{cmp::Reverse, mem, ops::RangeFrom};
 
 /// private stuff for graph-building
 impl Graph {
-    fn new(cfg: Config) -> Graph {
+    fn new(cfg: parsing::Config) -> Graph {
         Graph {
             cfg,
             // nodes
@@ -53,163 +52,23 @@ impl Graph {
         self.sc_edges.shrink_to_fit();
     }
 
-    /// Uses the graph's nodes, so nodes must have been added before this method works properly.
     /// The provided edge is interpreted as forward-edge.
-    /// Metric-dependencies between each other are considered by looping enough times
-    /// over the calculation-loop.
     fn add_metrics(&mut self, proto_edge: &mut ProtoEdgeB) -> Result<(), String> {
         let cfg = &self.cfg;
 
-        // - finalize proto-edge -
-        // Repeat the calculations n times.
-        // In worst case, no metric is provided and all have to be calculated sequentially.
-        for _ in 0..cfg.edges.dim() {
-            // just a quick, coarse way of breaking earlier
-            let mut are_all_metrics_some = true;
-            for metric_idx in (0..cfg.edges.dim()).map(MetricIdx) {
-                // if value should be provided, it is already in the proto-edge from parsing
-                if cfg.edges.is_metric_provided(metric_idx) {
-                    continue;
-                }
-
-                let category = cfg.edges.metric_category(metric_idx);
-
-                // Jump if proto-edge has its value.
-                if let Some(value) = &mut proto_edge.metrics[*metric_idx] {
-                    // But jump only if value is correct.
-                    if value.approx_eq(&0.0) && category.must_be_positive() {
-                        debug!(
-                            "Proto-edge (id:{}->id:{}) has {}=0, hence is corrected to epsilon.",
-                            self.nodes().id(proto_edge.src_idx),
-                            self.nodes().id(proto_edge.dst_idx),
-                            category
-                        );
-                        *value = std::f64::EPSILON;
-                    }
-                    continue;
-                }
-                // now: proto-edge has no value for this metric and has to be updated
-
-                // calculate metric dependent on category
-                match category {
-                    EdgeCategory::Meters => {
-                        let src_coord = self.node_coords[*proto_edge.src_idx];
-                        let dst_coord = self.node_coords[*proto_edge.dst_idx];
-                        let distance = defaults::distance::TYPE::from(geo::haversine_distance_km(
-                            &src_coord, &dst_coord,
-                        ));
-                        proto_edge.metrics[*metric_idx] = Some(*distance);
-                    }
-                    EdgeCategory::Seconds => {
-                        // get distance and maxspeed to calculate duration
-                        let mut raw_distance = None;
-                        let mut raw_speed = None;
-                        // get calculation-rules
-                        for &(other_type, other_idx) in cfg.edges.calc_rules(metric_idx) {
-                            // get values from edge dependent of calculation-rules
-                            match other_type {
-                                EdgeCategory::Meters => {
-                                    raw_distance = proto_edge.metrics[*other_idx]
-                                }
-                                EdgeCategory::KilometersPerHour => {
-                                    raw_speed = proto_edge.metrics[*other_idx];
-                                }
-                                _ => {
-                                    return Err(format!(
-                                    "Wrong metric-category {} in calc-rule for metric-category {}",
-                                    other_type, category
-                                ))
-                                }
-                            }
-                        }
-                        // calc duration and update proto-edge
-                        if let (Some(raw_distance), Some(raw_speed)) = (raw_distance, raw_speed) {
-                            let duration: defaults::time::TYPE =
-                                (defaults::distance::TYPE::new(raw_distance)
-                                    / defaults::speed::TYPE::new(raw_speed))
-                                .into();
-                            proto_edge.metrics[*metric_idx] = Some(*duration)
-                        } else {
-                            are_all_metrics_some = false;
-                        }
-                    }
-                    EdgeCategory::KilometersPerHour => {
-                        // get distance and duration to calculate maxspeed
-                        let mut raw_distance = None;
-                        let mut raw_duration = None;
-                        // get calculation-rules
-                        for &(other_type, other_idx) in cfg.edges.calc_rules(metric_idx) {
-                            // get values from edge dependent of calculation-rules
-                            match other_type {
-                                EdgeCategory::Meters => {
-                                    raw_distance = proto_edge.metrics[*other_idx]
-                                }
-                                EdgeCategory::Seconds => {
-                                    raw_duration = proto_edge.metrics[*other_idx];
-                                }
-                                _ => {
-                                    return Err(format!(
-                                    "Wrong metric-category {} in calc-rule for metric-category {}",
-                                    other_type, category
-                                ))
-                                }
-                            }
-                        }
-                        // calc maxspeed and update proto-edge
-                        if let (Some(raw_distance), Some(raw_duration)) =
-                            (raw_distance, raw_duration)
-                        {
-                            let maxspeed: defaults::speed::TYPE =
-                                (defaults::distance::TYPE::new(raw_distance)
-                                    / defaults::time::TYPE::new(raw_duration))
-                                .into();
-                            proto_edge.metrics[*metric_idx] = Some(*maxspeed)
-                        } else {
-                            are_all_metrics_some = false;
-                        }
-                    }
-                    EdgeCategory::LaneCount
-                    | EdgeCategory::Custom
-                    | EdgeCategory::ShortcutEdgeIdx
-                    | EdgeCategory::SrcId
-                    | EdgeCategory::IgnoredSrcIdx
-                    | EdgeCategory::DstId
-                    | EdgeCategory::IgnoredDstIdx
-                    | EdgeCategory::Ignore => {
-                        // Should be set to false here, but being here needs the metric to be none.
-                        // This would be bad anyways, because these metrics should be provided, not
-                        // calculated.
-                        // -> breaking loop for performance is okay
-                        // are_all_metrics_some = false;
-                    }
-                }
-            }
-
-            if are_all_metrics_some {
-                break;
+        for (metric_idx, raw_value) in proto_edge.metrics.iter_mut().enumerate() {
+            if raw_value.approx_eq(&0.0) {
+                debug!(
+                    "Proto-edge (id:{}->id:{}) has {}=0, hence is corrected to epsilon.",
+                    self.nodes().id(proto_edge.src_idx),
+                    self.nodes().id(proto_edge.dst_idx),
+                    cfg.edges.metrics.ids[metric_idx]
+                );
+                *raw_value = std::f64::EPSILON;
             }
         }
 
-        // add metrics to graph
-        for (i, value) in proto_edge.metrics.iter().enumerate() {
-            let metric_idx = MetricIdx(i);
-            // If expected metrics haven't been calculated yet, some metrics are missing!
-            if let &Some(value) = value {
-                self.metrics[*metric_idx].push(value);
-            } else {
-                if cfg.edges.is_metric_provided(metric_idx) {
-                    return Err(format!(
-                        "Metric {} should be provided, but is not.",
-                        cfg.edges.metric_category(metric_idx)
-                    ));
-                }
-                return Err(format!(
-                    "Metric {} couldn't be calculated \
-                     since not enough calculation rules were given.",
-                    cfg.edges.metric_category(metric_idx)
-                ));
-            }
-        }
+        self.metrics.push(proto_edge.metrics.clone());
 
         Ok(())
     }
@@ -243,7 +102,7 @@ impl ProtoShortcut {
 pub struct ProtoEdge {
     pub src_id: i64,
     pub dst_id: i64,
-    pub metrics: DimVec<Option<f64>>,
+    pub metrics: DimVec<f64>,
 }
 
 impl Into<ProtoShortcut> for ProtoEdge {
@@ -273,7 +132,7 @@ struct ProtoEdgeA {
     pub idx: usize,
     pub src_id: i64,
     pub dst_id: i64,
-    pub metrics: DimVec<Option<f64>>,
+    pub metrics: DimVec<f64>,
     pub sc_edges: Option<usize>,
 }
 
@@ -281,7 +140,7 @@ struct ProtoEdgeB {
     pub idx: usize,
     pub src_idx: NodeIdx,
     pub dst_idx: NodeIdx,
-    pub metrics: DimVec<Option<f64>>,
+    pub metrics: DimVec<f64>,
     pub sc_edges: Option<usize>,
 }
 
@@ -308,14 +167,14 @@ struct ProtoEdgeC {
 }
 
 pub struct EdgeBuilder {
-    cfg: Config,
+    cfg: parsing::Config,
     node_ids: Vec<i64>,
     proto_edges: Vec<ProtoEdgeA>,
     proto_shortcuts: Vec<[EdgeIdx; 2]>,
 }
 
 impl EdgeBuilder {
-    pub fn cfg(&self) -> &Config {
+    pub fn cfg(&self) -> &parsing::Config {
         &self.cfg
     }
 
@@ -379,7 +238,7 @@ impl EdgeBuilder {
 
         let mut node_coords = vec![None; self.node_ids.len()];
         node_coords.shrink_to_fit();
-        let mut node_levels = vec![0; self.node_ids.len()];
+        let mut node_levels = vec![defaults::network::nodes::LEVEL; self.node_ids.len()];
         node_levels.shrink_to_fit();
         NodeBuilder {
             cfg: self.cfg,
@@ -393,7 +252,7 @@ impl EdgeBuilder {
 }
 
 pub struct NodeBuilder {
-    cfg: Config,
+    cfg: parsing::Config,
     node_ids: Vec<i64>,
     node_coords: Vec<Option<Coordinate>>,
     node_levels: Vec<usize>,
@@ -402,7 +261,7 @@ pub struct NodeBuilder {
 }
 
 impl NodeBuilder {
-    pub fn cfg(&self) -> &Config {
+    pub fn cfg(&self) -> &parsing::Config {
         &self.cfg
     }
 
@@ -432,7 +291,7 @@ impl NodeBuilder {
 }
 
 pub struct GraphBuilder {
-    cfg: Config,
+    cfg: parsing::Config,
     node_ids: Vec<i64>,
     node_coords: Vec<Option<Coordinate>>,
     node_levels: Vec<usize>,
@@ -441,7 +300,7 @@ pub struct GraphBuilder {
 }
 
 impl GraphBuilder {
-    pub fn new(cfg: Config) -> EdgeBuilder {
+    pub fn new(cfg: parsing::Config) -> EdgeBuilder {
         EdgeBuilder {
             cfg,
             node_ids: Vec::new(),
@@ -614,21 +473,13 @@ impl GraphBuilder {
 
                     // compare src-id and dst-id, then metrics approximately
                     if (e0.src_idx, e0.dst_idx) == (e1.src_idx, e1.dst_idx) {
-                        for (e0_opt, e1_opt) in e0.metrics.iter().zip(e1.metrics.iter()) {
-                            if e0_opt.is_none() && e1_opt.is_none() {
-                                // both are none
+                        for (e0_metric, e1_metric) in e0.metrics.iter().zip(e1.metrics.iter()) {
+                            if e0_metric.approx_eq(&e1_metric) {
                                 continue;
-                            } else {
-                                if let (Some(e0_metric), Some(e1_metric)) = (e0_opt, e1_opt) {
-                                    // both are some
-                                    if e0_metric.approx_eq(&e1_metric) {
-                                        continue;
-                                    }
-                                }
-                                // both are different
-                                is_eq = false;
-                                break;
                             }
+                            // values are different
+                            is_eq = false;
+                            break;
                         }
                     } else {
                         is_eq = false;
@@ -675,7 +526,7 @@ impl GraphBuilder {
         // If metrics are built before indices and offsets are built, the need of memory while
         // building is reduced.
 
-        info!("START Create/store/filter metrics.");
+        info!("START Store metrics.");
         let mut new_sc_edges = Vec::with_capacity(sc_count);
         let mut proto_edges = {
             let mut new_proto_edges = vec![];
@@ -687,10 +538,10 @@ impl GraphBuilder {
             let max_chunk_size = capacity::MAX_BYTE_PER_CHUNK / ProtoShortcut::mem_size_b();
             debug!("max-chunk-size: {}", max_chunk_size);
             // init metrics
-            graph.metrics = vec![vec![]; graph.cfg().edges.dim()];
+            graph.metrics = Vec::new();
             debug!(
                 "initial graph-metric-capacity: {}",
-                graph.metrics[0].capacity()
+                graph.metrics.capacity()
             );
 
             // sort reversed to make splice efficient
@@ -705,13 +556,10 @@ impl GraphBuilder {
 
                 // allocate new memory-needs
                 proto_edges.shrink_to_fit();
-                graph
-                    .metrics
-                    .iter_mut()
-                    .for_each(|m| m.reserve_exact(chunk.len()));
+                graph.metrics.reserve_exact(chunk.len());
                 new_proto_edges.reserve_exact(chunk.len());
                 debug!("chunk-len: {}", chunk.len());
-                debug!("graph-metric-capacity: {}", graph.metrics[0].capacity());
+                debug!("graph-metric-capacity: {}", graph.metrics.capacity());
 
                 for mut edge in chunk.into_iter() {
                     // add to graph and remember ids
@@ -895,6 +743,318 @@ impl GraphBuilder {
             info!("{}", progress_bar.set(graph.fwd_dsts.len()));
             // reduce and optimize memory-usage
             graph.shrink_to_fit();
+        }
+
+        //----------------------------------------------------------------------------------------//
+        // generate new metrics
+
+        info!("START Create and convert metrics.");
+        if let Some(generating_cfg) = graph.cfg.generating.take() {
+            // nodes
+
+            for category in generating_cfg.nodes.categories.iter() {
+                match category {
+                    generating::nodes::Category::Meta { info, id: new_id } => {
+                        match info {
+                            generating::nodes::MetaInfo::NodeIdx => {
+                                // if id does already exist
+                                // -> error
+
+                                if graph.cfg.nodes.categories.iter().any(
+                                    |category| match category {
+                                        parsing::nodes::Category::Meta { info: _, id }
+                                        | parsing::nodes::Category::Metric { unit: _, id } => {
+                                            new_id == id
+                                        }
+                                        parsing::nodes::Category::Ignored => false,
+                                    },
+                                ) {
+                                    return Err(format!(
+                                        "Node-meta-info {:?} has id {}, which does already exist.",
+                                        info, new_id
+                                    ));
+                                }
+
+                                // add new category
+
+                                graph.cfg.nodes.categories.push(category.clone().into());
+                            }
+                            generating::nodes::MetaInfo::NodeId
+                            | generating::nodes::MetaInfo::Level => {
+                                return Err(format!(
+                                    "Node-meta-info {:?} (id: {}) cannot be created \
+                                     and has to be provided.",
+                                    info, new_id
+                                ))
+                            }
+                        }
+                    }
+                }
+            }
+
+            // edges
+
+            // check duplicated id
+
+            for category in generating_cfg.edges.categories.iter() {
+                match category {
+                    generating::edges::Category::Meta {
+                        info: _,
+                        id: new_id,
+                    }
+                    | generating::edges::Category::Copy {
+                        from: _,
+                        to:
+                            generating::edges::metrics::Category {
+                                unit: _,
+                                id: new_id,
+                            },
+                    }
+                    | generating::edges::Category::Calc {
+                        a: _,
+                        b: _,
+                        result:
+                            generating::edges::metrics::Category {
+                                unit: _,
+                                id: new_id,
+                            },
+                    }
+                    | generating::edges::Category::Haversine {
+                        unit: _,
+                        id: new_id,
+                    } => {
+                        // if id does already exist
+                        // -> error
+
+                        if graph
+                            .cfg
+                            .edges
+                            .categories
+                            .iter()
+                            .any(|category| match category {
+                                parsing::edges::Category::Meta { info: _, id }
+                                | parsing::edges::Category::Metric { unit: _, id } => new_id == id,
+                                parsing::edges::Category::Ignored => false,
+                            })
+                        {
+                            return Err(format!(
+                                "Id {} should be generated, but does already exist.",
+                                new_id
+                            ));
+                        }
+                    }
+                    generating::edges::Category::Convert { from: _, to: _ } => {
+                        // do not check because it's in-place, so duplicates would be removed.
+                    }
+                }
+            }
+
+            // add new data
+
+            for category in generating_cfg.edges.categories.iter() {
+                match category {
+                    generating::edges::Category::Meta { info, id: _ } => {
+                        match info {
+                            generating::edges::MetaInfo::SrcIdx
+                            | generating::edges::MetaInfo::DstIdx
+                            | generating::edges::MetaInfo::ShortcutIdx0
+                            | generating::edges::MetaInfo::ShortcutIdx1 => {
+                                // update graph
+                                //
+                                // -> already done
+
+                                // update config
+
+                                graph.cfg.edges.categories.push(category.clone().into());
+                            }
+                        }
+                    }
+                    generating::edges::Category::Haversine { unit, id } => {
+                        // check unit
+
+                        if !match unit {
+                            generating::edges::metrics::UnitInfo::Meters => false,
+                            generating::edges::metrics::UnitInfo::Kilometers => true,
+                            generating::edges::metrics::UnitInfo::Seconds => false,
+                            generating::edges::metrics::UnitInfo::Minutes => false,
+                            generating::edges::metrics::UnitInfo::Hours => false,
+                            generating::edges::metrics::UnitInfo::KilometersPerHour => false,
+                            generating::edges::metrics::UnitInfo::LaneCount => false,
+                            generating::edges::metrics::UnitInfo::F64 => false,
+                        } {
+                            return Err(format!(
+                                "Haversine creates {:?}, but you may convert \
+                                the resulting value afterwards.",
+                                generating::edges::metrics::UnitInfo::Kilometers
+                            ));
+                        }
+
+                        // calculate haversine-distance and update graph and config
+
+                        for edge_idx in (0..graph.metrics.len()).map(EdgeIdx) {
+                            // get positions
+
+                            let (src_coord, dst_coord) = {
+                                let src_idx = graph.bwd_edges().dst_idx(edge_idx);
+                                let dst_idx = graph.fwd_edges().dst_idx(edge_idx);
+                                let nodes = graph.nodes();
+                                (nodes.coord(src_idx), nodes.coord(dst_idx))
+                            };
+
+                            // calculate distance
+                            let distance = {
+                                let km =
+                                    kissunits::geo::haversine_distance_km(&src_coord, &dst_coord);
+                                generating::edges::metrics::UnitInfo::Kilometers.convert(unit, *km)
+                            };
+
+                            // update graph
+
+                            graph.metrics[*edge_idx].push(distance);
+                        }
+
+                        // update config
+
+                        graph.cfg.edges.categories.push(category.clone().into());
+                        graph.cfg.edges.metrics.units.push((*unit).into());
+                        graph.cfg.edges.metrics.ids.push(id.clone());
+                    }
+                    generating::edges::Category::Copy { from, to } => {
+                        // loop over all edges
+                        // and add to their metrics
+
+                        let metric_idx = graph
+                            .cfg
+                            .edges
+                            .metrics
+                            .ids
+                            .iter()
+                            .position(|id| id == &from.id)
+                            .expect(&format!(
+                                "Id {} is expected in graph, but doesn't exist.",
+                                from.id
+                            ));
+                        for edge_idx in 0..graph.metrics.len() {
+                            // get old value
+                            // and generate new value
+
+                            let new_raw_value = {
+                                let old_raw_value = graph.metrics[edge_idx][metric_idx];
+                                from.unit.convert(&to.unit, old_raw_value)
+                            };
+
+                            // update graph
+
+                            graph.metrics[edge_idx].push(new_raw_value);
+                        }
+
+                        // update config
+
+                        graph.cfg.edges.categories.push(category.clone().into());
+                        graph.cfg.edges.metrics.units.push(to.unit.into());
+                        graph.cfg.edges.metrics.ids.push(to.id.clone());
+                    }
+                    generating::edges::Category::Convert { from, to } => {
+                        // loop over all edges
+                        // and replace their existing metrics
+
+                        let metric_idx = graph
+                            .cfg
+                            .edges
+                            .metrics
+                            .ids
+                            .iter()
+                            .position(|id| id == &from.id)
+                            .expect(&format!(
+                                "Id {} is expected in graph, but doesn't exist.",
+                                from.id
+                            ));
+                        for edge_idx in 0..graph.metrics.len() {
+                            // get old value
+                            // and generate new value
+
+                            let new_raw_value = {
+                                let old_raw_value = graph.metrics[edge_idx][metric_idx];
+                                from.unit.convert(&to.unit, old_raw_value)
+                            };
+
+                            // update graph
+
+                            graph.metrics[edge_idx][metric_idx] = new_raw_value;
+                        }
+
+                        // update config
+
+                        graph
+                            .cfg
+                            .edges
+                            .categories
+                            .iter_mut()
+                            .for_each(|category| match category {
+                                parsing::edges::Category::Metric {
+                                    unit: old_unit,
+                                    id: old_id,
+                                } => {
+                                    if old_id == &from.id {
+                                        *old_unit = to.unit.into();
+                                        *old_id = to.id.clone();
+                                    }
+                                }
+                                parsing::edges::Category::Meta { info: _, id: _ }
+                                | parsing::edges::Category::Ignored => (),
+                            });
+                        graph.cfg.edges.metrics.units[metric_idx] = to.unit.into();
+                        graph.cfg.edges.metrics.ids[metric_idx] = to.id.clone();
+                    }
+                    generating::edges::Category::Calc { result, a, b } => {
+                        // loop over all edges
+                        // and replace their existing metrics
+
+                        let idx_a = graph
+                            .cfg
+                            .edges
+                            .metrics
+                            .ids
+                            .iter()
+                            .position(|id| id == &a.id)
+                            .expect(&format!(
+                                "Id {} is expected in graph, but doesn't exist.",
+                                a.id
+                            ));
+                        let idx_b = graph
+                            .cfg
+                            .edges
+                            .metrics
+                            .ids
+                            .iter()
+                            .position(|id| id == &b.id)
+                            .expect(&format!(
+                                "Id {} is expected in graph, but doesn't exist.",
+                                b.id
+                            ));
+                        for edge_idx in 0..graph.metrics.len() {
+                            // get old value
+                            // and generate new value
+
+                            let new_raw_value = {
+                                let old_raw_a = graph.metrics[edge_idx][idx_a];
+                                let old_raw_b = graph.metrics[edge_idx][idx_b];
+                                result.unit.calc(&a.unit, old_raw_a, &b.unit, old_raw_b)
+                            };
+
+                            // update graph
+
+                            graph.metrics[edge_idx].push(new_raw_value);
+                        }
+
+                        // update config
+
+                        graph.cfg.edges.categories.push(category.clone().into());
+                        graph.cfg.edges.metrics.units.push(result.unit.into());
+                        graph.cfg.edges.metrics.ids.push(result.id.clone());
+                    }
+                }
+            }
         }
 
         info!("FINISHED Finalizing graph has finished.");

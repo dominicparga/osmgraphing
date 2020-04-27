@@ -14,16 +14,7 @@ pub mod accuracy {
     pub const F64_FMT_DIGITS: usize = 6;
 }
 
-pub mod distance {
-    pub type TYPE = crate::units::distance::Kilometers;
-}
-
-pub mod time {
-    pub type TYPE = crate::units::time::Minutes;
-}
-
 pub mod speed {
-    pub type TYPE = crate::units::speed::KilometersPerHour;
     pub const MAX_KMH: u16 = 130;
     pub const MIN_KMH: u8 = 5;
 }
@@ -36,13 +27,14 @@ pub mod capacity {
     pub const MAX_BYTE_PER_CHUNK: usize = 200 * 1_000_000;
 }
 
-pub mod parser {
+pub mod parsing {
     // provided by multi-ch-constructor
     pub const NO_SHORTCUT_IDX: &str = "-1";
 }
 
-pub mod generator {
-    pub use super::parser::NO_SHORTCUT_IDX;
+pub mod writing {
+    pub use super::parsing::NO_SHORTCUT_IDX;
+    pub const IGNORE_STR: &str = "_";
 }
 
 pub mod routing {
@@ -50,11 +42,15 @@ pub mod routing {
 }
 
 pub mod network {
+    pub mod nodes {
+        pub const LEVEL: usize = 0;
+    }
+
     use crate::{
         defaults,
-        network::{StreetCategory, VehicleCategory},
-        units::speed::KilometersPerHour,
+        network::{vehicles::Category as VehicleCategory, StreetCategory},
     };
+    use kissunits::speed::KilometersPerHour;
     use log::warn;
     use osmpbfreader::Way;
     use std::{cmp::max, fmt, fmt::Display, str::FromStr};

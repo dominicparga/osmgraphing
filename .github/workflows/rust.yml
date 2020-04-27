@@ -10,10 +10,13 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v2
+    - name: Install toolchain
+      run: |
+        rustup component add rustfmt
     - name: Build
       run: |
         cargo build --verbose
-        cargo build --release --features="osmgraphing" --verbose
+        cargo build --release --verbose
     - name: Run tests
       run: |
         cargo test --verbose
@@ -30,10 +33,11 @@ jobs:
       run: |
         rustup toolchain install beta
         rustup default beta
+        rustup component add rustfmt
     - name: Build
       run: |
         cargo build --verbose
-        cargo build --release --features="osmgraphing" --verbose
+        cargo build --release --verbose
     - name: Run tests
       run: |
         cargo test --verbose
@@ -49,11 +53,12 @@ jobs:
       run: |
         rustup toolchain install nightly
         rustup default nightly
+        rustup component add rustfmt
       continue-on-error: true
     - name: Build
       run: |
         cargo build --verbose
-        cargo build --release --features="osmgraphing" --verbose
+        cargo build --release --verbose
       continue-on-error: true
     - name: Run tests
       run: |

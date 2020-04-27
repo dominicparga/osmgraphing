@@ -1,8 +1,7 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use log::error;
 use osmgraphing::{
-    configs::{self, Config},
-    helpers,
+    configs, helpers,
     io::Parser,
     network::{Graph, NodeIdx},
     routing,
@@ -12,10 +11,14 @@ fn criterion_benchmark(c: &mut Criterion) {
     helpers::init_logging("WARN", vec![]).expect("No user-input, so this should be fine.");
 
     // parsing
-    let cfg = Config::from_yaml("resources/configs/isle-of-man.pbf.yaml").unwrap();
+    let parsing_cfg = configs::parsing::Config::from_yaml("resources/configs/isle-of-man.pbf.yaml");
+    let routing_strs = vec![
+        "routing: { metrics: [{ id: 'kilometers' }] }",
+        "routing: { metrics: [{ id: 'kilometers' }, { id: 'minutes' }] }",
+    ];
 
     // create graph
-    let graph = match Parser::parse_and_finalize(cfg.parser) {
+    let graph = match Parser::parse_and_finalize(parsing_cfg) {
         Ok(graph) => graph,
         Err(msg) => {
             error!("{}", msg);
@@ -56,13 +59,8 @@ fn criterion_benchmark(c: &mut Criterion) {
     ];
 
     // benchmarking shortest routing
-    let routing_strs = vec![
-        "routing: { metrics: [{ id: 'Meters' }] }",
-        "routing: { metrics: [{ id: 'Meters' }, { id: 'Seconds' }] }",
-    ];
     for routing_str in routing_strs {
-        let routing_cfg = configs::routing::Config::from_str(routing_str, graph.cfg())
-            .expect("Routing-config is wrong.");
+        let routing_cfg = configs::routing::Config::from_str(routing_str, graph.cfg());
 
         for (prefix, suffix, routes) in labelled_routes.iter() {
             c.bench_function(
@@ -109,11 +107,8 @@ fn bidir_shortest_dijkstra(
 ) {
     let mut dijkstra = routing::Dijkstra::new();
 
-    let nodes = graph.nodes();
     for &(src_idx, dst_idx) in routes.iter() {
-        let src = nodes.create(src_idx);
-        let dst = nodes.create(dst_idx);
-        let _option_path = dijkstra.compute_best_path(&src, &dst, graph, cfg);
+        let _option_path = dijkstra.compute_best_path(src_idx, dst_idx, graph, cfg);
     }
 }
 
@@ -124,10 +119,7 @@ fn bidir_fastest_dijkstra(
 ) {
     let mut dijkstra = routing::Dijkstra::new();
 
-    let nodes = graph.nodes();
     for &(src_idx, dst_idx) in routes.iter() {
-        let src = nodes.create(src_idx);
-        let dst = nodes.create(dst_idx);
-        let _option_path = dijkstra.compute_best_path(&src, &dst, graph, cfg);
+        let _option_path = dijkstra.compute_best_path(src_idx, dst_idx, graph, cfg);
     }
 }

@@ -1,17 +1,24 @@
-parser:
+parsing:
   map-file: 'resources/maps/small.fmi'
   vehicles:
     category: 'Car'
     are-drivers-picky: false
   nodes:
-  - category: 'NodeId'
-  - category: 'Latitude'
-  - category: 'Longitude'
+  - meta: { info: 'NodeId', id: 'node-id' }
+  - metric: { unit: 'Latitude', id: 'latitude' }
+  - metric: { unit: 'Longitude', id: 'longitude' }
   edges:
-  - category: 'SrcId'
-  - category: 'DstId'
-  - category: 'Meters'
-  - category: 'KilometersPerHour'
-  - category: 'Seconds'
-    is-provided: false
-    calc-rules: ['Meters', 'KilometersPerHour']
+  - meta: { info: 'SrcId', id: 'src-id' }
+  - meta: { info: 'DstId', id: 'dst-id' }
+  - metric: { unit: 'Meters', id: 'meters' }
+  - metric: { unit: 'KilometersPerHour', id: 'kmph' }
+  generating:
+    nodes: []
+    edges:
+    - convert:
+        from: { unit: 'Meters', id: 'meters' }
+        to: { unit: 'Kilometers', id: 'kilometers' }
+    - calc:
+        result: { unit: 'Minutes', id: 'minutes' }
+        a: { unit: 'Kilometers', id: 'kilometers' }
+        b: { unit: 'KilometersPerHour', id: 'kmph' }

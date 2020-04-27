@@ -1,31 +1,41 @@
 use crate::helpers::{defaults, test_dijkstra, TestNode};
+use kissunits::{
+    geo::Coordinate,
+    time::{Minutes, Seconds},
+};
 use osmgraphing::{
     configs::{self, SimpleId},
     defaults::capacity::DimVec,
     network::{MetricIdx, NodeIdx},
-    units::{
-        geo::Coordinate,
-        time::{Minutes, Seconds},
-    },
 };
 use smallvec::smallvec;
 
 const METRIC_ID: &str = defaults::DURATION_ID;
-const CONFIG: &str = defaults::paths::resources::configs::BIDIRECTIONAL_BAIT_FMI;
+const FMI_CONFIG: &str = defaults::paths::resources::configs::BIDIRECTIONAL_BAIT_FMI;
 const IS_CH_DIJKSTRA: bool = true;
 
 #[test]
 fn chdijkstra_on_map() {
-    test_dijkstra(CONFIG, METRIC_ID, IS_CH_DIJKSTRA, Box::new(expected_paths))
+    test_dijkstra(
+        FMI_CONFIG,
+        METRIC_ID,
+        IS_CH_DIJKSTRA,
+        Box::new(expected_paths),
+    )
 }
 
 #[test]
 fn dijkstra_on_map() {
-    test_dijkstra(CONFIG, METRIC_ID, !IS_CH_DIJKSTRA, Box::new(expected_paths))
+    test_dijkstra(
+        FMI_CONFIG,
+        METRIC_ID,
+        !IS_CH_DIJKSTRA,
+        Box::new(expected_paths),
+    )
 }
 
 fn expected_paths(
-    cfg_parser: &configs::parser::Config,
+    parsing_cfg: &configs::parsing::Config,
 ) -> Vec<(
     TestNode,
     TestNode,
@@ -111,7 +121,15 @@ fn expected_paths(
             (
                 src,
                 dst,
-                smallvec![cfg_parser.edges.metric_idx(&SimpleId::from(METRIC_ID))],
+                smallvec![MetricIdx(
+                    parsing_cfg
+                        .edges
+                        .metrics
+                        .ids
+                        .iter()
+                        .position(|id| id == &SimpleId::from(METRIC_ID))
+                        .unwrap()
+                )],
                 path_info,
             )
         })

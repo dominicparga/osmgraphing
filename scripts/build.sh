@@ -4,5 +4,5 @@ set -e
 
 cargo fmt -- --check
 
-cargo build
-cargo build --release --features="osmgraphing"
+cargo build --all-features
+cargo build --all-features --release

@@ -1,41 +1,33 @@
-use log::{error, info};
+use log::info;
 use osmgraphing::{
-    configs::Config,
-    helpers,
+    configs, helpers,
     io::Parser,
     network::NodeIdx,
     routing::{self},
 };
 use std::{path::PathBuf, time::Instant};
 
-fn main() {
+fn main() -> Result<(), String> {
     helpers::init_logging("INFO", vec!["dijkstra"]).expect("LogLevel 'INFO' does exist.");
     info!("Executing example: A*");
 
-    // get config by provided map-file
-    let cfg = {
-        let cfg_file = PathBuf::from("resources/configs/simple-stuttgart.fmi.yaml");
-        match Config::from_yaml(&cfg_file) {
-            Ok(cfg) => cfg,
-            Err(msg) => {
-                error!("{}", msg);
-                return;
-            }
-        }
+    let raw_cfg = PathBuf::from("resources/configs/simple-stuttgart.fmi.yaml");
+
+    // parsing
+
+    let parsing_cfg = match configs::parsing::Config::try_from_yaml(&raw_cfg) {
+        Ok(parsing_cfg) => parsing_cfg,
+        Err(msg) => return Err(format!("{}", msg)),
     };
-    let cfg_routing = cfg
-        .routing
-        .expect("Config-file should contain routing-settings.");
 
     // measure parsing-time
     let now = Instant::now();
+
     // parse and create graph
-    let graph = match Parser::parse_and_finalize(cfg.parser) {
+
+    let graph = match Parser::parse_and_finalize(parsing_cfg) {
         Ok(graph) => graph,
-        Err(msg) => {
-            error!("{}", msg);
-            return;
-        }
+        Err(msg) => return Err(format!("{}", msg)),
     };
     info!(
         "Finished parsing in {} seconds ({} µs).",
@@ -45,16 +37,22 @@ fn main() {
     info!("");
     info!("{}", graph);
 
-    // init routing to reuse it
+    // routing
+
+    let routing_cfg = match configs::routing::Config::try_from_yaml(&raw_cfg, graph.cfg()) {
+        Ok(routing_cfg) => routing_cfg,
+        Err(msg) => return Err(format!("{}", msg)),
+    };
     let mut dijkstra = routing::Dijkstra::new();
 
     // generate route-pairs
+
     let nodes = graph.nodes();
     let src = nodes.create(NodeIdx(1));
     let dst = nodes.create(NodeIdx(5));
 
     let now = Instant::now();
-    let option_path = dijkstra.compute_best_path(&src, &dst, &graph, &cfg_routing);
+    let option_path = dijkstra.compute_best_path(src.idx(), dst.idx(), &graph, &routing_cfg);
 
     info!("");
     info!(
@@ -63,12 +61,14 @@ fn main() {
     );
     if let Some(path) = option_path {
         info!(
-            "Cost {:?} from ({}) to ({}).",
-            path.calc_cost(cfg_routing.metric_indices(), &graph),
+            "Path costs {:?} from ({}) to ({}).",
+            path.flatten(&graph).costs(),
             src,
             dst
         );
     } else {
         info!("No path from ({}) to ({}).", src, dst);
     }
+
+    Ok(())
 }
