@@ -83,7 +83,7 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 - Add licenses of all dependencies to new __license__ (see [changed](#unreleased/changed)).
 - Update __`README.md`__ by adding cgal-installation.
 - Add __notes to `notes.md`__  about routing-heuristics via population-data and add some info from github-issues.
-- Add __balancer.rs__ and module __`exploration.rs`__, which are unfinished yet, but are causing the license-change to `GPL` when compiled with the __feature `gpl-3.0`__.
+- Add __balancer.rs__ and module __`exploration.rs`__, which are unfinished yet, but are causing the license-change to `GPL` when compiled with the __feature `gpl`__.
 
 
 ### Changed <a name="v0.13.0/changed"></a>
@@ -93,7 +93,7 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
   - Improve __access to path-costs__ of a (shortest) path.
   - Implement __path-flattening__ to support unified shortcut-paths and to improve path's cost-accuracy.
 - Refactor `Cargo.toml` to support new licensing.
-- __Replace feature `osmgraphing` by feature `gpl-3.0`__ to support new licensing.
+- __Replace feature `osmgraphing` by feature `gpl`__ to support new licensing.
 - __Refactor configs__ completely, also differentiating between implementation, unaccessable from outside (like the __raw-configs__), and the module, accessable.
   This makes the implementation more flexible and improves maintenance, especially when generating metrics from others.
   - __Rename `generating` to `writing`__ and use the word `generating` for generating metrics.

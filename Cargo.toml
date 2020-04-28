@@ -21,7 +21,7 @@ license = "Apache-2.0 WITH GPL-3.0-or-later"
 
 
 [features]
-"gpl-3.0" = ["nd-triangulation"]
+"gpl" = ["nd-triangulation"]
 
 
 [[bin]]
@@ -29,7 +29,7 @@ name = 'osmgraphing' # bin/osmgraphing.rs
 
 [[bin]]
 name = 'balancer' # bin/balancer.rs
-required-features = ["gpl-3.0"]
+required-features = ["gpl"]
 
 
 [[example]]

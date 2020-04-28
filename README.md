@@ -162,7 +162,7 @@ yay -S cgal
 yay -S eigen
 ```
 
-For building accordingly, execute `cargo build --features "gpl-3.0"`.
+For building accordingly, execute `cargo build --features "gpl"`.
 
 
 ## Credits

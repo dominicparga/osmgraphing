@@ -2,7 +2,7 @@ mod dijkstra;
 pub mod paths;
 pub use dijkstra::Dijkstra;
 
-#[cfg(feature = "gpl-3.0")]
+#[cfg(feature = "gpl")]
 mod exploration;
-#[cfg(feature = "gpl-3.0")]
+#[cfg(feature = "gpl")]
 pub use exploration::ConvexHullExplorator;
