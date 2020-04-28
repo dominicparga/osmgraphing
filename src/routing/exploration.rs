@@ -4,9 +4,9 @@
 // https://crates.io/crates/nalgebra
 
 use crate::{
-    configs::routing::Config,
+    configs,
     network::{Graph, NodeIdx},
-    routing::Dijkstra,
+    routing::{paths::Path, Dijkstra},
 };
 use log::debug;
 use nd_triangulation::Triangulation;
@@ -17,29 +17,6 @@ pub struct ConvexHullExplorator {}
 impl ConvexHullExplorator {
     pub fn new() -> ConvexHullExplorator {
         ConvexHullExplorator {}
-    }
-
-    fn compute_and_add_path(
-        triangulation: &mut Triangulation,
-        dijkstra: &mut Dijkstra,
-        src_idx: NodeIdx,
-        dst_idx: NodeIdx,
-        graph: &Graph,
-        cfg_routing: &Config,
-    ) -> Result<(), String> {
-        if let Some(best_path) = dijkstra.compute_best_path(src_idx, dst_idx, graph, cfg_routing) {
-            let best_path = best_path.flatten(graph);
-            match triangulation.add_vertex(&best_path.costs()) {
-                Ok(_) => Ok(()),
-                Err(e) => Err(format!("{}", e)),
-            }
-        } else {
-            Err(format!(
-                "No path exists from {} to {}",
-                graph.nodes().create(src_idx),
-                graph.nodes().create(dst_idx)
-            ))
-        }
     }
 
     // TODO cap exploration with epsilon for routing-costs (1 + eps) * costs[i]
@@ -53,55 +30,62 @@ impl ConvexHullExplorator {
         dst_idx: NodeIdx,
         dijkstra: &mut Dijkstra,
         graph: &Graph,
-        cfg_routing: &Config,
-    ) -> Result<(), String> {
-        //----------------------------------------------------------------------------------------//
+        routing_cfg: &configs::routing::Config,
+    ) -> Result<Vec<Path>, String> {
         // init query
 
-        let mut cfg_routing = cfg_routing.clone();
+        let mut routing_cfg = routing_cfg.clone();
         let dim = graph.metrics().dim();
+        let mut triangulation = Triangulation::new(dim);
+        let mut found_paths = Vec::new();
 
-        //----------------------------------------------------------------------------------------//
         // find initial convex-hull
         // TODO what if not enough different paths have been found?
         // -> return already found paths
-
-        let mut triangulation = Triangulation::new(dim);
-
-        // prepare point d+1
-
-        // if path exists -> add it to convex hull
-        cfg_routing.alphas = smallvec![1.0 / (dim as f64); dim];
-        Self::compute_and_add_path(
-            &mut triangulation,
-            dijkstra,
-            src_idx,
-            dst_idx,
-            graph,
-            &cfg_routing,
-        )?;
-
+        //
         // prepare dirac-paths
         // alphas = [0, ..., 0, 1, 0, ..., 0] (f64)
+        //
+        // prepare avg paths
 
-        // path from src to dst does exist
-        for i in 0..dim {
-            cfg_routing.alphas = smallvec![0.0; dim];
-            cfg_routing.alphas[i] = 1.0;
-            Self::compute_and_add_path(
-                &mut triangulation,
-                dijkstra,
-                src_idx,
-                dst_idx,
-                graph,
-                &cfg_routing,
-            )?;
+        for i in 0..(dim + 1) {
+            // dirac vs average
+            if i < dim {
+                routing_cfg.alphas = smallvec![0.0; dim];
+                routing_cfg.alphas[i] = 1.0;
+            } else {
+                routing_cfg.alphas = smallvec![1.0 / (dim as f64); dim];
+            }
+
+            // and if path exists
+            // -> add its cost-vector to triangulation (<-> convex hull)
+            // -> remember it for return
+
+            if let Some(best_path) =
+                dijkstra.compute_best_path(src_idx, dst_idx, graph, &routing_cfg)
+            {
+                let best_path = best_path.flatten(graph);
+
+                // add path to triangulation (<-> convex hull)
+                match triangulation.add_vertex(&best_path.costs()) {
+                    Ok(_) => (),
+                    Err(e) => return Err(format!("{}", e)),
+                }
+
+                // remember path
+                found_paths.push(best_path);
+
+                // } else {
+                //     Err(format!(
+                //         "No path exists from {} to {}",
+                //         graph.nodes().create(src_idx),
+                //         graph.nodes().create(dst_idx)
+                //     ))
+            }
         }
 
-        //----------------------------------------------------------------------------------------//
         // print convex-hull for debugging
 
-        // info!("metrics: {:?}", graph.cfg().edges.metric_categories());
         for cell in triangulation.convex_hull_cells() {
             debug!("New cell");
             for vertex in cell.vertices() {
@@ -109,7 +93,6 @@ impl ConvexHullExplorator {
             }
         }
 
-        //----------------------------------------------------------------------------------------//
         // algo
         //
         // Goal:
@@ -124,6 +107,6 @@ impl ConvexHullExplorator {
             // loop
         }
 
-        Ok(())
+        Ok(found_paths)
     }
 }
