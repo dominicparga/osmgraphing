@@ -17,7 +17,7 @@ repository = "https://github.com/dominicparga/osmgraphing"
 readme = "README.md"
 keywords = ["osm", "route", "routing", "pbf", "xml"]
 categories = ["algorithms", "data-structures", "parser-implementations", "parsing"]
-license = "Apache-2.0 WITH GPL-3.0-or-later"
+license = "Apache-2.0 OR GPL-3.0-or-later"
 
 
 [features]
