@@ -87,7 +87,7 @@ License GPL-3.0-only
 ```text
 osmpbfreader
 https://github.com/TeXitoi/osmpbfreader-rs
-License WTFPL WITH LGPLv3
+License WTFPL OR LGPLv3
 ```
 
 ```text
