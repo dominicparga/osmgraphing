@@ -125,13 +125,13 @@ impl Dijkstra {
         src_idx: NodeIdx,
         dst_idx: NodeIdx,
         graph: &Graph,
-        cfg_routing: &Config,
+        routing_cfg: &Config,
     ) -> Option<Path> {
-        if cfg_routing.alphas.len() <= 0 {
+        if routing_cfg.alphas.len() <= 0 {
             panic!("Best path should be computed, but no alphas are specified.");
         }
 
-        self.is_ch_dijkstra = cfg_routing.is_ch_dijkstra;
+        self.is_ch_dijkstra = routing_cfg.is_ch_dijkstra;
 
         //----------------------------------------------------------------------------------------//
         // initialization-stuff
@@ -235,7 +235,7 @@ impl Dijkstra {
                 }
 
                 let new_cost = current.cost
-                    + helpers::dot_product(&cfg_routing.alphas, &leaving_edge.metrics());
+                    + helpers::dot_product(&routing_cfg.alphas, &leaving_edge.metrics());
                 if new_cost < self.costs[dir][*leaving_edge.dst_idx()] {
                     self.predecessors[dir][*leaving_edge.dst_idx()] = Some(leaving_edge.idx());
                     self.costs[dir][*leaving_edge.dst_idx()] = new_cost;
