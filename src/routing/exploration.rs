@@ -5,11 +5,11 @@
 
 use crate::{
     configs,
-    helpers::{self, Approx},
+    defaults::capacity::DimVec,
     network::{Graph, NodeIdx},
     routing::{paths::Path, Dijkstra},
 };
-use nd_triangulation::Triangulation;
+use log::debug;
 use smallvec::smallvec;
 
 pub struct ConvexHullExplorator {}
@@ -40,118 +40,126 @@ impl ConvexHullExplorator {
 
         // return these paths in the end
         let mut found_paths = Vec::new();
-        let mut found_paths_count = 0;
-        let mut triangulation = Triangulation::new(dim);
+        let mut candidates: Vec<DimVec<_>> = Vec::new();
 
         // find initial convex-hull
-        // TODO what if not enough different paths have been found?
-        // -> return already found paths
-        //
-        // prepare dirac-paths
-        // alphas = [0, ..., 0, 1, 0, ..., 0] (f64)
-        //
-        // prepare avg paths
 
-        for i in 0..(dim + 1) {
-            // dirac vs average
-            if i < dim {
-                routing_cfg.alphas = smallvec![0.0; dim];
-                routing_cfg.alphas[i] = 1.0;
-            } else {
-                routing_cfg.alphas = smallvec![1.0 / (dim as f64); dim];
-            }
+        for i in 0..dim {
+            // prepare dirac-paths
+            // alphas = [0, ..., 0, 1, 0, ..., 0] (f64)
+            routing_cfg.alphas = smallvec![0.0; dim];
+            routing_cfg.alphas[i] = 1.0;
 
             // and if path exists
-            // -> add its cost-vector to triangulation (<-> convex hull)
-            // -> remember it for return
+            // -> remember it as convex-hull-member
 
             if let Some(best_path) =
                 dijkstra.compute_best_path(src_idx, dst_idx, graph, &routing_cfg)
             {
                 found_paths.push(best_path.flatten(graph));
-                log::debug!("pushed {}", found_paths.last().unwrap());
+                debug!("pushed {}", found_paths.last().unwrap());
             } else {
-                log::debug!("unpushed");
+                debug!("didn't push anything");
             }
         }
 
-        // algo
+        // If not enough different paths have been found
+        // -> return already found paths by keeping candidates empty
 
-        while found_paths_count < found_paths.len() && found_paths.len() < 10 {
-            log::debug!(
-                "loop with {} new found paths ({} total) and {} cells",
-                found_paths.len() - found_paths_count,
-                found_paths.len(),
-                triangulation.convex_hull_cells().count()
-            );
+        found_paths.dedup();
+        if found_paths.len() == dim {
+            candidates.push((0..dim).collect());
+        }
 
-            // add new paths
+        // find new routes
 
-            for i in found_paths_count..found_paths.len() {
-                let p = &found_paths[i];
-                match triangulation.add_vertex(p.costs()) {
-                    Ok(_) => (),
-                    Err(e) => return Err(format!("{}", e)),
-                }
-            }
-            found_paths_count = found_paths.len();
+        while let Some(candidate) = candidates.pop() {
+            debug!("loop with {} possible candidate(s)", candidates.len() + 1);
 
-            log::debug!(
-                "after adding new paths to triangulation: {} cells",
-                triangulation.convex_hull_cells().count()
-            );
-            for cell in triangulation.convex_hull_cells() {
-                log::debug!("START cell");
-                for vertex in cell.vertices() {
-                    log::debug!("vertex-coords {:?}", vertex.coords());
-                }
-                log::debug!("FINISH cell");
-            }
+            // check candidate, if it's shape already sharp enough
 
-            // check every facet, if it is already sharp enough
+            // Solve LGS to get alpha, where all cell-vertex-costs (personalized with alpha)
+            // are equal.
 
-            for cell in triangulation.convex_hull_cells() {
-                if let Some(vertex) = cell.vertices().next() {
-                    // Solve LGS to get alpha, where all cell-vertex-costs (personalized with alpha)
-                    // are equal.
+            // TODO create LGS from candidates
+            routing_cfg.alphas = smallvec![1.0 / (dim as f64); dim];
+            debug!("alphas = {:?}", routing_cfg.alphas);
 
-                    // TODO LGS
-                    routing_cfg.alphas = routing_cfg.alphas;
+            if let Some(best_path) =
+                dijkstra.compute_best_path(src_idx, dst_idx, graph, &routing_cfg)
+            {
+                let new_p = best_path.flatten(graph);
 
-                    // find best path
+                // Check if path has already been found.
+                // If so
+                // -> Candidate's shape, meaning the respective partial convex-hull, is complete.
+                {
+                    let mut is_already_found = false;
 
-                    if let Some(best_path) =
-                        dijkstra.compute_best_path(src_idx, dst_idx, graph, &routing_cfg)
-                    {
-                        let new_p = best_path.flatten(graph);
-
-                        if new_p
-                            .costs()
-                            .iter()
-                            .zip(vertex.coords())
-                            .fold(true, |acc, (a, b)| acc && a == b)
-                        {
-                            if found_paths.contains(&new_p) {
-                                continue;
-                            }
+                    for &i in candidate.iter() {
+                        if found_paths[i] == new_p {
+                            is_already_found = true;
+                            break;
                         }
-
-                        // All already found paths have same cost with the used alpha.
-                        // Hence, if the new costs are better than any of these paths,
-                        // under this particular alpha, the new found path is part
-                        // of the convex-hull and has to be added.
-                        if helpers::dot_product(&routing_cfg.alphas, new_p.costs()).approx()
-                            <= helpers::dot_product(&routing_cfg.alphas, vertex.coords()).approx()
-                        {
-                            // remember path
-                            found_paths.push(new_p);
-                            log::debug!("pushed {}", found_paths.last().unwrap());
-                        } else {
-                            log::debug!("unpushed because not good");
-                        }
-                    } else {
-                        log::debug!("unpushed");
                     }
+
+                    if is_already_found {
+                        debug!("already found path {}", new_p);
+                        continue;
+                    }
+                }
+
+                // Otherwise, add the new path and resulting new candidates.
+                // Given is the cost-space and the goal is finding a convex-hull of all paths in
+                // cost-space.
+                // Given that the facet-paths (at the beginning, the initial dirac-paths) are part
+                // of the convex-hull, a new path has to be part of the convex-hull as well, or
+                // Dijkstra would have found one of the already found paths in the first place.
+                //
+                // Proof:
+                //
+                // Note that imaginating a 2D-cost-space could help.
+                //
+                // Dijkstra determines the cost-value by calculating the scalar-product of the
+                // alpha-vector with a path's cost-vector.
+                // Further, the scalar-product is the orthogonal projection of a vector v onto
+                // the other vector w, times the length of w.
+                // When comparing two scalar-products, where w is equal, it is just a comparison of
+                // of the projections themselves.
+                //
+                // Let the alpha-vector be w from above description.
+                // Since the alpha-vector is only relevant in its direction, assume it to be
+                // infinitely long for better understanding.
+                // The initially found paths are part of the convex-hull, because they have been
+                // found with dirac-alphas and hence have the shortest orthogonal projection on the
+                // alpha-vector.
+                // Further, new paths' cost-vectors have to be between facet-paths in the
+                // cost-space, or mathematically speaking, be a linear combination of the
+                // facet-paths with positive coefficients, if the facet-paths are part of the
+                // convex-hull as well and there are no negative weights in the graph.
+                //
+                // Looking at a facet of the current convex-hull, every found path is the best one
+                // for a specific subset of all alpha-vectors.
+                // A new path, found by Dijkstra, can't be worse than the already found ones.
+                // Being a better path implies having a lower scalar-product with the alpha-vector
+                // and the new path's cost-vector.
+                // The scalar-product can only be better, if the projection of the new cost-vector
+                // onto the respective alpha-vector is shorter than the projection of the
+                // facet-paths.
+                // Since the new path has to be between the facet-paths, as the alpha-vector does,
+                // this can only be achieved by being closer to the origin, leading to a new
+                // convex-hull.
+
+                // remember path
+                found_paths.push(new_p);
+                debug!("found path: {}", found_paths.last().unwrap());
+                debug!("found paths: {}", found_paths.len());
+
+                // Add new facets by replacing every cost with the new path's cost.
+                for i in 0..candidate.len() {
+                    let mut new_candidate = candidate.clone();
+                    new_candidate[i] = found_paths.len() - 1;
+                    candidates.push(new_candidate);
                 }
             }
         }
