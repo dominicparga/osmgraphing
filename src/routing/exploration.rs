@@ -6,7 +6,7 @@
 use crate::{
     configs,
     defaults::capacity::DimVec,
-    helpers::algebra,
+    helpers::{self, algebra},
     network::{Graph, NodeIdx},
     routing::{paths::Path, Dijkstra},
 };
@@ -75,29 +75,48 @@ impl ConvexHullExplorator {
         // find new routes
 
         while let Some(candidate) = candidates.pop() {
-            debug!("loop with {} possible candidate(s)", candidates.len() + 1);
+            debug!("LOOP with {} possible candidate(s)", candidates.len() + 1);
 
             // check candidate, if it's shape already sharp enough
 
             // Solve LGS to get alpha, where all cell-vertex-costs (personalized with alpha)
             // are equal.
+            // -> Determine rows of matrix
 
-            let rows = DimVec::new();
+            let mut rows = DimVec::new();
+            for i in 1..dim {
+                rows.push(helpers::sub(
+                    found_paths[candidate[0]].costs(),
+                    found_paths[candidate[i]].costs(),
+                ));
+            }
+            // one condition is missing, namely normalizing alpha
+            // -> last row in matrix is 1.0
+            rows.push(smallvec![1.0; dim]);
 
-            let matrix = algebra::Matrix::from_rows(
-                candidate
-                    .iter()
-                    .map(|&i| found_paths[i].costs().clone())
-                    .collect(),
-            );
-            debug!("matrix = {}", matrix);
+            // solution-vector
+            let mut b = smallvec![0.0; dim];
+            // normalizing sum of alphas to 1.0
+            // -> last row is 1.0
+            b[dim - 1] = 1.0;
 
-            routing_cfg.alphas = if let Some(x) = matrix.lu().solve(&smallvec![0.0; dim]) {
+            debug!("rows = {:?}", rows);
+            debug!("b = {:?}", b);
+
+            // calculate alphas
+            routing_cfg.alphas = if let Some(x) = algebra::Matrix::from_rows(rows).lu().solve(&b) {
                 x
             } else {
                 continue;
             };
             debug!("alphas = {:?}", routing_cfg.alphas);
+            for i in 0..dim {
+                debug!(
+                    "alphas * costs[c{}] = {:?}",
+                    i,
+                    helpers::dot_product(&routing_cfg.alphas, found_paths[candidate[i]].costs())
+                );
+            }
 
             // find new path with new alpha
 
