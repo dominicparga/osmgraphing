@@ -121,9 +121,10 @@ impl Eq for Path {}
 
 impl PartialEq for Path {
     fn eq(&self, other: &Path) -> bool {
-        self.src_idx() == other.src_idx()
+        // length before edges and edges last because of performance
+        self.edges.len() == other.edges.len()
+            && self.src_idx() == other.src_idx()
             && self.dst_idx() == other.dst_idx()
-            && self.edges.len() == other.edges.len()
             && self.edges == other.edges
     }
 }
