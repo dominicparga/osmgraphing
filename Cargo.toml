@@ -79,6 +79,7 @@ clap = "2.33" # cmdline-parsing
 env_logger = "0.6" # logging for external use, e.g. main.rs and examples
 kissunits = "1" # units like Meters or Coordinate
 log = "0.4"        # logging for internal use, e.g. lib.rs
+nalgebra = "0.21" # vectors and matrics
 osmpbfreader = "0.13" # read osm.pbf-files
 progressing = "2" # progress-bar
 rand = "0.7" # generate random numbers

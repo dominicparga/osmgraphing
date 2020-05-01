@@ -39,7 +39,7 @@ pub mod fmi {
             writing,
         },
         defaults::{self, accuracy},
-        helpers::{self, Approx},
+        helpers::{self, approx::Approx},
         network::{EdgeIdx, Graph, NodeIdx},
     };
     use log::info;

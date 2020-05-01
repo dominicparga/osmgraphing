@@ -79,6 +79,12 @@ License MIT OR Apache-2.0
 ```
 
 ```text
+nalgebra
+https://github.com/rustsim/nalgebra
+License BSD 3-Clause
+```
+
+```text
 nd-triangulation
 https://github.com/lesstat/nd-triangulation
 License GPL-3.0-only

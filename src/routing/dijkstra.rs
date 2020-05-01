@@ -311,7 +311,7 @@ struct CostNode {
 
 mod costnode {
     use super::{CostNode, Direction};
-    use crate::helpers::{ApproxCmp, ApproxEq};
+    use crate::helpers::approx::{ApproxCmp, ApproxEq};
     use std::{
         cmp::Ordering,
         fmt::{self, Display},

@@ -6,6 +6,7 @@
 use crate::{
     configs,
     defaults::capacity::DimVec,
+    helpers::algebra,
     network::{Graph, NodeIdx},
     routing::{paths::Path, Dijkstra},
 };
@@ -67,7 +68,7 @@ impl ConvexHullExplorator {
         // -> return already found paths by keeping candidates empty
 
         found_paths.dedup();
-        if found_paths.len() == dim {
+        if dim > 1 && found_paths.len() == dim {
             candidates.push((0..dim).collect());
         }
 
@@ -81,9 +82,24 @@ impl ConvexHullExplorator {
             // Solve LGS to get alpha, where all cell-vertex-costs (personalized with alpha)
             // are equal.
 
-            // TODO create LGS from candidates
-            routing_cfg.alphas = smallvec![1.0 / (dim as f64); dim];
+            let rows = DimVec::new();
+
+            let matrix = algebra::Matrix::from_rows(
+                candidate
+                    .iter()
+                    .map(|&i| found_paths[i].costs().clone())
+                    .collect(),
+            );
+            debug!("matrix = {}", matrix);
+
+            routing_cfg.alphas = if let Some(x) = matrix.lu().solve(&smallvec![0.0; dim]) {
+                x
+            } else {
+                continue;
+            };
             debug!("alphas = {:?}", routing_cfg.alphas);
+
+            // find new path with new alpha
 
             if let Some(best_path) =
                 dijkstra.compute_best_path(src_idx, dst_idx, graph, &routing_cfg)
@@ -92,7 +108,7 @@ impl ConvexHullExplorator {
 
                 // Check if path has already been found.
                 // If so
-                // -> Candidate's shape, meaning the respective partial convex-hull, is complete.
+                // -> Candidate's shape, meaning the respective partial convex-hull, is complete
                 {
                     let mut is_already_found = false;
 
@@ -110,45 +126,27 @@ impl ConvexHullExplorator {
                 }
 
                 // Otherwise, add the new path and resulting new candidates.
-                // Given is the cost-space and the goal is finding a convex-hull of all paths in
-                // cost-space.
-                // Given that the facet-paths (at the beginning, the initial dirac-paths) are part
-                // of the convex-hull, a new path has to be part of the convex-hull as well, or
-                // Dijkstra would have found one of the already found paths in the first place.
+                // Given is the cost-space and the goal is finding a convex-hull of all paths in cost-space.
+                // Given that the facet-paths (at the beginning, the initial dirac-paths) are part of the convex-hull, a new path has to be part of the convex-hull as well, or Dijkstra would have found one of the already found paths in the first place.
                 //
                 // Proof:
                 //
                 // Note that imaginating a 2D-cost-space could help.
                 //
-                // Dijkstra determines the cost-value by calculating the scalar-product of the
-                // alpha-vector with a path's cost-vector.
-                // Further, the scalar-product is the orthogonal projection of a vector v onto
-                // the other vector w, times the length of w.
-                // When comparing two scalar-products, where w is equal, it is just a comparison of
-                // of the projections themselves.
+                // Dijkstra determines the cost-value by calculating the scalar-product of the alpha-vector with a path's cost-vector.
+                // Further, the scalar-product is the orthogonal projection of a vector v onto the other vector w, times the length of w.
+                // When comparing two scalar-products, where w is equal, it is just a comparison of of the projections themselves.
                 //
                 // Let the alpha-vector be w from above description.
-                // Since the alpha-vector is only relevant in its direction, assume it to be
-                // infinitely long for better understanding.
-                // The initially found paths are part of the convex-hull, because they have been
-                // found with dirac-alphas and hence have the shortest orthogonal projection on the
-                // alpha-vector.
-                // Further, new paths' cost-vectors have to be between facet-paths in the
-                // cost-space, or mathematically speaking, be a linear combination of the
-                // facet-paths with positive coefficients, if the facet-paths are part of the
-                // convex-hull as well and there are no negative weights in the graph.
+                // Since the alpha-vector is only relevant in its direction, assume it to be infinitely long for better understanding.
+                // The initially found paths are part of the convex-hull, because they have been found with dirac-alphas and hence have the shortest orthogonal projection on the alpha-vector.
+                // Further, new paths' cost-vectors have to be between facet-paths in the cost-space, or mathematically speaking, be a linear combination of the facet-paths with positive coefficients, if the facet-paths are part of the convex-hull as well and there are no negative weights in the graph.
                 //
-                // Looking at a facet of the current convex-hull, every found path is the best one
-                // for a specific subset of all alpha-vectors.
+                // Looking at a facet of the current convex-hull, every found path is the best one for a specific subset of all alpha-vectors.
                 // A new path, found by Dijkstra, can't be worse than the already found ones.
-                // Being a better path implies having a lower scalar-product with the alpha-vector
-                // and the new path's cost-vector.
-                // The scalar-product can only be better, if the projection of the new cost-vector
-                // onto the respective alpha-vector is shorter than the projection of the
-                // facet-paths.
-                // Since the new path has to be between the facet-paths, as the alpha-vector does,
-                // this can only be achieved by being closer to the origin, leading to a new
-                // convex-hull.
+                // Being a better path implies having a lower scalar-product with the alpha-vector and the new path's cost-vector.
+                // The scalar-product can only be better, if the projection of the new cost-vector onto the respective alpha-vector is shorter than the projection of the facet-paths.
+                // Since the new path has to be between the facet-paths, as the alpha-vector does, this can only be achieved by being closer to the origin, leading to a new convex-hull.
 
                 // remember path
                 found_paths.push(new_p);
@@ -164,6 +162,7 @@ impl ConvexHullExplorator {
             }
         }
 
+        // TODO no paths found -> error?
         Ok(found_paths)
     }
 }
