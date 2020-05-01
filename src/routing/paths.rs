@@ -23,8 +23,11 @@ impl Display for Path {
         let prettier_edges: Vec<_> = self.edges.iter().map(|edge_idx| **edge_idx).collect();
         write!(
             f,
-            "{{ src-idx: {}, dst-idx: {}, costs: {:?}, edges: {:?} }}",
-            self.src_idx, self.dst_idx, self.costs, prettier_edges
+            "{{ src-idx: {}, dst-idx: {}, costs: {:?}, hop-distance: {:?} }}",
+            self.src_idx,
+            self.dst_idx,
+            self.costs,
+            prettier_edges.len()
         )
     }
 }
@@ -120,6 +123,7 @@ impl PartialEq for Path {
     fn eq(&self, other: &Path) -> bool {
         self.src_idx() == other.src_idx()
             && self.dst_idx() == other.dst_idx()
+            && self.edges.len() == other.edges.len()
             && self.edges == other.edges
     }
 }

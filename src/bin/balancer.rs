@@ -63,7 +63,7 @@ fn main() -> Result<(), String> {
     let mut explorator = routing::ConvexHullExplorator::new();
 
     // generate random route-pairs
-    let route_count = 100;
+    let route_count = 2; // TODO let route_count = 100;
     let seed = 42;
 
     // if all possible routes are less than the preferred route-count

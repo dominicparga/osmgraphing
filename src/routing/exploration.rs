@@ -5,10 +5,10 @@
 
 use crate::{
     configs,
+    helpers::{self, Approx},
     network::{Graph, NodeIdx},
     routing::{paths::Path, Dijkstra},
 };
-use log::debug;
 use nd_triangulation::Triangulation;
 use smallvec::smallvec;
 
@@ -34,10 +34,14 @@ impl ConvexHullExplorator {
     ) -> Result<Vec<Path>, String> {
         // init query
 
+        // config and stuff
         let mut routing_cfg = routing_cfg.clone();
         let dim = graph.metrics().dim();
-        let mut triangulation = Triangulation::new(dim);
+
+        // return these paths in the end
         let mut found_paths = Vec::new();
+        let mut found_paths_count = 0;
+        let mut triangulation = Triangulation::new(dim);
 
         // find initial convex-hull
         // TODO what if not enough different paths have been found?
@@ -64,47 +68,92 @@ impl ConvexHullExplorator {
             if let Some(best_path) =
                 dijkstra.compute_best_path(src_idx, dst_idx, graph, &routing_cfg)
             {
-                let best_path = best_path.flatten(graph);
-
-                // add path to triangulation (<-> convex hull)
-                match triangulation.add_vertex(&best_path.costs()) {
-                    Ok(_) => (),
-                    Err(e) => return Err(format!("{}", e)),
-                }
-
-                // remember path
-                found_paths.push(best_path);
-
-                // } else {
-                //     Err(format!(
-                //         "No path exists from {} to {}",
-                //         graph.nodes().create(src_idx),
-                //         graph.nodes().create(dst_idx)
-                //     ))
-            }
-        }
-
-        // print convex-hull for debugging
-
-        for cell in triangulation.convex_hull_cells() {
-            debug!("New cell");
-            for vertex in cell.vertices() {
-                debug!("{:?}", vertex.coords());
+                found_paths.push(best_path.flatten(graph));
+                log::debug!("pushed {}", found_paths.last().unwrap());
+            } else {
+                log::debug!("unpushed");
             }
         }
 
         // algo
-        //
-        // Goal:
-        // c(p1)
 
-        let mut has_new_route = true;
+        while found_paths_count < found_paths.len() && found_paths.len() < 10 {
+            log::debug!(
+                "loop with {} new found paths ({} total) and {} cells",
+                found_paths.len() - found_paths_count,
+                found_paths.len(),
+                triangulation.convex_hull_cells().count()
+            );
 
-        while has_new_route {
-            has_new_route = false;
+            // add new paths
+
+            for i in found_paths_count..found_paths.len() {
+                let p = &found_paths[i];
+                match triangulation.add_vertex(p.costs()) {
+                    Ok(_) => (),
+                    Err(e) => return Err(format!("{}", e)),
+                }
+            }
+            found_paths_count = found_paths.len();
+
+            log::debug!(
+                "after adding new paths to triangulation: {} cells",
+                triangulation.convex_hull_cells().count()
+            );
+            for cell in triangulation.convex_hull_cells() {
+                log::debug!("START cell");
+                for vertex in cell.vertices() {
+                    log::debug!("vertex-coords {:?}", vertex.coords());
+                }
+                log::debug!("FINISH cell");
+            }
 
             // check every facet, if it is already sharp enough
-            // loop
+
+            for cell in triangulation.convex_hull_cells() {
+                if let Some(vertex) = cell.vertices().next() {
+                    // Solve LGS to get alpha, where all cell-vertex-costs (personalized with alpha)
+                    // are equal.
+
+                    // TODO LGS
+                    routing_cfg.alphas = routing_cfg.alphas;
+
+                    // find best path
+
+                    if let Some(best_path) =
+                        dijkstra.compute_best_path(src_idx, dst_idx, graph, &routing_cfg)
+                    {
+                        let new_p = best_path.flatten(graph);
+
+                        if new_p
+                            .costs()
+                            .iter()
+                            .zip(vertex.coords())
+                            .fold(true, |acc, (a, b)| acc && a == b)
+                        {
+                            if found_paths.contains(&new_p) {
+                                continue;
+                            }
+                        }
+
+                        // All already found paths have same cost with the used alpha.
+                        // Hence, if the new costs are better than any of these paths,
+                        // under this particular alpha, the new found path is part
+                        // of the convex-hull and has to be added.
+                        if helpers::dot_product(&routing_cfg.alphas, new_p.costs()).approx()
+                            <= helpers::dot_product(&routing_cfg.alphas, vertex.coords()).approx()
+                        {
+                            // remember path
+                            found_paths.push(new_p);
+                            log::debug!("pushed {}", found_paths.last().unwrap());
+                        } else {
+                            log::debug!("unpushed because not good");
+                        }
+                    } else {
+                        log::debug!("unpushed");
+                    }
+                }
+            }
         }
 
         Ok(found_paths)
