@@ -105,9 +105,9 @@ routing:
   is-ch-dijkstra: true
   # list of routing-relevant metrics
   metrics:
-  - id: 'to-the-moon-and-back',
+  - id: 'kilometers',
     # optional; default is 1.0
     alpha: 169.0
-  - id: 'Seconds',
+  - id: 'minutes',
     # optional; default is 1.0
     alpha: 331.0
