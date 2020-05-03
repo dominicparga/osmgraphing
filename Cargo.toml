@@ -21,7 +21,6 @@ license = "Apache-2.0 OR GPL-3.0-or-later"
 
 
 [features]
-"gpl" = ["nd-triangulation"]
 
 
 [[bin]]
@@ -29,7 +28,6 @@ name = 'osmgraphing' # bin/osmgraphing.rs
 
 [[bin]]
 name = 'balancer' # bin/balancer.rs
-required-features = ["gpl"]
 
 
 [[example]]
@@ -87,8 +85,6 @@ rand_pcg = "0.2" # generate random numbers
 serde = "1" # serialization
 serde_yaml = "0.8" # (de-)serialization
 smallvec = "1" # inlining small vecs
-
-nd-triangulation = { version = "0.3", optional = true } # CGAL-interface
 
 
 [dev-dependencies]
