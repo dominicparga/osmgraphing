@@ -120,6 +120,9 @@ impl Dijkstra {
     }
 
     /// None means no path exists, whereas an empty path is a path from a node to itself.
+    ///
+    /// ATTENTION!
+    /// If any alpha-value in the routing-config is negative, or any metric in the graph is negative, this method won't terminate.
     pub fn compute_best_path(
         &mut self,
         src_idx: NodeIdx,
@@ -127,8 +130,17 @@ impl Dijkstra {
         graph: &Graph,
         routing_cfg: &Config,
     ) -> Option<Path> {
-        if routing_cfg.alphas.len() <= 0 {
-            panic!("Best path should be computed, but no alphas are specified.");
+        debug_assert!(
+            routing_cfg.alphas.len() <= 0,
+            "Best path should be computed, but no alphas are specified."
+        );
+
+        for alpha in routing_cfg.alphas.iter() {
+            // Dijkstra would not terminate with negative weights
+            // -> no path found
+            if alpha < &0.0 {
+                return None;
+            }
         }
 
         self.is_ch_dijkstra = routing_cfg.is_ch_dijkstra;
