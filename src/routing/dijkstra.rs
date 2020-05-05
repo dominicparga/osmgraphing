@@ -131,7 +131,7 @@ impl Dijkstra {
         routing_cfg: &Config,
     ) -> Option<Path> {
         debug_assert!(
-            routing_cfg.alphas.len() <= 0,
+            routing_cfg.alphas.len() > 0,
             "Best path should be computed, but no alphas are specified."
         );
 
