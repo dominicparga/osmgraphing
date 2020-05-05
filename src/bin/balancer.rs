@@ -1,4 +1,4 @@
-use log::{info, warn};
+use log::info;
 use osmgraphing::{configs, helpers, io::Parser, network::NodeIdx, routing};
 use rand::{
     distributions::{Distribution, Uniform},
@@ -63,7 +63,7 @@ fn main() -> Result<(), String> {
     let mut explorator = routing::ConvexHullExplorator::new();
 
     // generate random route-pairs
-    let route_count = 100; // TODO let route_count = 100;
+    let route_count = 100;
     let seed = 42;
 
     // if all possible routes are less than the preferred route-count
@@ -110,15 +110,15 @@ fn main() -> Result<(), String> {
         gen_route().map(|(src_idx, dst_idx)| (nodes.create(src_idx), nodes.create(dst_idx)))
     {
         let now = Instant::now();
-        match explorator.fully_explorate(src.idx(), dst.idx(), &mut dijkstra, &graph, &routing_cfg)
-        {
-            Ok(found_paths) => info!(
-                "Ran Explorator-query in {} ms. Found {} paths.",
-                now.elapsed().as_micros() as f64 / 1_000.0,
-                found_paths.len()
-            ),
-            Err(msg) => warn!("{}", msg),
-        }
+        info!("Explore query for src {} and dst {}.", src, dst);
+        let found_paths =
+            explorator.fully_explorate(src.idx(), dst.idx(), &mut dijkstra, &graph, &routing_cfg);
+        info!(
+            "Ran Explorator-query in {} ms. Found {} path(s).",
+            now.elapsed().as_micros() as f64 / 1_000.0,
+            found_paths.len()
+        );
+        found_paths.iter().for_each(|p| info!("    {}", p));
     }
 
     Ok(())

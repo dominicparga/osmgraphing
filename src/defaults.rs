@@ -39,6 +39,7 @@ pub mod writing {
 
 pub mod routing {
     pub const ALPHA: f64 = 1.0;
+    pub const TOLERATED_SCALE: f64 = std::f64::INFINITY;
 }
 
 pub mod network {

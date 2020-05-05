@@ -108,6 +108,8 @@ routing:
   - id: 'kilometers',
     # optional; default is 1.0
     alpha: 169.0
+    # optional; default is inf
+    tolerated-scale: 1.3
   - id: 'minutes',
     # optional; default is 1.0
     alpha: 331.0
