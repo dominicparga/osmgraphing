@@ -110,7 +110,9 @@ fn main() -> Result<(), String> {
         gen_route().map(|(src_idx, dst_idx)| (nodes.create(src_idx), nodes.create(dst_idx)))
     {
         let now = Instant::now();
-        info!("Explore query for src {} and dst {}.", src, dst);
+        info!("Explore new query");
+        info!("src {}", src);
+        info!("dst {}", dst);
         let found_paths =
             explorator.fully_explorate(src.idx(), dst.idx(), &mut dijkstra, &graph, &routing_cfg);
         info!(
