@@ -56,6 +56,7 @@ Maybe, it is concept for later documentation, or just keep-up-the-good-work (`ku
 ### Extend configs
 
 - Warn user when parsing `pbf`-map, if unused categories are provided in the config.
+- Don't convert `kilometers` to `meters` to store the graph and convert it back when parsing the graph.
 
 
 ### Extend parsing

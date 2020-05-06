@@ -1,8 +1,8 @@
 use crate::defaults::capacity::DimVec;
 use std::{fs::File, path::Path, str::FromStr};
 
-mod approx;
-pub use approx::{Approx, ApproxCmp, ApproxEq};
+pub mod algebra;
+pub mod approx;
 
 pub fn add(a: &DimVec<f64>, b: &DimVec<f64>) -> DimVec<f64> {
     a.iter().zip(b).map(|(aa, bb)| aa + bb).collect()
@@ -16,7 +16,7 @@ pub fn sub(a: &DimVec<f64>, b: &DimVec<f64>) -> DimVec<f64> {
     a.iter().zip(b).map(|(aa, bb)| aa - bb).collect()
 }
 
-pub fn dot_product(a: &DimVec<f64>, b: &DimVec<f64>) -> f64 {
+pub fn dot_product(a: &[f64], b: &[f64]) -> f64 {
     a.iter()
         .zip(b)
         .fold(0.0, |start, (aa, &bb)| start + aa * bb)

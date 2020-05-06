@@ -173,19 +173,14 @@ fn main() -> Result<(), String> {
             info!("");
 
             let now = Instant::now();
-            let option_path =
-                dijkstra.compute_best_path(src.idx(), dst.idx(), &graph, &routing_cfg);
+            let best_path = dijkstra.compute_best_path(src.idx(), dst.idx(), &graph, &routing_cfg);
             info!(
                 "Ran Dijkstra-query in {} ms",
                 now.elapsed().as_micros() as f64 / 1_000.0,
             );
-            if let Some(path) = option_path {
-                info!(
-                    "Path costs {:?} from ({}) to ({}).",
-                    path.flatten(&graph).costs(),
-                    src,
-                    dst
-                );
+            if let Some(best_path) = best_path {
+                let best_path = best_path.flatten(&graph);
+                info!("Found path {}.", best_path);
             } else {
                 info!("No path from ({}) to ({}).", src, dst);
             }

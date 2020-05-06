@@ -120,18 +120,30 @@ impl Dijkstra {
     }
 
     /// None means no path exists, whereas an empty path is a path from a node to itself.
+    ///
+    /// ATTENTION!
+    /// If any alpha-value in the routing-config is negative, or any metric in the graph is negative, this method won't terminate.
     pub fn compute_best_path(
         &mut self,
         src_idx: NodeIdx,
         dst_idx: NodeIdx,
         graph: &Graph,
-        cfg_routing: &Config,
+        routing_cfg: &Config,
     ) -> Option<Path> {
-        if cfg_routing.alphas.len() <= 0 {
-            panic!("Best path should be computed, but no alphas are specified.");
+        debug_assert!(
+            routing_cfg.alphas.len() > 0,
+            "Best path should be computed, but no alphas are specified."
+        );
+
+        for alpha in routing_cfg.alphas.iter() {
+            // Dijkstra would not terminate with negative weights
+            // -> no path found
+            if alpha < &0.0 {
+                return None;
+            }
         }
 
-        self.is_ch_dijkstra = cfg_routing.is_ch_dijkstra;
+        self.is_ch_dijkstra = routing_cfg.is_ch_dijkstra;
 
         //----------------------------------------------------------------------------------------//
         // initialization-stuff
@@ -235,7 +247,7 @@ impl Dijkstra {
                 }
 
                 let new_cost = current.cost
-                    + helpers::dot_product(&cfg_routing.alphas, &leaving_edge.metrics());
+                    + helpers::dot_product(&routing_cfg.alphas, &leaving_edge.metrics());
                 if new_cost < self.costs[dir][*leaving_edge.dst_idx()] {
                     self.predecessors[dir][*leaving_edge.dst_idx()] = Some(leaving_edge.idx());
                     self.costs[dir][*leaving_edge.dst_idx()] = new_cost;
@@ -311,7 +323,7 @@ struct CostNode {
 
 mod costnode {
     use super::{CostNode, Direction};
-    use crate::helpers::{ApproxCmp, ApproxEq};
+    use crate::helpers::approx::{ApproxCmp, ApproxEq};
     use std::{
         cmp::Ordering,
         fmt::{self, Display},

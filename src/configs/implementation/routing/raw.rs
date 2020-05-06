@@ -15,8 +15,9 @@ pub struct Content {
 }
 
 #[derive(Debug, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[serde(rename_all = "kebab-case", deny_unknown_fields)]
 pub struct Entry {
     pub id: SimpleId,
     pub alpha: Option<f64>,
+    pub tolerated_scale: Option<f64>,
 }

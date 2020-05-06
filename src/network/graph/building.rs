@@ -5,7 +5,7 @@ use crate::{
         self,
         capacity::{self, DimVec},
     },
-    helpers::{ApproxEq, MemSize},
+    helpers::{approx::ApproxEq, MemSize},
 };
 use kissunits::geo::Coordinate;
 use log::{debug, info};

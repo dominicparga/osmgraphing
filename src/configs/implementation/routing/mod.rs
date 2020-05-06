@@ -18,6 +18,7 @@ pub mod raw;
 pub struct Config {
     pub is_ch_dijkstra: bool,
     pub alphas: DimVec<f64>,
+    pub tolerated_scales: DimVec<f64>,
 }
 
 impl SupportingFileExts for Config {
@@ -49,12 +50,18 @@ impl Config {
         parsing_cfg: &parsing::Config,
     ) -> Result<Config, String> {
         let raw_cfg = raw_cfg.routing;
+        let dim = parsing_cfg.edges.metrics.units.len();
 
         // Alpha is 0.0 because non-mentioned id will not be considered.
-        let mut alphas = smallvec![0.0; parsing_cfg.edges.metrics.units.len()];
+        let mut alphas = smallvec![0.0; dim];
+        // Same argument holds for the toleration.
+        let mut tolerated_scales = smallvec![std::f64::INFINITY; dim];
 
         for entry in raw_cfg.metrics.into_iter() {
             let alpha = entry.alpha.unwrap_or(defaults::routing::ALPHA);
+            let tolerated_scale = entry
+                .tolerated_scale
+                .unwrap_or(defaults::routing::TOLERATED_SCALE);
 
             if let Some(metric_idx) = parsing_cfg
                 .edges
@@ -64,6 +71,7 @@ impl Config {
                 .position(|id| id == &entry.id)
             {
                 alphas[metric_idx] = alpha;
+                tolerated_scales[metric_idx] = tolerated_scale;
             } else {
                 return Err(format!(
                     "The given id {} should get alpha {}, but doesn't exist.",
@@ -75,6 +83,7 @@ impl Config {
         Ok(Config {
             is_ch_dijkstra: raw_cfg.is_ch_dijkstra.unwrap_or(false),
             alphas,
+            tolerated_scales,
         })
     }
 

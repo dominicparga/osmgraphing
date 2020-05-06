@@ -21,7 +21,6 @@ license = "Apache-2.0 OR GPL-3.0-or-later"
 
 
 [features]
-"gpl" = ["nd-triangulation"]
 
 
 [[bin]]
@@ -29,7 +28,6 @@ name = 'osmgraphing' # bin/osmgraphing.rs
 
 [[bin]]
 name = 'balancer' # bin/balancer.rs
-required-features = ["gpl"]
 
 
 [[example]]
@@ -79,6 +77,7 @@ clap = "2.33" # cmdline-parsing
 env_logger = "0.6" # logging for external use, e.g. main.rs and examples
 kissunits = "1" # units like Meters or Coordinate
 log = "0.4"        # logging for internal use, e.g. lib.rs
+nalgebra = "0.21" # vectors and matrics
 osmpbfreader = "0.13" # read osm.pbf-files
 progressing = "2" # progress-bar
 rand = "0.7" # generate random numbers
@@ -86,8 +85,6 @@ rand_pcg = "0.2" # generate random numbers
 serde = "1" # serialization
 serde_yaml = "0.8" # (de-)serialization
 smallvec = "1" # inlining small vecs
-
-nd-triangulation = { version = "0.3", optional = true } # CGAL-interface
 
 
 [dev-dependencies]
