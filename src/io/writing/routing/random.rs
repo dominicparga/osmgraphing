@@ -108,7 +108,7 @@ impl super::Writing for Writer {
             // write header
 
             writeln!(writer, "# route-count")?;
-            writeln!(writer, "# routes: src-id dst-id as Vec<(i64, i64)>")?;
+            writeln!(writer, "# routes: src-id dst-id as Vec<(i64, i64, usize)>")?;
             writeln!(writer, "")?;
 
             // write route-count

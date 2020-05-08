@@ -1,5 +1,5 @@
 use log::{error, info};
-use osmgraphing::{configs, helpers, io::Parser};
+use osmgraphing::{configs, helpers, io::network::Parser};
 use std::{path::PathBuf, time::Instant};
 
 fn main() {

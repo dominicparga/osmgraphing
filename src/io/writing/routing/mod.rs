@@ -1,8 +1,4 @@
-use crate::{
-    configs::writing,
-    io::SupportingFileExts,
-    network::Graph,
-};
+use crate::{configs::writing, io::SupportingFileExts, network::Graph};
 use log::info;
 
 mod random;
@@ -28,6 +24,6 @@ impl Writer {
 
 impl SupportingFileExts for Writer {
     fn supported_exts<'a>() -> &'a [&'a str] {
-        &["routes"]
+        &["route-pairs"]
     }
 }

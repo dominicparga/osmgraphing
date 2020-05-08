@@ -5,7 +5,7 @@ use crate::{
     io::SupportingFileExts,
 };
 use smallvec::smallvec;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 pub mod raw;
 
 /// # Specifying routing (TODO update text)
@@ -16,6 +16,7 @@ pub mod raw;
 /// The example below shows a routing-case, where the metric `distance` is weighted with `169 / (169 + 331) = 33.8 %` while the metric `duration` is weighted with `331 / (169 + 331) = 66.2 %`.
 #[derive(Clone, Debug)]
 pub struct Config {
+    pub routes_file: Option<PathBuf>,
     pub is_ch_dijkstra: bool,
     pub alphas: DimVec<f64>,
     pub tolerated_scales: DimVec<f64>,
@@ -108,6 +109,7 @@ impl Config {
         }
 
         Ok(Config {
+            routes_file: raw_cfg.routes_file,
             is_ch_dijkstra: raw_cfg.is_ch_dijkstra.unwrap_or(false),
             alphas,
             tolerated_scales,

@@ -1,6 +1,6 @@
 use crate::{
     helpers,
-    io::{Parser, SupportingFileExts},
+    io::{network::Parser, SupportingFileExts},
 };
 use serde::Deserialize;
 use std::path::{Path, PathBuf};
