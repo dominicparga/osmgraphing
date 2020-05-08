@@ -8,14 +8,16 @@ const FMI_CONFIG: &str = defaults::paths::resources::configs::ISLE_OF_MAN_FMI;
 #[test]
 fn pbf_yaml() {
     let parsing_cfg = configs::parsing::Config::from_yaml(PBF_CONFIG);
-    assert!(configs::writing::Config::try_from_yaml(PBF_CONFIG).is_err());
+    assert!(configs::writing::network::Config::try_from_yaml(PBF_CONFIG).is_err());
+    assert!(configs::writing::routing::Config::try_from_yaml(PBF_CONFIG).is_err());
     assert!(configs::routing::Config::try_from_yaml(PBF_CONFIG, &parsing_cfg).is_err());
 }
 
 #[test]
 fn fmi_yaml() {
     let parsing_cfg = configs::parsing::Config::from_yaml(FMI_CONFIG);
-    assert!(configs::writing::Config::try_from_yaml(FMI_CONFIG).is_err());
+    assert!(configs::writing::network::Config::try_from_yaml(FMI_CONFIG).is_err());
+    assert!(configs::writing::routing::Config::try_from_yaml(FMI_CONFIG).is_err());
     assert!(configs::routing::Config::try_from_yaml(FMI_CONFIG, &parsing_cfg).is_err());
 }
 

@@ -1,7 +1,8 @@
 mod parsing;
 mod writing;
 pub use parsing::Parser;
-pub use writing::Writer;
+pub use writing::network;
+pub use writing::routing;
 
 use std::path::Path;
 
