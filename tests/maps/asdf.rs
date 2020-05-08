@@ -1,6 +1,6 @@
 pub mod parsing {
     use crate::helpers::defaults;
-    use osmgraphing::{configs, io::Parser};
+    use osmgraphing::{configs, io::network::Parser};
     use std::path::PathBuf;
 
     #[test]

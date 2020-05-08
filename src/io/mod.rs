@@ -1,7 +1,14 @@
 mod parsing;
 mod writing;
-pub use parsing::Parser;
-pub use writing::Writer;
+
+pub mod network {
+    pub use crate::io::parsing::network::Parser;
+    pub use crate::io::writing::network::Writer;
+}
+pub mod routing {
+    pub use crate::io::parsing::routing::Parser;
+    pub use crate::io::writing::routing::Writer;
+}
 
 use std::path::Path;
 

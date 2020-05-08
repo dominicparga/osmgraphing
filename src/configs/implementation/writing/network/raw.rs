@@ -2,13 +2,19 @@ use super::{edges, nodes};
 use serde::Deserialize;
 use std::path::PathBuf;
 
+/// Don't deny unknown fields to allow multiple configs in one yaml-file.
 #[derive(Debug, Deserialize)]
 pub struct Config {
-    pub writing: Content,
+    pub writing: AnotherConfig,
 }
 
 #[derive(Debug, Deserialize)]
-#[serde(rename_all = "kebab-case", deny_unknown_fields)]
+pub struct AnotherConfig {
+    pub graph: Content,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "kebab-case")]
 pub struct Content {
     pub map_file: PathBuf,
     pub nodes: nodes::raw::Config,

@@ -5,7 +5,7 @@ use osmgraphing::{
     configs,
     defaults::capacity::DimVec,
     helpers,
-    io::Parser,
+    io::network::Parser,
     network::{Graph, MetricIdx, NodeIdx},
     routing,
 };

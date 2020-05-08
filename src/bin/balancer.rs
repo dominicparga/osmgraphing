@@ -1,9 +1,5 @@
 use log::info;
-use osmgraphing::{configs, helpers, io::Parser, network::NodeIdx, routing};
-use rand::{
-    distributions::{Distribution, Uniform},
-    SeedableRng,
-};
+use osmgraphing::{configs, helpers, io, routing};
 use std::{path::PathBuf, time::Instant};
 
 fn main() -> Result<(), String> {
@@ -35,7 +31,7 @@ fn main() -> Result<(), String> {
     // measure parsing-time
     let now = Instant::now();
 
-    let graph = match Parser::parse_and_finalize(parsing_cfg) {
+    let graph = match io::network::Parser::parse_and_finalize(parsing_cfg) {
         Ok(graph) => graph,
         Err(msg) => return Err(format!("{}", msg)),
     };
@@ -62,52 +58,17 @@ fn main() -> Result<(), String> {
     let mut dijkstra = routing::Dijkstra::new();
     let mut explorator = routing::ConvexHullExplorator::new();
 
-    // generate random route-pairs
-    let route_count = 100;
-    let seed = 42;
-
-    // if all possible routes are less than the preferred route-count
-    // -> just print all possible routes
-    // else: print random routes
-    let mut gen_route: Box<dyn FnMut() -> Option<(NodeIdx, NodeIdx)>> = {
-        if nodes.count() * nodes.count() <= route_count {
-            let mut i = 0;
-            let nodes = graph.nodes();
-            Box::new(move || {
-                if i < nodes.count() * nodes.count() {
-                    let src_idx = NodeIdx(i / nodes.count());
-                    let dst_idx = NodeIdx(i % nodes.count());
-                    i += 1;
-                    Some((src_idx, dst_idx))
-                } else {
-                    None
-                }
-            })
-        } else {
-            let mut rng = rand_pcg::Pcg32::seed_from_u64(seed);
-            let die = Uniform::from(0..nodes.count());
-            let mut i = 0;
-            Box::new(move || {
-                if i < route_count {
-                    let src_idx = NodeIdx(die.sample(&mut rng));
-                    let dst_idx = NodeIdx(die.sample(&mut rng));
-                    i += 1;
-                    Some((src_idx, dst_idx))
-                } else {
-                    None
-                }
-            })
-        }
-    };
-
     info!(
         "Explorate several routes for metrics {:?} of dimension {}",
         graph.cfg().edges.metrics.units,
         graph.metrics().dim()
     );
 
-    while let Some((src, dst)) =
-        gen_route().map(|(src_idx, dst_idx)| (nodes.create(src_idx), nodes.create(dst_idx)))
+    // calculate best paths
+
+    for (src, dst) in io::routing::Parser::parse_and_finalize(&routing_cfg, &graph)?
+        .iter()
+        .map(|&(src_idx, dst_idx, _)| (nodes.create(src_idx), nodes.create(dst_idx)))
     {
         let now = Instant::now();
         info!("Explore new query");

@@ -1147,7 +1147,7 @@ dependencies = [
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "nalgebra 0.21.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "osmpbfreader 0.13.4 (registry+https://github.com/rust-lang/crates.io-index)",
- "progressing 2.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "progressing 2.2.3 (git+https://github.com/dominicparga/progressing?branch=nightly)",
  "quick-xml 0.14.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand 0.7.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand_pcg 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1282,11 +1282,9 @@ dependencies = [
 
 [[package]]
 name = "progressing"
-version = "2.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
+version = "2.2.3"
+source = "git+https://github.com/dominicparga/progressing?branch=nightly#26f3c4d3252569590943d40e54bb3420ee9f4a74"
 dependencies = [
- "clap 2.33.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "env_logger 0.6.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -2382,7 +2380,7 @@ dependencies = [
 "checksum proc-macro-hack 0.5.11 (registry+https://github.com/rust-lang/crates.io-index)" = "ecd45702f76d6d3c75a80564378ae228a85f0b59d2f3ed43c91b4a69eb2ebfc5"
 "checksum proc-macro2 0.4.30 (registry+https://github.com/rust-lang/crates.io-index)" = "cf3d2011ab5c909338f7887f4fc896d35932e29146c12c8d01da6b22a80ba759"
 "checksum proc-macro2 1.0.9 (registry+https://github.com/rust-lang/crates.io-index)" = "6c09721c6781493a2a492a96b5a5bf19b65917fe6728884e7c44dd0c60ca3435"
-"checksum progressing 2.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "3198e821631dd579944cd3b037d595b758b241fac6d63253bfb774bca6dd5013"
+"checksum progressing 2.2.3 (git+https://github.com/dominicparga/progressing?branch=nightly)" = "<none>"
 "checksum protobuf 2.10.2 (registry+https://github.com/rust-lang/crates.io-index)" = "37a5325d019a4d837d3abde0a836920f959e33d350f77b5f1e289e061e774942"
 "checksum protobuf-codegen 2.10.2 (registry+https://github.com/rust-lang/crates.io-index)" = "64dd3a6192e0c6c1b0dae8f125b7f6b201c39fc487ebda0ee717d7a87fc47dc2"
 "checksum protobuf-codegen-pure 2.10.2 (registry+https://github.com/rust-lang/crates.io-index)" = "037fa49710ee83b3be232ed53c5fce0bdb1b64c6aa6b1143a86640969c3e4b1d"

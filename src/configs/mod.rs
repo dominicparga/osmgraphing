@@ -49,7 +49,13 @@ pub mod parsing {
 }
 
 pub mod writing {
-    pub use crate::configs::implementation::writing::Config;
+    pub mod network {
+        pub use crate::configs::implementation::writing::network::Config;
+    }
+
+    pub mod routing {
+        pub use crate::configs::implementation::writing::routing::{Category, Config};
+    }
 }
 
 pub mod routing {
