@@ -40,6 +40,7 @@ impl super::Writing for Writer {
             let mut writer = BufWriter::new(output_file);
 
             let nodes = graph.nodes();
+            let fwd_edges = graph.fwd_edges();
             let mut dijkstra = routing::Dijkstra::new();
             let routing_cfg = configs::routing::Config::from_all_metrics(graph.cfg());
 
@@ -107,18 +108,26 @@ impl super::Writing for Writer {
 
             // write header
 
-            writeln!(writer, "# route-count")?;
-            writeln!(writer, "# routes: src-id dst-id as Vec<(i64, i64, usize)>")?;
+            writeln!(writer, "# graph-file: {}", graph.cfg().map_file.display())?;
+            writeln!(writer, "# node-count: {}", nodes.count(),)?;
+            writeln!(writer, "# edge-count: {}", fwd_edges.count(),)?;
             writeln!(writer, "")?;
 
             // write route-count
 
             let mut found_route_pairs: Vec<_> = found_route_pairs.into_iter().collect();
             found_route_pairs.sort();
+            writeln!(writer, "# route-count")?;
             writeln!(writer, "{}", found_route_pairs.len())?;
+            writeln!(writer, "")?;
 
             // write routes
 
+            writeln!(
+                writer,
+                "# random routes: (src-id dst-id count) as (i64, i64, usize)"
+            )?;
+            writeln!(writer, "# seed: {}", myself.seed)?;
             for (src_id, dst_id) in found_route_pairs {
                 writeln!(writer, "{} {} {}", src_id, dst_id, 1)?;
             }
