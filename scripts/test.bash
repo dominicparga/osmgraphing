@@ -2,8 +2,6 @@
 
 set -e
 
-cargo fmt -- --check
-
 # build
 CUR_DIR="$(dirname "$(pwd)"/"${0}")"
 "${CUR_DIR}/build.sh"

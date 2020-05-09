@@ -2,6 +2,7 @@
 
 set -e
 
+cargo generate-lockfile
 cargo fmt -- --check
 
 cargo build --all-features
