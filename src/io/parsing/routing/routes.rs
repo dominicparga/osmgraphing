@@ -1,4 +1,4 @@
-use crate::{configs, helpers};
+use crate::{configs, helpers, network::RoutePair};
 use log::info;
 use std::{
     io::{BufRead, BufReader},
@@ -75,10 +75,10 @@ impl super::Parsing for Parser {
         Ok(())
     }
 
-    fn parse_routes(
+    fn parse_route_pairs(
         &self,
         cfg: &configs::routing::Config,
-    ) -> Result<Vec<(i64, i64, usize)>, String> {
+    ) -> Result<Vec<(RoutePair<i64>, usize)>, String> {
         info!("START Create routes from input-file.");
 
         let mut route_pairs = Vec::with_capacity(self.route_lines.len());
@@ -128,7 +128,13 @@ impl super::Parsing for Parser {
                 .ok()
                 .ok_or(format!("Could not parse route's count {}", param))?;
 
-            route_pairs.push((src_id, dst_id, n));
+            route_pairs.push((
+                RoutePair {
+                    src: src_id,
+                    dst: dst_id,
+                },
+                n,
+            ));
         }
 
         info!("FINISHED");
