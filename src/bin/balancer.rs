@@ -1,5 +1,5 @@
 use log::info;
-use osmgraphing::{configs, helpers, io, routing};
+use osmgraphing::{configs, helpers, io, network::RoutePair, routing};
 use std::{path::PathBuf, time::Instant};
 
 fn main() -> Result<(), String> {
@@ -54,7 +54,6 @@ fn main() -> Result<(), String> {
         }
     };
 
-    let nodes = graph.nodes();
     let mut dijkstra = routing::Dijkstra::new();
     let mut explorator = routing::ConvexHullExplorator::new();
 
@@ -66,9 +65,9 @@ fn main() -> Result<(), String> {
 
     // calculate best paths
 
-    for (src, dst) in io::routing::Parser::parse_and_finalize(&routing_cfg, &graph)?
+    for RoutePair { src, dst } in io::routing::Parser::parse(&routing_cfg)?
         .iter()
-        .map(|&(src_idx, dst_idx, _)| (nodes.create(src_idx), nodes.create(dst_idx)))
+        .map(|(route_pair, _)| route_pair.into_node(&graph))
     {
         let now = Instant::now();
         info!("Explore new query");

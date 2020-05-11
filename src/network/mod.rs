@@ -4,7 +4,8 @@ pub use graph::{
     EdgeAccessor, EdgeIdx, Graph, HalfEdge, MetricAccessor, MetricIdx, Node, NodeAccessor, NodeIdx,
 };
 
-//------------------------------------------------------------------------------------------------//
+mod routes;
+pub use routes::RoutePair;
 
 /// The street-type, collecting all kind of default-values.
 ///

@@ -1,16 +1,12 @@
-use crate::{
-    configs,
-    io::SupportingFileExts,
-    network::{Graph, NodeIdx},
-};
+use crate::{configs, io::SupportingFileExts, network::RoutePair};
 use log::info;
 
-pub mod routes;
+mod routes;
 
 pub struct Parser;
 
 impl Parser {
-    pub fn parse(cfg: &configs::routing::Config) -> Result<Vec<(i64, i64, usize)>, String> {
+    pub fn parse(cfg: &configs::routing::Config) -> Result<Vec<(RoutePair<i64>, usize)>, String> {
         let route_pairs_file = cfg
             .route_pairs_file
             .as_ref()
@@ -18,21 +14,6 @@ impl Parser {
 
         match Parser::find_supported_ext(route_pairs_file) {
             Ok(_) => routes::Parser::new().parse(cfg),
-            Err(msg) => Err(format!("Wrong parser-routes-file: {}", msg)),
-        }
-    }
-
-    pub fn parse_and_finalize(
-        cfg: &configs::routing::Config,
-        graph: &Graph,
-    ) -> Result<Vec<(NodeIdx, NodeIdx, usize)>, String> {
-        let route_pairs_file = cfg
-            .route_pairs_file
-            .as_ref()
-            .expect("No routes-file specified.");
-
-        match Parser::find_supported_ext(route_pairs_file) {
-            Ok(_) => routes::Parser::new().parse_and_finalize(cfg, graph),
             Err(msg) => Err(format!("Wrong parser-routes-file: {}", msg)),
         }
     }
@@ -59,41 +40,20 @@ trait Parsing {
         Ok(())
     }
 
-    fn parse_routes(
+    fn parse_route_pairs(
         &self,
         cfg: &configs::routing::Config,
-    ) -> Result<Vec<(i64, i64, usize)>, String>;
+    ) -> Result<Vec<(RoutePair<i64>, usize)>, String>;
 
-    fn parse(&mut self, cfg: &configs::routing::Config) -> Result<Vec<(i64, i64, usize)>, String> {
+    fn parse(
+        &mut self,
+        cfg: &configs::routing::Config,
+    ) -> Result<Vec<(RoutePair<i64>, usize)>, String> {
         info!("START Process given file");
         self.preprocess(cfg)?;
-        let routes = self.parse_routes(cfg)?;
+        let routes = self.parse_route_pairs(cfg)?;
         info!("FINISHED");
 
         Ok(routes)
-    }
-
-    fn parse_and_finalize(
-        &mut self,
-        cfg: &configs::routing::Config,
-        graph: &Graph,
-    ) -> Result<Vec<(NodeIdx, NodeIdx, usize)>, String> {
-        let routes = self.parse(cfg)?;
-
-        let nodes = graph.nodes();
-        Ok(routes
-            .into_iter()
-            .map(|(src_id, dst_id, n)| {
-                let src_idx = nodes.idx_from(src_id).expect(&format!(
-                    "Route-file contains src-id {}, which is not part of the graph.",
-                    src_id
-                ));
-                let dst_idx = nodes.idx_from(dst_id).expect(&format!(
-                    "Route-file contains dst-id {}, which is not part of the graph.",
-                    dst_id
-                ));
-                (src_idx, dst_idx, n)
-            })
-            .collect())
     }
 }

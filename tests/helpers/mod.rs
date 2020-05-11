@@ -5,7 +5,7 @@ use osmgraphing::{
     configs,
     defaults::capacity::DimVec,
     helpers, io,
-    network::{Graph, MetricIdx},
+    network::{Graph, MetricIdx, RoutePair},
     routing,
 };
 
@@ -126,7 +126,6 @@ pub fn compare_dijkstras(ch_fmi_config_file: &str, metric_id: &str) {
 
     // init dijkstra for routing
 
-    let nodes = graph.nodes();
     let mut dijkstra = routing::Dijkstra::new();
 
     let raw_cfg = format!(
@@ -143,13 +142,13 @@ pub fn compare_dijkstras(ch_fmi_config_file: &str, metric_id: &str) {
 
     // testing
 
-    let route_pairs = io::routing::Parser::parse_and_finalize(&ch_routing_cfg, &graph)
+    let route_pairs = io::routing::Parser::parse(&ch_routing_cfg)
         .expect("Parsing and finalizing route-pairs didn't work.");
 
-    for (src_idx, dst_idx, _) in route_pairs {
-        let src = nodes.create(src_idx);
-        let dst = nodes.create(dst_idx);
-
+    for RoutePair { src, dst } in route_pairs
+        .iter()
+        .map(|(route_pair, _)| route_pair.into_node(&graph))
+    {
         let option_ch_path =
             dijkstra.compute_best_path(src.idx(), dst.idx(), &graph, &ch_routing_cfg);
         let option_path = dijkstra.compute_best_path(src.idx(), dst.idx(), &graph, &routing_cfg);
