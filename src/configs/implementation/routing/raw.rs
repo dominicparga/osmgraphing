@@ -21,6 +21,5 @@ pub struct Content {
 pub struct Entry {
     pub id: SimpleId,
     pub alpha: Option<f64>,
-    #[serde(deserialize_with = "helpers::deserialize_f64_from_str")]
     pub tolerated_scale: Option<f64>,
 }

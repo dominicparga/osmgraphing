@@ -93,18 +93,3 @@ pub fn init_logging(max_log_level: &str, mut modules: Vec<&str>) -> Result<(), S
     // return
     Ok(())
 }
-
-pub fn deserialize_f64_from_str<'de, D>(deserializer: D) -> Result<Option<f64>, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    let snippet: String = Deserialize::deserialize(deserializer)?;
-
-    match snippet.trim().to_ascii_lowercase().as_ref() {
-        "inf" | "infinity" => Ok(Some(std::f64::INFINITY)),
-        _ => match f64::from_str(&snippet) {
-            Ok(value) => Ok(Some(value)),
-            Err(e) => Err(de::Error::custom(e)),
-        },
-    }
-}
