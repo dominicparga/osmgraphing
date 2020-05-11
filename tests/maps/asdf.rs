@@ -1,6 +1,6 @@
 pub mod parsing {
     use crate::helpers::defaults;
-    use osmgraphing::{configs, io::Parser};
+    use osmgraphing::{configs, io::network::Parser};
     use std::path::PathBuf;
 
     #[test]
@@ -19,14 +19,14 @@ pub mod parsing {
         let parsing_cfg =
             configs::parsing::Config::from_yaml(defaults::paths::resources::configs::SMALL_FMI);
         let yaml_str = &format!(
-            "routing: {{ metrics: [{{ id: '{}' }}, {{ id: '{}' }}] }}",
+            "routing: {{ route-pairs-file: 'asdf', metrics: [{{ id: '{}' }}, {{ id: '{}' }}] }}",
             defaults::SPEED_ID,
             defaults::SPEED_ID
         );
         configs::routing::Config::from_str(yaml_str, &parsing_cfg);
 
         let yaml_str = &format!(
-            "routing: {{ metrics: [{{ id: '{}' }}], is-ch-dijkstra: true }}",
+            "routing: {{ route-pairs-file: 'asdf', metrics: [{{ id: '{}' }}], is-ch-dijkstra: true }}",
             defaults::SPEED_ID
         );
         let routing_cfg = configs::routing::Config::from_str(yaml_str, &parsing_cfg);
@@ -36,7 +36,7 @@ pub mod parsing {
         );
 
         let yaml_str = &format!(
-            "routing: {{ metrics: [{{ id: '{}' }}], is-ch-dijkstra: false }}",
+            "routing: {{ route-pairs-file: 'asdf', metrics: [{{ id: '{}' }}], is-ch-dijkstra: false }}",
             defaults::SPEED_ID
         );
         let routing_cfg = configs::routing::Config::from_str(yaml_str, &parsing_cfg);

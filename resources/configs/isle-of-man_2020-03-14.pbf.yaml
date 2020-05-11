@@ -26,3 +26,7 @@ parsing:
         result: { unit: 'Minutes', id: 'minutes' }
         a: { unit: 'Kilometers', id: 'kilometers' }
         b: { unit: 'KilometersPerHour', id: 'kmph' }
+writing:
+  route-pairs:
+    file: 'resources/routes/isle-of-man_2020-03-14.pbf.route-pairs'
+    random: { seed: 42, count: 100 }

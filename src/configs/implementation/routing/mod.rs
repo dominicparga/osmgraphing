@@ -1,11 +1,11 @@
 use crate::{
-    configs::parsing,
+    configs,
     defaults::{self, capacity::DimVec},
     helpers,
     io::SupportingFileExts,
 };
 use smallvec::smallvec;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 pub mod raw;
 
 /// # Specifying routing (TODO update text)
@@ -16,6 +16,7 @@ pub mod raw;
 /// The example below shows a routing-case, where the metric `distance` is weighted with `169 / (169 + 331) = 33.8 %` while the metric `duration` is weighted with `331 / (169 + 331) = 66.2 %`.
 #[derive(Clone, Debug)]
 pub struct Config {
+    pub route_pairs_file: Option<PathBuf>,
     pub is_ch_dijkstra: bool,
     pub alphas: DimVec<f64>,
     pub tolerated_scales: DimVec<f64>,
@@ -28,7 +29,34 @@ impl SupportingFileExts for Config {
 }
 
 impl Config {
-    pub fn try_from_str(yaml_str: &str, parsing_cfg: &parsing::Config) -> Result<Config, String> {
+    /// Takes all metrics from graph with default settings
+    pub fn try_from_all_metrics(parsing_cfg: &configs::parsing::Config) -> Result<Config, String> {
+        let mut raw_routing_cfg = parsing_cfg
+            .edges
+            .metrics
+            .ids
+            .iter()
+            .map(|simple_id| format!("{{ id: '{}' }},", simple_id.0))
+            .fold(String::from("routing: { metrics: ["), |acc, id| {
+                format!("{} {}", acc, id)
+            });
+        raw_routing_cfg.push_str("] }");
+
+        Config::try_from_str(&raw_routing_cfg, parsing_cfg)
+    }
+
+    /// Takes all metrics from graph with default settings
+    pub fn from_all_metrics(parsing_cfg: &configs::parsing::Config) -> Config {
+        match Config::try_from_all_metrics(parsing_cfg) {
+            Ok(cfg) => cfg,
+            Err(msg) => panic!("{}", msg),
+        }
+    }
+
+    pub fn try_from_str(
+        yaml_str: &str,
+        parsing_cfg: &configs::parsing::Config,
+    ) -> Result<Config, String> {
         let raw_cfg = {
             match serde_yaml::from_str(yaml_str) {
                 Ok(raw_cfg) => raw_cfg,
@@ -38,16 +66,16 @@ impl Config {
         Config::try_from_raw(raw_cfg, parsing_cfg)
     }
 
-    pub fn from_str(yaml_str: &str, parsing_cfg: &parsing::Config) -> Config {
+    pub fn from_str(yaml_str: &str, parsing_cfg: &configs::parsing::Config) -> Config {
         match Config::try_from_str(yaml_str, parsing_cfg) {
             Ok(cfg) => cfg,
             Err(msg) => panic!("{}", msg),
         }
     }
 
-    pub fn try_from_raw(
+    fn try_from_raw(
         raw_cfg: raw::Config,
-        parsing_cfg: &parsing::Config,
+        parsing_cfg: &configs::parsing::Config,
     ) -> Result<Config, String> {
         let raw_cfg = raw_cfg.routing;
         let dim = parsing_cfg.edges.metrics.units.len();
@@ -81,13 +109,14 @@ impl Config {
         }
 
         Ok(Config {
+            route_pairs_file: raw_cfg.route_pairs_file,
             is_ch_dijkstra: raw_cfg.is_ch_dijkstra.unwrap_or(false),
             alphas,
             tolerated_scales,
         })
     }
 
-    pub fn from_raw(raw_cfg: raw::Config, parsing_cfg: &parsing::Config) -> Config {
+    fn _from_raw(raw_cfg: raw::Config, parsing_cfg: &configs::parsing::Config) -> Config {
         match Config::try_from_raw(raw_cfg, parsing_cfg) {
             Ok(cfg) => cfg,
             Err(msg) => panic!("{}", msg),
@@ -96,7 +125,7 @@ impl Config {
 
     pub fn try_from_yaml<P: AsRef<Path> + ?Sized>(
         path: &P,
-        parsing_cfg: &parsing::Config,
+        parsing_cfg: &configs::parsing::Config,
     ) -> Result<Config, String> {
         let file = {
             Config::find_supported_ext(path)?;
@@ -110,7 +139,10 @@ impl Config {
         Config::try_from_raw(raw_cfg, parsing_cfg)
     }
 
-    pub fn from_yaml<P: AsRef<Path> + ?Sized>(path: &P, parsing_cfg: &parsing::Config) -> Config {
+    pub fn from_yaml<P: AsRef<Path> + ?Sized>(
+        path: &P,
+        parsing_cfg: &configs::parsing::Config,
+    ) -> Config {
         match Config::try_from_yaml(path, parsing_cfg) {
             Ok(cfg) => cfg,
             Err(msg) => panic!("{}", msg),

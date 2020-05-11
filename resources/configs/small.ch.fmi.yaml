@@ -26,3 +26,7 @@ parsing:
     - convert:
         from: { unit: 'Seconds', id: 'seconds' }
         to: { unit: 'Minutes', id: 'minutes' }
+writing:
+  route-pairs:
+    file: 'resources/routes/small.ch.fmi.route-pairs'
+    random: { seed: 42, count: 100 }

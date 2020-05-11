@@ -8,20 +8,25 @@ const FMI_CONFIG: &str = defaults::paths::resources::configs::ISLE_OF_MAN_FMI;
 #[test]
 fn pbf_yaml() {
     let parsing_cfg = configs::parsing::Config::from_yaml(PBF_CONFIG);
-    assert!(configs::writing::Config::try_from_yaml(PBF_CONFIG).is_err());
+    assert!(configs::writing::network::Config::try_from_yaml(PBF_CONFIG).is_err());
+    assert!(configs::writing::routing::Config::try_from_yaml(PBF_CONFIG).is_ok());
     assert!(configs::routing::Config::try_from_yaml(PBF_CONFIG, &parsing_cfg).is_err());
 }
 
 #[test]
 fn fmi_yaml() {
     let parsing_cfg = configs::parsing::Config::from_yaml(FMI_CONFIG);
-    assert!(configs::writing::Config::try_from_yaml(FMI_CONFIG).is_err());
+    assert!(configs::writing::network::Config::try_from_yaml(FMI_CONFIG).is_err());
+    assert!(configs::writing::routing::Config::try_from_yaml(FMI_CONFIG).is_ok());
     assert!(configs::routing::Config::try_from_yaml(FMI_CONFIG, &parsing_cfg).is_err());
 }
 
 #[test]
 fn ch_fmi_yaml() {
-    configs::parsing::Config::from_yaml(CH_FMI_CONFIG);
+    let parsing_cfg = configs::parsing::Config::from_yaml(CH_FMI_CONFIG);
+    assert!(configs::writing::network::Config::try_from_yaml(CH_FMI_CONFIG).is_err());
+    assert!(configs::writing::routing::Config::try_from_yaml(CH_FMI_CONFIG).is_ok());
+    assert!(configs::routing::Config::try_from_yaml(CH_FMI_CONFIG, &parsing_cfg).is_err());
 }
 
 #[test]

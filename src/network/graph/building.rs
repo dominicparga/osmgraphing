@@ -407,7 +407,8 @@ impl GraphBuilder {
                     }
                 }
             }
-            info!("{}", progress_bar.set(new_proto_edges.len()));
+            progress_bar.set(new_proto_edges.len());
+            info!("{}", progress_bar);
             // reduce and optimize memory-usage
             new_proto_edges.shrink_to_fit();
 
@@ -586,7 +587,8 @@ impl GraphBuilder {
                     edge_idx += 1;
                 }
             }
-            info!("{}", progress_bar.set(edge_idx));
+            progress_bar.set(edge_idx);
+            info!("{}", progress_bar);
             // reduce and optimize memory-usage
             graph.shrink_to_fit();
             new_proto_edges.shrink_to_fit();
@@ -673,7 +675,8 @@ impl GraphBuilder {
             }
             // last node needs an upper bound as well for `leaving_edges(...)`
             graph.fwd_offsets.push(offset);
-            info!("{}", progress_bar.set(offset));
+            progress_bar.set(offset);
+            info!("{}", progress_bar);
             // reduce and optimize memory-usage
             // already dropped via iterator: drop(self.proto_edges);
             graph.shrink_to_fit();
@@ -740,7 +743,8 @@ impl GraphBuilder {
                 "Last offset-value should be as big as the number of proto-edges."
             );
             graph.bwd_offsets.push(offset);
-            info!("{}", progress_bar.set(graph.fwd_dsts.len()));
+            progress_bar.set(graph.fwd_dsts.len());
+            info!("{}", progress_bar);
             // reduce and optimize memory-usage
             graph.shrink_to_fit();
         }

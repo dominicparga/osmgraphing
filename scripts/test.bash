@@ -2,11 +2,9 @@
 
 set -e
 
-cargo fmt -- --check
-
 # build
-CUR_DIR="$(dirname "$(pwd)"/"${0}")"
-"${CUR_DIR}/build.sh"
+cur_dir="$(dirname "$(pwd)"/"${0}")"
+"${cur_dir}/build.sh"
 
 # test
 cargo test

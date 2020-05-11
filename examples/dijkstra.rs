@@ -1,7 +1,7 @@
 use log::info;
 use osmgraphing::{
     configs, helpers,
-    io::Parser,
+    io::network::Parser,
     network::NodeIdx,
     routing::{self},
 };

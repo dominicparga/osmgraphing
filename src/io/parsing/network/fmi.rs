@@ -90,7 +90,6 @@ impl super::Parsing for Parser {
         self.edge_lines = start..end;
 
         info!("FINISHED");
-
         Ok(())
     }
 
