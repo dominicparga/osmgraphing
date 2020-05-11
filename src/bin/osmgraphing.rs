@@ -1,4 +1,4 @@
-use log::info;
+use log::{error, info};
 use osmgraphing::{configs, helpers, io, network::RoutePair, routing};
 use std::{path::PathBuf, time::Instant};
 
@@ -22,11 +22,19 @@ use std::{path::PathBuf, time::Instant};
 
 //------------------------------------------------------------------------------------------------//
 
-fn main() -> Result<(), String> {
+fn main() {
+    let result = run();
+    if let Err(msg) = result {
+        error!("{}\n", msg);
+        panic!("{}", msg);
+    }
+}
+
+fn run() -> Result<(), String> {
     // process user-input
 
-    let matches = parse_cmdline();
-    match helpers::init_logging(matches.value_of("log").unwrap(), vec![]) {
+    let args = parse_cmdline();
+    match helpers::init_logging(&args.max_log_level, vec![]) {
         Ok(_) => (),
         Err(msg) => return Err(format!("{}", msg)),
     };
@@ -39,7 +47,7 @@ fn main() -> Result<(), String> {
         // get config by provided user-input
 
         let parsing_cfg = {
-            let raw_parsing_cfg = PathBuf::from(matches.value_of("config").unwrap());
+            let raw_parsing_cfg = PathBuf::from(args.cfg);
             match configs::parsing::Config::try_from_yaml(&raw_parsing_cfg) {
                 Ok(cfg) => cfg,
                 Err(msg) => return Err(format!("{}", msg)),
@@ -69,24 +77,11 @@ fn main() -> Result<(), String> {
 
     // writing built graph
 
-    if matches.is_present("is-writing-graph") {
+    if args.is_writing_graph {
         // get config by provided user-input
 
-        let writing_cfg = {
-            // take parsing-cfg if no other config is given
-
-            let raw_cfg = match matches.value_of("writing-graph-cfg") {
-                Some(path) => PathBuf::from(&path),
-                None => PathBuf::from(&matches.value_of("config").unwrap()),
-            };
-
-            // parse config
-
-            match configs::writing::network::Config::try_from_yaml(&raw_cfg) {
-                Ok(cfg) => cfg,
-                Err(msg) => return Err(format!("{}", msg)),
-            }
-        };
+        let writing_cfg =
+            configs::writing::network::Config::try_from_yaml(&args.writing_graph_cfg)?;
 
         // check if new file does already exist
 
@@ -116,24 +111,11 @@ fn main() -> Result<(), String> {
 
     // writing routes to file
 
-    if matches.is_present("is-writing-routes") {
+    if args.is_writing_routes {
         // get config by provided user-input
 
-        let writing_cfg = {
-            // take parsing-cfg if no other config is given
-
-            let raw_cfg = match matches.value_of("writing-routes-cfg") {
-                Some(path) => PathBuf::from(&path),
-                None => PathBuf::from(&matches.value_of("config").unwrap()),
-            };
-
-            // parse config
-
-            match configs::writing::routing::Config::try_from_yaml(&raw_cfg) {
-                Ok(cfg) => cfg,
-                Err(msg) => return Err(format!("{}", msg)),
-            }
-        };
+        let writing_cfg =
+            configs::writing::routing::Config::try_from_yaml(&args.writing_routes_cfg)?;
 
         // check if new file does already exist
 
@@ -163,24 +145,10 @@ fn main() -> Result<(), String> {
 
     // routing-example
 
-    if matches.is_present("is-routing") {
+    if args.is_routing {
         // get config by provided user-input
 
-        let routing_cfg = {
-            // take parsing-cfg if no other config is given
-
-            let raw_cfg = match matches.value_of("routing-cfg") {
-                Some(path) => PathBuf::from(&path),
-                None => PathBuf::from(&matches.value_of("config").unwrap()),
-            };
-
-            // parse config
-
-            match configs::routing::Config::try_from_yaml(&raw_cfg, graph.cfg()) {
-                Ok(cfg) => cfg,
-                Err(msg) => return Err(format!("{}", msg)),
-            }
-        };
+        let routing_cfg = configs::routing::Config::try_from_yaml(&args.routing_cfg, graph.cfg())?;
 
         info!("EXECUTE Do routing with alphas: {:?}", routing_cfg.alphas);
 
@@ -211,7 +179,7 @@ fn main() -> Result<(), String> {
     Ok(())
 }
 
-fn parse_cmdline<'a>() -> clap::ArgMatches<'a> {
+fn parse_cmdline<'a>() -> CmdlineArgs {
     let tmp = &[
         "Sets the logging-level by setting environment-variable 'RUST_LOG'.",
         "The env-variable 'RUST_LOG' has precedence.",
@@ -220,39 +188,42 @@ fn parse_cmdline<'a>() -> clap::ArgMatches<'a> {
         "for getting warn's by default, but 'info' about the others",
     ]
     .join("\n");
-    let arg_log_level = clap::Arg::with_name("log")
+    let arg_log_level = clap::Arg::with_name(constants::ids::MAX_LOG_LEVEL)
         .long("log")
         .short("l")
         .value_name("FILTER-LEVEL")
         .help(tmp)
         .takes_value(true)
         .required(false)
+        .case_insensitive(true)
         .default_value("INFO")
         .possible_values(&vec!["TRACE", "DEBUG", "INFO", "WARN", "ERROR"]);
 
-    let arg_parser_cfg = clap::Arg::with_name("config")
+    let arg_parser_cfg = clap::Arg::with_name(constants::ids::CFG)
         .long("config")
+        .short("c")
         .alias("parsing")
         .value_name("PATH")
         .help("Sets the parser and other configurations according to this config.")
-        .takes_value(true);
+        .takes_value(true)
+        .required(true);
 
-    let arg_is_routing = clap::Arg::with_name("is-routing")
+    let arg_is_routing = clap::Arg::with_name(constants::ids::IS_ROUTING)
         .long("routing")
         .help("Does routing as specified in the provided config.")
         .takes_value(false)
-        .requires("config");
+        .requires(constants::ids::CFG);
 
-    let arg_is_writing_graph = clap::Arg::with_name("is-writing-graph")
+    let arg_is_writing_graph = clap::Arg::with_name(constants::ids::IS_WRITING_GRAPH)
         .long("writing-graph")
         .help(
             "The generated graph will be exported \
                as described in the provided config.",
         )
         .takes_value(false)
-        .requires("config");
+        .requires(constants::ids::CFG);
 
-    let arg_is_writing_routes = clap::Arg::with_name("is-writing-routes")
+    let arg_is_writing_routes = clap::Arg::with_name(constants::ids::IS_WRITING_ROUTES)
         .long("writing-routes")
         .help(
             "The generated graph will be used to \
@@ -260,7 +231,7 @@ fn parse_cmdline<'a>() -> clap::ArgMatches<'a> {
                as described in the provided config.",
         )
         .takes_value(false)
-        .requires("config");
+        .requires(constants::ids::CFG);
 
     clap::App::new(env!("CARGO_PKG_NAME"))
         .version(env!("CARGO_PKG_VERSION"))
@@ -283,4 +254,66 @@ fn parse_cmdline<'a>() -> clap::ArgMatches<'a> {
         .arg(arg_is_writing_graph)
         .arg(arg_is_writing_routes)
         .get_matches()
+        .into()
+}
+
+mod constants {
+    pub mod ids {
+        pub const MAX_LOG_LEVEL: &str = "max-log-level";
+        pub const CFG: &str = "cfg";
+        pub const WRITING_GRAPH_CFG: &str = "writing-graph-cfg";
+        pub const WRITING_ROUTES_CFG: &str = "writing-routes-cfg";
+        pub const ROUTING_CFG: &str = "routing-cfg";
+        pub const IS_WRITING_GRAPH: &str = "is-writing-graph";
+        pub const IS_WRITING_ROUTES: &str = "is-writing-routes";
+        pub const IS_ROUTING: &str = "is-routing";
+    }
+}
+
+struct CmdlineArgs {
+    max_log_level: String,
+    cfg: String,
+    writing_graph_cfg: String,
+    writing_routes_cfg: String,
+    routing_cfg: String,
+    is_writing_graph: bool,
+    is_writing_routes: bool,
+    is_routing: bool,
+}
+
+impl<'a> From<clap::ArgMatches<'a>> for CmdlineArgs {
+    fn from(matches: clap::ArgMatches<'a>) -> CmdlineArgs {
+        let max_log_level = matches
+            .value_of(constants::ids::MAX_LOG_LEVEL)
+            .expect(&format!("cmdline-arg: {}", constants::ids::MAX_LOG_LEVEL));
+        let cfg = matches
+            .value_of(constants::ids::CFG)
+            .expect(&format!("cmdline-arg: {}", constants::ids::CFG));
+        let writing_graph_cfg = match matches.value_of(constants::ids::WRITING_GRAPH_CFG) {
+            Some(path) => path,
+            None => &cfg,
+        };
+        let writing_routes_cfg = match matches.value_of(constants::ids::WRITING_ROUTES_CFG) {
+            Some(path) => path,
+            None => &cfg,
+        };
+        let routing_cfg = match matches.value_of(constants::ids::ROUTING_CFG) {
+            Some(path) => path,
+            None => &cfg,
+        };
+        let is_writing_graph = matches.is_present(constants::ids::IS_WRITING_GRAPH);
+        let is_writing_routes = matches.is_present(constants::ids::IS_WRITING_ROUTES);
+        let is_routing = matches.is_present(constants::ids::IS_ROUTING);
+
+        CmdlineArgs {
+            max_log_level: String::from(max_log_level),
+            cfg: String::from(cfg),
+            writing_graph_cfg: String::from(writing_graph_cfg),
+            writing_routes_cfg: String::from(writing_routes_cfg),
+            routing_cfg: String::from(routing_cfg),
+            is_writing_graph,
+            is_writing_routes,
+            is_routing,
+        }
+    }
 }

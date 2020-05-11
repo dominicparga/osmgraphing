@@ -1,9 +1,4 @@
-use crate::{
-    configs,
-    defaults::{self, capacity::DimVec},
-    helpers,
-    io::SupportingFileExts,
-};
+use crate::{configs, defaults::capacity::DimVec, helpers, io::SupportingFileExts};
 use smallvec::smallvec;
 use std::path::{Path, PathBuf};
 pub mod raw;
@@ -86,18 +81,6 @@ impl Config {
         let mut tolerated_scales = smallvec![std::f64::INFINITY; dim];
 
         for entry in raw_cfg.metrics.into_iter() {
-            let alpha = entry.alpha.unwrap_or(defaults::routing::ALPHA);
-            let tolerated_scale = entry
-                .tolerated_scale
-                .map_or(Ok(None), |s| match s.to_ascii_lowercase().as_ref() {
-                    "inf" | "infinity" => Ok(Some(std::f64::INFINITY)),
-                    _ => Err(format!(
-                        "The tolerated-scale {} isn't neither f64 nor inf.",
-                        s
-                    )),
-                })?
-                .unwrap_or(defaults::routing::TOLERATED_SCALE);
-
             if let Some(metric_idx) = parsing_cfg
                 .edges
                 .metrics
@@ -105,12 +88,12 @@ impl Config {
                 .iter()
                 .position(|id| id == &entry.id)
             {
-                alphas[metric_idx] = alpha;
-                tolerated_scales[metric_idx] = tolerated_scale;
+                alphas[metric_idx] = entry.alpha;
+                tolerated_scales[metric_idx] = entry.tolerated_scale;
             } else {
                 return Err(format!(
                     "The given id {} should get alpha {}, but doesn't exist.",
-                    entry.id, alpha
+                    entry.id, entry.alpha
                 ));
             }
         }
