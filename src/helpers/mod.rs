@@ -22,6 +22,12 @@ pub fn dot_product(a: &[f64], b: &[f64]) -> f64 {
         .fold(0.0, |start, (aa, &bb)| start + aa * bb)
 }
 
+pub fn le(a: &[f64], b: &[f64]) -> bool {
+    a.iter()
+        .zip(b)
+        .fold(true, |start, (aa, bb)| start && aa.le(bb))
+}
+
 /// For example:
 /// Work off proto-edges in chunks to keep memory-usage lower.
 /// To keep additional memory-needs below 1 MB, the the maximum amount of four f64-values per
