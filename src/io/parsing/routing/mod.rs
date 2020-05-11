@@ -11,9 +11,12 @@ pub struct Parser;
 
 impl Parser {
     pub fn parse(cfg: &configs::routing::Config) -> Result<Vec<(i64, i64, usize)>, String> {
-        let routes_file = cfg.routes_file.as_ref().expect("No routes-file specified.");
+        let route_pairs_file = cfg
+            .route_pairs_file
+            .as_ref()
+            .expect("No routes-file specified.");
 
-        match Parser::find_supported_ext(routes_file) {
+        match Parser::find_supported_ext(route_pairs_file) {
             Ok(_) => routes::Parser::new().parse(cfg),
             Err(msg) => Err(format!("Wrong parser-routes-file: {}", msg)),
         }
@@ -23,9 +26,12 @@ impl Parser {
         cfg: &configs::routing::Config,
         graph: &Graph,
     ) -> Result<Vec<(NodeIdx, NodeIdx, usize)>, String> {
-        let routes_file = cfg.routes_file.as_ref().expect("No routes-file specified.");
+        let route_pairs_file = cfg
+            .route_pairs_file
+            .as_ref()
+            .expect("No routes-file specified.");
 
-        match Parser::find_supported_ext(routes_file) {
+        match Parser::find_supported_ext(route_pairs_file) {
             Ok(_) => routes::Parser::new().parse_and_finalize(cfg, graph),
             Err(msg) => Err(format!("Wrong parser-routes-file: {}", msg)),
         }
@@ -40,9 +46,12 @@ impl SupportingFileExts for Parser {
 
 trait Parsing {
     fn preprocess(&mut self, cfg: &configs::routing::Config) -> Result<(), String> {
-        let routes_file = cfg.routes_file.as_ref().expect("No routes-file specified.");
+        let route_pairs_file = cfg
+            .route_pairs_file
+            .as_ref()
+            .expect("No routes-file specified.");
 
-        match Parser::find_supported_ext(routes_file) {
+        match Parser::find_supported_ext(route_pairs_file) {
             Ok(_) => (),
             Err(msg) => return Err(format!("Wrong routes-file in parser: {}", msg)),
         }

@@ -14,7 +14,7 @@ const CH_FMI_CONFIG: &str = defaults::paths::resources::configs::SMALL_CH_FMI;
 fn ch_fmi_yaml() {
     let parsing_cfg = configs::parsing::Config::from_yaml(CH_FMI_CONFIG);
     assert!(configs::writing::network::Config::try_from_yaml(CH_FMI_CONFIG).is_err());
-    assert!(configs::writing::routing::Config::try_from_yaml(CH_FMI_CONFIG).is_err());
+    assert!(configs::writing::routing::Config::try_from_yaml(CH_FMI_CONFIG).is_ok());
     assert!(configs::routing::Config::try_from_yaml(CH_FMI_CONFIG, &parsing_cfg).is_err());
 }
 
@@ -22,7 +22,7 @@ fn ch_fmi_yaml() {
 fn fmi_yaml() {
     let parsing_cfg = configs::parsing::Config::from_yaml(FMI_CONFIG);
     assert!(configs::writing::network::Config::try_from_yaml(FMI_CONFIG).is_err());
-    assert!(configs::writing::routing::Config::try_from_yaml(FMI_CONFIG).is_err());
+    assert!(configs::writing::routing::Config::try_from_yaml(FMI_CONFIG).is_ok());
     assert!(configs::routing::Config::try_from_yaml(FMI_CONFIG, &parsing_cfg).is_err());
 }
 

@@ -21,7 +21,7 @@ impl SupportingFileExts for Config {
 
 impl From<raw::Config> for Config {
     fn from(raw_cfg: raw::Config) -> Config {
-        let raw_cfg = raw_cfg.writing.routes;
+        let raw_cfg = raw_cfg.writing.route_pairs;
 
         Config {
             file: raw_cfg.file,

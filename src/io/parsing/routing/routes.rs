@@ -23,14 +23,17 @@ impl super::Parsing for Parser {
     fn preprocess(&mut self, cfg: &configs::routing::Config) -> Result<(), String> {
         info!("START Start preprocessing routes-parser.");
 
-        let routes_file = cfg.routes_file.as_ref().expect("No routes-file specified.");
+        let route_pairs_file = cfg
+            .route_pairs_file
+            .as_ref()
+            .expect("No routes-file specified.");
 
         // only functional-lines are counted
         let mut line_number = 0;
         let mut is_taking_counts = false;
         // counts are only metric-count, node-count, edge-count (in this order)
         let mut counts = vec![];
-        let file = helpers::open_file(routes_file)?;
+        let file = helpers::open_file(route_pairs_file)?;
         for line in BufReader::new(file)
             .lines()
             .map(Result::unwrap)
@@ -78,11 +81,14 @@ impl super::Parsing for Parser {
     ) -> Result<Vec<(i64, i64, usize)>, String> {
         info!("START Create routes from input-file.");
 
-        let mut routes = Vec::with_capacity(self.route_lines.len());
-        let routes_file = cfg.routes_file.as_ref().expect("No routes-file specified.");
+        let mut route_pairs = Vec::with_capacity(self.route_lines.len());
+        let route_pairs_file = cfg
+            .route_pairs_file
+            .as_ref()
+            .expect("No routes-file specified.");
 
         let mut line_number = 0;
-        let file = helpers::open_file(routes_file)?;
+        let file = helpers::open_file(route_pairs_file)?;
         for line in BufReader::new(file)
             .lines()
             .map(Result::unwrap)
@@ -122,10 +128,10 @@ impl super::Parsing for Parser {
                 .ok()
                 .ok_or(format!("Could not parse route's count {}", param))?;
 
-            routes.push((src_id, dst_id, n));
+            route_pairs.push((src_id, dst_id, n));
         }
 
         info!("FINISHED");
-        Ok(routes)
+        Ok(route_pairs)
     }
 }

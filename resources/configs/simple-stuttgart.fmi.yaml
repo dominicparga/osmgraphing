@@ -22,6 +22,10 @@ parsing:
         result: { unit: 'Minutes', id: 'minutes' }
         a: { unit: 'Kilometers', id: 'kilometers' }
         b: { unit: 'KilometersPerHour', id: 'kmph' }
+writing:
+  route-pairs:
+    file: 'resources/routes/simple-stuttgart.fmi.route-pairs'
+    random: { seed: 42, count: 100 }
 # needed for examples/dijkstra
 routing:
   metrics:

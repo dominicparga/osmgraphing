@@ -4,14 +4,9 @@
 use osmgraphing::{
     configs,
     defaults::capacity::DimVec,
-    helpers,
-    io::network::Parser,
-    network::{Graph, MetricIdx, NodeIdx},
+    helpers, io,
+    network::{Graph, MetricIdx},
     routing,
-};
-use rand::{
-    distributions::{Distribution, Uniform},
-    SeedableRng,
 };
 
 #[allow(dead_code)]
@@ -29,9 +24,12 @@ pub mod defaults {
                 pub const SMALL_CH_FMI: &str = "resources/configs/small.ch.fmi.yaml";
                 pub const BIDIRECTIONAL_BAIT_FMI: &str =
                     "resources/configs/bidirectional-bait.fmi.yaml";
-                pub const ISLE_OF_MAN_FMI: &str = "resources/configs/isle-of-man.fmi.yaml";
-                pub const ISLE_OF_MAN_CH_FMI: &str = "resources/configs/isle-of-man.ch.fmi.yaml";
-                pub const ISLE_OF_MAN_PBF: &str = "resources/configs/isle-of-man.pbf.yaml";
+                pub const ISLE_OF_MAN_FMI: &str =
+                    "resources/configs/isle-of-man_2020-03-14.fmi.yaml";
+                pub const ISLE_OF_MAN_CH_FMI: &str =
+                    "resources/configs/isle-of-man_2020-03-14.ch.fmi.yaml";
+                pub const ISLE_OF_MAN_PBF: &str =
+                    "resources/configs/isle-of-man_2020-03-14.pbf.yaml";
             }
         }
     }
@@ -42,7 +40,7 @@ pub use components::{TestEdge, TestNode, TestPath};
 
 pub fn parse(cfg: configs::parsing::Config) -> Graph {
     let map_file = cfg.map_file.clone();
-    match Parser::parse_and_finalize(cfg) {
+    match io::network::Parser::parse_and_finalize(cfg) {
         Ok(graph) => graph,
         Err(msg) => {
             panic!("Could not parse {}. ERROR: {}", map_file.display(), msg);
@@ -71,19 +69,26 @@ pub fn test_dijkstra(
     let parsing_cfg = configs::parsing::Config::from_yaml(config_file);
     let graph = parse(parsing_cfg);
 
+    // get route-pairs from writing-section
+    let routes_cfg = configs::writing::routing::Config::from_yaml(config_file);
+
     // set up routing
 
     let mut dijkstra = routing::Dijkstra::new();
     let expected_paths = expected_paths(graph.cfg());
 
-    let routing_cfg = configs::routing::Config::from_str(
-        &format!(
-            "routing: {{ metrics: [{{ id: '{}' }}], is-ch-dijkstra: {} }}",
-            metric_id,
+    let raw_cfg = format!(
+        "{}\n{}\n{}\n{}\n{}",
+        "routing:",
+        format!("  route-pairs-file: '{}'", routes_cfg.file.display()),
+        format!(
+            "  is-ch-dijkstra: {}",
             if is_ch_dijkstra { "true" } else { "false" }
         ),
-        graph.cfg(),
+        "  metrics:",
+        format!("  - id: '{}'", metric_id),
     );
+    let routing_cfg = configs::routing::Config::from_str(&raw_cfg, graph.cfg());
 
     // test
 
@@ -114,48 +119,34 @@ pub fn compare_dijkstras(ch_fmi_config_file: &str, metric_id: &str) {
     // parse graph
 
     let parsing_cfg = configs::parsing::Config::from_yaml(ch_fmi_config_file);
-    let graph = Parser::parse_and_finalize(parsing_cfg).unwrap();
+    let graph = io::network::Parser::parse_and_finalize(parsing_cfg).unwrap();
+
+    // get route-pairs from writing-section
+    let routes_cfg = configs::writing::routing::Config::from_yaml(ch_fmi_config_file);
 
     // init dijkstra for routing
 
     let nodes = graph.nodes();
     let mut dijkstra = routing::Dijkstra::new();
 
-    let mut routing_cfg = configs::routing::Config::from_str(
-        &format!("routing: {{ metrics: [{{ id: '{}' }}] }}", metric_id),
-        graph.cfg(),
+    let raw_cfg = format!(
+        "{}\n{}\n{}\n{}",
+        "routing:",
+        format!("  route-pairs-file: '{}'", routes_cfg.file.display()),
+        "  metrics:",
+        format!("  - id: '{}'", metric_id),
     );
+    let mut routing_cfg = configs::routing::Config::from_str(&raw_cfg, graph.cfg());
     routing_cfg.is_ch_dijkstra = false;
     let mut ch_routing_cfg = routing_cfg.clone();
     ch_routing_cfg.is_ch_dijkstra = true;
 
-    // generate random route-pairs
-
-    let route_count = 100;
-    let seed = 42;
-
-    // if all possible routes are less than the preferred route-count
-    // -> just print all possible routes
-    // else: print random routes
-    let mut gen_route = {
-        let mut rng = rand_pcg::Pcg32::seed_from_u64(seed);
-        let die = Uniform::from(0..nodes.count());
-        let mut i = 0;
-        move || {
-            if i < route_count {
-                let src_idx = NodeIdx(die.sample(&mut rng));
-                let dst_idx = NodeIdx(die.sample(&mut rng));
-                i += 1;
-                Some((src_idx, dst_idx))
-            } else {
-                None
-            }
-        }
-    };
-
     // testing
 
-    while let Some((src_idx, dst_idx)) = gen_route() {
+    let route_pairs = io::routing::Parser::parse_and_finalize(&ch_routing_cfg, &graph)
+        .expect("Parsing and finalizing route-pairs didn't work.");
+
+    for (src_idx, dst_idx, _) in route_pairs {
         let src = nodes.create(src_idx);
         let dst = nodes.create(dst_idx);
 

@@ -11,7 +11,7 @@ pub struct Config {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "kebab-case", deny_unknown_fields)]
 pub struct Content {
-    pub routes_file: Option<PathBuf>,
+    pub route_pairs_file: Option<PathBuf>,
     pub is_ch_dijkstra: Option<bool>,
     pub metrics: Vec<Entry>,
 }

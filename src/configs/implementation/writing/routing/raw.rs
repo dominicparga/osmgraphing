@@ -8,8 +8,9 @@ pub struct Config {
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "kebab-case")]
 pub struct AnotherConfig {
-    pub routes: Content,
+    pub route_pairs: Content,
 }
 
 #[derive(Debug, Deserialize)]

@@ -13,7 +13,7 @@ const FMI_CONFIG: &str = defaults::paths::resources::configs::SIMPLE_STUTTGART_F
 fn fmi_yaml() {
     let parsing_cfg = configs::parsing::Config::from_yaml(FMI_CONFIG);
     assert!(configs::writing::network::Config::try_from_yaml(FMI_CONFIG).is_err());
-    assert!(configs::writing::routing::Config::try_from_yaml(FMI_CONFIG).is_err());
+    assert!(configs::writing::routing::Config::try_from_yaml(FMI_CONFIG).is_ok());
     assert!(configs::routing::Config::try_from_yaml(FMI_CONFIG, &parsing_cfg).is_err());
 }
 
