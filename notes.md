@@ -63,8 +63,9 @@ Maybe, it is concept for later documentation, or just keep-up-the-good-work (`ku
 
 - Use __preprocessing-phase__ for `pbf`-parser to count edges and __allocate memory__ accordingly.
 - Print __edit-link__ for weird osm-content (in addition to currently printed warnings).
-- Parse lanes (currently, default is used).
+- __Parse lanes__ (currently, default is used).
   - tags: `lanes`, `lanes:backward` (`way-id: 33172848`)
+- Add __routing__-structs abstract over route-types (route-pairs vs full routes).
 
 
 ### Extend routing
