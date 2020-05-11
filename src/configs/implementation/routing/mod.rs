@@ -89,6 +89,13 @@ impl Config {
             let alpha = entry.alpha.unwrap_or(defaults::routing::ALPHA);
             let tolerated_scale = entry
                 .tolerated_scale
+                .map_or(Ok(None), |s| match s.to_ascii_lowercase().as_ref() {
+                    "inf" | "infinity" => Ok(Some(std::f64::INFINITY)),
+                    _ => Err(format!(
+                        "The tolerated-scale {} isn't neither f64 nor inf.",
+                        s
+                    )),
+                })?
                 .unwrap_or(defaults::routing::TOLERATED_SCALE);
 
             if let Some(metric_idx) = parsing_cfg

@@ -21,5 +21,5 @@ pub struct Content {
 pub struct Entry {
     pub id: SimpleId,
     pub alpha: Option<f64>,
-    pub tolerated_scale: Option<f64>,
+    pub tolerated_scale: Option<String>,
 }
