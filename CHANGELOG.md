@@ -67,7 +67,7 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 
 ### Fixed <a name="unreleased/fixed"></a>
 
-\-
+- The explorator __compares vectors__ with a helper-method `le` (lower-equals).
 
 
 ### Security <a name="unreleased/security"></a>
@@ -122,6 +122,8 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
   - Replace existing tags with ones referring to `CHANGELOG.md` and add old tag-texts to the `CHANGELOG.md`
   - Inconsistent `semver` in old tags -> probably `cargo yank VERSION` needed
 - The link to `doc.rs` is hardcoded to `major.minor.patch=0.y.z` because `docs.rs` chooses version `1.0.0` though it's yanked..
+- The explorator compares `vec![f64]`, which only compares the first number of each vector.
+  Replace this by using a helper-method `le` (lower-equals) iterating over the values.
 
 
 ### Removed <a name="v0.13.0/removed"></a>
