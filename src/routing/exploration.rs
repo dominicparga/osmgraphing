@@ -39,7 +39,7 @@ impl ConvexHullExplorator {
         let mut routing_cfg = routing_cfg.clone();
         let dim = graph.metrics().dim();
         // Every cost-value has to be below this value.
-        let mut tolerated = smallvec![std::f64::INFINITY; dim];
+        let mut tolerated: DimVec<_> = smallvec![std::f64::INFINITY; dim];
         // don't consider ignored metrics
         let is_metric_considered: DimVec<_> = routing_cfg
             .alphas
@@ -249,7 +249,7 @@ impl ConvexHullExplorator {
 
         found_paths
             .into_iter()
-            .filter(|p| p.costs() <= &tolerated)
+            .filter(|p| helpers::le(p.costs(), &tolerated))
             .collect()
     }
 }

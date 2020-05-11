@@ -11,7 +11,8 @@ fn criterion_benchmark(c: &mut Criterion) {
     helpers::init_logging("WARN", vec![]).expect("No user-input, so this should be fine.");
 
     // parsing
-    let parsing_cfg = configs::parsing::Config::from_yaml("resources/configs/isle-of-man.pbf.yaml");
+    let parsing_cfg =
+        configs::parsing::Config::from_yaml("resources/configs/isle-of-man_2020-03-14.pbf.yaml");
     let routing_strs = vec![
         "routing: { metrics: [{ id: 'kilometers' }] }",
         "routing: { metrics: [{ id: 'kilometers' }, { id: 'minutes' }] }",
