@@ -1,5 +1,5 @@
 use crate::network::vehicles::Category as VehicleCategory;
-pub mod raw;
+pub mod proto;
 
 #[derive(Debug)]
 pub struct Config {
@@ -7,11 +7,11 @@ pub struct Config {
     pub are_drivers_picky: bool,
 }
 
-impl From<raw::Config> for Config {
-    fn from(raw_cfg: raw::Config) -> Self {
+impl From<proto::Config> for Config {
+    fn from(proto_cfg: proto::Config) -> Self {
         Config {
-            category: raw_cfg.category,
-            are_drivers_picky: raw_cfg.are_drivers_picky,
+            category: proto_cfg.category,
+            are_drivers_picky: proto_cfg.are_drivers_picky,
         }
     }
 }

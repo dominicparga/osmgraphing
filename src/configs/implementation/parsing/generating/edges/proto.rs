@@ -13,21 +13,21 @@ pub enum Category {
         id: SimpleId,
     },
     Haversine {
-        unit: metrics::raw::UnitInfo,
+        unit: metrics::proto::UnitInfo,
         id: SimpleId,
     },
     Copy {
-        from: metrics::raw::Category,
-        to: metrics::raw::Category,
+        from: metrics::proto::Category,
+        to: metrics::proto::Category,
     },
     Convert {
-        from: metrics::raw::Category,
-        to: metrics::raw::Category,
+        from: metrics::proto::Category,
+        to: metrics::proto::Category,
     },
     Calc {
-        result: metrics::raw::Category,
-        a: metrics::raw::Category,
-        b: metrics::raw::Category,
+        result: metrics::proto::Category,
+        a: metrics::proto::Category,
+        b: metrics::proto::Category,
     },
 }
 

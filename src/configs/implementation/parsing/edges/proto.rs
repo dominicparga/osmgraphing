@@ -13,7 +13,7 @@ pub enum Category {
         id: SimpleId,
     },
     Metric {
-        unit: metrics::raw::UnitInfo,
+        unit: metrics::proto::UnitInfo,
         id: SimpleId,
     },
     Ignored,

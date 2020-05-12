@@ -13,8 +13,8 @@ pub struct Config {
 #[serde(rename_all = "kebab-case", deny_unknown_fields)]
 pub struct Content {
     pub map_file: PathBuf,
-    pub vehicles: vehicles::raw::Config,
-    pub nodes: nodes::raw::Config,
-    pub edges: edges::raw::Config,
-    pub generating: Option<generating::raw::Config>,
+    pub vehicles: vehicles::proto::Config,
+    pub nodes: nodes::proto::Config,
+    pub edges: edges::proto::Config,
+    pub generating: Option<generating::proto::Config>,
 }

@@ -57,7 +57,6 @@ Maybe, it is concept for later documentation, or just keep-up-the-good-work (`ku
 
 - Warn user when parsing `pbf`-map, if unused categories are provided in the config.
 - Don't convert `kilometers` to `meters` to store the graph and convert it back when parsing the graph.
-- Use 3 parsing-stages: `raw config -(1)> proto-config -(2)> config` where `(1)` does conversions like `'inf' -> std::f64::INFINITY`.
 
 
 ### Extend parsing

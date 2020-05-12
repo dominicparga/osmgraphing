@@ -1,6 +1,7 @@
 use crate::{configs, defaults::capacity::DimVec, helpers, io::SupportingFileExts};
 use smallvec::smallvec;
 use std::path::{Path, PathBuf};
+pub mod proto;
 pub mod raw;
 
 /// # Specifying routing (TODO update text)
@@ -26,7 +27,7 @@ impl SupportingFileExts for Config {
 impl Config {
     /// Takes all metrics from graph with default settings
     pub fn try_from_all_metrics(parsing_cfg: &configs::parsing::Config) -> Result<Config, String> {
-        let mut raw_routing_cfg = parsing_cfg
+        let mut proto_routing_cfg = parsing_cfg
             .edges
             .metrics
             .ids
@@ -35,9 +36,9 @@ impl Config {
             .fold(String::from("routing: { metrics: ["), |acc, id| {
                 format!("{} {}", acc, id)
             });
-        raw_routing_cfg.push_str("] }");
+        proto_routing_cfg.push_str("] }");
 
-        Config::try_from_str(&raw_routing_cfg, parsing_cfg)
+        Config::try_from_str(&proto_routing_cfg, parsing_cfg)
     }
 
     /// Takes all metrics from graph with default settings
@@ -52,13 +53,13 @@ impl Config {
         yaml_str: &str,
         parsing_cfg: &configs::parsing::Config,
     ) -> Result<Config, String> {
-        let raw_cfg = {
+        let proto_cfg = {
             match serde_yaml::from_str(yaml_str) {
-                Ok(raw_cfg) => raw_cfg,
+                Ok(proto_cfg) => proto_cfg,
                 Err(e) => return Err(format!("{}", e)),
             }
         };
-        Config::try_from_raw(raw_cfg, parsing_cfg)
+        Config::try_from_proto(proto_cfg, parsing_cfg)
     }
 
     pub fn from_str(yaml_str: &str, parsing_cfg: &configs::parsing::Config) -> Config {
@@ -68,11 +69,10 @@ impl Config {
         }
     }
 
-    fn try_from_raw(
-        raw_cfg: raw::Config,
+    fn try_from_proto(
+        proto_cfg: proto::Config,
         parsing_cfg: &configs::parsing::Config,
     ) -> Result<Config, String> {
-        let raw_cfg = raw_cfg.routing;
         let dim = parsing_cfg.edges.metrics.units.len();
 
         // Alpha is 0.0 because non-mentioned id will not be considered.
@@ -80,7 +80,7 @@ impl Config {
         // Same argument holds for the toleration.
         let mut tolerated_scales = smallvec![std::f64::INFINITY; dim];
 
-        for entry in raw_cfg.metrics.into_iter() {
+        for entry in proto_cfg.metrics.into_iter() {
             if let Some(metric_idx) = parsing_cfg
                 .edges
                 .metrics
@@ -99,15 +99,15 @@ impl Config {
         }
 
         Ok(Config {
-            route_pairs_file: raw_cfg.route_pairs_file,
-            is_ch_dijkstra: raw_cfg.is_ch_dijkstra.unwrap_or(false),
+            route_pairs_file: proto_cfg.route_pairs_file,
+            is_ch_dijkstra: proto_cfg.is_ch_dijkstra,
             alphas,
             tolerated_scales,
         })
     }
 
-    fn _from_raw(raw_cfg: raw::Config, parsing_cfg: &configs::parsing::Config) -> Config {
-        match Config::try_from_raw(raw_cfg, parsing_cfg) {
+    fn _from_proto(proto_cfg: proto::Config, parsing_cfg: &configs::parsing::Config) -> Config {
+        match Config::try_from_proto(proto_cfg, parsing_cfg) {
             Ok(cfg) => cfg,
             Err(msg) => panic!("{}", msg),
         }
@@ -122,11 +122,11 @@ impl Config {
             helpers::open_file(path)?
         };
 
-        let raw_cfg = match serde_yaml::from_reader(file) {
-            Ok(raw_cfg) => raw_cfg,
+        let proto_cfg = match serde_yaml::from_reader(file) {
+            Ok(proto_cfg) => proto_cfg,
             Err(e) => return Err(format!("{}", e)),
         };
-        Config::try_from_raw(raw_cfg, parsing_cfg)
+        Config::try_from_proto(proto_cfg, parsing_cfg)
     }
 
     pub fn from_yaml<P: AsRef<Path> + ?Sized>(

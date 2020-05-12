@@ -1,18 +1,18 @@
 use crate::configs::{parsing::generating::nodes as gen, SimpleId};
 use serde::Deserialize;
 pub mod metrics;
-pub mod raw;
+pub mod proto;
 
 #[derive(Debug)]
 pub struct Config {
     pub categories: Vec<Category>,
 }
 
-impl From<raw::Config> for Config {
-    fn from(raw_cfg: raw::Config) -> Config {
+impl From<proto::Config> for Config {
+    fn from(proto_cfg: proto::Config) -> Config {
         let mut categories: Vec<Category> = Vec::new();
 
-        for category in raw_cfg.0.into_iter() {
+        for category in proto_cfg.0.into_iter() {
             categories.push(category.into());
         }
 
@@ -33,18 +33,18 @@ pub enum Category {
     Ignored,
 }
 
-impl From<raw::Category> for Category {
-    fn from(raw_category: raw::Category) -> Category {
-        match raw_category {
-            raw::Category::Meta { info, id } => Category::Meta {
+impl From<proto::Category> for Category {
+    fn from(proto_category: proto::Category) -> Category {
+        match proto_category {
+            proto::Category::Meta { info, id } => Category::Meta {
                 info: info.into(),
                 id,
             },
-            raw::Category::Metric { unit, id } => Category::Metric {
+            proto::Category::Metric { unit, id } => Category::Metric {
                 unit: unit.into(),
                 id,
             },
-            raw::Category::Ignored => Category::Ignored,
+            proto::Category::Ignored => Category::Ignored,
         }
     }
 }
@@ -67,11 +67,11 @@ pub enum MetaInfo {
     Level,
 }
 
-impl From<raw::MetaInfo> for MetaInfo {
-    fn from(raw_info: raw::MetaInfo) -> MetaInfo {
-        match raw_info {
-            raw::MetaInfo::NodeId => MetaInfo::NodeId,
-            raw::MetaInfo::Level => MetaInfo::Level,
+impl From<proto::MetaInfo> for MetaInfo {
+    fn from(proto_info: proto::MetaInfo) -> MetaInfo {
+        match proto_info {
+            proto::MetaInfo::NodeId => MetaInfo::NodeId,
+            proto::MetaInfo::Level => MetaInfo::Level,
         }
     }
 }
