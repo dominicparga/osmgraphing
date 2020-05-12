@@ -218,13 +218,13 @@ impl Display for Graph {
                     let metrics = half_edge.metrics();
                     writeln!(
                         f,
-                        "{}edge: {{ idx: {}, sc-offset: {}, ({})-{:?}->({}) }}",
+                        "{}edge: {{ idx: {}, sc-offset: {}, (idx: {})-{:?}->(idx: {}) }}",
                         xwd_prefix,
                         j,
                         self.sc_offsets[j],
-                        self.node_ids[*src_idx],
+                        *src_idx,
                         metrics,
-                        self.node_ids[*half_edge.dst_idx()],
+                        *half_edge.dst_idx(),
                     )?;
                 } else {
                     break;
@@ -390,8 +390,8 @@ impl<'a> Display for HalfEdge<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "{{ (src)-{}->({}) }}",
-            self.edge_accessor.metrics,
+            "{{ (src)-{:?}->(idx: {}) }}",
+            self.edge_accessor.metrics[self.idx],
             self.dst_idx(),
         )
     }
@@ -533,12 +533,6 @@ impl<'a> EdgeAccessor<'a> {
 pub struct MetricAccessor<'a> {
     cfg: &'a Config,
     metrics: &'a Vec<DimVec<f64>>,
-}
-
-impl<'a> Display for MetricAccessor<'a> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{:?}", self.metrics)
-    }
 }
 
 impl<'a> MetricAccessor<'a> {
