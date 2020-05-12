@@ -164,6 +164,11 @@ fn check_config(cfg: &parsing::Config) -> Result<(), String> {
                     } => true,
                     generating::edges::Category::Copy { from: _, to: _ } => true,
                     generating::edges::Category::Haversine { unit: _, id: _ } => true,
+                    generating::edges::Category::Custom {
+                        unit: _,
+                        id: _,
+                        default: _,
+                    } => true,
                 })
                 .count()
         } else {

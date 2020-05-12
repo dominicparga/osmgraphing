@@ -2,6 +2,7 @@ use crate::configs::SimpleId;
 use serde::Deserialize;
 pub mod metrics;
 pub mod proto;
+pub mod raw;
 
 #[derive(Debug, Deserialize)]
 pub struct Config {
@@ -13,6 +14,12 @@ pub enum Category {
     Meta {
         info: MetaInfo,
         id: SimpleId,
+    },
+    // out-of-place
+    Custom {
+        unit: metrics::UnitInfo,
+        id: SimpleId,
+        default: f64,
     },
     // out-of-place
     Haversine {
@@ -43,6 +50,11 @@ impl From<proto::Category> for Category {
             proto::Category::Meta { info, id } => Category::Meta {
                 info: info.into(),
                 id,
+            },
+            proto::Category::Custom { unit, id, default } => Category::Custom {
+                unit: unit.into(),
+                id,
+                default,
             },
             proto::Category::Haversine { unit, id } => Category::Haversine {
                 unit: unit.into(),

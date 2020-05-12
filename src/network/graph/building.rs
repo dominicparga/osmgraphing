@@ -823,6 +823,11 @@ impl GraphBuilder {
                                 id: new_id,
                             },
                     }
+                    | generating::edges::Category::Custom {
+                        unit: _,
+                        id: new_id,
+                        default: _,
+                    }
                     | generating::edges::Category::Haversine {
                         unit: _,
                         id: new_id,
@@ -872,6 +877,20 @@ impl GraphBuilder {
                                 graph.cfg.edges.categories.push(category.clone().into());
                             }
                         }
+                    }
+                    generating::edges::Category::Custom { unit, id, default } => {
+                        // update graph
+
+                        graph
+                            .metrics
+                            .iter_mut()
+                            .for_each(|metric| metric.push(*default));
+
+                        // update config
+
+                        graph.cfg.edges.categories.push(category.clone().into());
+                        graph.cfg.edges.metrics.units.push((*unit).into());
+                        graph.cfg.edges.metrics.ids.push(id.clone());
                     }
                     generating::edges::Category::Haversine { unit, id } => {
                         // check unit

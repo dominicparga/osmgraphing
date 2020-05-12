@@ -113,6 +113,7 @@ impl From<proto::Category> for Category {
     }
 }
 
+/// The generating-categories specify, how a metric is generated, but it will be stored as any other parsed category, why this implementation is needed.
 impl From<generating::edges::Category> for Category {
     fn from(gen_category: generating::edges::Category) -> Category {
         match gen_category {
@@ -120,7 +121,12 @@ impl From<generating::edges::Category> for Category {
                 info: info.into(),
                 id,
             },
-            generating::edges::Category::Haversine { unit, id } => Category::Metric {
+            generating::edges::Category::Custom {
+                unit,
+                id,
+                default: _,
+            }
+            | generating::edges::Category::Haversine { unit, id } => Category::Metric {
                 unit: unit.into(),
                 id,
             },

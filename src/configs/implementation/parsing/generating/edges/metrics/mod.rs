@@ -6,6 +6,7 @@ use kissunits::{
 };
 use serde::Deserialize;
 pub mod proto;
+pub mod raw;
 
 #[derive(Debug)]
 pub struct Config {
