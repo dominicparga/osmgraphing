@@ -1,7 +1,7 @@
 use crate::configs::SimpleId;
 use serde::Deserialize;
 pub mod metrics;
-pub mod raw;
+pub mod proto;
 
 #[derive(Debug, Deserialize)]
 pub struct Config {
@@ -13,10 +13,10 @@ pub enum Category {
     Meta { info: MetaInfo, id: SimpleId },
 }
 
-impl From<raw::Category> for Category {
-    fn from(raw_category: raw::Category) -> Category {
-        match raw_category {
-            raw::Category::Meta { info, id } => Category::Meta {
+impl From<proto::Category> for Category {
+    fn from(proto_category: proto::Category) -> Category {
+        match proto_category {
+            proto::Category::Meta { info, id } => Category::Meta {
                 info: info.into(),
                 id,
             },
@@ -31,10 +31,10 @@ pub enum MetaInfo {
     Level,
 }
 
-impl From<raw::MetaInfo> for MetaInfo {
-    fn from(raw_info: raw::MetaInfo) -> MetaInfo {
-        match raw_info {
-            raw::MetaInfo::NodeIdx => MetaInfo::NodeIdx,
+impl From<proto::MetaInfo> for MetaInfo {
+    fn from(proto_info: proto::MetaInfo) -> MetaInfo {
+        match proto_info {
+            proto::MetaInfo::NodeIdx => MetaInfo::NodeIdx,
         }
     }
 }
