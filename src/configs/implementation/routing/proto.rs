@@ -46,7 +46,7 @@ impl TryFrom<raw::Entry> for Entry {
     fn try_from(raw_entry: raw::Entry) -> Result<Entry, String> {
         let tolerated_scale = match &raw_entry.tolerated_scale {
             Some(snippet) => match snippet.to_ascii_lowercase().as_ref() {
-                "inf" | "infinity" => Ok(std::f64::INFINITY),
+                "inf" | "infinity" => Ok(defaults::routing::TOLERATED_SCALE_INF),
                 snippet => snippet
                     .parse::<f64>()
                     .map_err(|_| format!("Couln't parse f64-value {}", snippet)),

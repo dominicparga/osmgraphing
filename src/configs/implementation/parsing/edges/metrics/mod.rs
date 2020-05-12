@@ -1,6 +1,7 @@
 use crate::{
     configs::{parsing::generating::edges::metrics as gen, SimpleId},
     defaults::capacity::DimVec,
+    network::MetricIdx,
 };
 use kissunits::{
     distance::{Kilometers, Meters},
@@ -13,6 +14,19 @@ pub mod proto;
 pub struct Config {
     pub units: DimVec<UnitInfo>,
     pub ids: DimVec<SimpleId>,
+}
+
+impl Config {
+    pub fn idx_of<S>(&self, id: S) -> Option<MetricIdx>
+    where
+        S: AsRef<str>,
+    {
+        Some(MetricIdx(
+            self.ids
+                .iter()
+                .position(|self_id| self_id.0 == id.as_ref())?,
+        ))
+    }
 }
 
 #[derive(Copy, Clone, Debug, Deserialize, Eq, PartialEq)]

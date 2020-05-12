@@ -23,7 +23,7 @@ fn run() -> Result<(), String> {
 
     // parse graph
 
-    let graph = {
+    let mut graph = {
         // get config by provided user-input
 
         let parsing_cfg = {
@@ -79,10 +79,24 @@ fn run() -> Result<(), String> {
 
     // calculate best paths
 
-    for RoutePair { src, dst } in io::routing::Parser::parse(&routing_cfg)?
-        .iter()
-        .map(|(route_pair, _)| route_pair.into_node(&graph))
-    {
+    // collect all metric-info to edit them
+
+    let metric_id = "route-count";
+    let metric_idx = match graph.cfg().edges.metrics.idx_of(metric_id) {
+        Some(idx) => idx,
+        None => {
+            return Err(format!(
+                "Metric-id {} should be existent in graph, but isn't.",
+                metric_id
+            ))
+        }
+    };
+
+    // find all routes
+
+    for (route_pair, route_count) in io::routing::Parser::parse(&routing_cfg)? {
+        let RoutePair { src, dst } = route_pair.into_node(&graph);
+
         let now = Instant::now();
         info!("Explore new query");
         info!("src {}", src);
@@ -94,8 +108,19 @@ fn run() -> Result<(), String> {
             now.elapsed().as_micros() as f64 / 1_000.0,
             found_paths.len()
         );
-        found_paths.iter().for_each(|p| info!("    {}", p));
+
+        for i in 0..route_count {
+            let p = &found_paths[i % found_paths.len()];
+
+            info!("    {}", p);
+
+            for edge_idx in p {
+                graph.metrics_mut()[edge_idx][*metric_idx] += 1.0;
+            }
+        }
     }
+
+    info!("{:?}", graph.metrics());
 
     Ok(())
 }

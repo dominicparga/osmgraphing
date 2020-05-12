@@ -1,4 +1,9 @@
-use crate::{configs, defaults::capacity::DimVec, helpers, io::SupportingFileExts};
+use crate::{
+    configs,
+    defaults::{self, capacity::DimVec},
+    helpers,
+    io::SupportingFileExts,
+};
 use smallvec::smallvec;
 use std::path::{Path, PathBuf};
 pub mod proto;
@@ -78,7 +83,7 @@ impl Config {
         // Alpha is 0.0 because non-mentioned id will not be considered.
         let mut alphas = smallvec![0.0; dim];
         // Same argument holds for the toleration.
-        let mut tolerated_scales = smallvec![std::f64::INFINITY; dim];
+        let mut tolerated_scales = smallvec![defaults::routing::TOLERATED_SCALE_INF; dim];
 
         for entry in proto_cfg.metrics.into_iter() {
             if let Some(metric_idx) = parsing_cfg
