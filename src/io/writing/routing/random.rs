@@ -1,6 +1,5 @@
 use crate::{
     configs::{self, writing},
-    helpers,
     network::{Graph, NodeIdx},
     routing,
 };
@@ -13,6 +12,7 @@ use rand::{
 use std::{
     cmp::min,
     collections::HashSet,
+    fs::OpenOptions,
     io::{BufWriter, Write},
 };
 
@@ -36,7 +36,10 @@ impl super::Writing for Writer {
         ) -> Result<(), Box<dyn std::error::Error>> {
             // prepare
 
-            let output_file = helpers::open_new_file(&writing_cfg.file)?;
+            let output_file = OpenOptions::new()
+                .write(true)
+                .create_new(true)
+                .open(&writing_cfg.file)?;
             let mut writer = BufWriter::new(output_file);
 
             let nodes = graph.nodes();

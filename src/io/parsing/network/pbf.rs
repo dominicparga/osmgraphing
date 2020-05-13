@@ -1,13 +1,13 @@
 use crate::{
     configs::parsing::{self, edges},
     defaults::capacity::DimVec,
-    helpers,
     network::{EdgeBuilder, NodeBuilder, ProtoEdge, ProtoNode, StreetCategory},
 };
 use kissunits::geo::Coordinate;
 use log::info;
 use osmpbfreader::{reader::OsmPbfReader, OsmObj};
 use smallvec::smallvec;
+use std::fs::OpenOptions;
 
 pub struct Parser;
 
@@ -63,7 +63,11 @@ impl super::Parsing for Parser {
 
     fn parse_ways(&self, builder: &mut EdgeBuilder) -> Result<(), String> {
         info!("START Create edges from input-file.");
-        let file = helpers::open_file(&builder.cfg().map_file)?;
+        let file = OpenOptions::new()
+            .read(true)
+            .open(&builder.cfg().map_file)
+            .unwrap();
+
         for mut way in OsmPbfReader::new(file)
             .par_iter()
             .filter_map(Result::ok)
@@ -159,7 +163,7 @@ impl super::Parsing for Parser {
         info!("START Create nodes from input-file.");
         let cfg = builder.cfg();
 
-        let file = helpers::open_file(&cfg.map_file)?;
+        let file = OpenOptions::new().read(true).open(&cfg.map_file).unwrap();
         for node in OsmPbfReader::new(file)
             .par_iter()
             .filter_map(Result::ok)

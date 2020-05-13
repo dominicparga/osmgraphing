@@ -1,5 +1,5 @@
 use crate::defaults::capacity::DimVec;
-use std::{fs::File, path::Path, str::FromStr};
+use std::str::FromStr;
 
 pub mod algebra;
 pub mod approx;
@@ -34,29 +34,6 @@ pub fn le(a: &[f64], b: &[f64]) -> bool {
 /// worked-off chunk has to be limited to 250_000.
 pub trait MemSize {
     fn mem_size_b() -> usize;
-}
-
-pub fn open_file<P: AsRef<Path> + ?Sized>(path: &P) -> Result<File, String> {
-    let path = path.as_ref();
-    match File::open(path) {
-        Ok(file) => Ok(file),
-        Err(_) => Err(format!("No such file {}", path.display())),
-    }
-}
-
-pub fn open_new_file<P: AsRef<Path> + ?Sized>(path: &P) -> Result<File, String> {
-    let path = path.as_ref();
-    if path.exists() {
-        return Err(format!(
-            "Provided file {} does already exist. Please remove it.",
-            path.display()
-        ));
-    }
-
-    match File::create(path) {
-        Ok(file) => Ok(file),
-        Err(e) => Err(format!("{}", e)),
-    }
 }
 
 /// Sets the logging-level of this repo.

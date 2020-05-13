@@ -4,12 +4,15 @@ use crate::{
         writing,
     },
     defaults::{self, accuracy},
-    helpers::{self, approx::Approx},
+    helpers::approx::Approx,
     network::{EdgeIdx, Graph, NodeIdx},
 };
 use log::info;
 use progressing::{self, Bar};
-use std::io::{BufWriter, Write};
+use std::{
+    fs::OpenOptions,
+    io::{BufWriter, Write},
+};
 
 pub struct Writer;
 
@@ -27,7 +30,10 @@ impl super::Writing for Writer {
         ) -> Result<(), Box<dyn std::error::Error>> {
             // prepare
 
-            let output_file = helpers::open_new_file(&writing_cfg.map_file)?;
+            let output_file = OpenOptions::new()
+                .write(true)
+                .create_new(true)
+                .open(&writing_cfg.map_file)?;
             let mut writer = BufWriter::new(output_file);
 
             let fwd_edges = graph.fwd_edges();

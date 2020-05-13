@@ -1,6 +1,7 @@
-use crate::{configs, helpers, network::RoutePair};
+use crate::{configs, network::RoutePair};
 use log::info;
 use std::{
+    fs::OpenOptions,
     io::{BufRead, BufReader},
     ops::Range,
 };
@@ -33,7 +34,10 @@ impl super::Parsing for Parser {
         let mut is_taking_counts = false;
         // counts are only metric-count, node-count, edge-count (in this order)
         let mut counts = vec![];
-        let file = helpers::open_file(route_pairs_file)?;
+        let file = OpenOptions::new()
+            .read(true)
+            .open(route_pairs_file)
+            .unwrap();
         for line in BufReader::new(file)
             .lines()
             .map(Result::unwrap)
@@ -88,7 +92,10 @@ impl super::Parsing for Parser {
             .expect("No routes-file specified.");
 
         let mut line_number = 0;
-        let file = helpers::open_file(route_pairs_file)?;
+        let file = OpenOptions::new()
+            .read(true)
+            .open(route_pairs_file)
+            .unwrap();
         for line in BufReader::new(file)
             .lines()
             .map(Result::unwrap)

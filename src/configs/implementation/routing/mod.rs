@@ -1,11 +1,13 @@
 use crate::{
     configs,
     defaults::{self, capacity::DimVec},
-    helpers,
     io::SupportingFileExts,
 };
 use smallvec::smallvec;
-use std::path::{Path, PathBuf};
+use std::{
+    fs::OpenOptions,
+    path::{Path, PathBuf},
+};
 pub mod proto;
 pub mod raw;
 
@@ -124,7 +126,7 @@ impl Config {
     ) -> Result<Config, String> {
         let file = {
             Config::find_supported_ext(path)?;
-            helpers::open_file(path)?
+            OpenOptions::new().read(true).open(path).unwrap()
         };
 
         let proto_cfg = match serde_yaml::from_reader(file) {

@@ -4,12 +4,12 @@ use crate::{
         parsing::{self, nodes},
     },
     defaults::{self, capacity::DimVec},
-    helpers,
     network::{EdgeBuilder, EdgeIdx, NodeBuilder, ProtoEdge, ProtoNode, ProtoShortcut},
 };
 use kissunits::geo;
 use log::info;
 use std::{
+    fs::OpenOptions,
     io::{BufRead, BufReader},
     ops::Range,
 };
@@ -43,7 +43,7 @@ impl super::Parsing for Parser {
         let mut is_taking_counts = false;
         // counts are only metric-count, node-count, edge-count (in this order)
         let mut counts = vec![];
-        let file = helpers::open_file(&cfg.map_file)?;
+        let file = OpenOptions::new().read(true).open(&cfg.map_file).unwrap();
         for line in BufReader::new(file)
             .lines()
             .map(Result::unwrap)
@@ -96,7 +96,10 @@ impl super::Parsing for Parser {
     fn parse_ways(&self, builder: &mut EdgeBuilder) -> Result<(), String> {
         info!("START Create edges from input-file.");
         let mut line_number = 0;
-        let file = helpers::open_file(&builder.cfg().map_file)?;
+        let file = OpenOptions::new()
+            .read(true)
+            .open(&builder.cfg().map_file)
+            .unwrap();
         for line in BufReader::new(file)
             .lines()
             .map(Result::unwrap)
@@ -121,7 +124,10 @@ impl super::Parsing for Parser {
     fn parse_nodes(&self, builder: &mut NodeBuilder) -> Result<(), String> {
         info!("START Create nodes from input-file.");
         let mut line_number = 0;
-        let file = helpers::open_file(&builder.cfg().map_file)?;
+        let file = OpenOptions::new()
+            .read(true)
+            .open(&builder.cfg().map_file)
+            .unwrap();
         for line in BufReader::new(file)
             .lines()
             .map(Result::unwrap)

@@ -1,9 +1,9 @@
-use crate::{
-    helpers,
-    io::{routing::Writer, SupportingFileExts},
-};
+use crate::io::{routing::Writer, SupportingFileExts};
 use serde::Deserialize;
-use std::path::{Path, PathBuf};
+use std::{
+    fs::OpenOptions,
+    path::{Path, PathBuf},
+};
 pub mod raw;
 
 #[derive(Debug, Deserialize)]
@@ -34,7 +34,7 @@ impl Config {
     pub fn try_from_yaml<P: AsRef<Path> + ?Sized>(path: &P) -> Result<Config, String> {
         let file = {
             Config::find_supported_ext(path)?;
-            helpers::open_file(path)?
+            OpenOptions::new().read(true).open(path).unwrap()
         };
 
         let cfg: Config = match serde_yaml::from_reader(file) {
