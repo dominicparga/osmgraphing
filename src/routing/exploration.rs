@@ -82,9 +82,10 @@ impl ConvexHullExplorator {
                 // Remember tolerated costs for filtering in the end.
                 // The costs have to be checked in the end, since this iterative algorithm could
                 // find a tolerated path by using a unacceptable path.
-                if best_path.costs()[i] == 0.0 {
-                    tolerated[i] = 0.0;
+                if routing_cfg.tolerated_scales[i] == std::f64::INFINITY {
+                    tolerated[i] = routing_cfg.tolerated_scales[i];
                 } else {
+                    // NaN when 0.0 * inf
                     tolerated[i] = best_path.costs()[i] * routing_cfg.tolerated_scales[i];
                 }
 
