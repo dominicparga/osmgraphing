@@ -58,6 +58,25 @@ impl ApproxEq<Coordinate> for Coordinate {
     }
 }
 
+impl<T> Approx<Vec<T>> for Vec<T>
+where
+    T: Approx<T>,
+{
+    fn approx(self) -> Vec<T> {
+        self.into_iter().map(|value| value.approx()).collect()
+    }
+}
+
+impl<T, A> Approx<SmallVec<A>> for SmallVec<A>
+where
+    T: Approx<T>,
+    A: Array<Item = T>,
+{
+    fn approx(self) -> SmallVec<A> {
+        self.into_iter().map(|value| value.approx()).collect()
+    }
+}
+
 impl<T> ApproxEq<Vec<T>> for Vec<T>
 where
     T: ApproxEq<T>,
