@@ -41,6 +41,7 @@ impl AsRef<SimpleId> for SimpleId {
     }
 }
 
+pub mod balancing;
 pub mod parsing;
 pub mod routing;
 pub mod writing;

@@ -1,5 +1,9 @@
-use log::{error, info};
-use osmgraphing::{configs, helpers, io, network::RoutePair, routing};
+use log::{debug, error, info};
+use osmgraphing::{
+    configs, defaults, helpers, io,
+    network::{EdgeIdx, RoutePair},
+    routing,
+};
 use std::{path::PathBuf, time::Instant};
 
 fn main() {
@@ -57,15 +61,30 @@ fn run() -> Result<(), String> {
 
     // routing-example
 
-    let routing_cfg = {
-        // take parsing-cfg if no other config is given
-
-        // parse config
-
+    let mut routing_cfg =
         match configs::routing::Config::try_from_yaml(&args.routing_cfg, graph.cfg()) {
             Ok(cfg) => cfg,
             Err(msg) => return Err(format!("{}", msg)),
+        };
+
+    let balancing_cfg = {
+        // parse config
+
+        let balancing_cfg = match configs::balancing::Config::try_from_yaml(&args.balancing_cfg) {
+            Ok(cfg) => cfg,
+            Err(msg) => return Err(format!("{}", msg)),
+        };
+
+        // check if new file does already exist
+
+        if balancing_cfg.results_file.exists() {
+            return Err(format!(
+                "New results-dir {} does already exist. Please remove it.",
+                balancing_cfg.results_file.display()
+            ));
         }
+
+        balancing_cfg
     };
 
     let mut dijkstra = routing::Dijkstra::new();
@@ -81,7 +100,7 @@ fn run() -> Result<(), String> {
 
     // collect all metric-info to edit them
 
-    let metric_id = "route-count";
+    let metric_id = defaults::balancing::ROUTE_COUNT_ID;
     let metric_idx = match graph.cfg().edges.metrics.idx_of(metric_id) {
         Some(idx) => idx,
         None => {
@@ -92,35 +111,79 @@ fn run() -> Result<(), String> {
         }
     };
 
-    // find all routes
+    let route_pairs = io::routing::Parser::parse(&routing_cfg)?;
+    for iteration in 0..balancing_cfg.num_iterations {
+        let mut next_workload: Vec<usize> = vec![0; graph.fwd_edges().count()];
 
-    for (route_pair, route_count) in io::routing::Parser::parse(&routing_cfg)? {
-        let RoutePair { src, dst } = route_pair.into_node(&graph);
+        // look for best paths wrt
 
-        let now = Instant::now();
-        info!("Explore new query");
-        info!("src {}", src);
-        info!("dst {}", dst);
-        let found_paths =
-            explorator.fully_explorate(src.idx(), dst.idx(), &mut dijkstra, &graph, &routing_cfg);
-        info!(
-            "Ran Explorator-query in {} ms. Found {} path(s).",
-            now.elapsed().as_micros() as f64 / 1_000.0,
-            found_paths.len()
-        );
+        if iteration <= 0 {
+            routing_cfg.alphas[*metric_idx] = 0.0;
+        } else {
+            routing_cfg.alphas[*metric_idx] = 1.0;
+        }
 
-        for i in 0..route_count {
-            let p = &found_paths[i % found_paths.len()];
+        // find all routes and count density on graph
 
-            info!("    {}", p);
+        for &(route_pair, route_count) in route_pairs.iter() {
+            let RoutePair { src, dst } = route_pair.into_node(&graph);
 
-            for edge_idx in p {
-                graph.metrics_mut()[edge_idx][*metric_idx] += 1.0;
+            // find explorated routes
+
+            let now = Instant::now();
+            let found_paths = explorator.fully_explorate(
+                src.idx(),
+                dst.idx(),
+                &mut dijkstra,
+                &graph,
+                &routing_cfg,
+            );
+            debug!(
+                "Ran Explorator-query from src-id {} to dst-id {} in {} ms. Found {} path(s).",
+                src.id(),
+                dst.id(),
+                now.elapsed().as_micros() as f64 / 1_000.0,
+                found_paths.len()
+            );
+
+            // Update next workload by looping over all found routes
+            // -> Routes have to be flattened,
+            // -> or shortcuts will lead to wrong best-paths, because counts won't be cumulated.
+
+            for i in 0..route_count {
+                let p = &found_paths[i % found_paths.len()];
+
+                debug!("    {}", p);
+
+                for &edge_idx in p {
+                    next_workload[*edge_idx] += 1;
+                }
             }
         }
-    }
 
-    info!("{:?}", graph.metrics());
+        // update graph with new values
+        for (edge_idx, workload) in next_workload.into_iter().enumerate() {
+            graph.metrics_mut()[EdgeIdx(edge_idx)][*metric_idx] = workload as f64;
+
+            // TODO update shortcuts-metrics
+        }
+
+        // export density
+
+        // measure writing-time
+        let now = Instant::now();
+
+        match io::balancing::Writer::write(iteration, &graph, &balancing_cfg) {
+            Ok(()) => (),
+            Err(msg) => return Err(format!("{}", msg)),
+        };
+        info!(
+            "Finished writing in {} seconds ({} µs).",
+            now.elapsed().as_secs(),
+            now.elapsed().as_micros(),
+        );
+        info!("");
+    }
 
     Ok(())
 }
@@ -180,6 +243,7 @@ mod constants {
         pub const MAX_LOG_LEVEL: &str = "max-log-level";
         pub const CFG: &str = "cfg";
         pub const ROUTING_CFG: &str = "routing-cfg";
+        pub const BALANCING_CFG: &str = "balancing-cfg";
     }
 }
 
@@ -187,6 +251,7 @@ struct CmdlineArgs {
     max_log_level: String,
     cfg: String,
     routing_cfg: String,
+    balancing_cfg: String,
 }
 
 impl<'a> From<clap::ArgMatches<'a>> for CmdlineArgs {
@@ -201,11 +266,16 @@ impl<'a> From<clap::ArgMatches<'a>> for CmdlineArgs {
             Some(path) => path,
             None => &cfg,
         };
+        let balancing_cfg = match matches.value_of(constants::ids::BALANCING_CFG) {
+            Some(path) => path,
+            None => &cfg,
+        };
 
         CmdlineArgs {
             max_log_level: String::from(max_log_level),
             cfg: String::from(cfg),
             routing_cfg: String::from(routing_cfg),
+            balancing_cfg: String::from(balancing_cfg),
         }
     }
 }

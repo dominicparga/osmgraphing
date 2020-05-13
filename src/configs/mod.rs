@@ -61,3 +61,7 @@ pub mod writing {
 pub mod routing {
     pub use crate::configs::implementation::routing::Config;
 }
+
+pub mod balancing {
+    pub use crate::configs::implementation::balancing::Config;
+}
