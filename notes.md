@@ -122,6 +122,19 @@ This leads to wrong paths with normal bidirectional Dijkstra.
 To correct this issue, stop the query after polling a node of a sub-distance, which is higher than the currently best meeting-node's total distance.
 
 
+### Sources
+
+```text
+@book{mehlhorn2008algorithms,
+  title={Algorithms and data structures: The basic toolbox},
+  author={Mehlhorn, Kurt and Sanders, Peter},
+  year={2008},
+  publisher={Springer Science \& Business Media}
+}
+-> adjacency-array (= offset-graph)
+```
+
+
 ### License
 
 [When is a program and its plug-ins considered a single combined program?][gnu/licenses/gpl-faq/gplplugins]
