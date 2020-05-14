@@ -150,13 +150,15 @@ fn run() -> Result<(), String> {
             // -> Routes have to be flattened,
             // -> or shortcuts will lead to wrong best-paths, because counts won't be cumulated.
 
-            for i in 0..route_count {
-                let p = &found_paths[i % found_paths.len()];
+            if found_paths.len() > 0 {
+                for i in 0..route_count {
+                    let p = &found_paths[i % found_paths.len()];
 
-                debug!("    {}", p);
+                    debug!("    {}", p);
 
-                for &edge_idx in p {
-                    next_workload[*edge_idx] += 1;
+                    for &edge_idx in p {
+                        next_workload[*edge_idx] += 1;
+                    }
                 }
             }
         }
