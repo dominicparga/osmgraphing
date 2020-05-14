@@ -4,6 +4,10 @@ use osmgraphing::{
     network::{EdgeIdx, RoutePair},
     routing,
 };
+use rand::{
+    distributions::{Distribution, Uniform},
+    SeedableRng,
+};
 use std::{path::PathBuf, time::Instant};
 
 fn main() {
@@ -112,6 +116,7 @@ fn run() -> Result<(), String> {
     };
 
     let route_pairs = io::routing::Parser::parse(&routing_cfg)?;
+    let mut rng = rand_pcg::Pcg32::seed_from_u64(42); // TODO
     for iteration in 0..balancing_cfg.num_iterations {
         let mut next_workload: Vec<usize> = vec![0; graph.fwd_edges().count()];
 
@@ -151,8 +156,9 @@ fn run() -> Result<(), String> {
             // -> or shortcuts will lead to wrong best-paths, because counts won't be cumulated.
 
             if found_paths.len() > 0 {
-                for i in 0..route_count {
-                    let p = &found_paths[i % found_paths.len()];
+                let die = Uniform::from(0..found_paths.len());
+                for _ in 0..route_count {
+                    let p = &found_paths[die.sample(&mut rng)];
 
                     debug!("    {}", p);
 

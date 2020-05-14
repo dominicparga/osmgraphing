@@ -186,8 +186,8 @@ impl ConvexHullExplorator {
                 {
                     let mut is_already_found = false;
 
-                    for &i in candidate.iter() {
-                        if found_paths[i] == new_p {
+                    for found_path in &found_paths {
+                        if found_path == &new_p {
                             is_already_found = true;
                             break;
                         }
