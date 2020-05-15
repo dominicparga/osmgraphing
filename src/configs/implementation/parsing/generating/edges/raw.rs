@@ -12,6 +12,11 @@ pub enum Category {
         info: MetaInfo,
         id: SimpleId,
     },
+    Custom {
+        unit: Option<metrics::raw::UnitInfo>,
+        id: SimpleId,
+        default: Option<f64>,
+    },
     Haversine {
         unit: metrics::raw::UnitInfo,
         id: SimpleId,

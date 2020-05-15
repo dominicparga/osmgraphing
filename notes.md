@@ -26,6 +26,7 @@ Maybe, it is concept for later documentation, or just keep-up-the-good-work (`ku
     - Get population from osm-data
       - Take nodes/ways and distribute according to max-speed (low speed <-> high population-density).
       - Take city-level and let routes go from lower to higher levels.
+- Replace all `unwrap()` at least by `expect(callee)`.
 
 
 ### Build-script
@@ -57,7 +58,7 @@ Maybe, it is concept for later documentation, or just keep-up-the-good-work (`ku
 
 - Warn user when parsing `pbf`-map, if unused categories are provided in the config.
 - Don't convert `kilometers` to `meters` to store the graph and convert it back when parsing the graph.
-- Use 3 parsing-stages: `raw config -(1)> proto-config -(2)> config` where `(1)` does conversions like `'inf' -> std::f64::INFINITY`.
+- Write parser __parsing all configs__ at once.
 
 
 ### Extend parsing
@@ -73,6 +74,13 @@ Maybe, it is concept for later documentation, or just keep-up-the-good-work (`ku
 - Implement little parser for a file containing routes.
   Preferred is a format, where every line defines `src, dst`.
   To make this less dependent of a certain map, every node is represented by its coordinate or id instead of its index.
+
+
+### Extend balancing
+
+- Update route-counts of shortcuts after updating normal edges.
+- Add to config, which metric-id is used as route-count.
+- The explorator finds too many routes.
 
 
 ## Info
@@ -112,6 +120,19 @@ Hence, the forward- and the backward-query are not balanced wrt weights.
 Thus, after finding the first meeting-node, the hop-distance of the shortest-path could be arbitrary.
 This leads to wrong paths with normal bidirectional Dijkstra.
 To correct this issue, stop the query after polling a node of a sub-distance, which is higher than the currently best meeting-node's total distance.
+
+
+### Sources
+
+```text
+@book{mehlhorn2008algorithms,
+  title={Algorithms and data structures: The basic toolbox},
+  author={Mehlhorn, Kurt and Sanders, Peter},
+  year={2008},
+  publisher={Springer Science \& Business Media}
+}
+-> adjacency-array (= offset-graph)
+```
 
 
 ### License

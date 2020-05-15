@@ -1,7 +1,7 @@
 use serde::Deserialize;
 pub mod edges;
 pub mod nodes;
-pub mod raw;
+pub mod proto;
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "kebab-case")]
@@ -10,23 +10,23 @@ pub struct Config {
     pub edges: edges::Config,
 }
 
-impl From<raw::Config> for Config {
-    fn from(raw_cfg: raw::Config) -> Config {
+impl From<proto::Config> for Config {
+    fn from(proto_cfg: proto::Config) -> Config {
         Config {
             nodes: nodes::Config {
-                categories: raw_cfg
+                categories: proto_cfg
                     .nodes
                     .0
                     .into_iter()
-                    .map(|raw_category| raw_category.into())
+                    .map(|proto_category| proto_category.into())
                     .collect(),
             },
             edges: edges::Config {
-                categories: raw_cfg
+                categories: proto_cfg
                     .edges
                     .0
                     .into_iter()
-                    .map(|raw_category| raw_category.into())
+                    .map(|proto_category| proto_category.into())
                     .collect(),
             },
         }

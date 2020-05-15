@@ -4,7 +4,12 @@ pub use indexing::{EdgeIdx, MetricIdx, NodeIdx};
 
 use crate::{configs::parsing::Config, defaults::capacity::DimVec};
 use kissunits::geo::Coordinate;
-use std::{fmt, fmt::Display, iter::Iterator, ops::Index};
+use std::{
+    fmt,
+    fmt::Display,
+    iter::Iterator,
+    ops::{Index, IndexMut},
+};
 
 /// Stores graph-data as offset-graph in arrays and provides methods and shallow structs for accessing them.
 ///
@@ -135,6 +140,13 @@ impl Graph {
             metrics: &self.metrics,
         }
     }
+
+    pub fn metrics_mut<'a>(&'a mut self) -> MetricAccessorMut<'a> {
+        MetricAccessorMut {
+            cfg: &self.cfg,
+            metrics: &mut self.metrics,
+        }
+    }
 }
 
 impl Display for Graph {
@@ -218,13 +230,13 @@ impl Display for Graph {
                     let metrics = half_edge.metrics();
                     writeln!(
                         f,
-                        "{}edge: {{ idx: {}, sc-offset: {}, ({})-{:?}->({}) }}",
+                        "{}edge: {{ idx: {}, sc-offset: {}, (idx: {})-{:?}->(idx: {}) }}",
                         xwd_prefix,
                         j,
                         self.sc_offsets[j],
-                        self.node_ids[*src_idx],
+                        *src_idx,
                         metrics,
-                        self.node_ids[*half_edge.dst_idx()],
+                        *half_edge.dst_idx(),
                     )?;
                 } else {
                     break;
@@ -390,8 +402,8 @@ impl<'a> Display for HalfEdge<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "{{ (src)-{}->({}) }}",
-            self.edge_accessor.metrics,
+            "{{ (src)-{:?}->(idx: {}) }}",
+            self.edge_accessor.metrics[self.idx],
             self.dst_idx(),
         )
     }
@@ -535,12 +547,6 @@ pub struct MetricAccessor<'a> {
     metrics: &'a Vec<DimVec<f64>>,
 }
 
-impl<'a> Display for MetricAccessor<'a> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{:?}", self.metrics)
-    }
-}
-
 impl<'a> MetricAccessor<'a> {
     pub fn dim(&self) -> usize {
         self.cfg.edges.metrics.units.len()
@@ -576,5 +582,91 @@ impl<'a> Index<&EdgeIdx> for &MetricAccessor<'a> {
 
     fn index(&self, edge_idx: &EdgeIdx) -> &DimVec<f64> {
         &self.metrics[**edge_idx]
+    }
+}
+
+/// A shallow container for accessing metrics.
+/// Shallow means that it does only contain references to the graph's data-arrays.
+#[derive(Debug)]
+pub struct MetricAccessorMut<'a> {
+    cfg: &'a Config,
+    metrics: &'a mut Vec<DimVec<f64>>,
+}
+
+impl<'a> MetricAccessorMut<'a> {
+    pub fn dim(&self) -> usize {
+        self.cfg.edges.metrics.units.len()
+    }
+}
+
+impl<'a> Index<EdgeIdx> for MetricAccessorMut<'a> {
+    type Output = DimVec<f64>;
+
+    fn index(&self, edge_idx: EdgeIdx) -> &DimVec<f64> {
+        &self.metrics[*edge_idx]
+    }
+}
+
+impl<'a> IndexMut<EdgeIdx> for MetricAccessorMut<'a> {
+    fn index_mut(&mut self, edge_idx: EdgeIdx) -> &mut DimVec<f64> {
+        &mut self.metrics[*edge_idx]
+    }
+}
+
+impl<'a> Index<EdgeIdx> for &MetricAccessorMut<'a> {
+    type Output = DimVec<f64>;
+
+    fn index(&self, edge_idx: EdgeIdx) -> &DimVec<f64> {
+        &self.metrics[*edge_idx]
+    }
+}
+
+impl<'a> Index<EdgeIdx> for &mut MetricAccessorMut<'a> {
+    type Output = DimVec<f64>;
+
+    fn index(&self, edge_idx: EdgeIdx) -> &DimVec<f64> {
+        &self.metrics[*edge_idx]
+    }
+}
+
+impl<'a> IndexMut<EdgeIdx> for &mut MetricAccessorMut<'a> {
+    fn index_mut(&mut self, edge_idx: EdgeIdx) -> &mut DimVec<f64> {
+        &mut self.metrics[*edge_idx]
+    }
+}
+
+impl<'a> Index<&EdgeIdx> for MetricAccessorMut<'a> {
+    type Output = DimVec<f64>;
+
+    fn index(&self, edge_idx: &EdgeIdx) -> &DimVec<f64> {
+        &self.metrics[**edge_idx]
+    }
+}
+
+impl<'a> IndexMut<&EdgeIdx> for MetricAccessorMut<'a> {
+    fn index_mut(&mut self, edge_idx: &EdgeIdx) -> &mut DimVec<f64> {
+        &mut self.metrics[**edge_idx]
+    }
+}
+
+impl<'a> Index<&EdgeIdx> for &MetricAccessorMut<'a> {
+    type Output = DimVec<f64>;
+
+    fn index(&self, edge_idx: &EdgeIdx) -> &DimVec<f64> {
+        &self.metrics[**edge_idx]
+    }
+}
+
+impl<'a> Index<&EdgeIdx> for &mut MetricAccessorMut<'a> {
+    type Output = DimVec<f64>;
+
+    fn index(&self, edge_idx: &EdgeIdx) -> &DimVec<f64> {
+        &self.metrics[**edge_idx]
+    }
+}
+
+impl<'a> IndexMut<&EdgeIdx> for &mut MetricAccessorMut<'a> {
+    fn index_mut(&mut self, edge_idx: &EdgeIdx) -> &mut DimVec<f64> {
+        &mut self.metrics[**edge_idx]
     }
 }

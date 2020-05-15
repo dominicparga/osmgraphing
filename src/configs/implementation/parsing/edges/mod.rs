@@ -4,7 +4,7 @@ use crate::{
 };
 use serde::Deserialize;
 pub mod metrics;
-pub mod raw;
+pub mod proto;
 
 #[derive(Debug)]
 pub struct Config {
@@ -15,35 +15,35 @@ pub struct Config {
     pub metrics: metrics::Config,
 }
 
-impl From<raw::Config> for Config {
-    fn from(raw_cfg: raw::Config) -> Config {
+impl From<proto::Config> for Config {
+    fn from(proto_cfg: proto::Config) -> Config {
         // init datastructures
 
-        let mut categories = Vec::with_capacity(raw_cfg.0.len());
+        let mut categories = Vec::with_capacity(proto_cfg.0.len());
         let mut metric_units = DimVec::new();
         let mut metric_ids = DimVec::new();
 
         // check if any id is duplicate
 
-        for i in 0..raw_cfg.0.len() {
+        for i in 0..proto_cfg.0.len() {
             // get i-th id
 
             let id_i = {
-                match &raw_cfg.0[i] {
-                    raw::Category::Ignored => continue,
-                    raw::Category::Meta { info: _, id: id_i }
-                    | raw::Category::Metric { unit: _, id: id_i } => id_i,
+                match &proto_cfg.0[i] {
+                    proto::Category::Ignored => continue,
+                    proto::Category::Meta { info: _, id: id_i }
+                    | proto::Category::Metric { unit: _, id: id_i } => id_i,
                 }
             };
 
-            for j in (i + 1)..raw_cfg.0.len() {
+            for j in (i + 1)..proto_cfg.0.len() {
                 // get j-th id
 
                 let id_j = {
-                    match &raw_cfg.0[j] {
-                        raw::Category::Ignored => continue,
-                        raw::Category::Meta { info: _, id: id_j }
-                        | raw::Category::Metric { unit: _, id: id_j } => id_j,
+                    match &proto_cfg.0[j] {
+                        proto::Category::Ignored => continue,
+                        proto::Category::Meta { info: _, id: id_j }
+                        | proto::Category::Metric { unit: _, id: id_j } => id_j,
                     }
                 };
 
@@ -57,18 +57,18 @@ impl From<raw::Config> for Config {
 
         // Fill categories, ids and create mapping: id -> idx
 
-        for category in raw_cfg.0.into_iter() {
+        for category in proto_cfg.0.into_iter() {
             // add category
 
             match &category {
                 // add metrics separatedly
                 // for better access-performance through metric-indices
-                raw::Category::Metric { unit, id } => {
+                proto::Category::Metric { unit, id } => {
                     categories.push(category.clone().into());
                     metric_units.push(unit.clone().into());
                     metric_ids.push(id.clone());
                 }
-                raw::Category::Meta { info: _, id: _ } | raw::Category::Ignored => {
+                proto::Category::Meta { info: _, id: _ } | proto::Category::Ignored => {
                     categories.push(category.clone().into())
                 }
             }
@@ -97,22 +97,23 @@ pub enum Category {
     Ignored,
 }
 
-impl From<raw::Category> for Category {
-    fn from(raw_category: raw::Category) -> Category {
-        match raw_category {
-            raw::Category::Meta { info, id } => Category::Meta {
+impl From<proto::Category> for Category {
+    fn from(proto_category: proto::Category) -> Category {
+        match proto_category {
+            proto::Category::Meta { info, id } => Category::Meta {
                 info: info.into(),
                 id,
             },
-            raw::Category::Metric { unit, id } => Category::Metric {
+            proto::Category::Metric { unit, id } => Category::Metric {
                 unit: unit.into(),
                 id,
             },
-            raw::Category::Ignored => Category::Ignored,
+            proto::Category::Ignored => Category::Ignored,
         }
     }
 }
 
+/// The generating-categories specify, how a metric is generated, but it will be stored as any other parsed category, why this implementation is needed.
 impl From<generating::edges::Category> for Category {
     fn from(gen_category: generating::edges::Category) -> Category {
         match gen_category {
@@ -120,7 +121,12 @@ impl From<generating::edges::Category> for Category {
                 info: info.into(),
                 id,
             },
-            generating::edges::Category::Haversine { unit, id } => Category::Metric {
+            generating::edges::Category::Custom {
+                unit,
+                id,
+                default: _,
+            }
+            | generating::edges::Category::Haversine { unit, id } => Category::Metric {
                 unit: unit.into(),
                 id,
             },
@@ -148,13 +154,13 @@ pub enum MetaInfo {
     ShortcutIdx1,
 }
 
-impl From<raw::MetaInfo> for MetaInfo {
-    fn from(raw_info: raw::MetaInfo) -> MetaInfo {
-        match raw_info {
-            raw::MetaInfo::SrcId => MetaInfo::SrcId,
-            raw::MetaInfo::DstId => MetaInfo::DstId,
-            raw::MetaInfo::ShortcutIdx0 => MetaInfo::ShortcutIdx0,
-            raw::MetaInfo::ShortcutIdx1 => MetaInfo::ShortcutIdx1,
+impl From<proto::MetaInfo> for MetaInfo {
+    fn from(proto_info: proto::MetaInfo) -> MetaInfo {
+        match proto_info {
+            proto::MetaInfo::SrcId => MetaInfo::SrcId,
+            proto::MetaInfo::DstId => MetaInfo::DstId,
+            proto::MetaInfo::ShortcutIdx0 => MetaInfo::ShortcutIdx0,
+            proto::MetaInfo::ShortcutIdx1 => MetaInfo::ShortcutIdx1,
         }
     }
 }

@@ -9,6 +9,9 @@ pub mod routing {
     pub use crate::io::parsing::routing::Parser;
     pub use crate::io::writing::routing::Writer;
 }
+pub mod balancing {
+    pub use crate::io::writing::balancing::Writer;
+}
 
 use std::path::Path;
 

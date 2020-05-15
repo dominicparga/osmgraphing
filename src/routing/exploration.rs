@@ -5,7 +5,7 @@
 
 use crate::{
     configs,
-    defaults::capacity::DimVec,
+    defaults::{self, capacity::DimVec},
     helpers::{self, algebra},
     network::{Graph, NodeIdx},
     routing::{paths::Path, Dijkstra},
@@ -39,7 +39,7 @@ impl ConvexHullExplorator {
         let mut routing_cfg = routing_cfg.clone();
         let dim = graph.metrics().dim();
         // Every cost-value has to be below this value.
-        let mut tolerated: DimVec<_> = smallvec![std::f64::INFINITY; dim];
+        let mut tolerated: DimVec<_> = smallvec![defaults::routing::TOLERATED_SCALE_INF; dim];
         // don't consider ignored metrics
         let is_metric_considered: DimVec<_> = routing_cfg
             .alphas
@@ -82,13 +82,18 @@ impl ConvexHullExplorator {
                 // Remember tolerated costs for filtering in the end.
                 // The costs have to be checked in the end, since this iterative algorithm could
                 // find a tolerated path by using a unacceptable path.
-                tolerated[i] = best_path.costs()[i] * routing_cfg.tolerated_scales[i];
+                if routing_cfg.tolerated_scales[i] == std::f64::INFINITY {
+                    tolerated[i] = routing_cfg.tolerated_scales[i];
+                } else {
+                    // NaN when 0.0 * inf
+                    tolerated[i] = best_path.costs()[i] * routing_cfg.tolerated_scales[i];
+                }
 
                 // if metric should be considered and path has not been added
                 // -> remember path
                 if !found_paths.contains(&best_path) {
                     found_paths.push(best_path);
-                    debug!("pushed {}", found_paths.last().unwrap());
+                    debug!("pushed {}", found_paths.last().expect("found_paths.last()"));
                 }
             }
         }
@@ -181,8 +186,8 @@ impl ConvexHullExplorator {
                 {
                     let mut is_already_found = false;
 
-                    for &i in candidate.iter() {
-                        if found_paths[i] == new_p {
+                    for found_path in &found_paths {
+                        if found_path == &new_p {
                             is_already_found = true;
                             break;
                         }

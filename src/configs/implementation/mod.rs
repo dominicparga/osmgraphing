@@ -23,6 +23,25 @@ impl Display for SimpleId {
     }
 }
 
+impl AsRef<str> for SimpleId {
+    fn as_ref(&self) -> &str {
+        self.0.as_ref()
+    }
+}
+
+impl AsRef<String> for SimpleId {
+    fn as_ref(&self) -> &String {
+        &self.0
+    }
+}
+
+impl AsRef<SimpleId> for SimpleId {
+    fn as_ref(&self) -> &SimpleId {
+        &self
+    }
+}
+
+pub mod balancing;
 pub mod parsing;
 pub mod routing;
 pub mod writing;

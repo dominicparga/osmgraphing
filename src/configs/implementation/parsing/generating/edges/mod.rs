@@ -1,6 +1,7 @@
 use crate::configs::SimpleId;
 use serde::Deserialize;
 pub mod metrics;
+pub mod proto;
 pub mod raw;
 
 #[derive(Debug, Deserialize)]
@@ -13,6 +14,12 @@ pub enum Category {
     Meta {
         info: MetaInfo,
         id: SimpleId,
+    },
+    // out-of-place
+    Custom {
+        unit: metrics::UnitInfo,
+        id: SimpleId,
+        default: f64,
     },
     // out-of-place
     Haversine {
@@ -37,26 +44,31 @@ pub enum Category {
     },
 }
 
-impl From<raw::Category> for Category {
-    fn from(raw_category: raw::Category) -> Category {
-        match raw_category {
-            raw::Category::Meta { info, id } => Category::Meta {
+impl From<proto::Category> for Category {
+    fn from(proto_category: proto::Category) -> Category {
+        match proto_category {
+            proto::Category::Meta { info, id } => Category::Meta {
                 info: info.into(),
                 id,
             },
-            raw::Category::Haversine { unit, id } => Category::Haversine {
+            proto::Category::Custom { unit, id, default } => Category::Custom {
+                unit: unit.into(),
+                id,
+                default,
+            },
+            proto::Category::Haversine { unit, id } => Category::Haversine {
                 unit: unit.into(),
                 id,
             },
-            raw::Category::Copy { from, to } => Category::Copy {
+            proto::Category::Copy { from, to } => Category::Copy {
                 from: from.into(),
                 to: to.into(),
             },
-            raw::Category::Convert { from, to } => Category::Convert {
+            proto::Category::Convert { from, to } => Category::Convert {
                 from: from.into(),
                 to: to.into(),
             },
-            raw::Category::Calc { result, a, b } => Category::Calc {
+            proto::Category::Calc { result, a, b } => Category::Calc {
                 result: result.into(),
                 a: a.into(),
                 b: b.into(),
@@ -73,13 +85,13 @@ pub enum MetaInfo {
     ShortcutIdx1,
 }
 
-impl From<raw::MetaInfo> for MetaInfo {
-    fn from(raw_info: raw::MetaInfo) -> MetaInfo {
-        match raw_info {
-            raw::MetaInfo::SrcIdx => MetaInfo::SrcIdx,
-            raw::MetaInfo::DstIdx => MetaInfo::DstIdx,
-            raw::MetaInfo::ShortcutIdx0 => MetaInfo::ShortcutIdx0,
-            raw::MetaInfo::ShortcutIdx1 => MetaInfo::ShortcutIdx1,
+impl From<proto::MetaInfo> for MetaInfo {
+    fn from(proto_info: proto::MetaInfo) -> MetaInfo {
+        match proto_info {
+            proto::MetaInfo::SrcIdx => MetaInfo::SrcIdx,
+            proto::MetaInfo::DstIdx => MetaInfo::DstIdx,
+            proto::MetaInfo::ShortcutIdx0 => MetaInfo::ShortcutIdx0,
+            proto::MetaInfo::ShortcutIdx1 => MetaInfo::ShortcutIdx1,
         }
     }
 }

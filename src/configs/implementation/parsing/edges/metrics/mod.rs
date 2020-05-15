@@ -1,18 +1,32 @@
 use crate::{
     configs::{parsing::generating::edges::metrics as gen, SimpleId},
     defaults::capacity::DimVec,
+    network::MetricIdx,
 };
 use kissunits::{
     distance::{Kilometers, Meters},
     time::{Hours, Minutes, Seconds},
 };
 use serde::Deserialize;
-pub mod raw;
+pub mod proto;
 
 #[derive(Debug)]
 pub struct Config {
     pub units: DimVec<UnitInfo>,
     pub ids: DimVec<SimpleId>,
+}
+
+impl Config {
+    pub fn idx_of<S>(&self, id: S) -> Option<MetricIdx>
+    where
+        S: AsRef<str>,
+    {
+        Some(MetricIdx(
+            self.ids
+                .iter()
+                .position(|self_id| self_id.0 == id.as_ref())?,
+        ))
+    }
 }
 
 #[derive(Copy, Clone, Debug, Deserialize, Eq, PartialEq)]
@@ -27,17 +41,17 @@ pub enum UnitInfo {
     F64,
 }
 
-impl From<raw::UnitInfo> for UnitInfo {
-    fn from(raw_unit: raw::UnitInfo) -> UnitInfo {
-        match raw_unit {
-            raw::UnitInfo::Meters => UnitInfo::Meters,
-            raw::UnitInfo::Kilometers => UnitInfo::Kilometers,
-            raw::UnitInfo::Seconds => UnitInfo::Seconds,
-            raw::UnitInfo::Minutes => UnitInfo::Minutes,
-            raw::UnitInfo::Hours => UnitInfo::Hours,
-            raw::UnitInfo::KilometersPerHour => UnitInfo::KilometersPerHour,
-            raw::UnitInfo::LaneCount => UnitInfo::LaneCount,
-            raw::UnitInfo::F64 => UnitInfo::F64,
+impl From<proto::UnitInfo> for UnitInfo {
+    fn from(proto_unit: proto::UnitInfo) -> UnitInfo {
+        match proto_unit {
+            proto::UnitInfo::Meters => UnitInfo::Meters,
+            proto::UnitInfo::Kilometers => UnitInfo::Kilometers,
+            proto::UnitInfo::Seconds => UnitInfo::Seconds,
+            proto::UnitInfo::Minutes => UnitInfo::Minutes,
+            proto::UnitInfo::Hours => UnitInfo::Hours,
+            proto::UnitInfo::KilometersPerHour => UnitInfo::KilometersPerHour,
+            proto::UnitInfo::LaneCount => UnitInfo::LaneCount,
+            proto::UnitInfo::F64 => UnitInfo::F64,
         }
     }
 }

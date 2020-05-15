@@ -128,3 +128,37 @@ impl PartialEq for Path {
             && self.edges == other.edges
     }
 }
+
+impl IntoIterator for Path {
+    type Item = EdgeIdx;
+    type IntoIter = std::vec::IntoIter<EdgeIdx>;
+
+    fn into_iter(self) -> std::vec::IntoIter<EdgeIdx> {
+        self.edges.into_iter()
+    }
+}
+
+impl<'a> IntoIterator for &'a Path {
+    type Item = &'a EdgeIdx;
+    type IntoIter = std::slice::Iter<'a, EdgeIdx>;
+
+    fn into_iter(self) -> std::slice::Iter<'a, EdgeIdx> {
+        self.edges.iter()
+    }
+}
+
+impl Path {
+    pub fn iter(&self) -> std::slice::Iter<'_, EdgeIdx> {
+        self.edges.iter()
+    }
+}
+
+pub struct PathIntoIter(std::vec::IntoIter<EdgeIdx>);
+
+impl Iterator for PathIntoIter {
+    type Item = EdgeIdx;
+
+    fn next(&mut self) -> Option<EdgeIdx> {
+        self.0.next()
+    }
+}
