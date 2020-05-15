@@ -1,3 +1,4 @@
+use crate::configs::SimpleId;
 use serde::Deserialize;
 use std::path::PathBuf;
 
@@ -12,4 +13,5 @@ pub struct Config {
 pub struct Content {
     pub results_file: PathBuf,
     pub num_iterations: usize,
+    pub metric_id: SimpleId,
 }

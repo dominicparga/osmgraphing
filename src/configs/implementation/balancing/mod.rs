@@ -1,4 +1,4 @@
-use crate::io::SupportingFileExts;
+use crate::{configs::SimpleId, io::SupportingFileExts};
 use std::{
     fs::OpenOptions,
     path::{Path, PathBuf},
@@ -9,6 +9,7 @@ pub mod proto;
 pub struct Config {
     pub results_file: PathBuf,
     pub num_iterations: usize,
+    pub metric_id: SimpleId,
 }
 
 impl SupportingFileExts for Config {
@@ -39,6 +40,7 @@ impl Config {
         Ok(Config {
             results_file: proto_cfg.balancing.results_file,
             num_iterations: proto_cfg.balancing.num_iterations,
+            metric_id: proto_cfg.balancing.metric_id,
         })
     }
 

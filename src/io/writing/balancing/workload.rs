@@ -1,5 +1,5 @@
 use crate::{
-    configs, defaults,
+    configs,
     network::{EdgeIdx, Graph},
 };
 use std::{
@@ -82,11 +82,15 @@ impl super::Writing for Writer {
 
             // write edges
 
-            let metric_id = defaults::balancing::ROUTE_COUNT_ID;
-            let metric_idx = graph.cfg().edges.metrics.idx_of(metric_id).expect(&format!(
-                "Metric-id {} should be existent in graph, but isn't.",
-                metric_id
-            ));
+            let metric_idx = graph
+                .cfg()
+                .edges
+                .metrics
+                .idx_of(&balancing_cfg.metric_id)
+                .expect(&format!(
+                    "Metric-id {} should be existent in graph, but isn't.",
+                    balancing_cfg.metric_id
+                ));
             let metrics = graph.metrics();
 
             write!(

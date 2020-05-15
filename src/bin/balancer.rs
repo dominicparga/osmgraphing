@@ -1,6 +1,6 @@
 use log::{debug, error, info};
 use osmgraphing::{
-    configs, defaults, helpers, io,
+    configs, helpers, io,
     network::{EdgeIdx, RoutePair},
     routing,
 };
@@ -104,13 +104,12 @@ fn run() -> Result<(), String> {
 
     // collect all metric-info to edit them
 
-    let metric_id = defaults::balancing::ROUTE_COUNT_ID;
-    let metric_idx = match graph.cfg().edges.metrics.idx_of(metric_id) {
+    let metric_idx = match graph.cfg().edges.metrics.idx_of(&balancing_cfg.metric_id) {
         Some(idx) => idx,
         None => {
             return Err(format!(
                 "Metric-id {} should be existent in graph, but isn't.",
-                metric_id
+                balancing_cfg.metric_id
             ))
         }
     };

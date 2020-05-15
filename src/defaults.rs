@@ -43,10 +43,6 @@ pub mod routing {
     pub const TOLERATED_SCALE: f64 = std::f64::INFINITY;
 }
 
-pub mod balancing {
-    pub const ROUTE_COUNT_ID: &str = "route-count";
-}
-
 pub mod network {
     pub mod nodes {
         pub const LEVEL: usize = 0;
