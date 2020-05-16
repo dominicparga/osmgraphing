@@ -75,10 +75,10 @@ impl ConvexHullExplorator {
             // and if path exists
             // -> remember it as convex-hull-member
 
-            if let Some(best_path) =
+            if let Some(mut best_path) =
                 dijkstra.compute_best_path(src_idx, dst_idx, graph, &routing_cfg)
             {
-                let best_path = best_path.flatten(graph);
+                best_path.calc_costs(graph);
                 // Remember tolerated costs for filtering in the end.
                 // The costs have to be checked in the end, since this iterative algorithm could
                 // find a tolerated path by using a unacceptable path.
@@ -171,10 +171,11 @@ impl ConvexHullExplorator {
 
             // find new path with new alpha
 
-            if let Some(best_path) =
+            if let Some(mut best_path) =
                 dijkstra.compute_best_path(src_idx, dst_idx, graph, &routing_cfg)
             {
-                let new_p = best_path.flatten(graph);
+                best_path.calc_costs(graph);
+                let new_p = best_path;
                 debug!(
                     "alphas * new_costs = {:?}",
                     helpers::dot_product(&routing_cfg.alphas, new_p.costs())

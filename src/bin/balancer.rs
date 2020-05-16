@@ -157,11 +157,12 @@ fn run() -> Result<(), String> {
             if found_paths.len() > 0 {
                 let die = Uniform::from(0..found_paths.len());
                 for _ in 0..route_count {
-                    let p = &found_paths[die.sample(&mut rng)];
+                    // TODO flatten after loops and cumulate all workloads for sc-edges
+                    let p = found_paths[die.sample(&mut rng)].clone().flatten(&graph);
 
                     debug!("    {}", p);
 
-                    for &edge_idx in p {
+                    for edge_idx in p {
                         next_workload[*edge_idx] += 1;
                     }
                 }

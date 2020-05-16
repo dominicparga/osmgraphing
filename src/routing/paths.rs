@@ -64,7 +64,7 @@ impl Path {
             .expect("Path's cost has to be calculated.")
     }
 
-    /// Calculates the path's cost, but only if not existent.
+    /// Calculates the path's cost, but only if not calculated already.
     pub fn calc_costs(&mut self, graph: &Graph) -> &DimVec<f64> {
         if self.costs.is_none() {
             let graph_metrics = graph.metrics();
