@@ -1,7 +1,7 @@
 use crate::{
     configs, defaults,
-    helpers::err,
-    network::{EdgeIdx, Graph},
+    helpers::{approx::Approx, err},
+    network::Graph,
 };
 use std::{
     fs::OpenOptions,
@@ -24,7 +24,9 @@ impl super::Writing for Writer {
     ) -> err::Feedback {
         // prepare
 
+        let nodes = graph.nodes();
         let fwd_edges = graph.fwd_edges();
+        let bwd_edges = graph.bwd_edges();
 
         // get writers
 
@@ -51,8 +53,18 @@ impl super::Writing for Writer {
 
         // write data
 
-        for _edge_idx in (0..fwd_edges.count()).map(EdgeIdx) {
-            writeln!(writer, "{} {} {} {}", 1, 2, 3, 4)?; // TODO
+        for edge_idx in &fwd_edges {
+            let (src_lat, src_lon) = {
+                let idx = bwd_edges.dst_idx(edge_idx);
+                let coord = nodes.coord(idx);
+                (coord.lat.approx(), coord.lon.approx())
+            };
+            let (dst_lat, dst_lon) = {
+                let idx = fwd_edges.dst_idx(edge_idx);
+                let coord = nodes.coord(idx);
+                (coord.lat.approx(), coord.lon.approx())
+            };
+            writeln!(writer, "{} {} {} {}", src_lat, src_lon, dst_lat, dst_lon)?;
         }
 
         Ok(())
