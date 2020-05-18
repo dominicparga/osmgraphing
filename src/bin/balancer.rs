@@ -1,30 +1,33 @@
 use log::{debug, error, info};
 use osmgraphing::{
-    configs, helpers, io,
+    configs,
+    helpers::{err, init_logging},
+    io,
     network::{EdgeIdx, RoutePair},
     routing,
 };
+use progressing::{Bar, MappingBar};
 use rand::{
     distributions::{Distribution, Uniform},
     SeedableRng,
 };
-use std::{path::PathBuf, time::Instant};
+use std::{fs, path::PathBuf, time::Instant};
 
 fn main() {
     let result = run();
     if let Err(msg) = result {
         error!("{}\n", msg);
-        panic!("{}", msg);
+        std::process::exit(1);
     }
 }
 
-fn run() -> Result<(), String> {
+fn run() -> err::Feedback {
     // process user-input
 
     let args = parse_cmdline();
-    match helpers::init_logging(&args.max_log_level, vec!["balancer"]) {
+    match init_logging(&args.max_log_level, vec!["balancer"]) {
         Ok(_) => (),
-        Err(msg) => return Err(format!("{}", msg)),
+        Err(msg) => return Err(format!("{}", msg).into()),
     };
 
     info!("EXECUTE {}", env!("CARGO_PKG_NAME"));
@@ -38,7 +41,7 @@ fn run() -> Result<(), String> {
             let raw_parsing_cfg = PathBuf::from(args.cfg);
             match configs::parsing::Config::try_from_yaml(&raw_parsing_cfg) {
                 Ok(cfg) => cfg,
-                Err(msg) => return Err(format!("{}", msg)),
+                Err(msg) => return Err(format!("{}", msg).into()),
             }
         };
 
@@ -49,10 +52,10 @@ fn run() -> Result<(), String> {
 
         let graph = match io::network::Parser::parse_and_finalize(parsing_cfg) {
             Ok(graph) => graph,
-            Err(msg) => return Err(format!("{}", msg)),
+            Err(msg) => return Err(format!("{}", msg).into()),
         };
         info!(
-            "Finished parsing in {} seconds ({} µs).",
+            "FINISHED Parsed graph in {} seconds ({} µs).",
             now.elapsed().as_secs(),
             now.elapsed().as_micros(),
         );
@@ -68,7 +71,7 @@ fn run() -> Result<(), String> {
     let mut routing_cfg =
         match configs::routing::Config::try_from_yaml(&args.routing_cfg, graph.cfg()) {
             Ok(cfg) => cfg,
-            Err(msg) => return Err(format!("{}", msg)),
+            Err(msg) => return Err(format!("{}", msg).into()),
         };
 
     let balancing_cfg = {
@@ -76,16 +79,19 @@ fn run() -> Result<(), String> {
 
         let balancing_cfg = match configs::balancing::Config::try_from_yaml(&args.balancing_cfg) {
             Ok(cfg) => cfg,
-            Err(msg) => return Err(format!("{}", msg)),
+            Err(msg) => return Err(format!("{}", msg).into()),
         };
 
         // check if new file does already exist
 
-        if balancing_cfg.results_file.exists() {
+        if balancing_cfg.results_dir.exists() {
             return Err(format!(
-                "New results-dir {} does already exist. Please remove it.",
-                balancing_cfg.results_file.display()
-            ));
+                "Directory {} for results does already exist. Please remove it.",
+                balancing_cfg.results_dir.display()
+            )
+            .into());
+        } else {
+            fs::create_dir_all(&balancing_cfg.results_dir).map_err(err::Msg::from)?
         }
 
         balancing_cfg
@@ -104,22 +110,38 @@ fn run() -> Result<(), String> {
 
     // collect all metric-info to edit them
 
-    let metric_idx = match graph.cfg().edges.metrics.idx_of(&balancing_cfg.metric_id) {
+    let metric_idx = match graph
+        .cfg()
+        .edges
+        .metrics
+        .try_idx_of(&balancing_cfg.metric_id)
+    {
         Some(idx) => idx,
         None => {
             return Err(format!(
                 "Metric-id {} should be existent in graph, but isn't.",
                 balancing_cfg.metric_id
-            ))
+            )
+            .into())
         }
     };
 
     let route_pairs = io::routing::Parser::parse(&routing_cfg)?;
     let mut rng = rand_pcg::Pcg32::seed_from_u64(42); // TODO
     for iteration in 0..balancing_cfg.num_iterations {
-        let mut next_workload: Vec<usize> = vec![0; graph.fwd_edges().count()];
+        // simple init-logging
+
+        info!(
+            "START Iteration {} / {}",
+            iteration,
+            balancing_cfg.num_iterations - 1
+        );
+        let mut progress_bar = MappingBar::new(0..=route_pairs.len());
+        info!("{}", progress_bar);
 
         // look for best paths wrt
+
+        let mut next_workload: Vec<usize> = vec![0; graph.fwd_edges().count()];
 
         if iteration <= 0 {
             routing_cfg.alphas[*metric_idx] = 0.0;
@@ -129,7 +151,7 @@ fn run() -> Result<(), String> {
 
         // find all routes and count density on graph
 
-        for &(route_pair, route_count) in route_pairs.iter() {
+        for &(route_pair, route_count) in &route_pairs {
             let RoutePair { src, dst } = route_pair.into_node(&graph);
 
             // find explorated routes
@@ -157,7 +179,6 @@ fn run() -> Result<(), String> {
             if found_paths.len() > 0 {
                 let die = Uniform::from(0..found_paths.len());
                 for _ in 0..route_count {
-                    // TODO flatten after loops and cumulate all workloads for sc-edges
                     let p = found_paths[die.sample(&mut rng)].clone().flatten(&graph);
 
                     debug!("    {}", p);
@@ -167,13 +188,16 @@ fn run() -> Result<(), String> {
                     }
                 }
             }
+
+            progress_bar.add(true);
+            if progress_bar.progress() % (1 + (progress_bar.end() / 10)) == 0 {
+                info!("{}", progress_bar);
+            }
         }
 
         // update graph with new values
         for (edge_idx, workload) in next_workload.into_iter().enumerate() {
             graph.metrics_mut()[EdgeIdx(edge_idx)][*metric_idx] = workload as f64;
-
-            // TODO update shortcuts-metrics
         }
 
         // export density
@@ -183,14 +207,20 @@ fn run() -> Result<(), String> {
 
         match io::balancing::Writer::write(iteration, &graph, &balancing_cfg) {
             Ok(()) => (),
-            Err(msg) => return Err(format!("{}", msg)),
+            Err(msg) => return Err(format!("{}", msg).into()),
         };
         info!(
-            "Finished writing in {} seconds ({} µs).",
+            "FINISHED Written in {} seconds ({} µs).",
             now.elapsed().as_secs(),
             now.elapsed().as_micros(),
         );
         info!("");
+
+        info!(
+            "FINISHED Iteration {} / {}",
+            iteration,
+            balancing_cfg.num_iterations - 1
+        );
     }
 
     Ok(())

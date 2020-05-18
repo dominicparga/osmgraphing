@@ -7,7 +7,7 @@ pub mod proto;
 
 #[derive(Clone, Debug)]
 pub struct Config {
-    pub results_file: PathBuf,
+    pub results_dir: PathBuf,
     pub num_iterations: usize,
     pub metric_id: SimpleId,
 }
@@ -38,7 +38,7 @@ impl Config {
 
     fn try_from_proto(proto_cfg: proto::Config) -> Result<Config, String> {
         Ok(Config {
-            results_file: proto_cfg.balancing.results_file,
+            results_dir: proto_cfg.balancing.results_dir,
             num_iterations: proto_cfg.balancing.num_iterations,
             metric_id: proto_cfg.balancing.metric_id,
         })

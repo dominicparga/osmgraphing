@@ -11,7 +11,7 @@ pub struct Config {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "kebab-case", deny_unknown_fields)]
 pub struct Content {
-    pub results_file: PathBuf,
+    pub results_dir: PathBuf,
     pub num_iterations: usize,
     pub metric_id: SimpleId,
 }

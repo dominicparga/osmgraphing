@@ -9,7 +9,7 @@ use crate::{
 };
 use kissunits::geo::Coordinate;
 use log::{debug, info};
-use progressing::{self, Bar};
+use progressing::{Bar, MappingBar};
 use std::{cmp::Reverse, mem, ops::RangeFrom};
 
 /// private stuff for graph-building
@@ -360,7 +360,7 @@ impl GraphBuilder {
 
             let mut new_proto_edges = vec![];
 
-            let mut progress_bar = progressing::MappingBar::new(0..=self.proto_edges.len());
+            let mut progress_bar = MappingBar::new(0..=self.proto_edges.len());
 
             // Work off proto-edges in chunks to keep memory-usage lower.
             let max_chunk_size = capacity::MAX_BYTE_PER_CHUNK / ProtoEdgeB::mem_size_b();
@@ -532,7 +532,7 @@ impl GraphBuilder {
         let mut proto_edges = {
             let mut new_proto_edges = vec![];
 
-            let mut progress_bar = progressing::MappingBar::new(0..=proto_edges.len());
+            let mut progress_bar = MappingBar::new(0..=proto_edges.len());
             let mut edge_idx: usize = 0;
 
             // Work off proto-edges in chunks to keep memory-usage lower.
@@ -633,7 +633,7 @@ impl GraphBuilder {
         // logging
         info!("START Create the forward-offset-array and the forward-mapping.");
         {
-            let mut progress_bar = progressing::MappingBar::new(0..=proto_edges.len());
+            let mut progress_bar = MappingBar::new(0..=proto_edges.len());
             // start looping
             let mut src_idx = NodeIdx(0);
             let mut offset = 0;
@@ -702,7 +702,7 @@ impl GraphBuilder {
 
         info!("START Create the backward-offset-array.");
         {
-            let mut progress_bar = progressing::MappingBar::new(0..=proto_edges.len());
+            let mut progress_bar = MappingBar::new(0..=proto_edges.len());
             // start looping
             let mut src_idx = NodeIdx(0);
             let mut offset = 0;

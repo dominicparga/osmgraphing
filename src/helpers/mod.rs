@@ -3,6 +3,7 @@ use std::str::FromStr;
 
 pub mod algebra;
 pub mod approx;
+pub mod err;
 
 pub fn add(a: &DimVec<f64>, b: &DimVec<f64>) -> DimVec<f64> {
     a.iter().zip(b).map(|(aa, bb)| aa + bb).collect()

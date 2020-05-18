@@ -17,7 +17,7 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn idx_of<S>(&self, id: S) -> Option<MetricIdx>
+    pub fn try_idx_of<S>(&self, id: S) -> Option<MetricIdx>
     where
         S: AsRef<str>,
     {
@@ -25,6 +25,17 @@ impl Config {
             self.ids
                 .iter()
                 .position(|self_id| self_id.0 == id.as_ref())?,
+        ))
+    }
+
+    /// Panics if id doesn't exist
+    pub fn idx_of<S>(&self, id: S) -> MetricIdx
+    where
+        S: AsRef<str>,
+    {
+        self.try_idx_of(&id).expect(&format!(
+            "Metric-id {} should be existent in graph, but isn't.",
+            id.as_ref()
         ))
     }
 }

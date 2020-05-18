@@ -8,13 +8,11 @@ use std::{
     io::{BufWriter, Write},
 };
 
-pub struct Writer {
-    iteration: usize,
-}
+pub struct Writer {}
 
 impl Writer {
-    pub fn new(iteration: usize) -> Writer {
-        Writer { iteration }
+    pub fn new() -> Writer {
+        Writer {}
     }
 }
 
@@ -33,10 +31,7 @@ impl super::Writing for Writer {
         let mut writer = {
             let path = balancing_cfg
                 .results_dir
-                .join(defaults::explorating::files::capacities(
-                    self.iteration,
-                    balancing_cfg.num_iterations,
-                ));
+                .join(defaults::explorating::files::EDGES_WRITER);
             let output_file = match OpenOptions::new().write(true).create_new(true).open(&path) {
                 Ok(f) => f,
                 Err(e) => {
@@ -52,15 +47,12 @@ impl super::Writing for Writer {
 
         // write header
 
-        writeln!(writer, "capacity")?;
+        writeln!(writer, "src-lat src-lon dst-lat dst-lon")?;
 
         // write data
 
-        let metric_idx = graph.cfg().edges.metrics.idx_of(&balancing_cfg.metric_id);
-        let metrics = graph.metrics();
-
-        for edge_idx in (0..fwd_edges.count()).map(EdgeIdx) {
-            writeln!(writer, "{}", metrics[edge_idx][*metric_idx])?;
+        for _edge_idx in (0..fwd_edges.count()).map(EdgeIdx) {
+            writeln!(writer, "{} {} {} {}", 1, 2, 3, 4)?; // TODO
         }
 
         Ok(())

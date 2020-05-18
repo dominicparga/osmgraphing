@@ -1,14 +1,12 @@
-use crate::{configs, io::SupportingFileExts, network::Graph};
+use crate::{configs, helpers::err, io::SupportingFileExts, network::Graph};
 use log::info;
 
+mod edges;
 mod workload;
 
 trait Writing {
-    fn write(
-        &self,
-        graph: &Graph,
-        balancing_cfg: &configs::balancing::Config,
-    ) -> Result<(), String>;
+    fn write(&mut self, graph: &Graph, balancing_cfg: &configs::balancing::Config)
+        -> err::Feedback;
 }
 
 pub struct Writer;
@@ -18,14 +16,17 @@ impl Writer {
         iteration: usize,
         graph: &Graph,
         balancing_cfg: &configs::balancing::Config,
-    ) -> Result<(), String> {
+    ) -> err::Feedback {
         info!(
             "START Write graph's route-workload with iteration {}",
             iteration
         );
-        let result = workload::Writer::new(iteration).write(graph, balancing_cfg);
+        if iteration == 0 {
+            edges::Writer::new().write(graph, balancing_cfg)?;
+        }
+        workload::Writer::new(iteration).write(graph, balancing_cfg)?;
         info!("FINISHED");
-        result
+        Ok(())
     }
 }
 

@@ -1,5 +1,11 @@
 use log::{error, info};
-use osmgraphing::{configs, helpers, io, network::RoutePair, routing};
+use osmgraphing::{
+    configs,
+    helpers::{err, init_logging},
+    io,
+    network::RoutePair,
+    routing,
+};
 use std::{path::PathBuf, time::Instant};
 
 //------------------------------------------------------------------------------------------------//
@@ -23,20 +29,19 @@ use std::{path::PathBuf, time::Instant};
 //------------------------------------------------------------------------------------------------//
 
 fn main() {
-    let result = run();
-    if let Err(msg) = result {
+    if let Err(msg) = run() {
         error!("{}\n", msg);
-        panic!("{}", msg);
+        std::process::exit(1);
     }
 }
 
-fn run() -> Result<(), String> {
+fn run() -> err::Feedback {
     // process user-input
 
     let args = parse_cmdline();
-    match helpers::init_logging(&args.max_log_level, vec![]) {
+    match init_logging(&args.max_log_level, vec![]) {
         Ok(_) => (),
-        Err(msg) => return Err(format!("{}", msg)),
+        Err(msg) => return Err(err::Msg::from(format!("{}", msg))),
     };
 
     info!("EXECUTE {}", env!("CARGO_PKG_NAME"));
@@ -50,7 +55,7 @@ fn run() -> Result<(), String> {
             let raw_parsing_cfg = PathBuf::from(args.cfg);
             match configs::parsing::Config::try_from_yaml(&raw_parsing_cfg) {
                 Ok(cfg) => cfg,
-                Err(msg) => return Err(format!("{}", msg)),
+                Err(msg) => return Err(err::Msg::from(format!("{}", msg))),
             }
         };
 
@@ -61,7 +66,7 @@ fn run() -> Result<(), String> {
 
         let graph = match io::network::Parser::parse_and_finalize(parsing_cfg) {
             Ok(graph) => graph,
-            Err(msg) => return Err(format!("{}", msg)),
+            Err(msg) => return Err(err::Msg::from(format!("{}", msg))),
         };
         info!(
             "Finished parsing in {} seconds ({} µs).",
@@ -86,10 +91,10 @@ fn run() -> Result<(), String> {
         // check if new file does already exist
 
         if writing_cfg.map_file.exists() {
-            return Err(format!(
+            return Err(err::Msg::from(format!(
                 "New map-file {} does already exist. Please remove it.",
                 writing_cfg.map_file.display()
-            ));
+            )));
         }
 
         // writing to file
@@ -99,7 +104,7 @@ fn run() -> Result<(), String> {
 
         match io::network::Writer::write(&graph, &writing_cfg) {
             Ok(()) => (),
-            Err(msg) => return Err(format!("{}", msg)),
+            Err(msg) => return Err(err::Msg::from(format!("{}", msg))),
         };
         info!(
             "Finished writing in {} seconds ({} µs).",
@@ -120,10 +125,10 @@ fn run() -> Result<(), String> {
         // check if new file does already exist
 
         if writing_cfg.file.exists() {
-            return Err(format!(
+            return Err(err::Msg::from(format!(
                 "New routes-file {} does already exist. Please remove it.",
                 writing_cfg.file.display()
-            ));
+            )));
         }
 
         // writing to file
@@ -133,7 +138,7 @@ fn run() -> Result<(), String> {
 
         match io::routing::Writer::write(&graph, &writing_cfg) {
             Ok(()) => (),
-            Err(msg) => return Err(format!("{}", msg)),
+            Err(msg) => return Err(err::Msg::from(format!("{}", msg))),
         };
         info!(
             "Finished writing in {} seconds ({} µs).",

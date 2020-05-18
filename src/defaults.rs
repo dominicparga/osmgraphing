@@ -43,6 +43,16 @@ pub mod routing {
     pub const TOLERATED_SCALE: f64 = std::f64::INFINITY;
 }
 
+pub mod explorating {
+    pub mod files {
+        pub const EDGES_WRITER: &str = "src-dst-coords.csv";
+
+        pub fn capacities(i: usize, n: usize) -> String {
+            format!("capacities{:0digits$}.csv", i, digits = n.to_string().len())
+        }
+    }
+}
+
 pub mod network {
     pub mod nodes {
         pub const LEVEL: usize = 0;
