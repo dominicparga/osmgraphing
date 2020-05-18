@@ -1,6 +1,6 @@
 pub mod building;
 mod indexing;
-pub use indexing::{EdgeIdx, MetricIdx, NodeIdx};
+pub use indexing::{EdgeIdx, EdgeIdxIterator, MetricIdx, NodeIdx, NodeIdxIterator};
 
 use crate::{configs::parsing::Config, defaults::capacity::DimVec};
 use kissunits::geo::Coordinate;
@@ -418,6 +418,24 @@ pub struct NodeAccessor<'a> {
     node_levels: &'a Vec<usize>,
 }
 
+impl IntoIterator for NodeAccessor<'_> {
+    type Item = NodeIdx;
+    type IntoIter = NodeIdxIterator;
+
+    fn into_iter(self) -> NodeIdxIterator {
+        (0..self.count()).into()
+    }
+}
+
+impl<'a> IntoIterator for &'a NodeAccessor<'_> {
+    type Item = NodeIdx;
+    type IntoIter = NodeIdxIterator;
+
+    fn into_iter(self) -> NodeIdxIterator {
+        (0..self.count()).into()
+    }
+}
+
 impl<'a> NodeAccessor<'a> {
     pub fn count(&self) -> usize {
         self.node_ids.len()
@@ -475,6 +493,24 @@ pub struct EdgeAccessor<'a> {
     // shortcuts
     sc_offsets: &'a Vec<usize>,
     sc_edges: &'a Vec<[EdgeIdx; 2]>,
+}
+
+impl IntoIterator for EdgeAccessor<'_> {
+    type Item = EdgeIdx;
+    type IntoIter = EdgeIdxIterator;
+
+    fn into_iter(self) -> EdgeIdxIterator {
+        (0..self.count()).into()
+    }
+}
+
+impl<'a> IntoIterator for &'a EdgeAccessor<'_> {
+    type Item = EdgeIdx;
+    type IntoIter = EdgeIdxIterator;
+
+    fn into_iter(self) -> EdgeIdxIterator {
+        (0..self.count()).into()
+    }
 }
 
 impl<'a> EdgeAccessor<'a> {

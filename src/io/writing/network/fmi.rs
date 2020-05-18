@@ -5,7 +5,7 @@ use crate::{
     },
     defaults::{self, accuracy},
     helpers::approx::Approx,
-    network::{EdgeIdx, Graph, NodeIdx},
+    network::Graph,
 };
 use log::info;
 use progressing::{self, Bar};
@@ -83,21 +83,20 @@ impl super::Writing for Writer {
                 .filter_map(|id| id.as_ref())
                 .filter(|id| graph.cfg().edges.metrics.ids.contains(id))
                 .count();
-            let node_count = nodes.count();
-            let edge_count = fwd_edges.count();
             writeln!(writer, "{}", dim)?;
-            writeln!(writer, "{}", node_count)?;
-            writeln!(writer, "{}", edge_count)?;
+            writeln!(writer, "{}", nodes.count())?;
+            writeln!(writer, "{}", fwd_edges.count())?;
 
             // write graph-data to file
 
-            let mut progress_bar = progressing::BernoulliBar::from_goal(node_count + edge_count);
+            let mut progress_bar =
+                progressing::BernoulliBar::from_goal(nodes.count() + fwd_edges.count());
             info!("{}", progress_bar);
 
             // write nodes
 
             // for every node
-            for node_idx in (0..node_count).into_iter().map(NodeIdx) {
+            for node_idx in &nodes {
                 // loop over graphs config
                 // and print respective data
                 // if id fits
@@ -196,7 +195,7 @@ impl super::Writing for Writer {
             // write edges
 
             // for every edge
-            for edge_idx in (0..edge_count).into_iter().map(EdgeIdx) {
+            for edge_idx in &fwd_edges {
                 // loop over graphs config
                 // and print respective data
                 // if id fits

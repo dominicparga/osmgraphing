@@ -1,8 +1,4 @@
-use crate::{
-    configs, defaults,
-    helpers::err,
-    network::{EdgeIdx, Graph},
-};
+use crate::{configs, defaults, helpers::err, network::Graph};
 use std::{
     fs::OpenOptions,
     io::{BufWriter, Write},
@@ -59,7 +55,7 @@ impl super::Writing for Writer {
         let metric_idx = graph.cfg().edges.metrics.idx_of(&balancing_cfg.metric_id);
         let metrics = graph.metrics();
 
-        for edge_idx in (0..fwd_edges.count()).map(EdgeIdx) {
+        for edge_idx in fwd_edges {
             writeln!(writer, "{}", metrics[edge_idx][*metric_idx])?;
         }
 
