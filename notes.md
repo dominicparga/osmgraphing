@@ -27,6 +27,7 @@ Maybe, it is concept for later documentation, or just keep-up-the-good-work (`ku
       - Take nodes/ways and distribute according to max-speed (low speed <-> high population-density).
       - Take city-level and let routes go from lower to higher levels.
 - Replace all `unwrap()` at least by `expect(callee)`.
+- Reduce visibility of modules and control public-access, e.g. of module `defaults`, which is only needed in tests.
 
 
 ### Build-script
@@ -83,6 +84,9 @@ Maybe, it is concept for later documentation, or just keep-up-the-good-work (`ku
 - The explorator finds too many routes.
 - Flatten the found routes after the loops and cumulate all workloads for sc-edges at once.
   This reduces the access to edges.
+- Use `ch-constructor` (written in `c/cpp`) as binary or build wrapping rust-crate?
+  - [How to invoke a system-cmd?][stackoverflow/invoke-system-cmd]
+  - [C with Rust][rust-docs/c-with-rust]
 
 
 ## Info
@@ -143,15 +147,17 @@ To correct this issue, stop the query after polling a node of a sub-distance, wh
 
 
 [acm/micro-travel-demand]: https://dl.acm.org/doi/10.1145/3347146.3359361
-[destatis]: https://www.destatis.de/DE/Service/Statistik-Visualisiert/RegionalatlasAktuell.html
-[statistik-bw]: https://www.statistik-bw.de/Intermaptiv/?re=gemeinde&ags=08317057&i=01202&r=0&g=0001&afk=5&fkt=besetzung&fko=mittel
 [atlas.zensus2011.de]: https://atlas.zensus2011.de/
-[statistikportal]: https://www.statistikportal.de/de/flaechenatlas
+[destatis]: https://www.destatis.de/DE/Service/Statistik-Visualisiert/RegionalatlasAktuell.html
 [github/rust-lang/cargo/issues/5624]: https://github.com/rust-lang/cargo/issues/5624
 [github/vbuchhold/routing-framework]: https://github.com/vbuchhold/routing-framework
 [gnu/licenses/gpl-faq/gplplugins]: https://www.gnu.org/licenses/gpl-faq.html#GPLPlugins
 [kde/marble]: http://api.kde.org/4.x-api/kdeedu-apidocs/marble/html/namespaceMarble.html
 [leafletjs]: https://leafletjs.com/
 [osm/wiki/jmapviewer]: https://wiki.openstreetmap.org/wiki/JMapViewer
+[rust-docs/c-with-rust]: https://rust-embedded.github.io/book/interoperability/c-with-rust.html
+[stackoverflow/invoke-system-cmd]: https://stackoverflow.com/questions/21011330/how-do-i-invoke-a-system-command-in-rust-and-capture-its-output
+[statistik-bw]: https://www.statistik-bw.de/Intermaptiv/?re=gemeinde&ags=08317057&i=01202&r=0&g=0001&afk=5&fkt=besetzung&fko=mittel
+[statistikportal]: https://www.statistikportal.de/de/flaechenatlas
 [taginfo]: https://taginfo.openstreetmap.org/
 [worldometers/germany]: https://www.worldometers.info/world-population/germany-population/
