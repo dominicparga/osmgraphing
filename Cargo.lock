@@ -974,9 +974,9 @@ dependencies = [
 
 [[package]]
 name = "kissunits"
-version = "1.0.3"
+version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a22ca3231a813eed4e784da8dbefaf55f298761c7347cd0cf9df221d0cc2064b"
+checksum = "d5d8000435c4de3bcca57a1d9388bae28823e172696c3fef05e2117afdbb8905"
 
 [[package]]
 name = "language-tags"

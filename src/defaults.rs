@@ -14,15 +14,27 @@ pub mod accuracy {
     pub const F64_FMT_DIGITS: usize = 6;
 }
 
+pub mod vehicles {
+    use kissunits::distance::Kilometers;
+    use std::cmp::max;
+
+    /// Nagel-Schreckenberg-Model -> `7.5 m` space for every vehicle
+    ///
+    /// Returns at least 1
+    pub fn calc_num_vehicles(km: Kilometers) -> u64 {
+        max(1, (km / Kilometers::new(0.0075)) as u64)
+    }
+}
+
 pub mod speed {
-    pub const MAX_KMH: u16 = 130;
+    const _MAX_KMH: u16 = 130;
     pub const MIN_KMH: u8 = 5;
 }
 
 pub mod capacity {
     // For optimal performance and memory-usage:
     // Change this value before compiling, dependent of your number of stored metrics in the graph.
-    pub const SMALL_VEC_INLINE_SIZE: usize = 4;
+    pub const SMALL_VEC_INLINE_SIZE: usize = 5;
     pub type DimVec<T> = smallvec::SmallVec<[T; SMALL_VEC_INLINE_SIZE]>;
     pub const MAX_BYTE_PER_CHUNK: usize = 200 * 1_000_000;
 }
@@ -195,9 +207,6 @@ pub mod network {
                 StreetCategory::Path => true,
             }
         }
-
-        //--------------------------------------------------------------------------------------------//
-        // parsing
 
         pub fn from(way: &Way) -> Option<StreetCategory> {
             // read highway-tag from way

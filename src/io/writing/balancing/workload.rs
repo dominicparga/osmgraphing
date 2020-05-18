@@ -1,4 +1,5 @@
 use crate::{configs, defaults, helpers::err, network::Graph};
+use kissunits::distance::Kilometers;
 use std::{
     fs::OpenOptions,
     io::{BufWriter, Write},
@@ -52,11 +53,32 @@ impl super::Writing for Writer {
 
         // write data
 
-        let metric_idx = graph.cfg().edges.metrics.idx_of(&balancing_cfg.metric_id);
         let metrics = graph.metrics();
 
         for edge_idx in fwd_edges {
-            writeln!(writer, "{}", metrics[edge_idx][*metric_idx])?;
+            // read metrics-data from graph
+            let (distance, route_count, lane_count) = {
+                let tmp = &metrics[edge_idx];
+                (
+                    tmp[*balancing_cfg.distance_idx],
+                    tmp[*balancing_cfg.route_count_idx],
+                    tmp[*balancing_cfg.lane_count_idx] as u64,
+                )
+            };
+            // calculate
+            let distance = {
+                let unit = graph.cfg().edges.metrics.units[*balancing_cfg.distance_idx];
+                // convert value to meters
+                let raw_value = unit.convert(
+                    &configs::parsing::edges::metrics::UnitInfo::Kilometers,
+                    distance,
+                );
+                Kilometers(raw_value)
+            };
+            let num_vehicles = defaults::vehicles::calc_num_vehicles(distance);
+            let capacity = lane_count * num_vehicles;
+            let workload = route_count / (capacity as f64);
+            writeln!(writer, "{}", workload)?;
         }
 
         Ok(())

@@ -77,10 +77,11 @@ fn run() -> err::Feedback {
     let balancing_cfg = {
         // parse config
 
-        let balancing_cfg = match configs::balancing::Config::try_from_yaml(&args.balancing_cfg) {
-            Ok(cfg) => cfg,
-            Err(msg) => return Err(format!("{}", msg).into()),
-        };
+        let balancing_cfg =
+            match configs::balancing::Config::try_from_yaml(&args.balancing_cfg, graph.cfg()) {
+                Ok(cfg) => cfg,
+                Err(msg) => return Err(format!("{}", msg).into()),
+            };
 
         // check if new file does already exist
 
@@ -110,22 +111,6 @@ fn run() -> err::Feedback {
 
     // collect all metric-info to edit them
 
-    let metric_idx = match graph
-        .cfg()
-        .edges
-        .metrics
-        .try_idx_of(&balancing_cfg.metric_id)
-    {
-        Some(idx) => idx,
-        None => {
-            return Err(format!(
-                "Metric-id {} should be existent in graph, but isn't.",
-                balancing_cfg.metric_id
-            )
-            .into())
-        }
-    };
-
     let route_pairs = io::routing::Parser::parse(&routing_cfg)?;
     let mut rng = rand_pcg::Pcg32::seed_from_u64(42); // TODO
     for iteration in 0..balancing_cfg.num_iterations {
@@ -144,9 +129,9 @@ fn run() -> err::Feedback {
         let mut next_workload: Vec<usize> = vec![0; graph.fwd_edges().count()];
 
         if iteration <= 0 {
-            routing_cfg.alphas[*metric_idx] = 0.0;
+            routing_cfg.alphas[*balancing_cfg.route_count_idx] = 0.0;
         } else {
-            routing_cfg.alphas[*metric_idx] = 1.0;
+            routing_cfg.alphas[*balancing_cfg.route_count_idx] = 1.0;
         }
 
         // find all routes and count density on graph
@@ -197,7 +182,8 @@ fn run() -> err::Feedback {
 
         // update graph with new values
         for (edge_idx, workload) in next_workload.into_iter().enumerate() {
-            graph.metrics_mut()[EdgeIdx(edge_idx)][*metric_idx] = workload as f64;
+            graph.metrics_mut()[EdgeIdx(edge_idx)][*balancing_cfg.route_count_idx] =
+                workload as f64;
         }
 
         // export density
