@@ -153,12 +153,12 @@ impl Path {
     }
 }
 
-pub struct PathIntoIter(std::vec::IntoIter<EdgeIdx>);
-
-impl Iterator for PathIntoIter {
-    type Item = EdgeIdx;
-
-    fn next(&mut self) -> Option<EdgeIdx> {
-        self.0.next()
-    }
-}
+// pub struct PathIntoIter(std::vec::IntoIter<EdgeIdx>);
+//
+// impl Iterator for PathIntoIter {
+//     type Item = EdgeIdx;
+//
+//     fn next(&mut self) -> Option<EdgeIdx> {
+//         self.0.next()
+//     }
+// }
