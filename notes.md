@@ -81,6 +81,8 @@ Maybe, it is concept for later documentation, or just keep-up-the-good-work (`ku
 - Update route-counts of shortcuts after updating normal edges.
 - Add to config, which metric-id is used as route-count.
 - The explorator finds too many routes.
+- Flatten the found routes after the loops and cumulate all workloads for sc-edges at once.
+  This reduces the access to edges.
 
 
 ## Info
