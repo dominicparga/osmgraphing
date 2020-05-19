@@ -50,7 +50,7 @@ fn expected_paths(
         idx: NodeIdx(idx),
         id,
         coord: Coordinate { lat, lon },
-        level: 0,
+        ch_level: 0,
     })
     .collect();
 

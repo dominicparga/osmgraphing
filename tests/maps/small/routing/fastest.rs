@@ -83,7 +83,7 @@ fn expected_paths(
         idx: NodeIdx(idx),
         id: idx as i64,
         coord: Coordinate::zero(),
-        level: 0,
+        ch_level: 0,
     })
     .collect();
 

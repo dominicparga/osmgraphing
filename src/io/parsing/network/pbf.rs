@@ -178,7 +178,7 @@ impl super::Parsing for Parser {
             builder.insert(ProtoNode {
                 id: node.id.0,
                 coord: Coordinate::from_decimicro(node.decimicro_lat, node.decimicro_lon),
-                level: None,
+                ch_level: None,
             });
         }
         info!("FINISHED");

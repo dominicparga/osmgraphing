@@ -291,7 +291,7 @@ impl ProtoNode {
         let mut node_id = None;
         let mut lat = None;
         let mut lon = None;
-        let mut level = None;
+        let mut ch_level = None;
 
         // Loop over node-categories and parse params accordingly.
         let params: Vec<&str> = line.split_whitespace().collect();
@@ -315,12 +315,12 @@ impl ProtoNode {
                             }
                         };
                     }
-                    nodes::MetaInfo::Level => {
-                        level = match param.parse::<usize>() {
-                            Ok(level) => Some(level),
+                    nodes::MetaInfo::CHLevel => {
+                        ch_level = match param.parse::<usize>() {
+                            Ok(ch_level) => Some(ch_level),
                             Err(_) => {
                                 return Err(format!(
-                                    "Parsing level '{:?}' from fmi-file, which is not usize.",
+                                    "Parsing ch-level '{:?}' from fmi-file, which is not usize.",
                                     param
                                 ))
                             }
@@ -367,7 +367,7 @@ impl ProtoNode {
         Ok(ProtoNode {
             id: node_id,
             coord: geo::Coordinate { lat, lon },
-            level,
+            ch_level,
         })
     }
 }

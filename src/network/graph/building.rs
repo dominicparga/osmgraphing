@@ -21,7 +21,7 @@ impl Graph {
             node_ids: Vec::new(),
             // node-metrics
             node_coords: Vec::new(),
-            node_levels: Vec::new(),
+            node_ch_levels: Vec::new(),
             // edges
             fwd_dsts: Vec::new(),
             fwd_offsets: Vec::new(),
@@ -78,7 +78,7 @@ impl Graph {
 pub struct ProtoNode {
     pub id: i64,
     pub coord: Coordinate,
-    pub level: Option<usize>,
+    pub ch_level: Option<usize>,
 }
 
 pub struct ProtoShortcut {
@@ -238,13 +238,13 @@ impl EdgeBuilder {
 
         let mut node_coords = vec![None; self.node_ids.len()];
         node_coords.shrink_to_fit();
-        let mut node_levels = vec![defaults::network::nodes::LEVEL; self.node_ids.len()];
-        node_levels.shrink_to_fit();
+        let mut node_ch_levels = vec![defaults::network::nodes::LEVEL; self.node_ids.len()];
+        node_ch_levels.shrink_to_fit();
         NodeBuilder {
             cfg: self.cfg,
             node_ids: self.node_ids,
             node_coords,
-            node_levels,
+            node_ch_levels,
             proto_edges: self.proto_edges,
             proto_shortcuts: self.proto_shortcuts,
         }
@@ -255,7 +255,7 @@ pub struct NodeBuilder {
     cfg: parsing::Config,
     node_ids: Vec<i64>,
     node_coords: Vec<Option<Coordinate>>,
-    node_levels: Vec<usize>,
+    node_ch_levels: Vec<usize>,
     proto_edges: Vec<ProtoEdgeA>,
     proto_shortcuts: Vec<[EdgeIdx; 2]>,
 }
@@ -269,8 +269,8 @@ impl NodeBuilder {
     pub fn insert(&mut self, proto_node: ProtoNode) -> bool {
         if let Ok(idx) = self.node_ids.binary_search(&proto_node.id) {
             self.node_coords[idx] = Some(proto_node.coord);
-            if let Some(level) = proto_node.level {
-                self.node_levels[idx] = level;
+            if let Some(ch_level) = proto_node.ch_level {
+                self.node_ch_levels[idx] = ch_level;
             }
             true
         } else {
@@ -283,7 +283,7 @@ impl NodeBuilder {
             cfg: self.cfg,
             node_ids: self.node_ids,
             node_coords: self.node_coords,
-            node_levels: self.node_levels,
+            node_ch_levels: self.node_ch_levels,
             proto_edges: self.proto_edges,
             proto_shortcuts: self.proto_shortcuts,
         })
@@ -294,7 +294,7 @@ pub struct GraphBuilder {
     cfg: parsing::Config,
     node_ids: Vec<i64>,
     node_coords: Vec<Option<Coordinate>>,
-    node_levels: Vec<usize>,
+    node_ch_levels: Vec<usize>,
     proto_edges: Vec<ProtoEdgeA>,
     proto_shortcuts: Vec<[EdgeIdx; 2]>,
 }
@@ -348,7 +348,7 @@ impl GraphBuilder {
             }
             graph.node_ids = self.node_ids;
             graph.node_coords = self.node_coords.into_iter().map(Option::unwrap).collect();
-            graph.node_levels = self.node_levels;
+            graph.node_ch_levels = self.node_ch_levels;
             graph.shrink_to_fit();
         }
 
@@ -786,7 +786,7 @@ impl GraphBuilder {
                                 graph.cfg.nodes.categories.push(category.clone().into());
                             }
                             generating::nodes::MetaInfo::NodeId
-                            | generating::nodes::MetaInfo::Level => {
+                            | generating::nodes::MetaInfo::CHLevel => {
                                 return Err(format!(
                                     "Node-meta-info {:?} (id: {}) cannot be created \
                                      and has to be provided.",

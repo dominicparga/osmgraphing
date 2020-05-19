@@ -14,7 +14,7 @@ pub struct TestNode {
     pub id: i64,
     pub idx: NodeIdx,
     pub coord: Coordinate,
-    pub level: usize,
+    pub ch_level: usize,
 }
 
 impl From<Node> for TestNode {
@@ -24,7 +24,7 @@ impl From<Node> for TestNode {
             id: node.id(),
             idx: node.idx(),
             coord: node.coord(),
-            level: node.level(),
+            ch_level: node.ch_level(),
         }
     }
 }
@@ -40,13 +40,12 @@ impl PartialEq for TestNode {
         self.id == other.id
             && self.idx == other.idx
             && self.coord.approx_eq(&other.coord)
-            && self.level == other.level
+            && self.ch_level == other.ch_level
     }
 }
 
 impl TestNode {
-    #[allow(dead_code)]
-    pub fn new(name: &str, id: i64, coord: Coordinate, level: usize, graph: &Graph) -> TestNode {
+    pub fn new(name: &str, id: i64, coord: Coordinate, ch_level: usize, graph: &Graph) -> TestNode {
         let idx = graph
             .nodes()
             .idx_from(id)
@@ -56,7 +55,7 @@ impl TestNode {
             id,
             idx,
             coord,
-            level,
+            ch_level,
         }
     }
 }

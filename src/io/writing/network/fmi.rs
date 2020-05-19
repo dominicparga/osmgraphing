@@ -117,7 +117,9 @@ impl super::Writing for Writer {
                                 match info {
                                     nodes::MetaInfo::NodeId => write!(writer, "{}", node.id())?,
                                     nodes::MetaInfo::NodeIdx => write!(writer, "{}", node.idx())?,
-                                    nodes::MetaInfo::Level => write!(writer, "{}", node.level())?,
+                                    nodes::MetaInfo::CHLevel => {
+                                        write!(writer, "{}", node.ch_level())?
+                                    }
                                 }
                             }
                             nodes::Category::Metric { unit, id } => {

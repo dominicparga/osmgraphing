@@ -64,14 +64,14 @@ impl From<gen::Category> for Category {
 pub enum MetaInfo {
     NodeId,
     NodeIdx,
-    Level,
+    CHLevel,
 }
 
 impl From<proto::MetaInfo> for MetaInfo {
     fn from(proto_info: proto::MetaInfo) -> MetaInfo {
         match proto_info {
             proto::MetaInfo::NodeId => MetaInfo::NodeId,
-            proto::MetaInfo::Level => MetaInfo::Level,
+            proto::MetaInfo::Level => MetaInfo::CHLevel,
         }
     }
 }
@@ -81,7 +81,7 @@ impl From<gen::MetaInfo> for MetaInfo {
         match gen_info {
             gen::MetaInfo::NodeId => MetaInfo::NodeId,
             gen::MetaInfo::NodeIdx => MetaInfo::NodeIdx,
-            gen::MetaInfo::Level => MetaInfo::Level,
+            gen::MetaInfo::CHLevel => MetaInfo::CHLevel,
         }
     }
 }
