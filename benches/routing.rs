@@ -8,7 +8,7 @@ use osmgraphing::{
 };
 
 fn criterion_benchmark(c: &mut Criterion) {
-    helpers::init_logging("WARN", vec![]).expect("No user-input, so this should be fine.");
+    helpers::init_logging("WARN", &[]).expect("No user-input, so this should be fine.");
 
     // parsing
     let parsing_cfg =
