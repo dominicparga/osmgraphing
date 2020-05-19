@@ -31,8 +31,10 @@ However, the underlying parser and graph-structure are working very stable, effi
 1. [Setup and usage][self/setup-and-usage]
     1. [Long story short][self/long-story-short]
     1. [Downloading and generating maps][self/downloading-and-generating]
-1. [Requirements for large maps (e.g. countries)][self/large-maps]
-1. [Contraction-Hierarchies][self/contraction-hierarchies]
+    1. [Editing the config][self/editing-the-config]
+    1. [Inlined metrics][self/inlined-metrics]
+    1. [Requirements for large maps (e.g. countries)][self/large-maps]
+    1. [Contraction-Hierarchies][self/contraction-hierarchies]
 1. [Balancing][self/balancing]
 1. [Credits][self/credits]
 
@@ -48,11 +50,13 @@ Rust has a build-tool called `cargo`, which can be used to run everything except
 cargo build --release
 # Parse isle-of-man
 ./target/release/osmgraphing --config resources/configs/isle-of-man_2020-03-14.pbf.yaml
+# Further execution-info
+./target/release/osmgraphing --help
 ```
 
-In the module `defaults`, you should change the number of inlined metrics (for [`SmallVec`][github/servo/rust-smallvec]) according to your needs.
-Several GB can be saved by doing so.
-Further, if the number of inlined metrics is less than the number of your graph-file's metrics, the graph can't be parsed.
+Above binary will throw an error, since you probably haven't downloaded the map-file mentioned in the config.
+You can download `pbf`-files from [geofabrik][geofabrik].
+When editing the config, take [`resources/configs/blueprint.yaml`][github/self/blob/blueprint.yaml] as guide.
 
 
 ### Downloading and generating maps <a name="downloading-and-generating"></a>
@@ -63,11 +67,25 @@ Problems will be the size-limit when downloading from [openstreetmap][osm], but 
 For testing, some simple text-based format `fmi` is used.
 Since they are created manually for certain tasks, parsing them - generally speaking - is unstable.
 However, this repository has a generator, which can create such `fmi`-files from `pbf`- or other `fmi`-files (e.g. for different metric-order).
-The binary `osmgraphing` (binaries are in `target/release` after release-building) helps with generating proper config-files, but have a look at [`resources/configs/blueprint.yaml`][github/self/blob/blueprint.yaml] to get further explanations about the config-syntax.
 A tool for creating `fmi`-map-files, containing graphs contracted via contraction-hierarchies, is [multi-ch-constructor][github/lesstat/multi-ch-constructor].
 
 
-## Requirements for large maps (e.g. countries) <a name="large-maps"></a>
+### Editing the config <a name="editing-the-config"></a>
+
+Every option of a config is described in [`resources/configs/blueprint.yaml`][github/self/blob/blueprint.yaml].
+The binary `osmgraphing` (binaries are in `target/release` after release-building) uses the config for different use-cases.
+
+### Inlined metrics <a name="inlined-metrics"></a>
+
+Metrics are inlined using [`SmallVec`][github/servo/rust-smallvec].
+This improves performance and saves several GB.
+If your config uses less metrics than you have compiled to, you will receive a warning.
+Further, if the compiled number of inlined metrics is less than the number of your config's metrics, the graph can't be parsed and you receive an error.
+In this case, you must change the number of inlined metrics according to your needs.
+You can find this number in the module [`defaults`][github/self/blob/defaults.rs] as `SMALL_VEC_INLINE_SIZE` (`May 19th, 2020`).
+
+
+### Requirements for large maps (e.g. countries) <a name="large-maps"></a>
 
 In general, the requirements depend on the size of the parsed map (also same map of different dates) and your machine.
 Following numbers base on an __8-core-CPU__ and the `pbf`-maps from `March 14th, 2020` running on `archlinux` with __16 GB RAM__.
@@ -88,7 +106,7 @@ Small maps like `Isle-of-Man.pbf` (~50_000 nodes, ~107_000 edges) run on every m
 The German state `Baden-Württemberg.pbf` (~9 million nodes, ~18 million edges) needs less than __5 GB RAM__ at peak and around __30 seconds__ to parse.
 
 
-## Contraction-Hierarchies <a name="contraction-hierarchies"></a>
+### Contraction-Hierarchies <a name="contraction-hierarchies"></a>
 
 For speedup, this repository supports graphs contracted via contraction-hierarchies.
 The repository [`lesstat/multi-ch-constructor`][github/lesstat/multi-ch-constructor] generates contracted graphs from `fmi`-files of a certain format (see below).
@@ -211,6 +229,7 @@ He has implemented the first (and running) approach of the `A*`-algorithm.
 [github/self/blob/blueprint.yaml]: https://github.com/dominicparga/osmgraphing/blob/nightly/resources/configs/blueprint.yaml
 [github/self/blob/changelog]: https://github.com/dominicparga/osmgraphing/blob/nightly/CHANGELOG.md
 [github/self/blob/changelog/badge]: https://img.shields.io/badge/CHANGELOG-nightly-blueviolet?style=for-the-badge
+[github/self/blob/defaults.rs]: https://github.com/dominicparga/osmgraphing/blob/nightly/src/defaults.rs
 [github/self/last-commit]: https://github.com/dominicparga/osmgraphing/commits
 [github/self/last-commit/badge]: https://img.shields.io/github/last-commit/dominicparga/osmgraphing?style=for-the-badge
 [github/self/license]: https://github.com/dominicparga/osmgraphing/blob/nightly/LICENSE.md
@@ -225,6 +244,8 @@ He has implemented the first (and running) approach of the `A*`-algorithm.
 [self/contraction-hierarchies]: #contraction-hierarchies
 [self/credits]: #credits
 [self/downloading-and-generating]: #downloading-and-generating
+[self/editing-the-config]: #editing-the-config
+[self/inlined-metrics]: #inlined-metrics
 [self/large-maps]: #large-maps
 [self/long-story-short]: #long-story-short
 [self/setup-and-usage]: #setup-and-usage

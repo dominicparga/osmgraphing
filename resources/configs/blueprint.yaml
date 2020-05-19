@@ -33,7 +33,7 @@ parsing:
   # With edges, the order matters, if the map-file has a metric-order, like `fmi`-files. Each metric below will be stored in the graph.
   #
   # ATTENTION!!!
-  # In module 'defaults', set the inline-size accordingly for best performance and memory-usage.
+  # For best performance and memory-usage, in module 'defaults', set the inline-size accordingly to the number of metrics.
   edges:
     # can be provided once
   - meta: { info: 'SrcId', id: 'src-id'},
