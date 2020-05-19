@@ -18,15 +18,28 @@ However, if a parser-module does exist, every supported map-format (e.g. own `cs
 
 All calculations will be optimized for a single desktop instead of an more expensive cluster.
 
-## Reason for `version < 1.0.0`
+## Reason for `version < 1.0.0` <a name="version"></a>
 
 I'm currently building this library for my master-thesis, leading to interface-changes with breaking changes (at least) every few weeks, why version `1.0.0` is not supported yet.
 However, the underlying parser and graph-structure are working very stable, efficiently, tested with different maps (see `resources/`), and will be used until `August 2020` to simulate different routing-scenarios, so version `1.0.0` should be reached soon. `:)`
 
 
-## Setup and usage
+## Table of contents <a name="toc"></a>
 
-### Long story short
+1. [Reason for version < 1.0.0][self/version]
+1. [Table of contents][self/toc]
+1. [Setup and usage][self/setup-and-usage]
+    1. [Long story short][self/long-story-short]
+    1. [Downloading and generating maps][self/downloading-and-generating]
+1. [Requirements for large maps (e.g. countries)][self/large-maps]
+1. [Contraction-Hierarchies][self/contraction-hierarchies]
+1. [Balancing][self/balancing]
+1. [Credits][self/credits]
+
+
+## Setup and usage <a name="setup-and-usage"></a>
+
+### Long story short <a name="long-story-short"></a>
 
 Rust has a build-tool called `cargo`, which can be used to run everything except scripts in `scripts/`.
 
@@ -42,7 +55,7 @@ Several GB can be saved by doing so.
 Further, if the number of inlined metrics is less than the number of your graph-file's metrics, the graph can't be parsed.
 
 
-### Downloading and generating maps
+### Downloading and generating maps <a name="downloading-and-generating"></a>
 
 Downloaded osm-data is provided in xml (`osm`) or binary (`pbf`), where nodes are related to location in latitude and longitude.
 Problems will be the size-limit when downloading from [openstreetmap][osm], but there are other osm data providers like [geofabrik][geofabrik] for instance.
@@ -54,7 +67,7 @@ The binary `osmgraphing` (binaries are in `target/release` after release-buildin
 A tool for creating `fmi`-map-files, containing graphs contracted via contraction-hierarchies, is [multi-ch-constructor][github/lesstat/multi-ch-constructor].
 
 
-## Requirements for large maps (e.g. countries)
+## Requirements for large maps (e.g. countries) <a name="large-maps"></a>
 
 In general, the requirements depend on the size of the parsed map (also same map of different dates) and your machine.
 Following numbers base on an __8-core-CPU__ and the `pbf`-maps from `March 14th, 2020` running on `archlinux` with __16 GB RAM__.
@@ -67,7 +80,7 @@ Hence you could expect around `2x` `RAM`-usage for `4x` graph-size (meaning `4x`
 - A __routing query__ on `Germany.pbf` of distance around `600 km` takes around __22 seconds__ with `bidirectional Dijkstra`, highly depending on the specific src-dst-pair (and its search-space).
   This could be improved by removing intermediate nodes (like `b` in `a->b->c`), but they are kept for now.
   Maybe, they are needed for precise/realistic traffic-simulation.
-  An `Astar` is not used anymore, because its only purpose is reducing the search-space, which can be reduced much more using [`Contraction Hierarchies`](#contraction-hierarchies).
+  An `Astar` is not used anymore, because its only purpose is reducing the search-space, which can be reduced much more using [`Contraction Hierarchies`][self/contraction-hierarchies].
   Further, `Astar` has issues when it comes to multiple or custom metrics, because of the metrics' heuristics.
 
 Small maps like `Isle-of-Man.pbf` (~50_000 nodes, ~107_000 edges) run on every machine and are parsed in less than a second.
@@ -89,6 +102,8 @@ The `ignored`s and placeholders (e.g. `ch-level`) are important, because the `mu
 Besides that, the `multi-ch-constructor` uses node-indices as ids, leading to errors when the mapping `node -> indices [0; n]` is not surjective.
 
 ```yaml
+# Create a fmi-file from the pbf-file
+
 parsing:
   map-file: 'resources/maps/isle-of-man_2020-03-14.osm.pbf'
   vehicles:
@@ -158,7 +173,12 @@ cmake --build build
 > Using it does only speedup your queries, but due to a different resulting order in the priority, or rounding-errors, it could lead to different paths of same weight.
 
 
-## Credits
+## Balancing <a name="balancing"></a>
+
+> TODO
+
+
+## Credits <a name="credits"></a>
 
 The project started in the mid of 2019 as a student project.
 This section honors the workers and helpers of this project, sorted by their last names.
@@ -201,3 +221,12 @@ He has implemented the first (and running) approach of the `A*`-algorithm.
 [github/self/wiki/usage]: https://github.com/dominicparga/osmgraphing/wiki/Usage
 [github/servo/rust-smallvec]: https://github.com/servo/rust-smallvec
 [osm]: https://openstreetmap.org
+[self/balancing]: #balancing
+[self/contraction-hierarchies]: #contraction-hierarchies
+[self/credits]: #credits
+[self/downloading-and-generating]: #downloading-and-generating
+[self/large-maps]: #large-maps
+[self/long-story-short]: #long-story-short
+[self/setup-and-usage]: #setup-and-usage
+[self/toc]: #toc
+[self/version]: #version
