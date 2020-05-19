@@ -866,12 +866,10 @@ impl GraphBuilder {
 
             for category in generating_cfg.edges.categories.iter() {
                 match category {
-                    generating::edges::Category::Meta { info, id: _ } => {
+                    generating::edges::Category::Meta { info, id: new_id } => {
                         match info {
                             generating::edges::MetaInfo::SrcIdx
-                            | generating::edges::MetaInfo::DstIdx
-                            | generating::edges::MetaInfo::ShortcutIdx0
-                            | generating::edges::MetaInfo::ShortcutIdx1 => {
+                            | generating::edges::MetaInfo::DstIdx => {
                                 // update graph
                                 //
                                 // -> already done
@@ -879,6 +877,15 @@ impl GraphBuilder {
                                 // update config
 
                                 graph.cfg.edges.categories.push(category.clone().into());
+                            }
+                            generating::edges::MetaInfo::ShortcutIdx0
+                            | generating::edges::MetaInfo::ShortcutIdx1 => {
+                                return Err(format!(
+                                    "Edge-meta-info {:?} (id: {}) cannot be created \
+                                     and has to be provided.",
+                                    info, new_id
+                                )
+                                .into())
                             }
                         }
                     }
