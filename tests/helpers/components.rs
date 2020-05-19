@@ -45,6 +45,7 @@ impl PartialEq for TestNode {
 }
 
 impl TestNode {
+    #[allow(dead_code)]
     pub fn new(name: &str, id: i64, coord: Coordinate, ch_level: usize, graph: &Graph) -> TestNode {
         let idx = graph
             .nodes()

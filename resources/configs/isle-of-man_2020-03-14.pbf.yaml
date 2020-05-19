@@ -19,8 +19,6 @@ parsing:
     edges:
     - meta: { info: 'SrcIdx', id: 'src-idx' }
     - meta: { info: 'DstIdx', id: 'dst-idx' }
-    - meta: { info: 'ShortcutIdx0', id: 'sc-idx-0' }
-    - meta: { info: 'ShortcutIdx1', id: 'sc-idx-1' }
     - haversine: { unit: 'Kilometers', id: 'kilometers' }
     - calc:
         result: { unit: 'Minutes', id: 'minutes' }
