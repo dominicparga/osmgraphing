@@ -78,22 +78,31 @@ parsing:
         result: { unit: 'Minutes', id: 'minutes' }
         a: { unit: 'Kilometers', id: 'kilometers' }
         b: { unit: 'KilometersPerHour', id: 'kmph' }
+# optional
 # After parsing and generating the graph, it may be written to an external fmi-file.
 # The following lines define the columns of the new fmi-file.
 writing:
-  # output-map-file
-  map-file: 'relative-path-to-map-file'
-  nodes:
-  - id: 'node-idx'
-  - id: 'latitude'
-  - ignored
-  - id: 'level'
-  - id: 'longitude'
-  edges:
-  - id: 'src-id'
-  - id: 'dst-idx'
-  - ignored
-  - id: 'meters'
+  # optional
+  graph:
+    # output-map-file
+    map-file: 'relative-path-to-map-file'
+    nodes:
+    - id: 'node-idx'
+    - id: 'latitude'
+    - ignored
+    - id: 'level'
+    - id: 'longitude'
+    edges:
+    - id: 'src-id'
+    - id: 'dst-idx'
+    - ignored
+    - id: 'meters'
+  # optional
+  route-pairs:
+    file: 'relative-path-to-output-file'
+    # supported category: random (seeded) routes
+    random: { seed: 42, count: 100 }
+# optional
 # The metrics, which should be considered in routing, are listed here.
 # The given alphas are used as scale.
 # The ch-flag specifies the routing-algorithm.
@@ -101,6 +110,7 @@ writing:
 # negatively depending on the provided map.
 # It is recommended to set this properly.
 routing:
+  route-pairs-file: 'relative-path-to-file-containing-route-pairs'
   # optional; default is false
   is-ch-dijkstra: true
   # list of routing-relevant metrics
