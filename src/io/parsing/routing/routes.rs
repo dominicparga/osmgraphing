@@ -1,4 +1,4 @@
-use crate::{configs, network::RoutePair};
+use crate::{configs, helpers::err, network::RoutePair};
 use log::info;
 use std::{
     fs::OpenOptions,
@@ -21,7 +21,7 @@ impl Parser {
 }
 
 impl super::Parsing for Parser {
-    fn preprocess(&mut self, cfg: &configs::routing::Config) -> Result<(), String> {
+    fn preprocess(&mut self, cfg: &configs::routing::Config) -> err::Feedback {
         info!("START Start preprocessing routes-parser.");
 
         let route_pairs_file = cfg
@@ -63,9 +63,7 @@ impl super::Parsing for Parser {
 
         // add counts
         if counts.len() < 1 {
-            return Err(format!(
-                "The provided routes-file doesn't have the routes-count."
-            ));
+            return Err("The provided routes-file doesn't have the routes-count.".into());
         }
 
         // Current state: Last line-number is first route-line.

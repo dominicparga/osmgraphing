@@ -45,7 +45,7 @@ pub trait MemSize {
 /// modules: in addition to default (`env!("CARGO_PKG_NAME")`)
 ///
 /// Environment-variable RUST_LOG has precedence.
-pub fn init_logging(max_log_level: &str, mut modules: Vec<&str>) -> Result<(), String> {
+pub fn init_logging(max_log_level: &str, modules: &[&str]) -> err::Feedback {
     let mut builder = env_logger::Builder::new();
 
     // maximum filter-level for all components: `warn`
@@ -58,10 +58,10 @@ pub fn init_logging(max_log_level: &str, mut modules: Vec<&str>) -> Result<(), S
             "The provided max-log-level {} is not supported.",
             max_log_level
         ))?;
-    modules.push(env!("CARGO_PKG_NAME"));
     for module in modules {
         builder.filter(Some(module), max_log_level);
     }
+    builder.filter(Some(env!("CARGO_PKG_NAME")), max_log_level);
 
     // overwrite default with environment-variables
     if let Ok(filters) = std::env::var("RUST_LOG") {

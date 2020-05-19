@@ -1,6 +1,7 @@
 use crate::{
     configs::parsing::{self, edges},
     defaults::capacity::DimVec,
+    helpers::err,
     network::{EdgeBuilder, NodeBuilder, ProtoEdge, ProtoNode, StreetCategory},
 };
 use kissunits::geo::Coordinate;
@@ -18,7 +19,7 @@ impl Parser {
 }
 
 impl super::Parsing for Parser {
-    fn preprocess(&mut self, cfg: &parsing::Config) -> Result<(), String> {
+    fn preprocess(&mut self, cfg: &parsing::Config) -> err::Feedback {
         info!("START Start preprocessing pbf-parser.");
         super::check_config(cfg)?;
 
@@ -32,7 +33,7 @@ impl super::Parsing for Parser {
                     | edges::MetaInfo::DstIdx
                     | edges::MetaInfo::ShortcutIdx0
                     | edges::MetaInfo::ShortcutIdx1 => {
-                        return Err(format!("{:?} are not supported in pbf-files.", category))
+                        return Err(format!("{:?} are not supported in pbf-files.", category).into())
                     }
                 },
                 edges::Category::Metric { unit, id: _ } => match unit {
@@ -46,7 +47,8 @@ impl super::Parsing for Parser {
                             "The {:?} of an edge in a pbf-file has to be calculated, \
                              but is expected to be provided.",
                             category
-                        ));
+                        )
+                        .into());
                     }
                     edges::metrics::UnitInfo::KilometersPerHour
                     | edges::metrics::UnitInfo::LaneCount => {
@@ -61,7 +63,7 @@ impl super::Parsing for Parser {
         Ok(())
     }
 
-    fn parse_ways(&self, builder: &mut EdgeBuilder) -> Result<(), String> {
+    fn parse_ways(&self, builder: &mut EdgeBuilder) -> err::Feedback {
         info!("START Create edges from input-file.");
         let file = OpenOptions::new()
             .read(true)
@@ -159,7 +161,7 @@ impl super::Parsing for Parser {
         Ok(())
     }
 
-    fn parse_nodes(&self, builder: &mut NodeBuilder) -> Result<(), String> {
+    fn parse_nodes(&self, builder: &mut NodeBuilder) -> err::Feedback {
         info!("START Create nodes from input-file.");
         let cfg = builder.cfg();
 

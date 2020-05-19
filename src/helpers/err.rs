@@ -1,9 +1,10 @@
 use std::{
     fmt::{self, Display},
-    io,
+    io, result,
 };
 
-pub type Feedback = Result<(), Msg>;
+pub type Feedback = result::Result<(), Msg>;
+pub type Result<T> = result::Result<T, Msg>;
 
 #[derive(Debug)]
 pub struct Msg(String);

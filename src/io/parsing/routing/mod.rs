@@ -1,4 +1,4 @@
-use crate::{configs, io::SupportingFileExts, network::RoutePair};
+use crate::{configs, helpers::err, io::SupportingFileExts, network::RoutePair};
 use log::info;
 
 mod routes;
@@ -6,7 +6,7 @@ mod routes;
 pub struct Parser;
 
 impl Parser {
-    pub fn parse(cfg: &configs::routing::Config) -> Result<Vec<(RoutePair<i64>, usize)>, String> {
+    pub fn parse(cfg: &configs::routing::Config) -> err::Result<Vec<(RoutePair<i64>, usize)>> {
         let route_pairs_file = cfg
             .route_pairs_file
             .as_ref()
@@ -14,7 +14,7 @@ impl Parser {
 
         match Parser::find_supported_ext(route_pairs_file) {
             Ok(_) => routes::Parser::new().parse(cfg),
-            Err(msg) => Err(format!("Wrong parser-routes-file: {}", msg)),
+            Err(msg) => Err(format!("Wrong parser-routes-file: {}", msg).into()),
         }
     }
 }
@@ -26,7 +26,7 @@ impl SupportingFileExts for Parser {
 }
 
 trait Parsing {
-    fn preprocess(&mut self, cfg: &configs::routing::Config) -> Result<(), String> {
+    fn preprocess(&mut self, cfg: &configs::routing::Config) -> err::Feedback {
         let route_pairs_file = cfg
             .route_pairs_file
             .as_ref()
@@ -34,7 +34,7 @@ trait Parsing {
 
         match Parser::find_supported_ext(route_pairs_file) {
             Ok(_) => (),
-            Err(msg) => return Err(format!("Wrong routes-file in parser: {}", msg)),
+            Err(msg) => return Err(format!("Wrong routes-file in parser: {}", msg).into()),
         }
 
         Ok(())
@@ -48,7 +48,7 @@ trait Parsing {
     fn parse(
         &mut self,
         cfg: &configs::routing::Config,
-    ) -> Result<Vec<(RoutePair<i64>, usize)>, String> {
+    ) -> err::Result<Vec<(RoutePair<i64>, usize)>> {
         info!("START Process given file");
         self.preprocess(cfg)?;
         let routes = self.parse_route_pairs(cfg)?;

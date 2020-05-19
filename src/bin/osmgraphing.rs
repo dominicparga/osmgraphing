@@ -39,7 +39,7 @@ fn run() -> err::Feedback {
     // process user-input
 
     let args = parse_cmdline();
-    match init_logging(&args.max_log_level, vec![]) {
+    match init_logging(&args.max_log_level, &[]) {
         Ok(_) => (),
         Err(msg) => return Err(err::Msg::from(format!("{}", msg))),
     };

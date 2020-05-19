@@ -4,6 +4,7 @@ use crate::{
         parsing::{self, nodes},
     },
     defaults::{self, capacity::DimVec},
+    helpers::err,
     network::{EdgeBuilder, EdgeIdx, NodeBuilder, ProtoEdge, ProtoNode, ProtoShortcut},
 };
 use kissunits::geo;
@@ -34,7 +35,7 @@ impl Parser {
 
 impl super::Parsing for Parser {
     /// Remembers range of edge-lines and node-lines
-    fn preprocess(&mut self, cfg: &parsing::Config) -> Result<(), String> {
+    fn preprocess(&mut self, cfg: &parsing::Config) -> err::Feedback {
         info!("START Start preprocessing fmi-parser.");
         super::check_config(cfg)?;
 
@@ -71,7 +72,8 @@ impl super::Parsing for Parser {
         if counts.len() < 2 {
             return Err(format!(
                 "The provided fmi-map-file doesn't have enough (edge-, node-) counts."
-            ));
+            )
+            .into());
         }
 
         // Current state: Last line-number is first node-line.
@@ -93,7 +95,7 @@ impl super::Parsing for Parser {
         Ok(())
     }
 
-    fn parse_ways(&self, builder: &mut EdgeBuilder) -> Result<(), String> {
+    fn parse_ways(&self, builder: &mut EdgeBuilder) -> err::Feedback {
         info!("START Create edges from input-file.");
         let mut line_number = 0;
         let file = OpenOptions::new()
@@ -121,7 +123,7 @@ impl super::Parsing for Parser {
         Ok(())
     }
 
-    fn parse_nodes(&self, builder: &mut NodeBuilder) -> Result<(), String> {
+    fn parse_nodes(&self, builder: &mut NodeBuilder) -> err::Feedback {
         info!("START Create nodes from input-file.");
         let mut line_number = 0;
         let file = OpenOptions::new()

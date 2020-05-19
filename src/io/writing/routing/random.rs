@@ -1,5 +1,6 @@
 use crate::{
     configs::{self, writing},
+    helpers::err,
     network::{Graph, NodeIdx},
     routing,
 };
@@ -28,42 +29,40 @@ impl Writer {
 }
 
 impl super::Writing for Writer {
-    fn write(&self, graph: &Graph, writing_cfg: &writing::routing::Config) -> Result<(), String> {
-        fn inner_write(
-            myself: &Writer,
-            graph: &Graph,
-            writing_cfg: &writing::routing::Config,
-        ) -> Result<(), Box<dyn std::error::Error>> {
-            // prepare
+    fn write(&self, graph: &Graph, writing_cfg: &writing::routing::Config) -> err::Feedback {
+        // prepare
 
-            let output_file = OpenOptions::new()
-                .write(true)
-                .create_new(true)
-                .open(&writing_cfg.file)?;
-            let mut writer = BufWriter::new(output_file);
+        let output_file = OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(&writing_cfg.file)?;
+        let mut writer = BufWriter::new(output_file);
 
-            let nodes = graph.nodes();
-            let fwd_edges = graph.fwd_edges();
-            let mut dijkstra = routing::Dijkstra::new();
-            let routing_cfg = configs::routing::Config::from_all_metrics(graph.cfg());
+        let nodes = graph.nodes();
+        let fwd_edges = graph.fwd_edges();
 
-            let mut rng = rand_pcg::Pcg32::seed_from_u64(myself.seed);
+        // create routes
+
+        let num_possible_routes = nodes.count() * nodes.count();
+        let max_count = min(num_possible_routes, self.count);
+        let mut found_route_pairs = Vec::with_capacity(max_count);
+
+        let found_route_pairs = {
+            let mut processed_indices = HashSet::new();
+
+            let mut rng = rand_pcg::Pcg32::seed_from_u64(self.seed);
             let die = Uniform::from(0..nodes.count());
 
-            let num_possible_routes = nodes.count() * nodes.count();
-            let max_count = min(num_possible_routes, myself.count);
-            let mut processed_indices = HashSet::new();
-            let mut found_route_pairs = Vec::with_capacity(max_count);
+            let routing_cfg = configs::routing::Config::from_all_metrics(graph.cfg());
+            let mut dijkstra = routing::Dijkstra::new();
 
-            // create routes
-
-            if num_possible_routes <= myself.count {
+            if num_possible_routes <= self.count {
                 warn!(
                     "There are only {} nodes in the graph, resulting in {} possible routes, \
-                     and {} are requested.",
+                    and {} are requested.",
                     nodes.count(),
                     nodes.count() * nodes.count(),
-                    myself.count
+                    self.count
                 );
             }
 
@@ -82,7 +81,7 @@ impl super::Writing for Writer {
                     // if all possible routes are less than the preferred route-count
                     // -> just print all possible routes
                     // else: print random routes
-                    if num_possible_routes <= myself.count {
+                    if num_possible_routes <= self.count {
                         let i = progress_bar.progress().attempts;
                         let src_idx = NodeIdx(i / nodes.count());
                         let dst_idx = NodeIdx(i % nodes.count());
@@ -107,43 +106,37 @@ impl super::Writing for Writer {
                     progress_bar.add(false);
                 }
             }
+
+            found_route_pairs.sort();
             info!("{}", progress_bar);
 
-            // write header
+            found_route_pairs
+        };
 
-            writeln!(writer, "# graph-file: {}", graph.cfg().map_file.display())?;
-            writeln!(writer, "# node-count: {}", nodes.count(),)?;
-            writeln!(writer, "# edge-count: {}", fwd_edges.count(),)?;
-            writeln!(writer, "")?;
+        // write header
 
-            // write route-count
+        writeln!(writer, "# graph-file: {}", graph.cfg().map_file.display())?;
+        writeln!(writer, "# node-count: {}", nodes.count(),)?;
+        writeln!(writer, "# edge-count: {}", fwd_edges.count(),)?;
+        writeln!(writer, "")?;
 
-            let mut found_route_pairs: Vec<_> = found_route_pairs.into_iter().collect();
-            found_route_pairs.sort();
-            writeln!(writer, "# route-count")?;
-            writeln!(writer, "{}", found_route_pairs.len())?;
-            writeln!(writer, "")?;
+        // write route-count
 
-            // write routes
+        writeln!(writer, "# route-count")?;
+        writeln!(writer, "{}", found_route_pairs.len())?;
+        writeln!(writer, "")?;
 
-            writeln!(
-                writer,
-                "# random routes: (src-id dst-id count) as (i64, i64, usize)"
-            )?;
-            writeln!(writer, "# seed: {}", myself.seed)?;
-            for (src_id, dst_id) in found_route_pairs {
-                writeln!(writer, "{} {} {}", src_id, dst_id, 1)?;
-            }
+        // write routes
 
-            Ok(())
+        writeln!(
+            writer,
+            "# random routes: (src-id dst-id count) as (i64, i64, usize)"
+        )?;
+        writeln!(writer, "# seed: {}", self.seed)?;
+        for (src_id, dst_id) in found_route_pairs {
+            writeln!(writer, "{} {} {}", src_id, dst_id, 1)?;
         }
 
-        // return result
-
-        if let Err(e) = inner_write(self, graph, writing_cfg) {
-            Err(format!("{}", e))
-        } else {
-            Ok(())
-        }
+        Ok(())
     }
 }

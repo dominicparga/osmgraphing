@@ -5,7 +5,7 @@ use crate::{
         self,
         capacity::{self, DimVec},
     },
-    helpers::{approx::ApproxEq, MemSize},
+    helpers::{approx::ApproxEq, err, MemSize},
 };
 use kissunits::geo::Coordinate;
 use log::{debug, info};
@@ -53,7 +53,7 @@ impl Graph {
     }
 
     /// The provided edge is interpreted as forward-edge.
-    fn add_metrics(&mut self, proto_edge: &mut ProtoEdgeB) -> Result<(), String> {
+    fn add_metrics(&mut self, proto_edge: &mut ProtoEdgeB) -> err::Feedback {
         let cfg = &self.cfg;
 
         for (metric_idx, raw_value) in proto_edge.metrics.iter_mut().enumerate() {
@@ -278,7 +278,7 @@ impl NodeBuilder {
         }
     }
 
-    pub fn next(self) -> Result<GraphBuilder, String> {
+    pub fn next(self) -> err::Result<GraphBuilder> {
         Ok(GraphBuilder {
             cfg: self.cfg,
             node_ids: self.node_ids,
@@ -319,7 +319,7 @@ impl GraphBuilder {
         }
     }
 
-    pub fn finalize(mut self) -> Result<Graph, String> {
+    pub fn finalize(mut self) -> err::Result<Graph> {
         //----------------------------------------------------------------------------------------//
         // init graph
 
@@ -342,7 +342,8 @@ impl GraphBuilder {
                     return Err(format!(
                         "Proto-node (id: {}) has no coordinates, but belongs to an edge.",
                         self.node_ids[idx]
-                    ));
+                    )
+                    .into());
                 }
             }
             graph.node_ids = self.node_ids;
@@ -776,7 +777,8 @@ impl GraphBuilder {
                                     return Err(format!(
                                         "Node-meta-info {:?} has id {}, which does already exist.",
                                         info, new_id
-                                    ));
+                                    )
+                                    .into());
                                 }
 
                                 // add new category
@@ -789,7 +791,8 @@ impl GraphBuilder {
                                     "Node-meta-info {:?} (id: {}) cannot be created \
                                      and has to be provided.",
                                     info, new_id
-                                ))
+                                )
+                                .into())
                             }
                         }
                     }
@@ -849,7 +852,8 @@ impl GraphBuilder {
                             return Err(format!(
                                 "Id {} should be generated, but does already exist.",
                                 new_id
-                            ));
+                            )
+                            .into());
                         }
                     }
                     generating::edges::Category::Convert { from: _, to: _ } => {
@@ -909,7 +913,8 @@ impl GraphBuilder {
                                 "Haversine creates {:?}, but you may convert \
                                 the resulting value afterwards.",
                                 generating::edges::metrics::UnitInfo::Kilometers
-                            ));
+                            )
+                            .into());
                         }
 
                         // calculate haversine-distance and update graph and config

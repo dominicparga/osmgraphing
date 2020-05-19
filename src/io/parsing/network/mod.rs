@@ -4,6 +4,7 @@ pub mod pbf;
 use crate::{
     configs::parsing::{self, generating},
     defaults::capacity,
+    helpers::err,
     io::{MapFileExt, SupportingFileExts, SupportingMapFileExts},
     network::{EdgeBuilder, Graph, GraphBuilder, NodeBuilder},
 };
@@ -44,14 +45,14 @@ use std::path::Path;
 pub struct Parser;
 
 impl Parser {
-    pub fn parse(cfg: parsing::Config) -> Result<GraphBuilder, String> {
+    pub fn parse(cfg: parsing::Config) -> err::Result<GraphBuilder> {
         match Parser::from_path(&cfg.map_file)? {
             MapFileExt::PBF => pbf::Parser::new().parse(cfg),
             MapFileExt::FMI => fmi::Parser::new().parse(cfg),
         }
     }
 
-    pub fn parse_and_finalize(cfg: parsing::Config) -> Result<Graph, String> {
+    pub fn parse_and_finalize(cfg: parsing::Config) -> err::Result<Graph> {
         match Parser::from_path(&cfg.map_file)? {
             MapFileExt::PBF => pbf::Parser::new().parse_and_finalize(cfg),
             MapFileExt::FMI => fmi::Parser::new().parse_and_finalize(cfg),
@@ -67,11 +68,11 @@ impl SupportingFileExts for Parser {
 }
 
 trait Parsing {
-    fn preprocess(&mut self, cfg: &parsing::Config) -> Result<(), String> {
+    fn preprocess(&mut self, cfg: &parsing::Config) -> err::Feedback {
         check_config(cfg)
     }
 
-    fn parse(&mut self, cfg: parsing::Config) -> Result<GraphBuilder, String> {
+    fn parse(&mut self, cfg: parsing::Config) -> err::Result<GraphBuilder> {
         let mut builder = GraphBuilder::new(cfg);
 
         info!("START Process given file");
@@ -85,11 +86,11 @@ trait Parsing {
         builder
     }
 
-    fn parse_ways(&self, builder: &mut EdgeBuilder) -> Result<(), String>;
+    fn parse_ways(&self, builder: &mut EdgeBuilder) -> err::Feedback;
 
-    fn parse_nodes(&self, builder: &mut NodeBuilder) -> Result<(), String>;
+    fn parse_nodes(&self, builder: &mut NodeBuilder) -> err::Feedback;
 
-    fn parse_and_finalize(&mut self, cfg: parsing::Config) -> Result<Graph, String> {
+    fn parse_and_finalize(&mut self, cfg: parsing::Config) -> err::Result<Graph> {
         let path = Path::new(&cfg.map_file);
         info!("START Parse from given path {}", path.display());
 
@@ -103,7 +104,7 @@ trait Parsing {
 }
 
 /// check if yaml-config is correct
-fn check_config(cfg: &parsing::Config) -> Result<(), String> {
+fn check_config(cfg: &parsing::Config) -> err::Feedback {
     // check nodes
 
     // is NodeId in config?
@@ -113,9 +114,7 @@ fn check_config(cfg: &parsing::Config) -> Result<(), String> {
             false
         }
     }) {
-        return Err(String::from(
-            "The provided config-file doesn't contain a NodeId, but needs to.",
-        ));
+        return Err("The provided config-file doesn't contain a NodeId, but needs to.".into());
     }
 
     // check nodes' coordinates
@@ -128,9 +127,7 @@ fn check_config(cfg: &parsing::Config) -> Result<(), String> {
             false
         }
     }) {
-        return Err(String::from(
-            "The provided config-file doesn't contain a latitude, but needs to.",
-        ));
+        return Err("The provided config-file doesn't contain a latitude, but needs to.".into());
     }
 
     if !cfg.nodes.categories.iter().any(|category| match category {
@@ -141,9 +138,7 @@ fn check_config(cfg: &parsing::Config) -> Result<(), String> {
             false
         }
     }) {
-        return Err(String::from(
-            "The provided config-file doesn't contain a longitude, but needs to.",
-        ));
+        return Err("The provided config-file doesn't contain a longitude, but needs to.".into());
     }
 
     // check edges' metric-memory-capacity
@@ -181,7 +176,8 @@ fn check_config(cfg: &parsing::Config) -> Result<(), String> {
              than the parser has been compiled to ({}).",
             dim,
             capacity::SMALL_VEC_INLINE_SIZE
-        ));
+        )
+        .into());
     } else if dim < capacity::SMALL_VEC_INLINE_SIZE {
         warn!(
             "The provided config-file has less metrics for the graph ({}) \
@@ -215,7 +211,8 @@ fn check_config(cfg: &parsing::Config) -> Result<(), String> {
         return Err(format!(
             "The config-file has {} shortcut-indices, but should have 0 or 2.",
             count
-        ));
+        )
+        .into());
     }
 
     Ok(())

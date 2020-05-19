@@ -16,7 +16,7 @@ fn main() {
 }
 
 fn run() -> err::Feedback {
-    init_logging("INFO", vec!["dijkstra"]).expect("LogLevel 'INFO' does exist.");
+    init_logging("INFO", &["dijkstra"]).expect("LogLevel 'INFO' does exist.");
     info!("Executing example: A*");
 
     let raw_cfg = PathBuf::from("resources/configs/simple-stuttgart.fmi.yaml");

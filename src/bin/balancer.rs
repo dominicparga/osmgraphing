@@ -25,7 +25,7 @@ fn run() -> err::Feedback {
     // process user-input
 
     let args = parse_cmdline();
-    match init_logging(&args.max_log_level, vec!["balancer"]) {
+    match init_logging(&args.max_log_level, &["balancer"]) {
         Ok(_) => (),
         Err(msg) => return Err(format!("{}", msg).into()),
     };
