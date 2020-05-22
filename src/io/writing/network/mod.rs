@@ -16,7 +16,10 @@ pub struct Writer;
 
 impl Writer {
     pub fn write(graph: &Graph, writing_cfg: &writing::network::Config) -> err::Feedback {
-        info!("START Write file from graph");
+        info!(
+            "START Write file {} from graph",
+            writing_cfg.map_file.display()
+        );
         match Writer::from_path(&writing_cfg.map_file)? {
             MapFileExt::FMI => {
                 fmi::Writer::new().write(graph, writing_cfg)?;
