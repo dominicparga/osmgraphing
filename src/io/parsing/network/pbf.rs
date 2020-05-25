@@ -68,7 +68,10 @@ impl super::Parsing for Parser {
         let file = OpenOptions::new()
             .read(true)
             .open(&builder.cfg().map_file)
-            .unwrap();
+            .expect(&format!(
+                "Couldn't open {}",
+                builder.cfg().map_file.display()
+            ));
 
         for mut way in OsmPbfReader::new(file)
             .par_iter()
@@ -165,7 +168,10 @@ impl super::Parsing for Parser {
         info!("START Create nodes from input-file.");
         let cfg = builder.cfg();
 
-        let file = OpenOptions::new().read(true).open(&cfg.map_file).unwrap();
+        let file = OpenOptions::new()
+            .read(true)
+            .open(&cfg.map_file)
+            .expect(&format!("Couldn't open {}", cfg.map_file.display()));
         for node in OsmPbfReader::new(file)
             .par_iter()
             .filter_map(Result::ok)

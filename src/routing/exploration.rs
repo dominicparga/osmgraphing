@@ -241,7 +241,12 @@ impl ConvexHullExplorator {
                 //
                 // remember path
                 found_paths.push(new_p);
-                debug!("found path: {}", found_paths.last().unwrap());
+                debug!(
+                    "found path: {}",
+                    found_paths
+                        .last()
+                        .expect("Expects at least one found path.")
+                );
                 debug!("found paths: {}", found_paths.len());
 
                 // Add new facets by replacing every cost with the new path's cost.

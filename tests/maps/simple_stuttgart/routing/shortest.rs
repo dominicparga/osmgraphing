@@ -130,7 +130,7 @@ fn expected_paths(
                         .ids
                         .iter()
                         .position(|id| id == &SimpleId::from(METRIC_ID))
-                        .unwrap()
+                        .expect("Expect simple-stuttgart's distance-id to be correct.")
                 )],
                 path_info,
             )

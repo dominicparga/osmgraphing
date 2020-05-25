@@ -44,7 +44,10 @@ impl super::Parsing for Parser {
         let mut is_taking_counts = false;
         // counts are only metric-count, node-count, edge-count (in this order)
         let mut counts = vec![];
-        let file = OpenOptions::new().read(true).open(&cfg.map_file).unwrap();
+        let file = OpenOptions::new()
+            .read(true)
+            .open(&cfg.map_file)
+            .expect(&format!("Couldn't open {}", cfg.map_file.display()));
         for line in BufReader::new(file)
             .lines()
             .map(Result::unwrap)
@@ -78,8 +81,8 @@ impl super::Parsing for Parser {
 
         // Current state: Last line-number is first node-line.
         // Further, the last two counts are the node- and edge-counts.
-        let edge_count = counts.pop().unwrap();
-        let node_count = counts.pop().unwrap();
+        let edge_count = counts.pop().expect("Expect counts.len() >= 2.");
+        let node_count = counts.pop().expect("Expect counts.len() >= 2.");
 
         // nodes
         let start = line_number;
@@ -101,7 +104,10 @@ impl super::Parsing for Parser {
         let file = OpenOptions::new()
             .read(true)
             .open(&builder.cfg().map_file)
-            .unwrap();
+            .expect(&format!(
+                "Couldn't open {}",
+                builder.cfg().map_file.display()
+            ));
         for line in BufReader::new(file)
             .lines()
             .map(Result::unwrap)
@@ -129,7 +135,10 @@ impl super::Parsing for Parser {
         let file = OpenOptions::new()
             .read(true)
             .open(&builder.cfg().map_file)
-            .unwrap();
+            .expect(&format!(
+                "Couldn't open {}",
+                builder.cfg().map_file.display()
+            ));
         for line in BufReader::new(file)
             .lines()
             .map(Result::unwrap)
@@ -268,10 +277,10 @@ impl ProtoShortcut {
         );
 
         let sc_edges = {
-            if sc_edge_0.is_none() && sc_edge_1.is_none() {
-                None
+            if let (Some(sc_edge_0), Some(sc_edge_1)) = (sc_edge_0, sc_edge_1) {
+                Some([EdgeIdx(sc_edge_0), EdgeIdx(sc_edge_1)])
             } else {
-                Some([EdgeIdx(sc_edge_0.unwrap()), EdgeIdx(sc_edge_1.unwrap())])
+                None
             }
         };
 

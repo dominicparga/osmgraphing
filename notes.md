@@ -26,7 +26,6 @@ Maybe, it is concept for later documentation, or just keep-up-the-good-work (`ku
     - Get population from osm-data
       - Take nodes/ways and distribute according to max-speed (low speed <-> high population-density).
       - Take city-level and let routes go from lower to higher levels.
-- Replace all `unwrap()` at least by `expect(callee)`.
 - Reduce visibility of modules and control public-access, e.g. of module `defaults`, which is only needed in tests.
 
 

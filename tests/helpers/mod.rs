@@ -119,7 +119,8 @@ pub fn compare_dijkstras(ch_fmi_config_file: &str, metric_id: &str) {
     // parse graph
 
     let parsing_cfg = configs::parsing::Config::from_yaml(ch_fmi_config_file);
-    let graph = io::network::Parser::parse_and_finalize(parsing_cfg).unwrap();
+    let graph = io::network::Parser::parse_and_finalize(parsing_cfg)
+        .expect("Expect parser to be successful when comparing Dijkstras.");
 
     // get route-pairs from writing-section
     let routes_cfg = configs::writing::routing::Config::from_yaml(ch_fmi_config_file);

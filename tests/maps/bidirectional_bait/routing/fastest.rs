@@ -128,7 +128,7 @@ fn expected_paths(
                         .ids
                         .iter()
                         .position(|id| id == &SimpleId::from(METRIC_ID))
-                        .unwrap()
+                        .expect("Expect bidrectional-bait's duration-id to be correct.")
                 )],
                 path_info,
             )

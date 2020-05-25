@@ -57,9 +57,13 @@ impl From<proto::Config> for Config {
 
 impl Config {
     pub fn try_from_yaml<P: AsRef<Path> + ?Sized>(path: &P) -> Result<Config, String> {
+        let path = path.as_ref();
         let file = {
             Config::find_supported_ext(path)?;
-            OpenOptions::new().read(true).open(path).unwrap()
+            OpenOptions::new()
+                .read(true)
+                .open(path)
+                .expect(&format!("Couldn't open {}", path.display()))
         };
 
         let cfg: Config = match serde_yaml::from_reader(file) {

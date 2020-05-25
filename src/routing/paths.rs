@@ -77,7 +77,9 @@ impl Path {
                     }),
             );
         }
-        self.costs.as_ref().unwrap()
+        self.costs
+            .as_ref()
+            .expect("Costs have just been calculated.")
     }
 
     /// Flattens shortcuts, out-of-place, and calculates the flattened path's cost.
@@ -107,7 +109,10 @@ impl Path {
             // -> push to flattened path
             flattened_path.edges.push(edge_idx);
             helpers::add_assign(
-                flattened_path.costs.as_mut().unwrap(),
+                flattened_path
+                    .costs
+                    .as_mut()
+                    .expect("Flattened path should have calculated costs."),
                 &graph.metrics()[edge_idx],
             );
         }

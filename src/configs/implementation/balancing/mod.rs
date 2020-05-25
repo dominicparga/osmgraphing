@@ -67,9 +67,13 @@ impl Config {
         path: &P,
         parsing_cfg: &configs::parsing::Config,
     ) -> Result<Config, String> {
+        let path = path.as_ref();
         let file = {
             Config::find_supported_ext(path)?;
-            OpenOptions::new().read(true).open(path).unwrap()
+            OpenOptions::new()
+                .read(true)
+                .open(path)
+                .expect(&format!("Couldn't open {}", path.display()))
         };
 
         let proto_cfg = match serde_yaml::from_reader(file) {
