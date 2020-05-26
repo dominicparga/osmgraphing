@@ -1,4 +1,5 @@
 use crate::helpers::{defaults, test_dijkstra, TestNode};
+use defaults::paths::resources::simple_stuttgart as resources;
 use kissunits::{distance::Kilometers, geo::Coordinate};
 use osmgraphing::{
     configs::{self, SimpleId},
@@ -8,17 +9,26 @@ use osmgraphing::{
 use smallvec::smallvec;
 
 const METRIC_ID: &str = defaults::DISTANCE_ID;
-const CONFIG: &str = defaults::paths::resources::configs::SIMPLE_STUTTGART_FMI;
 const IS_CH_DIJKSTRA: bool = true;
 
 #[test]
 fn chdijkstra_on_map() {
-    test_dijkstra(CONFIG, METRIC_ID, IS_CH_DIJKSTRA, Box::new(expected_paths))
+    test_dijkstra(
+        resources::FMI_YAML,
+        METRIC_ID,
+        IS_CH_DIJKSTRA,
+        Box::new(expected_paths),
+    )
 }
 
 #[test]
 fn dijkstra_on_map() {
-    test_dijkstra(CONFIG, METRIC_ID, !IS_CH_DIJKSTRA, Box::new(expected_paths))
+    test_dijkstra(
+        resources::FMI_YAML,
+        METRIC_ID,
+        !IS_CH_DIJKSTRA,
+        Box::new(expected_paths),
+    )
 }
 
 fn expected_paths(

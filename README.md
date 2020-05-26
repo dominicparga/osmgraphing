@@ -49,14 +49,14 @@ Rust has a build-tool called `cargo`, which can be used to run everything except
 # Build the binary for parsing maps and do routing
 cargo build --release
 # Parse isle-of-man
-./target/release/osmgraphing --config resources/configs/isle-of-man_2020-03-14.pbf.yaml
+./target/release/osmgraphing --config resources/isle-of-man_2020-03-14/pbf.yaml
 # Further execution-info
 ./target/release/osmgraphing --help
 ```
 
 Above binary will throw an error, since you probably haven't downloaded the map-file mentioned in the config.
 You can download `pbf`-files from [geofabrik][geofabrik].
-When editing the config, take [`resources/configs/blueprint.yaml`][github/self/blob/blueprint.yaml] as guide.
+When editing the config, take [`resources/blueprint.yaml`][github/self/blob/blueprint.yaml] as guide.
 
 
 ### Downloading and generating maps <a name="downloading-and-generating"></a>
@@ -72,7 +72,7 @@ A tool for creating `fmi`-map-files, containing graphs contracted via contractio
 
 ### Editing the config <a name="editing-the-config"></a>
 
-Every option of a config is described in [`resources/configs/blueprint.yaml`][github/self/blob/blueprint.yaml].
+Every option of a config is described in [`resources/blueprint.yaml`][github/self/blob/blueprint.yaml].
 The binary `osmgraphing` (binaries are in `target/release` after release-building) uses the config for different use-cases.
 
 ### Inlined metrics <a name="inlined-metrics"></a>
@@ -123,7 +123,7 @@ Besides that, the `multi-ch-constructor` uses node-indices as ids, leading to er
 # Create a fmi-file from the pbf-file
 
 parsing:
-  map-file: 'resources/maps/isle-of-man_2020-03-14.osm.pbf'
+  map-file: 'resources/isle_of_man_2020-03-14/graph.osm.pbf'
   vehicles:
     category: 'Car'
     are-drivers-picky: false
@@ -152,7 +152,7 @@ parsing:
 writing:
   graph:
     # below, this is called path/to/fmi/graph
-    map-file: 'resources/maps/isle-of-man_2020-03-14.fmi'
+    map-file: 'resources/isle_of_man_2020-03-14/graph.fmi'
     nodes:
     - id: 'node-idx'
     - id: 'node-id'
@@ -226,7 +226,7 @@ He has implemented the first (and running) approach of the `A*`-algorithm.
 [github/lesstat/multi-ch-constructor/change-dim]: https://github.com/Lesstat/multi-ch-constructor/blob/bec548c1a1ebeae7ac19d3250d5473199336d6fe/src/multi_lib/graph.hpp#L49
 [github/self/actions]: https://github.com/dominicparga/osmgraphing/actions
 [github/self/actions/badge]: https://img.shields.io/github/workflow/status/dominicparga/osmgraphing/Rust?label=nightly-build&style=for-the-badge
-[github/self/blob/blueprint.yaml]: https://github.com/dominicparga/osmgraphing/blob/nightly/resources/configs/blueprint.yaml
+[github/self/blob/blueprint.yaml]: https://github.com/dominicparga/osmgraphing/blob/nightly/resources/blueprint.yaml
 [github/self/blob/changelog]: https://github.com/dominicparga/osmgraphing/blob/nightly/CHANGELOG.md
 [github/self/blob/changelog/badge]: https://img.shields.io/badge/CHANGELOG-nightly-blueviolet?style=for-the-badge
 [github/self/blob/defaults.rs]: https://github.com/dominicparga/osmgraphing/blob/nightly/src/defaults.rs

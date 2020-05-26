@@ -1,0 +1,38 @@
+# node-count
+8
+
+# edge-count
+19
+
+# nodes:
+# [NodeId, Latitude, Longitude]
+      0        0         0       # a
+      1        0         0       # b
+      2        0         0       # c
+      3        0         0       # d
+      4        0         0       # e
+      5        0         0       # f
+      6        0         0       # g
+      7        0         0       # h
+
+# edges:
+# [SrcId, DstId, Meters, KilometersPerHour]
+     1      0       1            30          # b -> a
+     1      0       1            30          # b -> a # duplicate
+     1      0       1            30          # b -> a # duplicate
+     1      2       1            30          # b -> c
+     2      0       1            30          # c -> a
+     2      1       1            30          # c -> b
+     3      1       1            30          # d -> b
+     3      4       2            30          # d -> e
+     3      7       1            30          # d -> h
+     4      3       2            30          # e -> d
+     4      5       1            30          # e -> f
+     5      4       1            30          # f -> e
+     5      4       1            30          # f -> e # duplicate
+     5      7       1            30          # f -> h
+     6      4       1            30          # g -> e
+     6      5       1            30          # g -> f
+     7      2       4            30          # h -> c
+     7      3       1            30          # h -> d
+     7      5       1            30          # h -> f

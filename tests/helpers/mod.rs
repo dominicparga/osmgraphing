@@ -17,19 +17,23 @@ pub mod defaults {
 
     pub mod paths {
         pub mod resources {
-            pub mod configs {
-                pub const SIMPLE_STUTTGART_FMI: &str =
-                    "resources/configs/simple-stuttgart.fmi.yaml";
-                pub const SMALL_FMI: &str = "resources/configs/small.fmi.yaml";
-                pub const SMALL_CH_FMI: &str = "resources/configs/small.ch.fmi.yaml";
-                pub const BIDIRECTIONAL_BAIT_FMI: &str =
-                    "resources/configs/bidirectional-bait.fmi.yaml";
-                pub const ISLE_OF_MAN_FMI: &str =
-                    "resources/configs/isle-of-man_2020-03-14.fmi.yaml";
-                pub const ISLE_OF_MAN_CH_FMI: &str =
-                    "resources/configs/isle-of-man_2020-03-14.ch.fmi.yaml";
-                pub const ISLE_OF_MAN_PBF: &str =
-                    "resources/configs/isle-of-man_2020-03-14.pbf.yaml";
+            pub mod bidirectional_bait {
+                pub const FMI_YAML: &str = "resources/bidirectional_bait/fmi.yaml";
+            }
+
+            pub mod isle_of_man {
+                pub const FMI_YAML: &str = "resources/isle_of_man_2020-03-14/fmi.yaml";
+                pub const CH_FMI_YAML: &str = "resources/isle_of_man_2020-03-14/ch.fmi.yaml";
+                pub const OSM_PBF_YAML: &str = "resources/isle_of_man_2020-03-14/osm.pbf.yaml";
+            }
+
+            pub mod simple_stuttgart {
+                pub const FMI_YAML: &str = "resources/simple_stuttgart/fmi.yaml";
+            }
+
+            pub mod small {
+                pub const FMI_YAML: &str = "resources/small/fmi.yaml";
+                pub const CH_FMI_YAML: &str = "resources/small/ch.fmi.yaml";
             }
         }
     }

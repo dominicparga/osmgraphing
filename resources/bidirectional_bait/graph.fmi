@@ -1,0 +1,31 @@
+# node-count
+5
+
+# edge-count
+10
+
+# nodes:
+# [NodeId, Latitude, Longitude]
+      0        0         0       # ll (left, src)
+      1        0         0       # bb (bottom)
+      2        0         0       # rr (right, dst)
+      3        0         0       # tr (top-right)
+      4        0         0       # tl (top-left)
+
+# edges:
+# Consider a path from left to right.
+# It is important to have the smaller hop-distance at the bottom-path,
+# but the smaller weight-distance at the top-path.
+#
+# [SrcId, DstId, Meters, KilometersPerHour]
+     0      1       5            30          # ll -> bb
+     1      2       5            30          # bb -> rr
+     2      3       3            30          # rr -> tr
+     3      4       3            30          # tr -> tl
+     4      0       3            30          # tl -> ll
+
+     0      4       3            30          # ll -> tl
+     4      3       3            30          # tl -> tr
+     3      2       3            30          # tr -> rr
+     2      1       5            30          # rr -> bb
+     1      0       5            30          # bb -> ll

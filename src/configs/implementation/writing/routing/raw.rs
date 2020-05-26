@@ -22,7 +22,8 @@ pub struct Content {
 }
 
 #[derive(Clone, Debug, Deserialize)]
-#[serde(rename_all = "lowercase")]
+#[serde(rename_all = "snake_case")]
 pub enum Category {
-    Random { seed: u64, count: usize },
+    #[serde(rename = "random_or_all")]
+    RandomOrAll { seed: u64, max_count: usize },
 }

@@ -1,4 +1,5 @@
 use crate::helpers::{assert_graph, defaults, parse, TestEdge, TestNode};
+use defaults::paths::resources::bidirectional_bait as resources;
 use kissunits::{
     distance::{Kilometers, Meters},
     geo::Coordinate,
@@ -7,14 +8,12 @@ use kissunits::{
 };
 use osmgraphing::{configs, network::EdgeIdx};
 
-const FMI_CONFIG: &str = defaults::paths::resources::configs::BIDIRECTIONAL_BAIT_FMI;
-
 #[test]
 fn fmi_yaml() {
-    let parsing_cfg = configs::parsing::Config::from_yaml(FMI_CONFIG);
-    assert!(configs::writing::network::Config::try_from_yaml(FMI_CONFIG).is_err());
-    assert!(configs::writing::routing::Config::try_from_yaml(FMI_CONFIG).is_ok());
-    assert!(configs::routing::Config::try_from_yaml(FMI_CONFIG, &parsing_cfg).is_err());
+    let parsing_cfg = configs::parsing::Config::from_yaml(resources::FMI_YAML);
+    assert!(configs::writing::network::Config::try_from_yaml(resources::FMI_YAML).is_err());
+    assert!(configs::writing::routing::Config::try_from_yaml(resources::FMI_YAML).is_ok());
+    assert!(configs::routing::Config::try_from_yaml(resources::FMI_YAML, &parsing_cfg).is_err());
 }
 
 #[test]
@@ -25,7 +24,7 @@ fn yaml_str() {
 
 #[test]
 fn fmi_graph() {
-    let parsing_cfg = configs::parsing::Config::from_yaml(FMI_CONFIG);
+    let parsing_cfg = configs::parsing::Config::from_yaml(resources::FMI_YAML);
     let graph = parse(parsing_cfg);
 
     //--------------------------------------------------------------------------------------------//

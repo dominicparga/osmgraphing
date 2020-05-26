@@ -8,7 +8,7 @@ fn main() {
 
     // get config by provided map-file
     let parsing_cfg = {
-        let raw_cfg = PathBuf::from("resources/configs/isle-of-man_2020-03-14.pbf.yaml");
+        let raw_cfg = PathBuf::from("resources/isle_of_man_2020-03-14/osm.pbf.yaml");
         match configs::parsing::Config::try_from_yaml(&raw_cfg) {
             Ok(parsing_cfg) => parsing_cfg,
             Err(msg) => {

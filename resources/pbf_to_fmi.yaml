@@ -1,0 +1,42 @@
+parsing:
+  map-file: 'resources/isle_of_man_2020-03-14/graph.osm.pbf'
+  vehicles:
+    category: 'Car'
+    are-drivers-picky: false
+  nodes:
+  - meta: { info: 'NodeId', id: 'node-id' }
+  - metric: { unit: 'Latitude', id: 'latitude' }
+  - metric: { unit: 'Longitude', id: 'longitude' }
+  edges:
+  - meta: { info: 'SrcId', id: 'src-id' }
+  - meta: { info: 'DstId', id: 'dst-id' }
+  - metric: { unit: 'KilometersPerHour', id: 'kmph' }
+  generating:
+    nodes:
+    - meta: { info: 'NodeIdx', id: 'node-idx' }
+    edges:
+    - meta: { info: 'SrcIdx', id: 'src-idx' }
+    - meta: { info: 'DstIdx', id: 'dst-idx' }
+    - haversine: { unit: 'Kilometers', id: 'kilometers' }
+    - calc:
+        result: { unit: 'Minutes', id: 'minutes' }
+        a: { unit: 'Kilometers', id: 'kilometers' }
+        b: { unit: 'KilometersPerHour', id: 'kmph' }
+writing:
+  graph:
+    map-file: 'resources/isle_of_man_2020-03-14/graph.fmi'
+    nodes:
+    - id: 'node-idx'
+    - id: 'node-id'
+    - id: 'latitude'
+    - id: 'longitude'
+    - ignored # height
+    - ignored # level for contraction-hierarchies
+    edges:
+    - id: 'src-idx'
+    - id: 'dst-idx'
+    - id: 'kilometers'
+    # - id: 'kmph' # nope because addition (in ch) makes no sense
+    - id: 'minutes'
+    - ignored # sc-idx-1
+    - ignored # sc-idx-1

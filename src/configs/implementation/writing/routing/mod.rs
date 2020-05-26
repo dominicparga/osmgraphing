@@ -62,13 +62,15 @@ impl Config {
 
 #[derive(Debug)]
 pub enum Category {
-    Random { seed: u64, count: usize },
+    RandomOrAll { seed: u64, max_count: usize },
 }
 
 impl From<raw::Category> for Category {
     fn from(raw_category: raw::Category) -> Category {
         match raw_category {
-            raw::Category::Random { seed, count } => Category::Random { seed, count },
+            raw::Category::RandomOrAll { seed, max_count } => {
+                Category::RandomOrAll { seed, max_count }
+            }
         }
     }
 }

@@ -1,7 +1,7 @@
 use crate::{configs::writing, helpers::err, io::SupportingFileExts, network::Graph};
 use log::info;
 
-mod random;
+mod random_or_all;
 
 trait Writing {
     fn write(&self, graph: &Graph, writing_cfg: &writing::routing::Config) -> err::Feedback;
@@ -16,8 +16,8 @@ impl Writer {
             writing_cfg.file.display()
         );
         let result = match writing_cfg.category {
-            writing::routing::Category::Random { seed, count } => {
-                random::Writer::new(seed, count).write(graph, writing_cfg)
+            writing::routing::Category::RandomOrAll { seed, max_count } => {
+                random_or_all::Writer::new(seed, max_count).write(graph, writing_cfg)
             }
         };
         info!("FINISHED");

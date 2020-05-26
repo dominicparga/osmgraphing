@@ -1,4 +1,5 @@
 use crate::helpers::{defaults, test_dijkstra, TestNode};
+use defaults::paths::resources::bidirectional_bait as resources;
 use kissunits::{
     geo::Coordinate,
     time::{Minutes, Seconds},
@@ -11,13 +12,12 @@ use osmgraphing::{
 use smallvec::smallvec;
 
 const METRIC_ID: &str = defaults::DURATION_ID;
-const FMI_CONFIG: &str = defaults::paths::resources::configs::BIDIRECTIONAL_BAIT_FMI;
 const IS_CH_DIJKSTRA: bool = true;
 
 #[test]
 fn chdijkstra_on_map() {
     test_dijkstra(
-        FMI_CONFIG,
+        resources::FMI_YAML,
         METRIC_ID,
         IS_CH_DIJKSTRA,
         Box::new(expected_paths),
@@ -27,7 +27,7 @@ fn chdijkstra_on_map() {
 #[test]
 fn dijkstra_on_map() {
     test_dijkstra(
-        FMI_CONFIG,
+        resources::FMI_YAML,
         METRIC_ID,
         !IS_CH_DIJKSTRA,
         Box::new(expected_paths),

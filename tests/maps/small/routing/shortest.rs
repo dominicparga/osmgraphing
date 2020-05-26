@@ -1,4 +1,5 @@
 use crate::helpers::{compare_dijkstras, defaults, test_dijkstra, TestNode};
+use defaults::paths::resources::small as resources;
 use kissunits::{distance::Kilometers, geo::Coordinate};
 use osmgraphing::{
     configs::{self, SimpleId},
@@ -8,19 +9,17 @@ use osmgraphing::{
 use smallvec::smallvec;
 
 const METRIC_ID: &str = defaults::DISTANCE_ID;
-const CONFIG: &str = defaults::paths::resources::configs::SMALL_FMI;
-const CH_CONFIG: &str = defaults::paths::resources::configs::SMALL_CH_FMI;
 const IS_CH_DIJKSTRA: bool = true;
 
 #[test]
 fn compare_dijkstras_on_ch_fmi_map() {
-    compare_dijkstras(CH_CONFIG, METRIC_ID);
+    compare_dijkstras(resources::CH_FMI_YAML, METRIC_ID);
 }
 
 #[test]
 fn chdijkstra_on_chmap() {
     test_dijkstra(
-        CH_CONFIG,
+        resources::CH_FMI_YAML,
         METRIC_ID,
         IS_CH_DIJKSTRA,
         Box::new(expected_paths),
@@ -30,7 +29,7 @@ fn chdijkstra_on_chmap() {
 #[test]
 fn dijkstra_on_chmap() {
     test_dijkstra(
-        CH_CONFIG,
+        resources::CH_FMI_YAML,
         METRIC_ID,
         !IS_CH_DIJKSTRA,
         Box::new(expected_paths),
@@ -39,12 +38,22 @@ fn dijkstra_on_chmap() {
 
 #[test]
 fn chdijkstra_on_map() {
-    test_dijkstra(CONFIG, METRIC_ID, IS_CH_DIJKSTRA, Box::new(expected_paths))
+    test_dijkstra(
+        resources::FMI_YAML,
+        METRIC_ID,
+        IS_CH_DIJKSTRA,
+        Box::new(expected_paths),
+    )
 }
 
 #[test]
 fn dijkstra_on_map() {
-    test_dijkstra(CONFIG, METRIC_ID, !IS_CH_DIJKSTRA, Box::new(expected_paths))
+    test_dijkstra(
+        resources::FMI_YAML,
+        METRIC_ID,
+        !IS_CH_DIJKSTRA,
+        Box::new(expected_paths),
+    )
 }
 
 fn expected_paths(

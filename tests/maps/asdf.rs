@@ -6,7 +6,7 @@ pub mod parsing {
     #[test]
     fn wrong_extension() {
         let mut parsing_cfg =
-            configs::parsing::Config::from_yaml(defaults::paths::resources::configs::SMALL_FMI);
+            configs::parsing::Config::from_yaml(defaults::paths::resources::small::FMI_YAML);
         parsing_cfg.map_file = PathBuf::from("foo.asdf");
         assert!(
             Parser::parse(parsing_cfg).is_err(),
@@ -17,7 +17,7 @@ pub mod parsing {
     #[test]
     fn routing_config_from_str() {
         let parsing_cfg =
-            configs::parsing::Config::from_yaml(defaults::paths::resources::configs::SMALL_FMI);
+            configs::parsing::Config::from_yaml(defaults::paths::resources::small::FMI_YAML);
         let yaml_str = &format!(
             "routing: {{ route-pairs-file: 'asdf', metrics: [{{ id: '{}' }}, {{ id: '{}' }}] }}",
             defaults::SPEED_ID,

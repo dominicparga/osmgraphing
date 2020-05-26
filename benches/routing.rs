@@ -12,7 +12,7 @@ fn criterion_benchmark(c: &mut Criterion) {
 
     // parsing
     let parsing_cfg =
-        configs::parsing::Config::from_yaml("resources/configs/isle-of-man_2020-03-14.pbf.yaml");
+        configs::parsing::Config::from_yaml("resources/isle_of_man_2020-03-14/osm.pbf.yaml");
     let routing_strs = vec![
         "routing: { metrics: [{ id: 'kilometers' }] }",
         "routing: { metrics: [{ id: 'kilometers' }, { id: 'minutes' }] }",

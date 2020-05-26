@@ -1,0 +1,28 @@
+parsing:
+  map-file: 'resources/isle_of_man_2020-03-14/graph.fmi'
+  vehicles:
+    category: 'Car'
+    are-drivers-picky: false
+  nodes:
+  - meta: { info: 'NodeId', id: 'node-id' }
+  - ignored # osm-id
+  - metric: { unit: 'Latitude', id: 'latitude' }
+  - metric: { unit: 'Longitude', id: 'longitude' }
+  edges:
+  - meta: { info: 'SrcId', id: 'src-id' }
+  - meta: { info: 'DstId', id: 'dst-id' }
+  - metric: { unit: 'Meters', id: 'meters' }
+  - metric: { unit: 'Seconds', id: 'seconds' }
+  generating:
+    nodes: []
+    edges:
+    - convert:
+        from: { unit: 'Meters', id: 'meters' }
+        to: { unit: 'Kilometers', id: 'kilometers' }
+    - convert:
+        from: { unit: 'Seconds', id: 'seconds' }
+        to: { unit: 'Minutes', id: 'minutes' }
+writing:
+  route-pairs:
+    file: 'resources/isle_of_man_2020-03-14/100.fmi.route-pairs'
+    random_or_all: { seed: 42, max_count: 100 }
