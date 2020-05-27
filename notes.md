@@ -52,12 +52,12 @@ Maybe, it is concept for later documentation, or just keep-up-the-good-work (`ku
   - Create graph of 2 nodes and 8 edges, where 3 edges are dominated by the others.
   - At least `2d + 1` edges are needed.
   - Test restriction(?)
+- Test created route-files.
 
 
 ### Extend configs
 
 - Warn user when parsing `pbf`-map, if unused categories are provided in the config.
-- Don't convert `kilometers` to `meters` to store the graph and convert it back when parsing the graph.
 - Write parser __parsing all configs__ at once.
 
 
