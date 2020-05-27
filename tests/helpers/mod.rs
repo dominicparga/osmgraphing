@@ -184,9 +184,21 @@ pub fn compare_dijkstras(ch_fmi_config_file: &str, metric_id: &str) {
             let cost = flattened_path.costs();
             // not approx because both Dijkstras are running on the same graph
             // -> same best path-cost should be found
-            assert!(ch_cost == cost,
-                "CH-Dijkstra's path's cost ({:?}) is different ({:?}) from Dijkstra's path's cost ({:?}). --------------------- CH-Dijkstra's path {} --------------------- Dijkstra's path {}",
-                ch_cost, helpers::sub(&ch_cost, &cost), cost,
+            // but approx is needed, because rounding-errors(?)
+            assert!(
+                flattened_ch_path.src_idx() == flattened_path.src_idx()
+                    && flattened_ch_path.dst_idx() == flattened_path.dst_idx()
+                    && ch_cost[*metric_idx].approx_eq(&cost[*metric_idx]),
+                "CH-Dijkstra's path's cost ({:?}) is different ({:?}) \
+                 from Dijkstra's path's cost ({:?}). \
+                 Metric-units are {:?} with alphas {:?}. \
+                 --------------------- CH-Dijkstra's path {} \
+                 --------------------- Dijkstra's path {}",
+                ch_cost,
+                helpers::sub(&ch_cost, &cost),
+                cost,
+                graph.cfg().edges.metrics.units,
+                routing_cfg.alphas,
                 flattened_ch_path,
                 flattened_path
             );
