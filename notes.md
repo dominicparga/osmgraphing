@@ -27,6 +27,7 @@ Maybe, it is concept for later documentation, or just keep-up-the-good-work (`ku
       - Take nodes/ways and distribute according to max-speed (low speed <-> high population-density).
       - Take city-level and let routes go from lower to higher levels.
 - Reduce visibility of modules and control public-access, e.g. of module `defaults`, which is only needed in tests.
+- Remove `panic(...)`
 
 
 ### Build-script
@@ -60,6 +61,7 @@ Maybe, it is concept for later documentation, or just keep-up-the-good-work (`ku
 - Warn user when parsing `pbf`-map, if unused categories are provided in the config.
 - Write parser __parsing all configs__ at once.
 - Cleanup `kebab-cases` and `snake_cases` etc.
+- Check if writing-cfg contains shortcut-indices when `is-ch-graph == false`.
 
 
 ### Extend parsing
