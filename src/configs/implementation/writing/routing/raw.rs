@@ -25,5 +25,5 @@ pub struct Content {
 #[serde(rename_all = "snake_case")]
 pub enum Category {
     #[serde(rename = "random_or_all")]
-    RandomOrAll { seed: u64, max_count: usize },
+    RandomOrAll { seed: Option<u64>, max_count: usize },
 }

@@ -25,4 +25,4 @@ parsing:
 writing:
   route-pairs:
     file: 'resources/bidirectional_bait/all_25.route-pairs'
-    random_or_all: { seed: 42, max_count: 100 }
+    random_or_all: { max_count: 100 }

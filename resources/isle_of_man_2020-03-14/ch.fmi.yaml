@@ -21,4 +21,4 @@ parsing:
 writing:
   route-pairs:
     file: 'resources/isle_of_man_2020-03-14/100.ch.fmi.route-pairs'
-    random_or_all: { seed: 42, max_count: 100 }
+    random_or_all: { max_count: 100 }

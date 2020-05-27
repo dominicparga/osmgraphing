@@ -110,7 +110,10 @@ writing:
     #
     # This mode generates random routes, if the graph has more than max_count possible routes (`node_count * node_count > max_count`).
     # If the number of possible routes is less, simply all existing routes of the graph are printed.
-    random_or_all: { seed: 42, max_count: 100 }
+    random_or_all:
+      # optional
+      seed: 42
+      max_count: 100
 # optional
 # The metrics, which should be considered in routing, are listed here.
 # The given alphas are used as scale.

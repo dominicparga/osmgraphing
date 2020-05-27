@@ -25,4 +25,4 @@ parsing:
 writing:
   route-pairs:
     file: 'resources/small/all_43.fmi.route-pairs'
-    random_or_all: { seed: 42, max_count: 100 }
+    random_or_all: { max_count: 100 }

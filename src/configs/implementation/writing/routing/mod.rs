@@ -1,4 +1,7 @@
-use crate::io::{routing::Writer, SupportingFileExts};
+use crate::{
+    defaults,
+    io::{routing::Writer, SupportingFileExts},
+};
 use serde::Deserialize;
 use std::{
     fs::OpenOptions,
@@ -68,9 +71,10 @@ pub enum Category {
 impl From<raw::Category> for Category {
     fn from(raw_category: raw::Category) -> Category {
         match raw_category {
-            raw::Category::RandomOrAll { seed, max_count } => {
-                Category::RandomOrAll { seed, max_count }
-            }
+            raw::Category::RandomOrAll { seed, max_count } => Category::RandomOrAll {
+                seed: seed.unwrap_or(defaults::SEED),
+                max_count,
+            },
         }
     }
 }

@@ -1,3 +1,5 @@
+pub const SEED: u64 = 42;
+
 pub mod accuracy {
     /// value is good because it refers to
     /// - 1 mm for km

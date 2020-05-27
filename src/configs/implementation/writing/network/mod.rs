@@ -12,6 +12,7 @@ pub mod raw;
 #[serde(from = "raw::Config")]
 pub struct Config {
     pub map_file: PathBuf,
+    pub is_ch_graph: bool,
     pub nodes: nodes::Config,
     pub edges: edges::Config,
 }
@@ -28,6 +29,7 @@ impl From<raw::Config> for Config {
 
         Config {
             map_file: raw_cfg.map_file,
+            is_ch_graph: raw_cfg.is_ch_graph.unwrap_or(false),
             nodes: nodes::Config::from(raw_cfg.nodes),
             edges: edges::Config::from(raw_cfg.edges),
         }

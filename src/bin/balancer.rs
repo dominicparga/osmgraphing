@@ -1,6 +1,6 @@
 use log::{debug, error, info};
 use osmgraphing::{
-    configs,
+    configs, defaults,
     helpers::{err, init_logging},
     io,
     network::{EdgeIdx, RoutePair},
@@ -112,7 +112,7 @@ fn run() -> err::Feedback {
     // collect all metric-info to edit them
 
     let route_pairs = io::routing::Parser::parse(&routing_cfg)?;
-    let mut rng = rand_pcg::Pcg32::seed_from_u64(42); // TODO
+    let mut rng = rand_pcg::Pcg32::seed_from_u64(defaults::SEED);
     for iteration in 0..balancing_cfg.num_iterations {
         // simple init-logging
 
