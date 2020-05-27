@@ -437,6 +437,10 @@ impl<'a> IntoIterator for &'a NodeAccessor<'_> {
 }
 
 impl<'a> NodeAccessor<'a> {
+    pub fn iter(&self) -> NodeIdxIterator {
+        self.into_iter()
+    }
+
     pub fn count(&self) -> usize {
         self.node_ids.len()
     }
@@ -514,6 +518,10 @@ impl<'a> IntoIterator for &'a EdgeAccessor<'_> {
 }
 
 impl<'a> EdgeAccessor<'a> {
+    pub fn iter(&self) -> EdgeIdxIterator {
+        self.into_iter()
+    }
+
     pub fn count(&self) -> usize {
         self.edge_dsts.len()
     }

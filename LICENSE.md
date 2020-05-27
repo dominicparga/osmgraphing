@@ -11,6 +11,14 @@ osmgraphing
 https://github.com/dominicparga/osmgraphing
 Copyright 2019 Dominic Parga Cacheiro
 License Apache-2.0
+
+
+Only needed, if the script is used
+
+balancer-simulation
+https://github.com/dominicparga/osmgraphing/blob/nightly/scripts/balancer-simulation/run.sh
+Copyright 2020 Dominic Parga Cacheiro
+License GPL-3.0-only
 ```
 
 The following description gives an (incomplete) overview about this repository (and resulting binaries), for which the above copyright-notice holds.
@@ -31,6 +39,15 @@ You may obtain a copy of the License at
 
 Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and limitations under the License.
+
+
+## GPL-3.0
+
+Besides that, this repository contains one script `./scripts/balancer-simulation/run.sh`, which uses `multi-ch-constructor` licensed under `GPL-3.0`.
+Thus, this particular script is licensed under the `GPL-3.0` as well.
+You may obtain a copy of the License at
+
+`https://www.gnu.org/licenses/`
 
 
 ## Dependencies
@@ -61,6 +78,12 @@ log
 https://github.com/rust-lang/log
 Copyright (c) 2014 The Rust Project Developers
 License MIT OR Apache-2.0
+```
+
+```text
+multi-ch-constructor
+https://github.com/lesstat/multi-ch-constructor
+License GPL-3.0-only
 ```
 
 ```text

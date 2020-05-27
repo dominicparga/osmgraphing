@@ -30,7 +30,7 @@ fn run() -> err::Feedback {
         Err(msg) => return Err(format!("{}", msg).into()),
     };
 
-    info!("EXECUTE {}", env!("CARGO_PKG_NAME"));
+    info!("EXECUTE balancer");
 
     // parse graph
 
@@ -66,147 +66,182 @@ fn run() -> err::Feedback {
         graph
     };
 
-    // routing-example
+    // execute routing-example and count workload
 
-    let mut routing_cfg =
-        match configs::routing::Config::try_from_yaml(&args.routing_cfg, graph.cfg()) {
-            Ok(cfg) => cfg,
-            Err(msg) => return Err(format!("{}", msg).into()),
-        };
-
-    let balancing_cfg = {
-        // parse config
-
-        let balancing_cfg =
-            match configs::balancing::Config::try_from_yaml(&args.balancing_cfg, graph.cfg()) {
+    {
+        let mut routing_cfg =
+            match configs::routing::Config::try_from_yaml(&args.routing_cfg, graph.cfg()) {
                 Ok(cfg) => cfg,
                 Err(msg) => return Err(format!("{}", msg).into()),
             };
 
-        // check if new file does already exist
+        let balancing_cfg = {
+            // parse config
 
-        if balancing_cfg.results_dir.exists() {
-            return Err(format!(
-                "Directory {} for results does already exist. Please remove it.",
-                balancing_cfg.results_dir.display()
-            )
-            .into());
-        } else {
-            fs::create_dir_all(&balancing_cfg.results_dir).map_err(err::Msg::from)?
-        }
+            let balancing_cfg =
+                match configs::balancing::Config::try_from_yaml(&args.balancing_cfg, graph.cfg()) {
+                    Ok(cfg) => cfg,
+                    Err(msg) => return Err(format!("{}", msg).into()),
+                };
 
-        balancing_cfg
-    };
+            // check if new file does already exist
 
-    let mut dijkstra = routing::Dijkstra::new();
-    let mut explorator = routing::ConvexHullExplorator::new();
+            if balancing_cfg.results_dir.exists() {
+                return Err(format!(
+                    "Directory {} for results does already exist. Please remove it.",
+                    balancing_cfg.results_dir.display()
+                )
+                .into());
+            } else {
+                fs::create_dir_all(&balancing_cfg.results_dir).map_err(err::Msg::from)?
+            }
 
-    info!(
-        "Explorate several routes for metrics {:?} of dimension {}",
-        graph.cfg().edges.metrics.units,
-        graph.metrics().dim()
-    );
+            balancing_cfg
+        };
 
-    // calculate best paths
-
-    // collect all metric-info to edit them
-
-    let route_pairs = io::routing::Parser::parse(&routing_cfg)?;
-    let mut rng = rand_pcg::Pcg32::seed_from_u64(defaults::SEED);
-    for iteration in 0..balancing_cfg.num_iterations {
-        // simple init-logging
+        let mut dijkstra = routing::Dijkstra::new();
+        let mut explorator = routing::ConvexHullExplorator::new();
 
         info!(
-            "START Iteration {} / {}",
-            iteration,
-            balancing_cfg.num_iterations - 1
+            "Explorate several routes for metrics {:?} of dimension {}",
+            graph.cfg().edges.metrics.units,
+            graph.metrics().dim()
         );
-        let mut progress_bar = MappingBar::new(0..=route_pairs.len());
-        info!("{}", progress_bar);
 
-        // look for best paths wrt
+        // calculate best paths
 
-        let mut next_workload: Vec<usize> = vec![0; graph.fwd_edges().count()];
+        // collect all metric-info to edit them
 
-        if iteration <= 0 {
-            routing_cfg.alphas[*balancing_cfg.route_count_idx] = 0.0;
-        } else {
-            routing_cfg.alphas[*balancing_cfg.route_count_idx] = 1.0;
-        }
+        let route_pairs = io::routing::Parser::parse(&routing_cfg)?;
+        let mut rng = rand_pcg::Pcg32::seed_from_u64(defaults::SEED);
+        for iteration in 0..balancing_cfg.num_iterations {
+            // simple init-logging
 
-        // find all routes and count density on graph
-
-        for &(route_pair, route_count) in &route_pairs {
-            let RoutePair { src, dst } = route_pair.into_node(&graph);
-
-            // find explorated routes
-
-            let now = Instant::now();
-            let found_paths = explorator.fully_explorate(
-                src.idx(),
-                dst.idx(),
-                &mut dijkstra,
-                &graph,
-                &routing_cfg,
+            info!(
+                "START Iteration {} / {}",
+                iteration,
+                balancing_cfg.num_iterations - 1
             );
-            debug!(
-                "Ran Explorator-query from src-id {} to dst-id {} in {} ms. Found {} path(s).",
-                src.id(),
-                dst.id(),
-                now.elapsed().as_micros() as f64 / 1_000.0,
-                found_paths.len()
-            );
+            let mut progress_bar = MappingBar::new(0..=route_pairs.len());
+            info!("{}", progress_bar);
 
-            // Update next workload by looping over all found routes
-            // -> Routes have to be flattened,
-            // -> or shortcuts will lead to wrong best-paths, because counts won't be cumulated.
+            // look for best paths wrt
 
-            if found_paths.len() > 0 {
-                let die = Uniform::from(0..found_paths.len());
-                for _ in 0..route_count {
-                    let p = found_paths[die.sample(&mut rng)].clone().flatten(&graph);
+            let mut next_workload: Vec<usize> = vec![0; graph.fwd_edges().count()];
 
-                    debug!("    {}", p);
+            if iteration <= 0 {
+                routing_cfg.alphas[*balancing_cfg.route_count_idx] = 0.0;
+            } else {
+                routing_cfg.alphas[*balancing_cfg.route_count_idx] = 1.0;
+            }
 
-                    for edge_idx in p {
-                        next_workload[*edge_idx] += 1;
+            // find all routes and count density on graph
+
+            for &(route_pair, route_count) in &route_pairs {
+                let RoutePair { src, dst } = route_pair.into_node(&graph);
+
+                // find explorated routes
+
+                let now = Instant::now();
+                let found_paths = explorator.fully_explorate(
+                    src.idx(),
+                    dst.idx(),
+                    &mut dijkstra,
+                    &graph,
+                    &routing_cfg,
+                );
+                debug!(
+                    "Ran Explorator-query from src-id {} to dst-id {} in {} ms. Found {} path(s).",
+                    src.id(),
+                    dst.id(),
+                    now.elapsed().as_micros() as f64 / 1_000.0,
+                    found_paths.len()
+                );
+
+                // Update next workload by looping over all found routes
+                // -> Routes have to be flattened,
+                // -> or shortcuts will lead to wrong best-paths, because counts won't be cumulated.
+
+                if found_paths.len() > 0 {
+                    let die = Uniform::from(0..found_paths.len());
+                    for _ in 0..route_count {
+                        let p = found_paths[die.sample(&mut rng)].clone().flatten(&graph);
+
+                        debug!("    {}", p);
+
+                        for edge_idx in p {
+                            next_workload[*edge_idx] += 1;
+                        }
                     }
+                }
+
+                progress_bar.add(true);
+                if progress_bar.progress() % (1 + (progress_bar.end() / 10)) == 0 {
+                    info!("{}", progress_bar);
                 }
             }
 
-            progress_bar.add(true);
-            if progress_bar.progress() % (1 + (progress_bar.end() / 10)) == 0 {
-                info!("{}", progress_bar);
+            // update graph with new values
+            for (edge_idx, workload) in next_workload.into_iter().enumerate() {
+                graph.metrics_mut()[EdgeIdx(edge_idx)][*balancing_cfg.route_count_idx] =
+                    workload as f64;
             }
+
+            // export density
+
+            // measure writing-time
+            let now = Instant::now();
+
+            match io::balancing::Writer::write(iteration, &graph, &balancing_cfg) {
+                Ok(()) => (),
+                Err(msg) => return Err(format!("{}", msg).into()),
+            };
+            info!(
+                "FINISHED Written in {} seconds ({} µs).",
+                now.elapsed().as_secs(),
+                now.elapsed().as_micros(),
+            );
+            info!("");
+
+            info!(
+                "FINISHED Iteration {} / {}",
+                iteration,
+                balancing_cfg.num_iterations - 1
+            );
+        }
+    }
+
+    // write fmi-graph
+
+    {
+        // get config by provided user-input
+        let writing_cfg =
+            configs::writing::network::Config::try_from_yaml(&args.writing_graph_cfg)?;
+
+        // check if new file does already exist
+
+        if writing_cfg.map_file.exists() {
+            return Err(err::Msg::from(format!(
+                "New map-file {} does already exist. Please remove it.",
+                writing_cfg.map_file.display()
+            )));
         }
 
-        // update graph with new values
-        for (edge_idx, workload) in next_workload.into_iter().enumerate() {
-            graph.metrics_mut()[EdgeIdx(edge_idx)][*balancing_cfg.route_count_idx] =
-                workload as f64;
-        }
-
-        // export density
+        // writing to file
 
         // measure writing-time
         let now = Instant::now();
 
-        match io::balancing::Writer::write(iteration, &graph, &balancing_cfg) {
+        match io::network::Writer::write(&graph, &writing_cfg) {
             Ok(()) => (),
-            Err(msg) => return Err(format!("{}", msg).into()),
+            Err(msg) => return Err(err::Msg::from(format!("{}", msg))),
         };
         info!(
-            "FINISHED Written in {} seconds ({} µs).",
+            "Finished writing in {} seconds ({} µs).",
             now.elapsed().as_secs(),
             now.elapsed().as_micros(),
         );
         info!("");
-
-        info!(
-            "FINISHED Iteration {} / {}",
-            iteration,
-            balancing_cfg.num_iterations - 1
-        );
     }
 
     Ok(())
@@ -268,6 +303,7 @@ mod constants {
         pub const CFG: &str = "cfg";
         pub const ROUTING_CFG: &str = "routing-cfg";
         pub const BALANCING_CFG: &str = "balancing-cfg";
+        pub const WRITING_GRAPH_CFG: &str = "writing-graph-cfg";
     }
 }
 
@@ -276,6 +312,7 @@ struct CmdlineArgs {
     cfg: String,
     routing_cfg: String,
     balancing_cfg: String,
+    writing_graph_cfg: String,
 }
 
 impl<'a> From<clap::ArgMatches<'a>> for CmdlineArgs {
@@ -294,12 +331,17 @@ impl<'a> From<clap::ArgMatches<'a>> for CmdlineArgs {
             Some(path) => path,
             None => &cfg,
         };
+        let writing_graph_cfg = match matches.value_of(constants::ids::WRITING_GRAPH_CFG) {
+            Some(path) => path,
+            None => &cfg,
+        };
 
         CmdlineArgs {
             max_log_level: String::from(max_log_level),
             cfg: String::from(cfg),
             routing_cfg: String::from(routing_cfg),
             balancing_cfg: String::from(balancing_cfg),
+            writing_graph_cfg: String::from(writing_graph_cfg),
         }
     }
 }

@@ -81,7 +81,15 @@ impl super::Writing for Writer {
             .count();
         writeln!(writer, "{}", dim)?;
         writeln!(writer, "{}", nodes.count())?;
-        writeln!(writer, "{}", fwd_edges.count())?;
+        // only write non-shortcuts
+        writeln!(
+            writer,
+            "{}",
+            fwd_edges
+                .iter()
+                .filter(|&edge_idx| !fwd_edges.is_shortcut(edge_idx) || writing_cfg.is_ch_graph)
+                .count()
+        )?;
 
         // write graph-data to file
 
@@ -189,7 +197,10 @@ impl super::Writing for Writer {
         // write edges
 
         // for every edge
-        for edge_idx in &fwd_edges {
+        for edge_idx in fwd_edges
+            .iter()
+            .filter(|&edge_idx| !fwd_edges.is_shortcut(edge_idx) || writing_cfg.is_ch_graph)
+        {
             // loop over graphs config
             // and print respective data
             // if id fits

@@ -1,0 +1,63 @@
+parsing:
+  map-file: '${iter_0_dir}/graph.ch.fmi'
+  vehicles:
+    category: 'Car'
+    are-drivers-picky: false
+  nodes:
+  - meta: { info: 'NodeId', id: 'node-id' } # node-idx
+  - ignored # node-id
+  - metric: { unit: 'Latitude', id: 'latitude' }
+  - metric: { unit: 'Longitude', id: 'longitude' }
+  - ignored # height
+  - meta: { info: 'CHLevel', id: 'ch-level' }
+  edges:
+  - meta: { info: 'SrcId', id: 'src-id' } # src-idx
+  - meta: { info: 'DstId', id: 'dst-id' } # dst-idx
+  - metric: { unit: 'Kilometers', id: 'kilometers' }
+  - metric: { unit: 'Hours', id: 'hours' }
+  - metric: { unit: 'LaneCount', id: 'lane-count' }
+  - meta: { info: 'ShortcutIdx0', id: 'sc-idx-0'}
+  - meta: { info: 'ShortcutIdx1', id: 'sc-idx-1'}
+  generating:
+    nodes:
+    - meta: { info: 'NodeIdx', id: 'node-idx' }
+    edges:
+    - meta: { info: 'SrcIdx', id: 'src-idx' }
+    - meta: { info: 'DstIdx', id: 'dst-idx' }
+    - custom:
+        id: 'route-count'
+        unit: 'F64'
+        default: 0.0
+balancing:
+  results-dir: '${iter_0_dir}/stats'
+  num-iterations: 1
+  metric-ids:
+    distance: 'kilometers'
+    lane-count: 'lane-count'
+    route-count: 'route-count'
+routing:
+  route-pairs-file: '${iter_0_dir}/10_000.route-pairs'
+  is-ch-dijkstra: true
+  metrics:
+  - id: 'kilometers'
+  - id: 'hours'
+writing:
+  graph:
+    map-file: '${iter_1_dir}/graph.fmi'
+    is-ch-graph: false
+    nodes:
+    - id: 'node-idx'
+    - id: 'node-id'
+    - id: 'latitude'
+    - id: 'longitude'
+    - ignored # height
+    - ignored # ch-level
+    edges:
+    - id: 'src-idx'
+    - id: 'dst-idx'
+    - id: 'kilometers'
+    - id: 'hours'
+    - id: 'lane-count'
+    - id: 'route-count'
+    - ignored # sc-idx-0
+    - ignored # sc-idx-1
