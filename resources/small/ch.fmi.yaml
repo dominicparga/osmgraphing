@@ -9,7 +9,7 @@ parsing:
   - metric: { unit: 'Latitude', id: 'latitude' }
   - metric: { unit: 'Longitude', id: 'longitude' }
   - ignored # height
-  - meta: { info: 'Level', id: 'level' }
+  - meta: { info: 'CHLevel', id: 'ch-level' }
   edges:
   - meta: { info: 'SrcId', id: 'src-id' }
   - meta: { info: 'DstId', id: 'dst-id' }
@@ -25,7 +25,7 @@ parsing:
         to: { unit: 'Kilometers', id: 'kilometers' }
     - convert:
         from: { unit: 'Seconds', id: 'seconds' }
-        to: { unit: 'Minutes', id: 'minutes' }
+        to: { unit: 'Hours', id: 'hours' }
 writing:
   route-pairs:
     file: 'resources/small/all_43.ch.fmi.route-pairs'

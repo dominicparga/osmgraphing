@@ -21,7 +21,7 @@ parsing:
     - meta: { info: 'DstIdx', id: 'dst-idx' }
     - haversine: { unit: 'Kilometers', id: 'kilometers' }
     - calc:
-        result: { unit: 'Minutes', id: 'minutes' }
+        result: { unit: 'Hours', id: 'hours' }
         a: { unit: 'Kilometers', id: 'kilometers' }
         b: { unit: 'KilometersPerHour', id: 'kmph' }
 writing:

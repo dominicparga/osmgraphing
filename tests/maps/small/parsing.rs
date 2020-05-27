@@ -4,7 +4,7 @@ use kissunits::{
     distance::Kilometers,
     geo::Coordinate,
     speed::KilometersPerHour,
-    time::{Minutes, Seconds},
+    time::{Hours, Seconds},
 };
 use osmgraphing::{configs, network::EdgeIdx};
 
@@ -90,7 +90,7 @@ fn fmi_graph() {
             dst,
             Kilometers(meters / 1_000.0),
             KilometersPerHour(kmph),
-            Minutes::from(Seconds(s)),
+            Hours::from(Seconds(s)),
         )
     })
     .collect();
@@ -127,7 +127,7 @@ fn fmi_graph() {
             dst,
             Kilometers(meters / 1_000.0),
             KilometersPerHour(kmph),
-            Minutes::from(Seconds(s)),
+            Hours::from(Seconds(s)),
         )
     })
     .collect();

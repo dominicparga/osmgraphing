@@ -2,7 +2,7 @@ use crate::helpers::{defaults, test_dijkstra, TestNode};
 use defaults::paths::resources::bidirectional_bait as resources;
 use kissunits::{
     geo::Coordinate,
-    time::{Minutes, Seconds},
+    time::{Hours, Seconds},
 };
 use osmgraphing::{
     configs::{self, SimpleId},
@@ -113,7 +113,7 @@ fn expected_paths(
                                 .collect()
                         })
                         .collect();
-                    let cost = Minutes::from(Seconds(cost));
+                    let cost = Hours::from(Seconds(cost));
                     Some((smallvec![*cost], paths))
                 }
                 None => None,

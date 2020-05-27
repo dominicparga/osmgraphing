@@ -71,7 +71,7 @@ impl From<proto::MetaInfo> for MetaInfo {
     fn from(proto_info: proto::MetaInfo) -> MetaInfo {
         match proto_info {
             proto::MetaInfo::NodeId => MetaInfo::NodeId,
-            proto::MetaInfo::Level => MetaInfo::CHLevel,
+            proto::MetaInfo::CHLevel => MetaInfo::CHLevel,
         }
     }
 }

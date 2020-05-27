@@ -1,6 +1,9 @@
 use crate::helpers::{defaults, test_dijkstra, TestNode};
 use defaults::paths::resources::simple_stuttgart as resources;
-use kissunits::{geo::Coordinate, time::Minutes};
+use kissunits::{
+    geo::Coordinate,
+    time::{Hours, Minutes},
+};
 use osmgraphing::{
     configs::{self, SimpleId},
     defaults::capacity::DimVec,
@@ -125,7 +128,7 @@ fn expected_paths(
                                 .collect()
                         })
                         .collect();
-                    let cost = Minutes(cost);
+                    let cost = Hours::from(Minutes(cost));
                     Some((smallvec![*cost], paths))
                 }
                 None => None,

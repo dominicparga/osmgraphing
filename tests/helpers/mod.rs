@@ -4,7 +4,8 @@
 use osmgraphing::{
     configs,
     defaults::capacity::DimVec,
-    helpers, io,
+    helpers::{self, approx::ApproxEq},
+    io,
     network::{Graph, MetricIdx, RoutePair},
     routing,
 };
@@ -12,7 +13,7 @@ use osmgraphing::{
 #[allow(dead_code)]
 pub mod defaults {
     pub const DISTANCE_ID: &str = "kilometers";
-    pub const DURATION_ID: &str = "minutes";
+    pub const DURATION_ID: &str = "hours";
     pub const SPEED_ID: &str = "kmph";
 
     pub mod paths {
@@ -125,6 +126,8 @@ pub fn compare_dijkstras(ch_fmi_config_file: &str, metric_id: &str) {
     let parsing_cfg = configs::parsing::Config::from_yaml(ch_fmi_config_file);
     let graph = io::network::Parser::parse_and_finalize(parsing_cfg)
         .expect("Expect parser to be successful when comparing Dijkstras.");
+
+    let metric_idx = graph.cfg().edges.metrics.idx_of(metric_id);
 
     // get route-pairs from writing-section
     let routes_cfg = configs::writing::routing::Config::from_yaml(ch_fmi_config_file);

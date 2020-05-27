@@ -1,4 +1,4 @@
-use kissunits::{distance::Kilometers, geo::Coordinate, speed::KilometersPerHour, time::Minutes};
+use kissunits::{distance::Kilometers, geo::Coordinate, speed::KilometersPerHour, time::Hours};
 use osmgraphing::{
     defaults::capacity::DimVec,
     helpers::approx::ApproxEq,
@@ -80,7 +80,7 @@ impl TestEdge {
         dst: &TestNode,
         distance: Kilometers,
         maxspeed: KilometersPerHour,
-        duration: Minutes,
+        duration: Hours,
     ) -> TestEdge {
         TestEdge {
             name: (name.unwrap_or(&format!("{}->{}", src.name, dst.name))).to_owned(),
@@ -100,7 +100,7 @@ impl TestEdge {
         dst: &TestNode,
         distance: Kilometers,
         maxspeed: KilometersPerHour,
-        duration: Minutes,
+        duration: Hours,
     ) -> TestEdge {
         TestEdge {
             name: (name.unwrap_or(&format!("{}->{}", src.name, dst.name))).to_owned(),

@@ -2,7 +2,7 @@ use crate::helpers::{compare_dijkstras, defaults, test_dijkstra, TestNode};
 use defaults::paths::resources::small as resources;
 use kissunits::{
     geo::Coordinate,
-    time::{Minutes, Seconds},
+    time::{Hours, Seconds},
 };
 use osmgraphing::{
     configs::{self, SimpleId},
@@ -199,7 +199,7 @@ fn expected_paths(
                                 .collect()
                         })
                         .collect();
-                    let cost = Minutes::from(Seconds(cost));
+                    let cost = Hours::from(Seconds(cost));
                     Some((smallvec![*cost], paths))
                 }
                 None => None,

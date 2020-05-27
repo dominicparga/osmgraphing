@@ -4,24 +4,16 @@ parsing:
     category: 'Car'
     are-drivers-picky: false
   nodes:
-  - meta: { info: 'NodeId', id: 'node-id' }
+  - meta: { info: 'NodeId', id: 'node-id' } # node-idx
   - ignored # osm-id
   - metric: { unit: 'Latitude', id: 'latitude' }
   - metric: { unit: 'Longitude', id: 'longitude' }
   edges:
-  - meta: { info: 'SrcId', id: 'src-id' }
-  - meta: { info: 'DstId', id: 'dst-id' }
-  - metric: { unit: 'Meters', id: 'meters' }
-  - metric: { unit: 'Seconds', id: 'seconds' }
-  generating:
-    nodes: []
-    edges:
-    - convert:
-        from: { unit: 'Meters', id: 'meters' }
-        to: { unit: 'Kilometers', id: 'kilometers' }
-    - convert:
-        from: { unit: 'Seconds', id: 'seconds' }
-        to: { unit: 'Minutes', id: 'minutes' }
+  - meta: { info: 'SrcId', id: 'src-id' } # src-idx
+  - meta: { info: 'DstId', id: 'dst-id' } # dst-idx
+  - metric: { unit: 'Kilometers', id: 'kilometers' }
+  - metric: { unit: 'Hours', id: 'hours' }
+  - ignored # lane-count
 writing:
   route-pairs:
     file: 'resources/isle_of_man_2020-03-14/100.fmi.route-pairs'

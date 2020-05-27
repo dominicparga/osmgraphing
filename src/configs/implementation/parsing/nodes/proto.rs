@@ -22,5 +22,5 @@ pub enum Category {
 #[derive(Copy, Clone, Debug, Deserialize, Eq, PartialEq)]
 pub enum MetaInfo {
     NodeId,
-    Level,
+    CHLevel,
 }
