@@ -10,8 +10,7 @@ pub mod raw;
 #[derive(Clone, Debug)]
 pub struct Config {
     pub results_dir: PathBuf,
-    pub num_iterations: usize,
-    pub route_count_idx: MetricIdx,
+    pub workload_idx: MetricIdx,
     pub lane_count_idx: MetricIdx,
     pub distance_idx: MetricIdx,
 }
@@ -49,8 +48,7 @@ impl Config {
     ) -> Result<Config, String> {
         Ok(Config {
             results_dir: proto_cfg.results_dir,
-            num_iterations: proto_cfg.num_iterations,
-            route_count_idx: parsing_cfg.edges.metrics.idx_of(&proto_cfg.route_count_id),
+            workload_idx: parsing_cfg.edges.metrics.idx_of(&proto_cfg.workload_id),
             lane_count_idx: parsing_cfg.edges.metrics.idx_of(&proto_cfg.lane_count_id),
             distance_idx: parsing_cfg.edges.metrics.idx_of(&proto_cfg.distance_id),
         })

@@ -2,6 +2,7 @@ use crate::{configs, helpers::err, io::SupportingFileExts, network::Graph};
 use log::info;
 
 mod edges;
+mod num_routes;
 mod workload;
 
 trait Writing {
@@ -13,18 +14,14 @@ pub struct Writer;
 
 impl Writer {
     pub fn write(
-        iteration: usize,
+        abs_workloads: &Vec<usize>,
         graph: &Graph,
         balancing_cfg: &configs::balancing::Config,
     ) -> err::Feedback {
-        info!(
-            "START Write graph's route-workload with iteration {}",
-            iteration
-        );
-        if iteration == 0 {
-            edges::Writer::new().write(graph, balancing_cfg)?;
-        }
-        workload::Writer::new(iteration).write(graph, balancing_cfg)?;
+        info!("START Write graph's route-workload");
+        edges::Writer::new().write(graph, balancing_cfg)?;
+        workload::Writer::new().write(graph, balancing_cfg)?;
+        num_routes::Writer::new().write(abs_workloads, balancing_cfg)?;
         info!("FINISHED");
         Ok(())
     }

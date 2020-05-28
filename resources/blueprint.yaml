@@ -138,7 +138,6 @@ routing:
 # used for the balancer-binary
 balancing:
   results-dir: 'relative-path-to-results-dir'
-  num-iterations: 1
   # these metrics are needed for balancing
   metric-ids:
     distance: 'kilometers'

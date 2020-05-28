@@ -1,4 +1,4 @@
-use crate::{configs, helpers::err, network::Graph};
+use crate::{configs, helpers::err};
 use std::{
     fs::OpenOptions,
     io::{BufWriter, Write},
@@ -12,20 +12,18 @@ impl Writer {
     }
 }
 
-impl super::Writing for Writer {
-    fn write(
+impl Writer {
+    pub fn write(
         &mut self,
-        graph: &Graph,
+        abs_workload: &Vec<usize>,
         balancing_cfg: &configs::balancing::Config,
     ) -> err::Feedback {
         // prepare
 
-        let fwd_edges = graph.fwd_edges();
-
         // get writers
 
         let mut writer = {
-            let path = balancing_cfg.results_dir.join("workloads.csv");
+            let path = balancing_cfg.results_dir.join("abs_workloads.csv");
             let output_file = match OpenOptions::new().write(true).create_new(true).open(&path) {
                 Ok(f) => f,
                 Err(e) => {
@@ -41,14 +39,12 @@ impl super::Writing for Writer {
 
         // write header
 
-        writeln!(writer, "workloads")?;
+        writeln!(writer, "num_routes")?;
 
         // write data
 
-        let metrics = graph.metrics();
-
-        for edge_idx in fwd_edges {
-            writeln!(writer, "{}", metrics[edge_idx][*balancing_cfg.workload_idx])?;
+        for num_routes in abs_workload {
+            writeln!(writer, "{}", num_routes)?;
         }
 
         Ok(())

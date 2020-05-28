@@ -25,16 +25,15 @@ parsing:
     - meta: { info: 'SrcIdx', id: 'src-idx' }
     - meta: { info: 'DstIdx', id: 'dst-idx' }
     - custom:
-        id: 'route-count'
+        id: 'workload'
         unit: 'F64'
         default: 0.0
 balancing:
   results-dir: '${iter_0_dir}/stats'
-  num-iterations: 1
   metric-ids:
     distance: 'kilometers'
     lane-count: 'lane-count'
-    route-count: 'route-count'
+    workload: 'workload'
 routing:
   route-pairs-file: '${iter_0_dir}/10_000.route-pairs'
   is-ch-dijkstra: true
@@ -58,6 +57,6 @@ writing:
     - id: 'kilometers'
     - id: 'hours'
     - id: 'lane-count'
-    - id: 'route-count'
+    - id: 'workload'
     - ignored # sc-idx-0
     - ignored # sc-idx-1

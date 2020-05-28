@@ -3,7 +3,7 @@ use osmgraphing::{
     configs, defaults,
     helpers::{err, init_logging},
     io,
-    network::{EdgeIdx, RoutePair},
+    network::RoutePair,
     routing,
 };
 use progressing::{Bar, MappingBar};
@@ -69,7 +69,7 @@ fn run() -> err::Feedback {
     // execute routing-example and count workload
 
     {
-        let mut routing_cfg =
+        let routing_cfg =
             match configs::routing::Config::try_from_yaml(&args.routing_cfg, graph.cfg()) {
                 Ok(cfg) => cfg,
                 Err(msg) => return Err(format!("{}", msg).into()),
@@ -108,107 +108,85 @@ fn run() -> err::Feedback {
             graph.metrics().dim()
         );
 
-        // calculate best paths
-
-        // collect all metric-info to edit them
+        // calculate best paths and analyze workload
 
         let route_pairs = io::routing::Parser::parse(&routing_cfg)?;
         let mut rng = rand_pcg::Pcg32::seed_from_u64(defaults::SEED);
-        for iteration in 0..balancing_cfg.num_iterations {
-            // simple init-logging
 
-            info!(
-                "START Iteration {} / {}",
-                iteration,
-                balancing_cfg.num_iterations - 1
+        // simple init-logging
+
+        info!("START Executing routes and analyzing workload",);
+        let mut progress_bar = MappingBar::new(0..=route_pairs.len());
+        info!("{}", progress_bar);
+
+        // find all routes and count density on graph
+
+        let mut abs_workload: Vec<usize> = vec![0; graph.fwd_edges().count()];
+
+        for &(route_pair, num_routes) in &route_pairs {
+            let RoutePair { src, dst } = route_pair.into_node(&graph);
+
+            // find explorated routes
+
+            let now = Instant::now();
+            let found_paths = explorator.fully_explorate(
+                src.idx(),
+                dst.idx(),
+                &mut dijkstra,
+                &graph,
+                &routing_cfg,
             );
-            let mut progress_bar = MappingBar::new(0..=route_pairs.len());
-            info!("{}", progress_bar);
+            debug!(
+                "Ran Explorator-query from src-id {} to dst-id {} in {} ms. Found {} path(s).",
+                src.id(),
+                dst.id(),
+                now.elapsed().as_micros() as f64 / 1_000.0,
+                found_paths.len()
+            );
 
-            // look for best paths wrt
+            // Update next workload by looping over all found routes
+            // -> Routes have to be flattened,
+            // -> or shortcuts will lead to wrong best-paths, because counts won't be cumulated.
 
-            let mut next_workload: Vec<usize> = vec![0; graph.fwd_edges().count()];
+            if found_paths.len() > 0 {
+                let die = Uniform::from(0..found_paths.len());
+                for _ in 0..num_routes {
+                    let p = found_paths[die.sample(&mut rng)].clone().flatten(&graph);
 
-            if iteration <= 0 {
-                routing_cfg.alphas[*balancing_cfg.route_count_idx] = 0.0;
-            } else {
-                routing_cfg.alphas[*balancing_cfg.route_count_idx] = 1.0;
-            }
+                    debug!("    {}", p);
 
-            // find all routes and count density on graph
-
-            for &(route_pair, route_count) in &route_pairs {
-                let RoutePair { src, dst } = route_pair.into_node(&graph);
-
-                // find explorated routes
-
-                let now = Instant::now();
-                let found_paths = explorator.fully_explorate(
-                    src.idx(),
-                    dst.idx(),
-                    &mut dijkstra,
-                    &graph,
-                    &routing_cfg,
-                );
-                debug!(
-                    "Ran Explorator-query from src-id {} to dst-id {} in {} ms. Found {} path(s).",
-                    src.id(),
-                    dst.id(),
-                    now.elapsed().as_micros() as f64 / 1_000.0,
-                    found_paths.len()
-                );
-
-                // Update next workload by looping over all found routes
-                // -> Routes have to be flattened,
-                // -> or shortcuts will lead to wrong best-paths, because counts won't be cumulated.
-
-                if found_paths.len() > 0 {
-                    let die = Uniform::from(0..found_paths.len());
-                    for _ in 0..route_count {
-                        let p = found_paths[die.sample(&mut rng)].clone().flatten(&graph);
-
-                        debug!("    {}", p);
-
-                        for edge_idx in p {
-                            next_workload[*edge_idx] += 1;
-                        }
+                    for edge_idx in p {
+                        abs_workload[*edge_idx] += 1;
                     }
                 }
-
-                progress_bar.add(true);
-                if progress_bar.progress() % (1 + (progress_bar.end() / 10)) == 0 {
-                    info!("{}", progress_bar);
-                }
             }
 
-            // update graph with new values
-            for (edge_idx, workload) in next_workload.into_iter().enumerate() {
-                graph.metrics_mut()[EdgeIdx(edge_idx)][*balancing_cfg.route_count_idx] =
-                    workload as f64;
+            progress_bar.add(true);
+            if progress_bar.progress() % (1 + (progress_bar.end() / 10)) == 0 {
+                info!("{}", progress_bar);
             }
-
-            // export density
-
-            // measure writing-time
-            let now = Instant::now();
-
-            match io::balancing::Writer::write(iteration, &graph, &balancing_cfg) {
-                Ok(()) => (),
-                Err(msg) => return Err(format!("{}", msg).into()),
-            };
-            info!(
-                "FINISHED Written in {} seconds ({} µs).",
-                now.elapsed().as_secs(),
-                now.elapsed().as_micros(),
-            );
-            info!("");
-
-            info!(
-                "FINISHED Iteration {} / {}",
-                iteration,
-                balancing_cfg.num_iterations - 1
-            );
         }
+
+        // update graph with new values
+        defaults::vehicles::update_workload(&abs_workload, &mut graph, &balancing_cfg);
+
+        // export density
+
+        // measure writing-time
+        let now = Instant::now();
+
+        match io::balancing::Writer::write(&abs_workload, &graph, &balancing_cfg) {
+            Ok(()) => (),
+            Err(msg) => return Err(format!("{}", msg).into()),
+        };
+        info!(
+            "FINISHED Written in {} seconds ({} µs).",
+            now.elapsed().as_secs(),
+            now.elapsed().as_micros(),
+        );
+        info!("");
+
+        info!("FINISHED",);
     }
 
     // write fmi-graph

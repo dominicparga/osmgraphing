@@ -16,7 +16,7 @@ parsing:
   - metric: { unit: 'Kilometers', id: 'kilometers' }
   - metric: { unit: 'Hours', id: 'hours' }
   - metric: { unit: 'LaneCount', id: 'lane-count' }
-  - metric: { unit: 'F64', id: 'route-count' }
+  - metric: { unit: 'F64', id: 'workload' }
   - meta: { info: 'ShortcutIdx0', id: 'sc-idx-0'}
   - meta: { info: 'ShortcutIdx1', id: 'sc-idx-1'}
   generating:
@@ -27,18 +27,17 @@ parsing:
     - meta: { info: 'DstIdx', id: 'dst-idx' }
 balancing:
   results-dir: '${iter_dir}/stats'
-  num-iterations: 1
   metric-ids:
     distance: 'kilometers'
     lane-count: 'lane-count'
-    route-count: 'route-count'
+    workload: 'workload'
 routing:
   route-pairs-file: '${iter_0_dir}/10_000.route-pairs'
   is-ch-dijkstra: true
   metrics:
   - id: 'kilometers'
   - id: 'hours'
-  - id: 'route-count'
+  - id: 'workload'
 writing:
   graph:
     map-file: '${next_iter_dir}/graph.fmi'
@@ -56,6 +55,6 @@ writing:
     - id: 'kilometers'
     - id: 'hours'
     - id: 'lane-count'
-    - id: 'route-count'
+    - id: 'workload'
     - ignored # sc-idx-0
     - ignored # sc-idx-1
