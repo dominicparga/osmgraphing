@@ -3,6 +3,7 @@ use crate::{
     helpers,
     network::{EdgeIdx, Graph, NodeIdx},
 };
+use log::debug;
 use smallvec::smallvec;
 use std::{
     cmp::{Eq, PartialEq},
@@ -13,7 +14,9 @@ use std::{
 #[derive(Clone, Debug)]
 pub struct Path {
     src_idx: NodeIdx,
+    src_id: i64,
     dst_idx: NodeIdx,
+    dst_id: i64,
     edges: Vec<EdgeIdx>,
     costs: Option<DimVec<f64>>,
 }
@@ -23,9 +26,9 @@ impl Display for Path {
         let prettier_edges: Vec<_> = self.edges.iter().map(|edge_idx| **edge_idx).collect();
         write!(
             f,
-            "{{ src-idx: {}, dst-idx: {}, costs: {:?}, hop-distance: {:?} }}",
-            self.src_idx,
-            self.dst_idx,
+            "{{ src-id: {}, dst-id: {}, costs: {:?}, hop-distance: {:?} }}",
+            self.src_id,
+            self.dst_id,
             self.costs,
             prettier_edges.len()
         )
@@ -36,10 +39,18 @@ impl Path {
     /// ATTENTION! This method does not calculate the path's cost.
     /// This can be done, e.g., with `calc_cost(...)` or `flatten(...)`.
     /// Accessing the costs without calculating them will lead to panics.
-    pub fn new(src_idx: NodeIdx, dst_idx: NodeIdx, edges: Vec<EdgeIdx>) -> Path {
+    pub fn new(
+        src_idx: NodeIdx,
+        src_id: i64,
+        dst_idx: NodeIdx,
+        dst_id: i64,
+        edges: Vec<EdgeIdx>,
+    ) -> Path {
         Path {
             src_idx,
+            src_id,
             dst_idx,
+            dst_id,
             edges,
             costs: None,
         }
@@ -87,7 +98,9 @@ impl Path {
         // setup new edges
         let mut flattened_path = Path {
             src_idx: self.src_idx,
+            src_id: self.src_id,
             dst_idx: self.dst_idx,
+            dst_id: self.dst_id,
             edges: Vec::with_capacity(self.edges.capacity()),
             costs: Some(smallvec![0.0; graph.metrics().dim()]),
         };
@@ -98,11 +111,59 @@ impl Path {
 
         let fwd_edges = graph.fwd_edges();
         while let Some(mut edge_idx) = old_edges.pop() {
+            debug!("");
+            let n = old_edges.len();
+            debug!(
+                "n-3: {}, n-2: {} n-1: {}",
+                old_edges[n - 3],
+                old_edges[n - 2],
+                old_edges[n - 1]
+            );
             // if edge is shortcut
             // -> push on old-edges
             while let Some(sc_edges) = fwd_edges.sc_edges(edge_idx) {
+                debug!(
+                    "edge-idx: {}, src-id {} -> dst-id {}",
+                    edge_idx,
+                    graph
+                        .nodes()
+                        .create(graph.bwd_edges().dst_idx(edge_idx))
+                        .id(),
+                    graph
+                        .nodes()
+                        .create(graph.fwd_edges().dst_idx(edge_idx))
+                        .id()
+                );
+                debug!(
+                    "sc-edge-0: {}, src-id {} -> dst-id {} (will be next)",
+                    sc_edges[0],
+                    graph
+                        .nodes()
+                        .create(graph.bwd_edges().dst_idx(sc_edges[0]))
+                        .id(),
+                    graph
+                        .nodes()
+                        .create(graph.fwd_edges().dst_idx(sc_edges[0]))
+                        .id()
+                );
+                debug!(
+                    "sc-edge-1: {}, src-id {} -> dst-id {} (will be pushed)",
+                    sc_edges[1],
+                    graph
+                        .nodes()
+                        .create(graph.bwd_edges().dst_idx(sc_edges[1]))
+                        .id(),
+                    graph
+                        .nodes()
+                        .create(graph.fwd_edges().dst_idx(sc_edges[1]))
+                        .id()
+                );
                 old_edges.push(sc_edges[1]);
                 edge_idx = sc_edges[0];
+
+                if old_edges[n - 4] == old_edges[n - 1] {
+                    std::process::exit(1);
+                }
             }
 
             // edge-idx is not a shortcut
@@ -128,8 +189,8 @@ impl PartialEq for Path {
     fn eq(&self, other: &Path) -> bool {
         // length before edges and edges last because of performance
         self.edges.len() == other.edges.len()
-            && self.src_idx() == other.src_idx()
-            && self.dst_idx() == other.dst_idx()
+            && self.src_id == other.src_id
+            && self.dst_id == other.dst_id
             && self.edges == other.edges
     }
 }

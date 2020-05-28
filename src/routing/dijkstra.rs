@@ -301,7 +301,13 @@ impl Dijkstra {
                 cur_idx = xwd_edges[opp_dir].dst_idx(leaving_idx);
             }
 
-            Some(Path::new(src_idx, dst_idx, proto_path))
+            Some(Path::new(
+                src_idx,
+                nodes.id(src_idx),
+                dst_idx,
+                nodes.id(dst_idx),
+                proto_path,
+            ))
         } else {
             None
         }

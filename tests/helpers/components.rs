@@ -241,8 +241,13 @@ impl TestPath {
 
             // check path
 
-            let expected_path =
-                routing::paths::Path::new(self.src.idx, self.dst.idx, own_proto_path);
+            let expected_path = routing::paths::Path::new(
+                self.src.idx,
+                self.src.id,
+                self.dst.idx,
+                self.dst.id,
+                own_proto_path,
+            );
             if expected_path != flattened_actual_path {
                 wrong_path_result = Some((expected_path, &flattened_actual_path));
                 continue;
