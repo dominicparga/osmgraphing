@@ -49,8 +49,6 @@ replace_patterns_in_config() {
 create_fmi_from_pbf() {
     cp "${cwd}/pbf_to_fmi.yaml" "${iter_0_dir}"
     cfg="${iter_0_dir}/pbf_to_fmi.yaml"
-
-    cp "${cwd}/resources/configs/pbf_to_fmi.yaml" "${cfg}"
     replace_patterns_in_config "${cfg}"
 
     # parse and write graph
@@ -150,7 +148,8 @@ mkdir --verbose --parents "${results_dir}"
 
 iter_0_dir="${results_dir}/0"
 iter_1_dir="${results_dir}/1"
-for iter in '0' '1' '2'; do
+# for iter in '0' '1' '2' '3' '4' '5' '6' '7' '8' '9'; do
+for iter in '0' '1' '2' '3'; do
     iter_dir="${results_dir}/${iter}"
 
     if [ "${iter}" -eq '0' ]; then
