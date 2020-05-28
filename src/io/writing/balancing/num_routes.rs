@@ -1,4 +1,4 @@
-use crate::{configs, helpers::err};
+use crate::{configs, helpers::err, network::Graph};
 use std::{
     fs::OpenOptions,
     io::{BufWriter, Write},
@@ -15,7 +15,8 @@ impl Writer {
 impl Writer {
     pub fn write(
         &mut self,
-        abs_workload: &Vec<usize>,
+        abs_workloads: &Vec<usize>,
+        graph: &Graph,
         balancing_cfg: &configs::balancing::Config,
     ) -> err::Feedback {
         // prepare
@@ -43,8 +44,12 @@ impl Writer {
 
         // write data
 
-        for num_routes in abs_workload {
-            writeln!(writer, "{}", num_routes)?;
+        let fwd_edges = graph.fwd_edges();
+        for edge_idx in fwd_edges
+            .iter()
+            .filter(|&edge_idx| !fwd_edges.is_shortcut(edge_idx))
+        {
+            writeln!(writer, "{}", abs_workloads[*edge_idx])?;
         }
 
         Ok(())

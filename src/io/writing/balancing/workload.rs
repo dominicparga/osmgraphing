@@ -10,10 +10,8 @@ impl Writer {
     pub fn new() -> Writer {
         Writer {}
     }
-}
 
-impl super::Writing for Writer {
-    fn write(
+    pub fn write(
         &mut self,
         graph: &Graph,
         balancing_cfg: &configs::balancing::Config,
@@ -47,7 +45,10 @@ impl super::Writing for Writer {
 
         let metrics = graph.metrics();
 
-        for edge_idx in fwd_edges {
+        for edge_idx in fwd_edges
+            .iter()
+            .filter(|&edge_idx| !fwd_edges.is_shortcut(edge_idx))
+        {
             writeln!(writer, "{}", metrics[edge_idx][*balancing_cfg.workload_idx])?;
         }
 

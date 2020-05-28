@@ -14,10 +14,8 @@ impl Writer {
     pub fn new() -> Writer {
         Writer {}
     }
-}
 
-impl super::Writing for Writer {
-    fn write(
+    pub fn write(
         &mut self,
         graph: &Graph,
         balancing_cfg: &configs::balancing::Config,
@@ -53,7 +51,10 @@ impl super::Writing for Writer {
 
         // write data
 
-        for edge_idx in &fwd_edges {
+        for edge_idx in fwd_edges
+            .iter()
+            .filter(|&edge_idx| !fwd_edges.is_shortcut(edge_idx))
+        {
             let (src_lat, src_lon) = {
                 let idx = bwd_edges.dst_idx(edge_idx);
                 let coord = nodes.coord(idx);

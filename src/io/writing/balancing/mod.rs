@@ -5,11 +5,6 @@ mod edges;
 mod num_routes;
 mod workload;
 
-trait Writing {
-    fn write(&mut self, graph: &Graph, balancing_cfg: &configs::balancing::Config)
-        -> err::Feedback;
-}
-
 pub struct Writer;
 
 impl Writer {
@@ -21,7 +16,7 @@ impl Writer {
         info!("START Write graph's route-workload");
         edges::Writer::new().write(graph, balancing_cfg)?;
         workload::Writer::new().write(graph, balancing_cfg)?;
-        num_routes::Writer::new().write(abs_workloads, balancing_cfg)?;
+        num_routes::Writer::new().write(abs_workloads, graph, balancing_cfg)?;
         info!("FINISHED");
         Ok(())
     }
