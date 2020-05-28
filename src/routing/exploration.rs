@@ -10,7 +10,7 @@ use crate::{
     network::{Graph, NodeIdx},
     routing::{paths::Path, Dijkstra},
 };
-use log::debug;
+use log::{debug, trace};
 use smallvec::smallvec;
 
 pub struct ConvexHullExplorator {}
@@ -144,8 +144,8 @@ impl ConvexHullExplorator {
                 }
             }
 
-            debug!("rows = {:?}", rows);
-            debug!("b = {:?}", b);
+            trace!("rows = {:?}", rows);
+            trace!("b = {:?}", b);
 
             // calculate alphas
             // TODO check if points lay on a line
@@ -160,9 +160,9 @@ impl ConvexHullExplorator {
             } else {
                 continue;
             };
-            debug!("alphas = {:?}", routing_cfg.alphas);
+            trace!("alphas = {:?}", routing_cfg.alphas);
             for i in 0..candidate.len() {
-                debug!(
+                trace!(
                     "alphas * costs[c{}] = {:?}",
                     i,
                     helpers::dot_product(&routing_cfg.alphas, found_paths[candidate[i]].costs())
@@ -176,7 +176,7 @@ impl ConvexHullExplorator {
             {
                 best_path.calc_costs(graph);
                 let new_p = best_path;
-                debug!(
+                trace!(
                     "alphas * new_costs = {:?}",
                     helpers::dot_product(&routing_cfg.alphas, new_p.costs())
                 );
@@ -195,7 +195,7 @@ impl ConvexHullExplorator {
                     }
 
                     if is_already_found {
-                        debug!("already found path {}", new_p);
+                        trace!("already found path {}", new_p);
                         continue;
                     }
                 }
