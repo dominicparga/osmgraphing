@@ -161,8 +161,9 @@ impl Path {
                 old_edges.push(sc_edges[1]);
                 edge_idx = sc_edges[0];
 
-                if old_edges[n - 4] == old_edges[n - 1] {
-                    std::process::exit(1);
+                // max path-length contains all edges in a graph
+                if old_edges.len() > fwd_edges.count() {
+                    panic!("There is a cycle of shortcut-references in the graph.");
                 }
             }
 
