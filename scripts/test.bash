@@ -8,5 +8,4 @@ cur_dir="$(dirname "$(pwd)"/"${0}")"
 
 # test
 cargo test
-cargo run --example dijkstra
-cargo run --example parser
+cargo test --release --features 'custom_only'
