@@ -67,7 +67,7 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v2
     - name: Run benchmarks
-      run: cargo bench --bench routing -- --warm-up-time 10 --measurement-time 120
+      run: cargo bench
     - name: Prepare upload
       run: |
         __ARTIFACTS="artifacts/$(git rev-parse --verify HEAD)"
