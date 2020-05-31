@@ -1,8 +1,19 @@
 use log::{error, info};
-use osmgraphing::{configs, helpers::init_logging, io::network::Parser};
+use osmgraphing::{
+    configs,
+    helpers::{err, init_logging},
+    io::network::Parser,
+};
 use std::{path::PathBuf, time::Instant};
 
 fn main() {
+    if let Err(msg) = run() {
+        error!("{}", msg);
+        std::process::exit(1);
+    }
+}
+
+fn run() -> err::Feedback {
     init_logging("INFO", &["parser"]).expect("LogLevel 'INFO' does exist.");
     info!("Executing example: parser");
 
@@ -11,10 +22,7 @@ fn main() {
         let raw_cfg = PathBuf::from("resources/isle_of_man_2020-03-14/osm.pbf.yaml");
         match configs::parsing::Config::try_from_yaml(&raw_cfg) {
             Ok(parsing_cfg) => parsing_cfg,
-            Err(msg) => {
-                error!("{}", msg);
-                return;
-            }
+            Err(msg) => return Err(err::Msg::from(format!("{}", msg))),
         }
     };
 
@@ -23,10 +31,7 @@ fn main() {
     // parse and create graph
     let graph = match Parser::parse_and_finalize(parsing_cfg) {
         Ok(graph) => graph,
-        Err(msg) => {
-            error!("{}", msg);
-            return;
-        }
+        Err(msg) => return Err(err::Msg::from(format!("{}", msg))),
     };
     info!(
         "Finished parsing in {} seconds ({} µs).",
@@ -35,4 +40,6 @@ fn main() {
     );
     info!("");
     info!("{}", graph);
+
+    Ok(())
 }
