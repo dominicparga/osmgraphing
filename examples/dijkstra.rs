@@ -11,7 +11,7 @@ use std::{path::PathBuf, time::Instant};
 fn main() {
     if let Err(msg) = run() {
         error!("{}", msg);
-        std::process::exit(1);
+        panic!("{}", msg);
     }
 }
 
