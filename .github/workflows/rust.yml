@@ -7,14 +7,15 @@ on:
 jobs:
   prepare_custom:
     runs-on: ubuntu-latest
+    env:
+      map_dir: 'custom/resources/stuttgart-regbez/'
     steps:
     - name: Create custom directories
       run: |
         pwd
-        map_dir='custom/resources/stuttgart-regbez/'
+        mkdir --parents --verbose "${map_dir}"
     - name: Download stuttgart-regbez/graph.osm.pbf
       run: |
-        mkdir -p "${map_dir}"
         wget -O "${map_dir}/graph.osm.pbf" https://download.geofabrik.de/europe/germany/baden-wuerttemberg/stuttgart-regbez-latest.osm.pbf
     - name: Make data available in other jobs
       uses: actions/upload-artifact@v1
