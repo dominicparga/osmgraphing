@@ -14,7 +14,7 @@ jobs:
     - name: Create custom directories
       run: |
         mkdir --parents --verbose "${stuttgart_regbez_dir}"
-    - name: Download "${stuttgart_regbez_dir}/graph.osm.pbf"
+    - name: Prepare stuttgart-regbez
       run: |
         wget -O "${stuttgart_regbez_dir}/graph.osm.pbf" "${stuttgart_regbez_url}"
     - name: Make data available in other jobs
@@ -22,18 +22,6 @@ jobs:
       with:
         name: custom
         path: custom
-  foo:
-    runs-on: ubuntu-latest
-    needs: [prepare_custom]
-    steps:
-    - name: Download custom-directory
-      uses: actions/download-artifact@v1
-      with:
-        name: custom
-    - name: asdf
-      run: |
-        ls -al custom
-        ls -al custom/resources/stuttgart-regbez
   stable:
     runs-on: ubuntu-latest
     needs: [prepare_custom]
