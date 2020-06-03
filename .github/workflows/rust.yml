@@ -16,7 +16,7 @@ jobs:
         mkdir --parents --verbose "${stuttgart_regbez_dir}"
     - name: Download "${stuttgart_regbez_dir}/graph.osm.pbf"
       run: |
-        wget -O "${stuttgart_regbez_dir}/graph.osm.pbf" "${stuttgart_rebez_url}"
+        wget -O "${stuttgart_regbez_dir}/graph.osm.pbf" "${stuttgart_regbez_url}"
     - name: Make data available in other jobs
       uses: actions/upload-artifact@v1
       with:
