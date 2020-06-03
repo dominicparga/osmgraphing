@@ -25,7 +25,7 @@ fn do_benchmark(criterion: &mut Criterion) {
         configs::parsing::Config::from_yaml("resources/isle_of_man_2020-03-14/osm.pbf.yaml");
     let routing_strs = vec![
         "routing: { metrics: [{ id: 'kilometers' }] }",
-        "routing: { metrics: [{ id: 'kilometers' }, { id: 'minutes' }] }",
+        "routing: { metrics: [{ id: 'kilometers' }, { id: 'hours' }] }",
     ];
 
     // create graph
