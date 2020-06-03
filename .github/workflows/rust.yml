@@ -24,7 +24,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [prepare_custom]
     steps:
-    - name: foo
+    - name: asdf
       run: |
         ls -al custom
         ls -al custom/stuttgart-regbez
