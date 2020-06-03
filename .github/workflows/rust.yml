@@ -8,14 +8,15 @@ jobs:
   prepare_custom:
     runs-on: ubuntu-latest
     env:
-      stuttgart_regbez: 'custom/resources/stuttgart-regbez'
+      stuttgart_regbez_dir: 'custom/resources/stuttgart-regbez'
+      stuttgart_regbez_url: https://download.geofabrik.de/europe/germany/baden-wuerttemberg/stuttgart-regbez-latest.osm.pbf
     steps:
     - name: Create custom directories
       run: |
-        mkdir --parents --verbose "${stuttgart_regbez}"
-    - name: Download "${stuttgart-regbez}/graph.osm.pbf"
+        mkdir --parents --verbose "${stuttgart_regbez_dir}"
+    - name: Download "${stuttgart_regbez_dir}/graph.osm.pbf"
       run: |
-        wget -O "${stuttgart_regbez}/graph.osm.pbf" https://download.geofabrik.de/europe/germany/baden-wuerttemberg/stuttgart-regbez-latest.osm.pbf
+        wget -O "${stuttgart_regbez_dir}/graph.osm.pbf" "${stuttgart_rebez_url}"
     - name: Make data available in other jobs
       uses: actions/upload-artifact@v1
       with:
@@ -32,7 +33,7 @@ jobs:
     - name: asdf
       run: |
         ls -al custom
-        ls -al custom/stuttgart-regbez
+        ls -al custom/resources/stuttgart-regbez
   stable:
     runs-on: ubuntu-latest
     needs: [prepare_custom]
