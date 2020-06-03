@@ -9,6 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Create custom directories
+      run: |
         pwd
         map_dir='custom/resources/stuttgart-regbez/'
     - name: Download stuttgart-regbez/graph.osm.pbf
