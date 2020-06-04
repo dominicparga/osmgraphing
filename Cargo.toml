@@ -25,8 +25,8 @@ default = ['custom']
 
 # TODO different test-lengths
 # https://testing.googleblog.com/2010/12/test-sizes.html
-custom_only = []
 custom = []
+custom_only = ['custom']
 
 
 [[bin]]
