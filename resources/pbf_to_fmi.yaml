@@ -11,6 +11,7 @@ parsing:
   - meta: { info: 'SrcId', id: 'src-id' }
   - meta: { info: 'DstId', id: 'dst-id' }
   - metric: { unit: 'KilometersPerHour', id: 'kmph' }
+  - metric: { unit: 'LaneCount', id: 'lane-count' }
   generating:
     nodes:
     - meta: { info: 'NodeIdx', id: 'node-idx' }
@@ -19,7 +20,7 @@ parsing:
     - meta: { info: 'DstIdx', id: 'dst-idx' }
     - haversine: { unit: 'Kilometers', id: 'kilometers' }
     - calc:
-        result: { unit: 'Minutes', id: 'minutes' }
+        result: { unit: 'Hours', id: 'hours' }
         a: { unit: 'Kilometers', id: 'kilometers' }
         b: { unit: 'KilometersPerHour', id: 'kmph' }
 writing:
@@ -31,12 +32,12 @@ writing:
     - id: 'latitude'
     - id: 'longitude'
     - ignored # height
-    - ignored # level for contraction-hierarchies
+    - ignored # ch-level
     edges:
     - id: 'src-idx'
     - id: 'dst-idx'
     - id: 'kilometers'
-    # - id: 'kmph' # nope because addition (in ch) makes no sense
-    - id: 'minutes'
-    - ignored # sc-idx-1
+    - id: 'hours'
+    - id: 'lane-count'
+    - ignored # sc-idx-0
     - ignored # sc-idx-1
