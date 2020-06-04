@@ -18,6 +18,8 @@ pub mod defaults {
 
     pub mod paths {
         pub mod resources {
+            pub const DIR: &str = "resources";
+
             pub mod bidirectional_bait {
                 pub const FMI_YAML: &str = "resources/bidirectional_bait/fmi.yaml";
             }
@@ -30,6 +32,8 @@ pub mod defaults {
 
             #[cfg(feature = "custom")]
             pub mod stuttgart_regbez {
+                pub const DIR: &str = "resources/stuttgart-regbez_2019-09-07";
+                pub const URL: &str = "https://firebasestorage.googleapis.com/v0/b/osmgraphing.appspot.com/o/stuttgart-regbez_2019-09-07.tar.xz?alt=media&token=ad181f8c-f23a-4bfa-9d2d-00e5acfbb182";
                 pub const FMI_YAML: &str = "resources/stuttgart-regbez_2019-09-07/fmi.yaml";
                 pub const CH_FMI_YAML: &str = "resources/stuttgart-regbez_2019-09-07/ch.fmi.yaml";
                 pub const OSM_PBF_YAML: &str = "resources/stuttgart-regbez_2019-09-07/osm.pbf.yaml";
