@@ -1,23 +1,33 @@
-use std::process::Command;
+#[allow(dead_code)]
+mod dijkstra {
+    include!("../../examples/dijkstra.rs");
 
-fn run_example(example: &str) {
-    let output = Command::new("sh")
-        .arg("-c")
-        .arg(&format!("cargo run --example {}", example))
-        .output()
-        .expect("failed to execute process");
-
-    if !output.status.success() {
-        panic!("{}", std::str::from_utf8(&output.stderr).unwrap());
+    pub fn test() {
+        match run() {
+            Ok(()) => (),
+            Err(msg) => panic!("{}", msg),
+        }
     }
 }
 
 #[test]
 fn dijkstra() {
-    run_example("dijkstra");
+    dijkstra::test();
+}
+
+#[allow(dead_code)]
+mod parser {
+    include!("../../examples/parser.rs");
+
+    pub fn test() {
+        match run() {
+            Ok(()) => (),
+            Err(msg) => panic!("{}", msg),
+        }
+    }
 }
 
 #[test]
 fn parser() {
-    run_example("parser");
+    parser::test();
 }

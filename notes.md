@@ -27,7 +27,8 @@ Maybe, it is concept for later documentation, or just keep-up-the-good-work (`ku
       - Take nodes/ways and distribute according to max-speed (low speed <-> high population-density).
       - Take city-level and let routes go from lower to higher levels.
 - Reduce visibility of modules and control public-access, e.g. of module `defaults`, which is only needed in tests.
-- Remove `panic(...)`
+- Remove `panic(...)` where possible
+- Mention and explain cargo-features somewhere.
 
 
 ### Build-script

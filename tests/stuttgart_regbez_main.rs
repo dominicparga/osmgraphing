@@ -1,3 +1,3 @@
 mod helpers;
-#[cfg(any(feature = "custom", feature = "custom_only"))]
+#[cfg(feature = "custom")]
 mod stuttgart_regbez;
