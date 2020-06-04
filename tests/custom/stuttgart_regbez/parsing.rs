@@ -100,43 +100,43 @@ fn ch_fmi_graph() {
     );
     let fwd_edges = graph.fwd_edges();
     let bwd_edges = graph.bwd_edges();
-    let _expected = 13_328_013;
-    // assert_eq!(
-    //     fwd_edges.count(),
-    //     expected,
-    //     "Number of fwd-edges in graph should be {} but is {}.",
-    //     expected,
-    //     fwd_edges.count()
-    // );
-    // assert_eq!(
-    //     bwd_edges.count(),
-    //     expected,
-    //     "Number of bwd-edges in graph should be {} but is {}.",
-    //     expected,
-    //     bwd_edges.count()
-    // );
+    let expected = 13_327_936;
+    assert_eq!(
+        fwd_edges.count(),
+        expected,
+        "Number of fwd-edges in graph should be {} but is {}.",
+        expected,
+        fwd_edges.count()
+    );
+    assert_eq!(
+        bwd_edges.count(),
+        expected,
+        "Number of bwd-edges in graph should be {} but is {}.",
+        expected,
+        bwd_edges.count()
+    );
 
     // check consistency
 
-    // for edge_idx in &fwd_edges {
-    let edge_idx = osmgraphing::network::EdgeIdx(11867561);
-    if let Some(&[sc_edge_0, sc_edge_1]) = fwd_edges.sc_edges(edge_idx) {
-        let src_idx = bwd_edges.dst_idx(edge_idx);
-        let dst_idx = fwd_edges.dst_idx(edge_idx);
-        let src_0_idx = bwd_edges.dst_idx(sc_edge_0);
-        let dst_0_idx = fwd_edges.dst_idx(sc_edge_0);
-        let src_1_idx = bwd_edges.dst_idx(sc_edge_1);
-        let dst_1_idx = fwd_edges.dst_idx(sc_edge_1);
+    for edge_idx in &fwd_edges {
+        // let edge_idx = osmgraphing::network::EdgeIdx(11867561);
+        if let Some(&[sc_edge_0, sc_edge_1]) = fwd_edges.sc_edges(edge_idx) {
+            let src_idx = bwd_edges.dst_idx(edge_idx);
+            let dst_idx = fwd_edges.dst_idx(edge_idx);
+            let src_0_idx = bwd_edges.dst_idx(sc_edge_0);
+            let dst_0_idx = fwd_edges.dst_idx(sc_edge_0);
+            let src_1_idx = bwd_edges.dst_idx(sc_edge_1);
+            let dst_1_idx = fwd_edges.dst_idx(sc_edge_1);
 
-        let err_msg = format!("Using node-indices: Shortcut-edge (edge-idx: {}) ({} -> {}) doesn't match with sc-edges ({} -> {}) and ({} -> {})", edge_idx, src_idx, dst_idx, src_0_idx, dst_0_idx, src_1_idx, dst_1_idx);
-        assert_eq!(src_idx, src_0_idx, "{}", err_msg);
-        assert_eq!(dst_0_idx, src_1_idx, "{}", err_msg);
-        assert_eq!(dst_1_idx, dst_idx, "{}", err_msg);
-    } else {
-        assert!(
-            !fwd_edges.is_shortcut(edge_idx),
-            "Not every shortcut-edge is seen as shortcut-edge."
-        );
+            let err_msg = format!("Using node-indices: Shortcut-edge (edge-idx: {}) ({} -> {}) doesn't match with sc-edges ({} -> {}) and ({} -> {})", edge_idx, src_idx, dst_idx, src_0_idx, dst_0_idx, src_1_idx, dst_1_idx);
+            assert_eq!(src_idx, src_0_idx, "{}", err_msg);
+            assert_eq!(dst_0_idx, src_1_idx, "{}", err_msg);
+            assert_eq!(dst_1_idx, dst_idx, "{}", err_msg);
+        } else {
+            assert!(
+                !fwd_edges.is_shortcut(edge_idx),
+                "Not every shortcut-edge is seen as shortcut-edge."
+            );
+        }
     }
-    // }
 }

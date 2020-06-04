@@ -28,13 +28,11 @@ pub mod defaults {
                 pub const OSM_PBF_YAML: &str = "resources/isle_of_man_2020-03-14/osm.pbf.yaml";
             }
 
-            // #[cfg(feature = "custom")] TODO dominic
+            #[cfg(feature = "custom")]
             pub mod stuttgart_regbez {
-                pub const FMI_YAML: &str = "custom/resources/stuttgart-regbez_2019-09-07/fmi.yaml";
-                pub const CH_FMI_YAML: &str =
-                    "custom/resources/stuttgart-regbez_2019-09-07/ch.fmi.yaml";
-                pub const OSM_PBF_YAML: &str =
-                    "custom/resources/stuttgart-regbez_2019-09-07/osm.pbf.yaml";
+                pub const FMI_YAML: &str = "resources/stuttgart-regbez_2019-09-07/fmi.yaml";
+                pub const CH_FMI_YAML: &str = "resources/stuttgart-regbez_2019-09-07/ch.fmi.yaml";
+                pub const OSM_PBF_YAML: &str = "resources/stuttgart-regbez_2019-09-07/osm.pbf.yaml";
             }
 
             pub mod simple_stuttgart {
