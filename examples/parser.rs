@@ -7,6 +7,7 @@ use osmgraphing::{
 use std::{path::PathBuf, time::Instant};
 
 fn main() {
+    init_logging("INFO", &["parser"]).expect("LogLevel 'INFO' does exist.");
     if let Err(msg) = run() {
         error!("{}", msg);
         panic!("{}", msg);
@@ -14,7 +15,6 @@ fn main() {
 }
 
 fn run() -> err::Feedback {
-    init_logging("INFO", &["parser"]).expect("LogLevel 'INFO' does exist.");
     info!("Executing example: parser");
 
     // get config by provided map-file
