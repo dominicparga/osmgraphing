@@ -128,8 +128,9 @@ fn ch_fmi_graph() {
             let dst_1_idx = fwd_edges.dst_idx(sc_edge_1);
 
             let err_msg = format!(
-                "Using node-indices: Shortcut-edge (edge-idx: {}) ({} -> {}) \
-                doesn't match with sc-edges ({} -> {}) and ({} -> {})",
+                "Shortcut-edge (edge-idx: {}) (node-idx: {} -> node-idx: {}) \
+                doesn't match with sc-edges (node-idx: {} -> node-idx: {}) \
+                and (node-idx: {} -> node-idx: {})",
                 edge_idx, src_idx, dst_idx, src_0_idx, dst_0_idx, src_1_idx, dst_1_idx
             );
 
