@@ -21,7 +21,7 @@ license = 'Apache-2.0'
 
 
 [features]
-default = ['custom']
+default = []
 
 # TODO different test-lengths
 # https://testing.googleblog.com/2010/12/test-sizes.html
