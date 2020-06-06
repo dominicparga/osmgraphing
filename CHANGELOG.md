@@ -68,6 +68,7 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 ### Fixed <a name="unreleased/fixed"></a>
 
 - The explorator __compares vectors__ with a helper-method `le` (lower-equals).
+- When correcting shorcut-indices in graph-building, iterating backward over them is correct.
 
 
 ### Security <a name="unreleased/security"></a>
@@ -124,6 +125,8 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 - The link to `doc.rs` is hardcoded to `major.minor.patch=0.y.z` because `docs.rs` chooses version `1.0.0` though it's yanked..
 - The explorator compares `vec![f64]`, which only compares the first number of each vector.
   Replace this by using a helper-method `le` (lower-equals) iterating over the values.
+- When correcting shortcut-indices after removing duplicated edges, the iteration is done forward, but should be done backward.
+  Otherwise, it leads to wrong shortcuts, loop-references and index-overflows.
 
 
 ### Removed <a name="v0.13.0/removed"></a>

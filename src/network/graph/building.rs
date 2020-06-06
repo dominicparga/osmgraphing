@@ -458,7 +458,7 @@ impl GraphBuilder {
         info!("DO Remove duplicated proto-edges and correct remaining ch-shortcuts");
         // count shortcut-edges for later
         let mut sc_count = 0;
-        if true {
+        {
             // duplicate is e.g. the edge
             // node-id 314074041 -> node-id 283494218
             // which is part of two ways
