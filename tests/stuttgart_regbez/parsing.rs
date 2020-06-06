@@ -1,5 +1,5 @@
-use crate::helpers::{defaults, parse};
-use defaults::paths::resources::isle_of_man as resources;
+use crate::helpers::{assert_graph_sloppy, defaults, parse};
+use defaults::paths::resources::stuttgart_regbez as resources;
 use osmgraphing::configs;
 
 #[test]
@@ -29,34 +29,13 @@ fn ch_fmi_yaml() {
 }
 
 #[test]
-fn yaml_str() {
-    // TODO
-    pbf_yaml();
-}
-
-#[test]
 fn pbf_graph() {
     let parsing_cfg = configs::parsing::Config::from_yaml(resources::OSM_PBF_YAML);
     let graph = parse(parsing_cfg);
 
-    let nodes = graph.nodes();
-    let expected = 52_803;
-    assert_eq!(
-        nodes.count(),
-        expected,
-        "Number of nodes in graph should be {} but is {}.",
-        expected,
-        nodes.count()
-    );
-    let fwd_edges = graph.fwd_edges();
-    let expected = 107_031;
-    assert_eq!(
-        fwd_edges.count(),
-        expected,
-        "Number of fwd-edges in graph should be {} but is {}.",
-        expected,
-        fwd_edges.count()
-    );
+    let expected_node_count = 2_688_220;
+    let expected_edge_count = 5_592_415;
+    assert_graph_sloppy(expected_node_count, expected_edge_count, &graph);
 }
 
 #[test]
@@ -64,24 +43,9 @@ fn fmi_graph() {
     let parsing_cfg = configs::parsing::Config::from_yaml(resources::FMI_YAML);
     let graph = parse(parsing_cfg);
 
-    let nodes = graph.nodes();
-    let expected = 52_803;
-    assert_eq!(
-        nodes.count(),
-        expected,
-        "Number of nodes in graph should be {} but is {}.",
-        expected,
-        nodes.count()
-    );
-    let fwd_edges = graph.fwd_edges();
-    let expected = 107_031;
-    assert_eq!(
-        fwd_edges.count(),
-        expected,
-        "Number of fwd-edges in graph should be {} but is {}.",
-        expected,
-        fwd_edges.count()
-    );
+    let expected_node_count = 2_688_220;
+    let expected_edge_count = 5_592_415;
+    assert_graph_sloppy(expected_node_count, expected_edge_count, &graph);
 }
 
 #[test]
@@ -89,22 +53,7 @@ fn ch_fmi_graph() {
     let parsing_cfg = configs::parsing::Config::from_yaml(resources::CH_FMI_YAML);
     let graph = parse(parsing_cfg);
 
-    let nodes = graph.nodes();
-    let expected = 52_803;
-    assert_eq!(
-        nodes.count(),
-        expected,
-        "Number of nodes in graph should be {} but is {}.",
-        expected,
-        nodes.count()
-    );
-    let fwd_edges = graph.fwd_edges();
-    let expected = 189_145;
-    assert_eq!(
-        fwd_edges.count(),
-        expected,
-        "Number of fwd-edges in graph should be {} but is {}.",
-        expected,
-        fwd_edges.count()
-    );
+    let expected_node_count = 2_688_220;
+    let expected_edge_count = 13_327_936;
+    assert_graph_sloppy(expected_node_count, expected_edge_count, &graph);
 }

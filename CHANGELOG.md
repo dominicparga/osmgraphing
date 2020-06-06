@@ -68,6 +68,7 @@ The format is based on [Keep a Changelog][keepachangelog], and this project adhe
 ### Fixed <a name="unreleased/fixed"></a>
 
 - The explorator __compares vectors__ with a helper-method `le` (lower-equals).
+- When correcting shorcut-indices in graph-building, iterating backward over them is correct.
 
 
 ### Security <a name="unreleased/security"></a>

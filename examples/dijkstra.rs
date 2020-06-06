@@ -9,14 +9,14 @@ use osmgraphing::{
 use std::{path::PathBuf, time::Instant};
 
 fn main() {
+    init_logging("INFO", &["dijkstra"]).expect("LogLevel 'INFO' does exist.");
     if let Err(msg) = run() {
         error!("{}", msg);
-        std::process::exit(1);
+        panic!("{}", msg);
     }
 }
 
 fn run() -> err::Feedback {
-    init_logging("INFO", &["dijkstra"]).expect("LogLevel 'INFO' does exist.");
     info!("Executing example: A*");
 
     let raw_cfg = PathBuf::from("resources/simple_stuttgart/fmi.yaml");

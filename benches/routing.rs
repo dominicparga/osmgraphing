@@ -1,4 +1,4 @@
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{black_box, Criterion};
 use log::error;
 use osmgraphing::{
     configs, helpers,
@@ -6,8 +6,18 @@ use osmgraphing::{
     network::{Graph, NodeIdx},
     routing,
 };
+use std::time::Duration;
 
-fn criterion_benchmark(c: &mut Criterion) {
+fn main() {
+    let mut criterion = Criterion::default()
+        .warm_up_time(Duration::from_secs(10))
+        .measurement_time(Duration::from_secs(120))
+        .configure_from_args();
+    do_benchmark(&mut criterion);
+    criterion.final_summary();
+}
+
+fn do_benchmark(criterion: &mut Criterion) {
     helpers::init_logging("WARN", &[]).expect("No user-input, so this should be fine.");
 
     // parsing
@@ -15,7 +25,7 @@ fn criterion_benchmark(c: &mut Criterion) {
         configs::parsing::Config::from_yaml("resources/isle_of_man_2020-03-14/osm.pbf.yaml");
     let routing_strs = vec![
         "routing: { metrics: [{ id: 'kilometers' }] }",
-        "routing: { metrics: [{ id: 'kilometers' }, { id: 'minutes' }] }",
+        "routing: { metrics: [{ id: 'kilometers' }, { id: 'hours' }] }",
     ];
 
     // create graph
@@ -64,7 +74,7 @@ fn criterion_benchmark(c: &mut Criterion) {
         let routing_cfg = configs::routing::Config::from_str(routing_str, graph.cfg());
 
         for (prefix, suffix, routes) in labelled_routes.iter() {
-            c.bench_function(
+            criterion.bench_function(
                 &format!("{}Shortest Dijkstra (bidir){}", prefix, suffix),
                 |b| {
                     b.iter(|| {
@@ -80,7 +90,7 @@ fn criterion_benchmark(c: &mut Criterion) {
 
         // benchmarking fastest routing
         for (prefix, suffix, routes) in labelled_routes.iter() {
-            c.bench_function(
+            criterion.bench_function(
                 &format!("{}Fastest Dijkstra (bidir){}", prefix, suffix),
                 |b| {
                     b.iter(|| {
@@ -95,11 +105,6 @@ fn criterion_benchmark(c: &mut Criterion) {
         }
     }
 }
-
-criterion_group!(benches, criterion_benchmark);
-criterion_main!(benches);
-
-//------------------------------------------------------------------------------------------------//
 
 fn bidir_shortest_dijkstra(
     graph: &Graph,

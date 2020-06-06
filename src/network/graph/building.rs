@@ -494,6 +494,7 @@ impl GraphBuilder {
                 // -> inc r
                 // -> remember index for updating shortcuts
                 if is_duplicate {
+                    // replace r by w-1
                     removed_indices.push(r);
                 }
                 // if not a duplicate
@@ -509,11 +510,14 @@ impl GraphBuilder {
 
             // correct remaining shortcuts
             // -> decrement every index, that is at least as high as a removed-idx
+            // This works because the original list has been sorted, meaning duplicates are laying
+            // next to each other.
+            // Thus decrementing corrects every value.
             for edge in proto_edges.iter() {
                 if let Some(sc_idx) = edge.sc_edges {
                     let shortcuts = &mut self.proto_shortcuts[sc_idx];
                     sc_count += 1;
-                    for removed_idx in removed_indices.iter() {
+                    for removed_idx in removed_indices.iter().rev() {
                         for shortcut in shortcuts.iter_mut().filter(|sc| ***sc >= *removed_idx) {
                             **shortcut -= 1;
                         }
