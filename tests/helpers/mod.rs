@@ -231,6 +231,36 @@ pub fn assert_graph(
     bwd_test_edges: Vec<TestEdge>,
     graph: &Graph,
 ) {
+    assert_eq!(
+        fwd_test_edges.len(),
+        bwd_test_edges.len(),
+        "The amount of expected fwd-edges should be equal to the amount of bwd-edges."
+    );
+    assert_graph_sloppy(test_nodes.len(), fwd_test_edges.len(), graph);
+
+    // comparing nodes
+
+    let nodes = graph.nodes();
+    for (expected, original) in test_nodes
+        .iter()
+        .map(|expected| (expected, TestNode::from(nodes.create(expected.idx))))
+    {
+        assert_eq!(
+            expected, &original,
+            "Expected node {} but graph-node is {}.",
+            expected, original
+        );
+    }
+
+    // comparing forward- and backward-edges
+
+    for test_edge in fwd_test_edges.iter().chain(bwd_test_edges.iter()) {
+        test_edge.assert_correct(&graph);
+    }
+}
+
+#[allow(dead_code)]
+pub fn assert_graph_sloppy(expected_node_count: usize, expected_edge_count: usize, graph: &Graph) {
     let _nodes = graph.nodes();
     let nodes = graph.nodes(); // calling twice should be fine
     let _fwd_edges = graph.fwd_edges();
@@ -240,25 +270,74 @@ pub fn assert_graph(
 
     assert_eq!(
         nodes.count(),
-        test_nodes.len(),
+        expected_node_count,
         "Number of nodes in graph should be {} but is {}.",
-        test_nodes.len(),
+        expected_node_count,
         nodes.count()
+    );
+    // implicitly checked below, but explicit is better than implicit
+    assert_eq!(
+        fwd_edges.count(),
+        bwd_edges.count(),
+        "The amount of fwd-edges should be equal to the amount of bwd-edges."
     );
     assert_eq!(
         fwd_edges.count(),
-        fwd_test_edges.len(),
+        expected_edge_count,
         "Number of fwd-edges in graph should be {} but is {}.",
-        fwd_test_edges.len(),
+        expected_edge_count,
         fwd_edges.count()
     );
     assert_eq!(
         bwd_edges.count(),
-        bwd_test_edges.len(),
+        expected_edge_count,
         "Number of bwd-edges in graph should be {} but is {}.",
-        bwd_test_edges.len(),
+        expected_edge_count,
         bwd_edges.count()
     );
+
+    // check consistency
+
+    for edge_idx in &fwd_edges {
+        if let Some(&[sc_edge_0, sc_edge_1]) = fwd_edges.sc_edges(edge_idx) {
+            assert!(
+                *sc_edge_0 < fwd_edges.count(),
+                "Sc-edge-0 {} of edge-idx {} is too large (only {} edges in graph).",
+                *sc_edge_0,
+                *edge_idx,
+                fwd_edges.count()
+            );
+            assert!(
+                *sc_edge_1 < fwd_edges.count(),
+                "Sc-edge-1 {} of edge-idx {} is too large (only {} edges in graph).",
+                *sc_edge_1,
+                *edge_idx,
+                fwd_edges.count()
+            );
+
+            let src_idx = bwd_edges.dst_idx(edge_idx);
+            let dst_idx = fwd_edges.dst_idx(edge_idx);
+            let src_0_idx = bwd_edges.dst_idx(sc_edge_0);
+            let dst_0_idx = fwd_edges.dst_idx(sc_edge_0);
+            let src_1_idx = bwd_edges.dst_idx(sc_edge_1);
+            let dst_1_idx = fwd_edges.dst_idx(sc_edge_1);
+
+            let err_msg = format!(
+                "Shortcut-edge (edge-idx: {}) (node-idx: {} -> node-idx: {}) \
+                doesn't match with sc-edges (node-idx: {} -> node-idx: {}) \
+                and (node-idx: {} -> node-idx: {})",
+                edge_idx, src_idx, dst_idx, src_0_idx, dst_0_idx, src_1_idx, dst_1_idx
+            );
+            assert_eq!(src_idx, src_0_idx, "{}", err_msg);
+            assert_eq!(dst_0_idx, src_1_idx, "{}", err_msg);
+            assert_eq!(dst_1_idx, dst_idx, "{}", err_msg);
+        } else {
+            assert!(
+                !fwd_edges.is_shortcut(edge_idx),
+                "Not every shortcut-edge is seen as shortcut-edge."
+            );
+        }
+    }
 
     // for i in nodes.count()..(2 * nodes.count()) {
     //     for j in nodes.count()..(2 * nodes.count()) {
@@ -288,25 +367,4 @@ pub fn assert_graph(
     //         );
     //     }
     // }
-
-    //--------------------------------------------------------------------------------------------//
-    // testing nodes
-
-    for (expected, original) in test_nodes
-        .iter()
-        .map(|expected| (expected, TestNode::from(nodes.create(expected.idx))))
-    {
-        assert_eq!(
-            expected, &original,
-            "Expected node {} but graph-node is {}.",
-            expected, original
-        );
-    }
-
-    //--------------------------------------------------------------------------------------------//
-    // testing forward- and backward-edges
-
-    for test_edge in fwd_test_edges.iter().chain(bwd_test_edges.iter()) {
-        test_edge.assert_correct(&graph);
-    }
 }

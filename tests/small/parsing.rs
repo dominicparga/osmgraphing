@@ -1,4 +1,4 @@
-use crate::helpers::{assert_graph, defaults, parse, TestEdge, TestNode};
+use crate::helpers::{assert_graph, assert_graph_sloppy, defaults, parse, TestEdge, TestNode};
 use defaults::paths::resources::small as resources;
 use kissunits::{
     distance::Kilometers,
@@ -127,4 +127,14 @@ fn fmi_graph() {
     .collect();
 
     assert_graph(test_nodes, fwd_test_edges, bwd_test_edges, &graph);
+}
+
+#[test]
+fn ch_fmi_graph() {
+    let parsing_cfg = configs::parsing::Config::from_yaml(resources::CH_FMI_YAML);
+    let graph = parse(parsing_cfg);
+
+    let expected_node_count = 8;
+    let expected_edge_count = 18;
+    assert_graph_sloppy(expected_node_count, expected_edge_count, &graph);
 }
