@@ -29,12 +29,6 @@ fn ch_fmi_yaml() {
 }
 
 #[test]
-fn yaml_str() {
-    // TODO
-    pbf_yaml();
-}
-
-#[test]
 fn pbf_graph() {
     let parsing_cfg = configs::parsing::Config::from_yaml(resources::OSM_PBF_YAML);
     let graph = parse(parsing_cfg);

@@ -25,12 +25,6 @@ fn fmi_yaml() {
 }
 
 #[test]
-fn yaml_str() {
-    // TODO
-    fmi_yaml();
-}
-
-#[test]
 fn fmi_graph() {
     let parsing_cfg = configs::parsing::Config::from_yaml(resources::FMI_YAML);
     let graph = parse(parsing_cfg);

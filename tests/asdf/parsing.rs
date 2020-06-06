@@ -44,3 +44,9 @@ fn routing_config_from_str() {
         "Routing-config should specify normal dijkstra."
     );
 }
+
+#[test]
+#[ignore]
+fn config_from_str() {
+    // TODO implement testing yaml-str
+}
