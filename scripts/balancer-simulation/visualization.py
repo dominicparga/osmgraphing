@@ -11,12 +11,14 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 
+
 def run(cfg):
     '''
     TODO function docstring
     '''
     results_dir = cfg['results_dir']
     num_iter = cfg['num_iter']
+    old_workloads = None
 
     for i in range(num_iter):
         print(f'workloads {i}')
@@ -34,7 +36,7 @@ def run(cfg):
                 dst_lat = float(row['dst-lat'])
                 dst_lon = float(row['dst-lon'])
                 # take mid-point of an edge as reference
-                lats.append((src_lat+ dst_lat) / 2.0)
+                lats.append((src_lat + dst_lat) / 2.0)
                 lons.append((src_lon + dst_lon) / 2.0)
 
         print('Read workloads')
@@ -52,8 +54,42 @@ def run(cfg):
 
         print(f'mean={np.mean(workloads)}')
         print(f' std={np.std(workloads)}')
+        print(f' min={np.min(workloads)}')
+        print(f' max={np.max(workloads)}')
 
-        # plot
+        # plot deltas
+
+        if old_workloads is not None:
+            delta_workloads = list(map(
+                lambda new, old: new - old, workloads, old_workloads
+            ))
+
+            plt.figure()
+            plt.title(f'deltas {i}')
+
+            cmap = mpl.cm.get_cmap(cfg['cmap'])
+            plt.scatter(
+                lons,
+                lats,
+                c=delta_workloads,
+                s=20,
+                alpha=0.4,
+                edgecolors='none',
+                cmap=cmap,
+                label='',
+                # vmin=0,
+                # vmax=10
+            )
+
+            plt.xlabel('longitude')
+            plt.ylabel('latitude')
+            plt.colorbar()
+            plt.grid(False)
+            plt.savefig(f'{results_dir}/{i}/stats/deltas.png')
+            # plt.show()
+        old_workloads = workloads
+
+        # plot workloads
 
         plt.figure()
         plt.title(f'workloads {i}')
@@ -81,13 +117,15 @@ def run(cfg):
 
 
 if __name__ == '__main__':
-    cwd = os.path.join(os.getcwd(), os.path.dirname(__file__))
+    CWD = os.path.join(os.getcwd(), os.path.dirname(__file__))
+    RESULTS_DIR = os.path.join(CWD, '..', '..', 'custom', 'results')
 
     # vis workloads
     run({
         'results_dir': os.path.join(
-            cwd,
-            '../../custom/results/isle_of_man_2020-03-14/2020-05-28_10-20-20'
+            RESULTS_DIR,
+            'isle_of_man_2020-03-14',
+            '2020-06-07_13-07-42'
         ),
         'cmap': 'copper',
         'num_iter': 10

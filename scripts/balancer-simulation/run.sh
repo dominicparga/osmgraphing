@@ -128,28 +128,28 @@ percent='99.85' # 99.85
 # get/set map-file
 map_file="${osmgraphing_dir}/${1}"
 if [ -z "${1}" ] || [ ! -f "${map_file}" ]; then
-    printf "ERROR: Please provide a map-file relative to osmgraphing/. "
+    printf "ERROR: Please provide a valid map-file relative to osmgraphing/. "
     echo "It's probably the one from your config-file."
     exit 1
 fi
 # get name of map by removing shortest suffix and longest prefix
-map_name="${map_file%/*}"
-map_name="${map_name##*/}"
+map_name="${map_file%/*}" # shortest suffix starting with /
+map_name="${map_name##*/}" # longest prefix ending with /
 
 # results-directory
 results_dir="${custom_dir}/results/${map_name}/$(date "+%Y-%m-%d_%H-%M-%S")"
 mkdir --verbose --parents "${results_dir}"
 
 # build osmgraphing
-"${osmgraphing_dir}/scripts/build.sh"
+cargo build --release
 
 #------------------------------------------------------------------------------#
 # iteration i
 
 iter_0_dir="${results_dir}/0"
 iter_1_dir="${results_dir}/1"
-# for iter in '0' '1' '2' '3' '4' '5' '6' '7' '8' '9'; do
-for iter in '0' '1' '2' '3'; do
+for iter in '0' '1' '2' '3' '4' '5' '6' '7' '8' '9'; do
+# for iter in '0' '1' '2' '3'; do
     iter_dir="${results_dir}/${iter}"
 
     if [ "${iter}" -eq '0' ]; then
