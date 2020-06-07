@@ -166,10 +166,11 @@ impl super::Writing for Writer {
                     // if nothing has been written
                     // -> id is not in config
                     if !has_been_written {
-                        panic!(format!(
+                        return Err(format!(
                             "Writing-config has id {} which is not part of graph's node-data.",
                             next_id
-                        ));
+                        )
+                        .into());
                     }
                 } else {
                     // if id is None
@@ -302,10 +303,11 @@ impl super::Writing for Writer {
                     // if nothing has been written
                     // -> id is not in config
                     if !has_been_written {
-                        panic!(format!(
+                        return Err(format!(
                             "Writing-config has id {} which is not part of graph's edge-data.",
                             next_id
-                        ))
+                        )
+                        .into());
                     }
                 } else {
                     // if id is None

@@ -1,10 +1,12 @@
 use crate::{
     configs::{parsing::generating, SimpleId},
     defaults::capacity::DimVec,
+    helpers::err,
 };
 use serde::Deserialize;
 pub mod metrics;
 pub mod proto;
+use std::convert::TryFrom;
 
 #[derive(Debug)]
 pub struct Config {
@@ -15,8 +17,10 @@ pub struct Config {
     pub metrics: metrics::Config,
 }
 
-impl From<proto::Config> for Config {
-    fn from(proto_cfg: proto::Config) -> Config {
+impl TryFrom<proto::Config> for Config {
+    type Error = err::Msg;
+
+    fn try_from(proto_cfg: proto::Config) -> err::Result<Config> {
         // init datastructures
 
         let mut categories = Vec::with_capacity(proto_cfg.0.len());
@@ -50,7 +54,7 @@ impl From<proto::Config> for Config {
                 // compare both ids
 
                 if id_i == id_j {
-                    panic!("Config has duplicate id: {}", id_i);
+                    return Err(format!("Config has duplicate id: {}", id_i).into());
                 }
             }
         }
@@ -74,13 +78,13 @@ impl From<proto::Config> for Config {
             }
         }
 
-        Config {
+        Ok(Config {
             categories,
             metrics: metrics::Config {
                 units: metric_units,
                 ids: metric_ids,
             },
-        }
+        })
     }
 }
 

@@ -944,7 +944,8 @@ impl GraphBuilder {
                             let distance = {
                                 let km =
                                     kissunits::geo::haversine_distance_km(&src_coord, &dst_coord);
-                                generating::edges::metrics::UnitInfo::Kilometers.convert(unit, *km)
+                                generating::edges::metrics::UnitInfo::Kilometers
+                                    .try_convert(unit, *km)?
                             };
 
                             // update graph
@@ -979,7 +980,7 @@ impl GraphBuilder {
 
                             let new_raw_value = {
                                 let old_raw_value = graph.metrics[edge_idx][metric_idx];
-                                from.unit.convert(&to.unit, old_raw_value)
+                                from.unit.try_convert(&to.unit, old_raw_value)?
                             };
 
                             // update graph
@@ -1014,7 +1015,7 @@ impl GraphBuilder {
 
                             let new_raw_value = {
                                 let old_raw_value = graph.metrics[edge_idx][metric_idx];
-                                from.unit.convert(&to.unit, old_raw_value)
+                                from.unit.try_convert(&to.unit, old_raw_value)?
                             };
 
                             // update graph
@@ -1078,7 +1079,9 @@ impl GraphBuilder {
                             let new_raw_value = {
                                 let old_raw_a = graph.metrics[edge_idx][idx_a];
                                 let old_raw_b = graph.metrics[edge_idx][idx_b];
-                                result.unit.calc(&a.unit, old_raw_a, &b.unit, old_raw_b)
+                                result
+                                    .unit
+                                    .try_calc(&a.unit, old_raw_a, &b.unit, old_raw_b)?
                             };
 
                             // update graph

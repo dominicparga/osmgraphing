@@ -1,9 +1,8 @@
 use crate::{
     defaults::capacity::DimVec,
-    helpers,
+    helpers::{self, err},
     network::{EdgeIdx, Graph, NodeIdx},
 };
-use log::debug;
 use smallvec::smallvec;
 use std::{
     cmp::{Eq, PartialEq},
@@ -94,7 +93,7 @@ impl Path {
     }
 
     /// Flattens shortcuts, out-of-place, and calculates the flattened path's cost.
-    pub fn flatten(self, graph: &Graph) -> Path {
+    pub fn try_flatten(self, graph: &Graph) -> err::Result<Path> {
         // setup new edges
         let mut flattened_path = Path {
             src_idx: self.src_idx,
@@ -111,59 +110,15 @@ impl Path {
 
         let fwd_edges = graph.fwd_edges();
         while let Some(mut edge_idx) = old_edges.pop() {
-            debug!("");
-            let n = old_edges.len();
-            debug!(
-                "n-3: {}, n-2: {} n-1: {}",
-                old_edges[n - 3],
-                old_edges[n - 2],
-                old_edges[n - 1]
-            );
             // if edge is shortcut
             // -> push on old-edges
             while let Some(sc_edges) = fwd_edges.sc_edges(edge_idx) {
-                debug!(
-                    "edge-idx: {}, src-id {} -> dst-id {}",
-                    edge_idx,
-                    graph
-                        .nodes()
-                        .create(graph.bwd_edges().dst_idx(edge_idx))
-                        .id(),
-                    graph
-                        .nodes()
-                        .create(graph.fwd_edges().dst_idx(edge_idx))
-                        .id()
-                );
-                debug!(
-                    "sc-edge-0: {}, src-id {} -> dst-id {} (will be next)",
-                    sc_edges[0],
-                    graph
-                        .nodes()
-                        .create(graph.bwd_edges().dst_idx(sc_edges[0]))
-                        .id(),
-                    graph
-                        .nodes()
-                        .create(graph.fwd_edges().dst_idx(sc_edges[0]))
-                        .id()
-                );
-                debug!(
-                    "sc-edge-1: {}, src-id {} -> dst-id {} (will be pushed)",
-                    sc_edges[1],
-                    graph
-                        .nodes()
-                        .create(graph.bwd_edges().dst_idx(sc_edges[1]))
-                        .id(),
-                    graph
-                        .nodes()
-                        .create(graph.fwd_edges().dst_idx(sc_edges[1]))
-                        .id()
-                );
                 old_edges.push(sc_edges[1]);
                 edge_idx = sc_edges[0];
 
                 // max path-length contains all edges in a graph
                 if old_edges.len() > fwd_edges.count() {
-                    panic!("There is a cycle of shortcut-references in the graph.");
+                    return Err("There is a cycle of shortcut-references in the graph.".into());
                 }
             }
 
@@ -180,7 +135,14 @@ impl Path {
         }
 
         flattened_path.edges.shrink_to_fit();
-        flattened_path
+        Ok(flattened_path)
+    }
+
+    pub fn flatten(self, graph: &Graph) -> Path {
+        match self.try_flatten(graph) {
+            Ok(path) => path,
+            Err(msg) => panic!("{}", msg),
+        }
     }
 }
 

@@ -1,6 +1,7 @@
 use crate::{
     configs::{parsing::generating::edges::metrics as gen, SimpleId},
     defaults::capacity::DimVec,
+    helpers::err,
     network::MetricIdx,
 };
 use kissunits::{
@@ -83,7 +84,7 @@ impl From<gen::UnitInfo> for UnitInfo {
 }
 
 impl UnitInfo {
-    pub fn convert(&self, to: &UnitInfo, raw_value: f64) -> f64 {
+    pub fn try_convert(&self, to: &UnitInfo, raw_value: f64) -> err::Result<f64> {
         let new_raw_value = match self {
             UnitInfo::Meters => match to {
                 UnitInfo::Meters | UnitInfo::F64 => Some(raw_value),
@@ -152,9 +153,16 @@ impl UnitInfo {
         };
 
         if let Some(new_raw_value) = new_raw_value {
-            new_raw_value
+            Ok(new_raw_value)
         } else {
-            panic!("Unit {:?} can't be converted to {:?}.", self, to)
+            Err(format!("Unit {:?} can't be converted to {:?}.", self, to).into())
+        }
+    }
+
+    pub fn convert(&self, to: &UnitInfo, raw_value: f64) -> f64 {
+        match self.try_convert(to, raw_value) {
+            Ok(new_raw_value) => new_raw_value,
+            Err(msg) => panic!("{}", msg),
         }
     }
 }

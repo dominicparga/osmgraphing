@@ -1,6 +1,10 @@
-use crate::io::{network::Parser, SupportingFileExts};
+use crate::{
+    helpers::err,
+    io::{network::Parser, SupportingFileExts},
+};
 use serde::Deserialize;
 use std::{
+    convert::TryFrom,
     fs::OpenOptions,
     path::{Path, PathBuf},
 };
@@ -23,7 +27,7 @@ pub mod vehicles;
 ///
 /// Keep in mind, that metrics (except for id) are stored as `f64` for better maintainability and efficiency.
 #[derive(Debug, Deserialize)]
-#[serde(from = "proto::Config")]
+#[serde(try_from = "proto::Config")]
 pub struct Config {
     pub map_file: PathBuf,
     pub vehicles: vehicles::Config,
@@ -38,20 +42,22 @@ impl SupportingFileExts for Config {
     }
 }
 
-impl From<proto::Config> for Config {
-    fn from(proto_cfg: proto::Config) -> Config {
+impl TryFrom<proto::Config> for Config {
+    type Error = err::Msg;
+
+    fn try_from(proto_cfg: proto::Config) -> err::Result<Config> {
         let proto_cfg = proto_cfg.parsing;
 
-        Config {
+        Ok(Config {
             map_file: proto_cfg.map_file,
             vehicles: proto_cfg.vehicles.into(),
             nodes: proto_cfg.nodes.into(),
-            edges: proto_cfg.edges.into(),
+            edges: edges::Config::try_from(proto_cfg.edges)?,
             generating: match proto_cfg.generating {
                 Some(generating_cfg) => Some(generating_cfg.into()),
                 None => None,
             },
-        }
+        })
     }
 }
 

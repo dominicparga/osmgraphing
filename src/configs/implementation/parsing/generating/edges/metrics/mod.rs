@@ -1,4 +1,4 @@
-use crate::{configs::SimpleId, defaults::capacity::DimVec};
+use crate::{configs::SimpleId, defaults::capacity::DimVec, helpers::err};
 use kissunits::{
     distance::{Kilometers, Meters},
     speed::KilometersPerHour,
@@ -57,7 +57,7 @@ impl From<proto::UnitInfo> for UnitInfo {
 }
 
 impl UnitInfo {
-    pub fn convert(&self, to: &UnitInfo, raw_value: f64) -> f64 {
+    pub fn try_convert(&self, to: &UnitInfo, raw_value: f64) -> err::Result<f64> {
         let new_raw_value = match self {
             UnitInfo::Meters => match to {
                 UnitInfo::Meters => Some(raw_value),
@@ -133,13 +133,19 @@ impl UnitInfo {
         };
 
         if let Some(new_raw_value) = new_raw_value {
-            new_raw_value
+            Ok(new_raw_value)
         } else {
-            panic!("Unit {:?} can't be converted to {:?}.", self, to)
+            Err(format!("Unit {:?} can't be converted to {:?}.", self, to).into())
         }
     }
 
-    pub fn calc(&self, unit_a: &UnitInfo, raw_a: f64, unit_b: &UnitInfo, raw_b: f64) -> f64 {
+    pub fn try_calc(
+        &self,
+        unit_a: &UnitInfo,
+        raw_a: f64,
+        unit_b: &UnitInfo,
+        raw_b: f64,
+    ) -> err::Result<f64> {
         let raw_result = match self {
             UnitInfo::Meters => None,
             UnitInfo::Kilometers => None,
@@ -248,12 +254,13 @@ impl UnitInfo {
         };
 
         if let Some(raw_result) = raw_result {
-            raw_result
+            Ok(raw_result)
         } else {
-            panic!(
+            Err(format!(
                 "{:?} can't be calculated by {:?} and {:?}.",
                 self, unit_a, unit_b
             )
+            .into())
         }
     }
 }
