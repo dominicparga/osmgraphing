@@ -18,8 +18,8 @@ All calculations should be done effectively on a single desktop instead of an ex
 
 ## Reason for `version < 1.0.0`
 
-I'm currently building this library for my master-thesis, leading to interface-changes with breaking changes (at least) every few weeks, why version `1.0.0` is not supported yet.
-However, the underlying parser and graph-structure are working very stable, efficiently, tested with different maps (see `resources/`), and will be used in `May 2020` to simulate different routing-scenarios, so version `1.0.0` should be reached soon. `:)`
+I'm currently building this library for my master-thesis (submission `August 2020`), leading to interface-changes with breaking changes (at least) every few weeks, why version `1.0.0` is not supported yet.
+However, the underlying parser and graph-structure are working very stable, efficiently, tested with different maps (see `resources/`), and will be used to simulate different routing-scenarios, so version `1.0.0` should be reached soon. `:)`
 
 
 ## Setup and usage
