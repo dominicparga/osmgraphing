@@ -13,6 +13,7 @@ pub struct Config {
     pub workload_idx: MetricIdx,
     pub lane_count_idx: MetricIdx,
     pub distance_idx: MetricIdx,
+    pub workload_correction: f64,
 }
 
 impl SupportingFileExts for Config {
@@ -51,6 +52,7 @@ impl Config {
             workload_idx: parsing_cfg.edges.metrics.idx_of(&proto_cfg.workload_id),
             lane_count_idx: parsing_cfg.edges.metrics.idx_of(&proto_cfg.lane_count_id),
             distance_idx: parsing_cfg.edges.metrics.idx_of(&proto_cfg.distance_id),
+            workload_correction: proto_cfg.workload_correction,
         })
     }
 

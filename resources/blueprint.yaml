@@ -143,3 +143,5 @@ balancing:
     distance: 'kilometers'
     route-count: 'route-count'
     lane-count: 'lane-count'
+  # optional
+  workload-correction: 0.3

@@ -100,6 +100,10 @@ pub mod routing {
     pub const TOLERATED_SCALE: f64 = std::f64::INFINITY;
 }
 
+pub mod balancing {
+    pub const WORKLOAD_CORRECTION: f64 = 0.01;
+}
+
 pub mod explorating {
     pub mod files {
         pub const EDGES_WRITER: &str = "src-dst-coords.csv";
