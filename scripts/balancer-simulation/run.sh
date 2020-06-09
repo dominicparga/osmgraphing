@@ -146,10 +146,11 @@ cargo build --release
 #------------------------------------------------------------------------------#
 # iteration i
 
+iter=0
+num_iter=2
 iter_0_dir="${results_dir}/0"
 iter_1_dir="${results_dir}/1"
-for iter in '0' '1' '2' '3' '4' '5' '6' '7' '8' '9'; do
-# for iter in '0' '1' '2' '3'; do
+while [ "${iter}" -lt "${num_iter}" ]; do
     iter_dir="${results_dir}/${iter}"
 
     if [ "${iter}" -eq '0' ]; then
@@ -181,4 +182,12 @@ for iter in '0' '1' '2' '3' '4' '5' '6' '7' '8' '9'; do
 
     # create results and new fmi-graph
     balance_for_iteration "${iter}"
+
+    iter="${next_iter}"
 done
+
+# visualize all generated data
+
+"${cwd}/visualization.py" \
+--results-dir "${results_dir}" \
+--num-iter "${num_iter}"

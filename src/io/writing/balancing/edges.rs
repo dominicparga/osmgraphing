@@ -3,6 +3,7 @@ use crate::{
     helpers::{approx::Approx, err},
     network::Graph,
 };
+use kissunits::distance::Kilometers;
 use std::{
     fs::OpenOptions,
     io::{BufWriter, Write},
@@ -25,6 +26,7 @@ impl Writer {
         let nodes = graph.nodes();
         let fwd_edges = graph.fwd_edges();
         let bwd_edges = graph.bwd_edges();
+        let metrics = graph.metrics();
 
         // get writers
 
@@ -47,9 +49,14 @@ impl Writer {
 
         // write header
 
-        writeln!(writer, "src-lat src-lon dst-lat dst-lon")?;
+        writeln!(
+            writer,
+            "src-lat src-lon dst-lat dst-lon kilometers lane_count"
+        )?;
 
         // write data
+
+        let distance_unit = graph.cfg().edges.metrics.units[*balancing_cfg.distance_idx];
 
         for edge_idx in fwd_edges
             .iter()
@@ -65,7 +72,29 @@ impl Writer {
                 let coord = nodes.coord(idx);
                 (coord.lat.approx(), coord.lon.approx())
             };
-            writeln!(writer, "{} {} {} {}", src_lat, src_lon, dst_lat, dst_lon)?;
+
+            let (raw_distance, lane_count) = {
+                let tmp = &metrics[edge_idx];
+                (
+                    tmp[*balancing_cfg.distance_idx],
+                    tmp[*balancing_cfg.lane_count_idx] as u64,
+                )
+            };
+            // use correct unit for distance
+            let distance = {
+                // convert value to meters
+                let raw_value = distance_unit.convert(
+                    &configs::parsing::edges::metrics::UnitInfo::Kilometers,
+                    raw_distance,
+                );
+                Kilometers(raw_value)
+            };
+
+            writeln!(
+                writer,
+                "{} {} {} {} {} {}",
+                src_lat, src_lon, dst_lat, dst_lon, *distance, lane_count
+            )?;
         }
 
         Ok(())

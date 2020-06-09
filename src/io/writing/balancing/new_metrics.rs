@@ -10,21 +10,20 @@ impl Writer {
     pub fn new() -> Writer {
         Writer {}
     }
-}
 
-impl Writer {
     pub fn write(
         &mut self,
-        abs_workloads: &Vec<usize>,
         graph: &Graph,
         balancing_cfg: &configs::balancing::Config,
     ) -> err::Feedback {
         // prepare
 
+        let fwd_edges = graph.fwd_edges();
+
         // get writers
 
         let mut writer = {
-            let path = balancing_cfg.results_dir.join("abs_workloads.csv");
+            let path = balancing_cfg.results_dir.join("new_metrics.csv");
             let output_file = match OpenOptions::new().write(true).create_new(true).open(&path) {
                 Ok(f) => f,
                 Err(e) => {
@@ -40,16 +39,17 @@ impl Writer {
 
         // write header
 
-        writeln!(writer, "num_routes")?;
+        writeln!(writer, "new_metrics")?;
 
         // write data
 
-        let fwd_edges = graph.fwd_edges();
+        let metrics = graph.metrics();
+
         for edge_idx in fwd_edges
             .iter()
             .filter(|&edge_idx| !fwd_edges.is_shortcut(edge_idx))
         {
-            writeln!(writer, "{}", abs_workloads[*edge_idx])?;
+            writeln!(writer, "{}", metrics[edge_idx][*balancing_cfg.workload_idx])?;
         }
 
         Ok(())

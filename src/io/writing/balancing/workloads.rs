@@ -10,15 +10,16 @@ impl Writer {
     pub fn new() -> Writer {
         Writer {}
     }
+}
 
+impl Writer {
     pub fn write(
         &mut self,
+        workloads: &Vec<usize>,
         graph: &Graph,
         balancing_cfg: &configs::balancing::Config,
     ) -> err::Feedback {
         // prepare
-
-        let fwd_edges = graph.fwd_edges();
 
         // get writers
 
@@ -39,17 +40,16 @@ impl Writer {
 
         // write header
 
-        writeln!(writer, "workloads")?;
+        writeln!(writer, "num_routes")?;
 
         // write data
 
-        let metrics = graph.metrics();
-
+        let fwd_edges = graph.fwd_edges();
         for edge_idx in fwd_edges
             .iter()
             .filter(|&edge_idx| !fwd_edges.is_shortcut(edge_idx))
         {
-            writeln!(writer, "{}", metrics[edge_idx][*balancing_cfg.workload_idx])?;
+            writeln!(writer, "{}", workloads[*edge_idx])?;
         }
 
         Ok(())
