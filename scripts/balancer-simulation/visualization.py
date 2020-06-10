@@ -144,6 +144,10 @@ class Workload():
     def raw(self):
         return self._raw
 
+    @property
+    def _raw_nz(self):
+        return list(filter(lambda w: w > 0.0, self._raw))
+
     @raw.setter
     def raw(self, new_raw):
         self._raw = new_raw
@@ -475,7 +479,7 @@ def plot_workload_histogram(data: Data, sim: Simulation, style: Style):
         int(np.floor(data.workloads.min))
     plt.style.use(style.plt)
     plt.figure()
-    plt.title(f'workloads {data.iteration} greater than 0.0')  # TODO
+    plt.title(f'workloads {data.iteration}')  # TODO
     plt.hist(
         data.workloads.raw,
         bins=num_bins,
@@ -501,7 +505,7 @@ def plot_norm_workloads_histogram(data: Data, sim: Simulation, style: Style):
         int(np.floor(data.workloads.min))
     plt.style.use(style.plt)
     plt.figure()
-    plt.title(f'normalized workloads {data.iteration} histogram')
+    plt.title(f'normalized workloads {data.iteration}')
     plt.hist(
         data.log_workloads.raw,
         bins=num_bins,
