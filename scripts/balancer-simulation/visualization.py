@@ -198,54 +198,6 @@ class Data():
         self._delta_workloads = None
         self._log_delta_workloads = None
 
-    def log_norm_pos(self, workloads: Workload):
-        '''
-        A value is mapped from [min, max] to [1.0, 2.0] before log2 is
-        taken, resulting in a value in [0.0, 1.0].
-
-        ATTENTION: 0.0 < min, max
-        '''
-
-        return [
-            math.log2(1.0 + (w - workloads.min) /
-                      (workloads.max - workloads.min))
-            for w in workloads.raw
-        ]
-
-    def log_norm(self, workloads: Workload):
-        '''
-        All positive values are mapped from [0.0, max] to [1.0, 2.0]
-        before log2 is taken, resulting in a value in [0.0, 1.0].
-
-        Negative values are negated before being treated as a positive
-        value. After mapping to [0.0, 1.0], the resulting value is
-        negated again, resulting in a value in [-1.0, 0.0].
-
-        ATTENTION: min < 0.0 < max
-        '''
-
-        new_list = deepcopy(workloads.raw)
-
-        max_value = np.max(new_list)
-        min_value = np.min(new_list)
-
-        for i in range(len(new_list)):
-            v = new_list[i]
-            # positive values
-            if v > 0.0:  # -> max > 0.0
-                # get a value in [1.0, 2.0]
-                v = 1.0 + v / max_value
-                # get a value in [0.0, 1.0]
-                new_list[i] = math.log2(v)
-            # negative values
-            elif v < 0.0:  # -> min < 0.0
-                # get a value in [1.0, 2.0]
-                v = 1.0 + v / min_value
-                # get a value in [-1.0, 0.0]
-                new_list[i] = -math.log2(v)
-
-        return new_list
-
     def start_new_iteration(self, iteration: int):
         self._iteration = iteration
 
@@ -299,7 +251,7 @@ class Data():
     def log_workloads(self):
         if self._log_workloads is None:
             self._log_workloads = Workload()
-            self._log_workloads.raw = self.log_norm_pos(self.workloads)
+            self._log_workloads.raw = norm_pos_workloads(self.workloads)
         return self._log_workloads
 
     @ property
@@ -314,7 +266,8 @@ class Data():
     def log_delta_workloads(self):
         if self._log_delta_workloads is None:
             self._log_delta_workloads = Workload()
-            self._log_delta_workloads.raw = self.log_norm(self.delta_workloads)
+            self._log_delta_workloads.raw = norm_workloads(
+                self.delta_workloads)
         return self._log_delta_workloads
 
     def read_in_edge_info(self, sim: Simulation):
@@ -349,6 +302,82 @@ class Data():
             for row in csv_reader:
                 value = float(row['new_metrics'])
                 self.workloads.raw.append(value)
+
+
+def norm(value, max_value, min_value):
+    '''
+    Maps positive values to [0.0, 1.0]
+    '''
+    return (value - min_value) / (max_value - min_value)
+
+
+def log_norm(value, max_value, min_value):
+    '''
+    Maps positive values to [0.0, 1.0] using one log
+    '''
+    tmp = norm(
+        value=value, max_value=max_value, min_value=min_value
+    )
+    return math.log2(1.0 + tmp)
+
+
+def log_log_norm(value, max_value, min_value):
+    '''
+    Maps positive values to [0.0, 1.0] using two logs
+    '''
+    tmp = norm(
+        value=value, max_value=max_value, min_value=min_value
+    )
+    return math.log2(math.log2(2.0 + 2.0 * tmp))
+
+
+def norm_pos_workloads(workloads: Workload, norm_fn=norm):
+    '''
+    A value is mapped from [min, max] to [1.0, 2.0] before log2 is
+    taken, resulting in a value in [0.0, 1.0].
+
+    ATTENTION: 0.0 < min, max
+    '''
+
+    return [
+        norm_fn(
+            value=w, min_value=workloads.min, max_value=workloads.max
+        )
+        for w in workloads.raw
+    ]
+
+
+def norm_workloads(workloads: Workload, norm_fn=norm):
+    '''
+    All positive values are mapped from [0.0, max] to [1.0, 2.0]
+    before log2 is taken, resulting in a value in [0.0, 1.0].
+
+    Negative values are negated before being treated as a positive
+    value. After mapping to [0.0, 1.0], the resulting value is
+    negated again, resulting in a value in [-1.0, 0.0].
+
+    ATTENTION: min < 0.0 < max
+    '''
+
+    new_list = deepcopy(workloads.raw)
+
+    max_value = np.max(new_list)
+    min_value = np.min(new_list)
+
+    for i in range(len(new_list)):
+        v = new_list[i]
+        # positive values
+        if v > 0.0:  # -> max > 0.0
+            new_list[i] = norm_fn(
+                value=v, max_value=max_value, min_value=0.0
+            )
+        # negative values
+        elif v < 0.0:  # -> min < 0.0
+            new_list[i] = -norm_fn(
+                value=-v, max_value=-min_value, min_value=0.0
+            )
+
+    return new_list
 
 
 def plot_delta_workloads(data: Data, sim: Simulation, style: Style):
