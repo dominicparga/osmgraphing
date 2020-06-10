@@ -335,12 +335,11 @@ class Data():
                 self.lane_counts.append(lane_count)
 
     def read_in_workloads(self, sim: Simulation):
-        workloads_csv_path = f'{sim.results_dir}/{self._iteration}/stats/workloads.csv'
+        workloads_csv_path = f'{sim.results_dir}/{self._iteration}/stats/abs_workloads.csv'
         with open(workloads_csv_path, mode='r') as csv_file:
             csv_reader = csv.DictReader(csv_file, delimiter=' ')
             for edge_idx, row in enumerate(csv_reader):
-                value = float(row['num_routes']) / \
-                    self.volume(edge_idx)  # TODO normalize
+                value = float(row['num_routes']) / self.volume(edge_idx)
                 self.workloads.raw.append(value)
 
     def _read_in_new_metrics(self, sim: Simulation):

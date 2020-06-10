@@ -65,8 +65,9 @@ pub mod vehicles {
             let num_vehicles = calc_num_vehicles(distance);
             let capacity = lane_count * num_vehicles;
             let new_metric = {
-                let workload = workload as f64 / (capacity as f64);
-                workload * balancing_cfg.workload_correction
+                let new_workload = workload as f64 / (capacity as f64);
+                let old_workload = metrics[edge_idx][*balancing_cfg.workload_idx];
+                old_workload + (new_workload - old_workload) * balancing_cfg.workload_correction
             };
 
             metrics[edge_idx][*balancing_cfg.workload_idx] = new_metric;

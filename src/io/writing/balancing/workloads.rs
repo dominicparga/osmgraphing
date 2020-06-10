@@ -24,7 +24,7 @@ impl Writer {
         // get writers
 
         let mut writer = {
-            let path = balancing_cfg.results_dir.join("workloads.csv");
+            let path = balancing_cfg.results_dir.join("abs_workloads.csv");
             let output_file = match OpenOptions::new().write(true).create_new(true).open(&path) {
                 Ok(f) => f,
                 Err(e) => {

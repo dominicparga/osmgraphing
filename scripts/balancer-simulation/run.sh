@@ -147,7 +147,7 @@ cargo build --release
 # iteration i
 
 iter=0
-num_iter=2
+num_iter=10
 iter_0_dir="${results_dir}/0"
 iter_1_dir="${results_dir}/1"
 while [ "${iter}" -lt "${num_iter}" ]; do
