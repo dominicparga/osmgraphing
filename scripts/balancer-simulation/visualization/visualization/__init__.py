@@ -13,7 +13,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 
-from styling import Style
+from .styling import Style
 
 
 class Simulation():
@@ -99,9 +99,7 @@ class Data():
         self._lane_counts = []
         self._old_workloads = Workload()
         self._workloads = Workload()
-        self._log_workloads = None
         self._delta_workloads = None
-        self._log_delta_workloads = None
 
     def start_new_iteration(self, iteration: int):
         self._iteration = iteration
@@ -111,9 +109,7 @@ class Data():
         self.workloads.raw = tmp
         self.workloads.raw.clear()
 
-        self._log_workloads = None
         self._delta_workloads = None
-        self._log_delta_workloads = None
 
     @ property
     def iteration(self):
@@ -153,27 +149,12 @@ class Data():
         return self._workloads
 
     @ property
-    def log_workloads(self):
-        if self._log_workloads is None:
-            self._log_workloads = Workload()
-            self._log_workloads.raw = norm_pos_workloads(self.workloads)
-        return self._log_workloads
-
-    @ property
     def delta_workloads(self):
         if self._delta_workloads is None:
             self._delta_workloads = Workload()
             for new, old in zip(self.workloads.raw, self.old_workloads.raw):
                 self._delta_workloads.raw.append(new - old)
         return self._delta_workloads
-
-    @ property
-    def log_delta_workloads(self):
-        if self._log_delta_workloads is None:
-            self._log_delta_workloads = Workload()
-            self._log_delta_workloads.raw = norm_workloads(
-                self.delta_workloads)
-        return self._log_delta_workloads
 
     def read_in_edge_info(self, sim: Simulation):
         coords_csv_path = f'{sim.results_dir}/{self.iteration}/stats/edge-info.csv'
@@ -209,82 +190,6 @@ class Data():
                 self.workloads.raw.append(value)
 
 
-def norm(value, max_value, min_value):
-    '''
-    Maps positive values to [0.0, 1.0]
-    '''
-    return (value - min_value) / (max_value - min_value)
-
-
-def log_norm(value, max_value, min_value):
-    '''
-    Maps positive values to [0.0, 1.0] using one log
-    '''
-    tmp = norm(
-        value=value, max_value=max_value, min_value=min_value
-    )
-    return math.log2(1.0 + tmp)
-
-
-def log_log_norm(value, max_value, min_value):
-    '''
-    Maps positive values to [0.0, 1.0] using two logs
-    '''
-    tmp = norm(
-        value=value, max_value=max_value, min_value=min_value
-    )
-    return math.log2(math.log2(2.0 + 2.0 * tmp))
-
-
-def norm_pos_workloads(workloads: Workload, norm_fn=norm):
-    '''
-    A value is mapped from [min, max] to [1.0, 2.0] before log2 is
-    taken, resulting in a value in [0.0, 1.0].
-
-    ATTENTION: 0.0 < min, max
-    '''
-
-    return [
-        norm_fn(
-            value=w, min_value=workloads.min, max_value=workloads.max
-        )
-        for w in workloads.raw
-    ]
-
-
-def norm_workloads(workloads: Workload, norm_fn=norm):
-    '''
-    All positive values are mapped from [0.0, max] to [1.0, 2.0]
-    before log2 is taken, resulting in a value in [0.0, 1.0].
-
-    Negative values are negated before being treated as a positive
-    value. After mapping to [0.0, 1.0], the resulting value is
-    negated again, resulting in a value in [-1.0, 0.0].
-
-    ATTENTION: min < 0.0 < max
-    '''
-
-    new_list = deepcopy(workloads.raw)
-
-    max_value = np.max(new_list)
-    min_value = np.min(new_list)
-
-    for i in range(len(new_list)):
-        v = new_list[i]
-        # positive values
-        if v > 0.0:  # -> max > 0.0
-            new_list[i] = norm_fn(
-                value=v, max_value=max_value, min_value=0.0
-            )
-        # negative values
-        elif v < 0.0:  # -> min < 0.0
-            new_list[i] = -norm_fn(
-                value=-v, max_value=-min_value, min_value=0.0
-            )
-
-    return new_list
-
-
 def plot_delta_workloads(data: Data, sim: Simulation, style: Style):
     '''
     TODO function docstring
@@ -297,13 +202,11 @@ def plot_delta_workloads(data: Data, sim: Simulation, style: Style):
         data.lons,
         data.lats,
         c=data.delta_workloads.raw,
-        s=style.scatter_s,
-        alpha=style.scatter_alpha,
-        edgecolors='none',
-        cmap=style.delta_cmap,
-        label='',
-        # vmin=0,
-        # vmax=10
+        s=style.integer.s,
+        alpha=style.integer.alpha,
+        edgecolors=style.integer.edgecolors,
+        cmap=style.integer.cmap,
+        norm=style.integer.norm
     )
     plt.xlabel('longitude')
     plt.ylabel('latitude')
@@ -311,36 +214,6 @@ def plot_delta_workloads(data: Data, sim: Simulation, style: Style):
     plt.grid(False)
     plt.savefig(
         f'{sim.results_dir}/{data.iteration}/stats/delta_workloads.png')
-    # plt.show()
-    plt.close()
-
-
-def plot_norm_delta_workloads(data: Data, sim: Simulation, style: Style):
-    '''
-    TODO function docstring
-    '''
-
-    plt.style.use(style.plt)
-    plt.figure()
-    plt.title(f'normalized delta-workloads {data.iteration}')
-    plt.scatter(
-        data.lons,
-        data.lats,
-        c=data.log_delta_workloads.raw,
-        s=style.scatter_s,
-        alpha=style.scatter_alpha,
-        edgecolors='none',
-        cmap=style.delta_cmap,
-        label='',
-        # vmin=0,
-        # vmax=10
-    )
-    plt.xlabel('longitude')
-    plt.ylabel('latitude')
-    plt.colorbar()
-    plt.grid(False)
-    plt.savefig(
-        f'{sim.results_dir}/{data.iteration}/stats/norm_delta_workloads.png')
     # plt.show()
     plt.close()
 
@@ -357,48 +230,17 @@ def plot_workloads(data: Data, sim: Simulation, style: Style):
         data.lons,
         data.lats,
         c=data.workloads.raw,
-        s=style.scatter_s,
-        alpha=style.scatter_alpha,
-        edgecolors='none',
-        cmap=style.positive_cmap,
-        label='',
-        # vmin=0,
-        # vmax=10
+        s=style.pos_integer.s,
+        alpha=style.pos_integer.alpha,
+        edgecolors=style.pos_integer.edgecolors,
+        cmap=style.pos_integer.cmap,
+        norm=style.pos_integer.norm
     )
     plt.xlabel('longitude')
     plt.ylabel('latitude')
     plt.colorbar()
     plt.grid(False)
     plt.savefig(f'{sim.results_dir}/{data.iteration}/stats/workloads.png')
-    # plt.show()
-    plt.close()
-
-
-def plot_norm_workloads(data: Data, sim: Simulation, style: Style):
-    '''
-    TODO
-    '''
-
-    plt.style.use(style.plt)
-    plt.figure()
-    plt.title(f'normalized workloads {data.iteration}')
-    plt.scatter(
-        data.lons,
-        data.lats,
-        c=data.log_workloads.raw,
-        s=style.scatter_s,
-        alpha=style.scatter_alpha,
-        edgecolors='none',
-        cmap=style.positive_cmap,
-        label='',
-        # vmin=0,
-        # vmax=10
-    )
-    plt.xlabel('longitude')
-    plt.ylabel('latitude')
-    plt.colorbar()
-    plt.grid(False)
-    plt.savefig(f'{sim.results_dir}/{data.iteration}/stats/norm_workloads.png')
     # plt.show()
     plt.close()
 
@@ -424,32 +266,6 @@ def plot_workload_histogram(data: Data, sim: Simulation, style: Style):
     plt.grid(False)
     plt.savefig(
         f'{sim.results_dir}/{data.iteration}/stats/workloads_hist.png')
-    # plt.show()
-    plt.close()
-
-
-def plot_norm_workloads_histogram(data: Data, sim: Simulation, style: Style):
-    '''
-    TODO
-    '''
-
-    # same number of bins than before
-    num_bins = int(np.ceil(data.workloads.max)) - \
-        int(np.floor(data.workloads.min))
-    plt.style.use(style.plt)
-    plt.figure()
-    plt.title(f'normalized workloads {data.iteration}')
-    plt.hist(
-        data.log_workloads.raw,
-        bins=num_bins,
-        fc=style.hist_fc,
-        ec=style.hist_ec
-    )
-    plt.xlabel('log(workloads)')
-    plt.ylabel('amount')
-    plt.grid(False)
-    plt.savefig(
-        f'{sim.results_dir}/{data.iteration}/stats/norm_workloads_hist.png')
     # plt.show()
     plt.close()
 
@@ -494,84 +310,18 @@ def run(sim: Simulation, style: Style):
         print(f' max={data.workloads.max}')
 
         if data.iteration > 0:
-            print('plot_delta_workloads')
+            print('plot delta-workloads')
             plot_delta_workloads(sim=sim, data=data, style=style)
-            print('plot_norm_delta_workloads')
-            plot_norm_delta_workloads(sim=sim, data=data, style=style)
-        print('plot_workloads')
+        print('plot workloads')
         plot_workloads(sim=sim, data=data, style=style)
-        print('plot_norm_workloads')
-        plot_norm_workloads(sim=sim, data=data, style=style)
-        print('plot_workload_histogram')
+        print('plot workloads as histogram')
         plot_workload_histogram(sim=sim, data=data, style=style)
-        print('plot_norm_workloads_histogram')
-        plot_norm_workloads_histogram(sim=sim, data=data, style=style)
-        print('plot_boxplots')
+        print('plot boxplots')
         plot_boxplots(sim=sim, data=data, style=style)
-        print('plot_workloads_sorted')
+        print('plot workloads sorted')
         plot_workloads_sorted(sim=sim, data=data, style=style)
 
         # new line if next iteration
 
         if sim.is_last_iteration(data.iteration):
             print('')
-
-
-def parse_cmdline():
-    # define args and parse them
-
-    parser = argparse.ArgumentParser(
-        description='Visualize results from balancer-binary.')
-
-    help_msg = 'Maximum number of iterations, starting with the provided index.'
-    parser.add_argument(
-        '--num-iter',
-        metavar=('NUM_ITER'),
-        required=True,
-        type=int,
-        help=help_msg
-    )
-    help_msg = 'Directory where results are laying.'
-    parser.add_argument(
-        '--results-dir',
-        metavar=('RESULTS_DIR'),
-        required=True,
-        help=help_msg
-    )
-    help_msg = 'Dark or light style'
-    parser.add_argument(
-        '--style',
-        metavar=('STYLE'),
-        choices=['dark', 'light'],
-        default='light',
-        required=False,
-        help=help_msg
-    )
-
-    # finalize and return
-
-    args = parser.parse_args()
-
-    cwd = os.path.join(os.getcwd(), os.path.dirname(__file__))
-    results_dir = os.path.join(cwd, '..', '..', '..')
-    return {
-        'results_dir': os.path.join(results_dir, args.results_dir),
-        'num_iter': args.num_iter,
-        'style': args.style
-    }
-
-
-if __name__ == '__main__':
-    params = parse_cmdline()
-
-    sim = Simulation(
-        results_dir=params['results_dir'],
-        num_iter=params['num_iter']
-    )
-
-    if params['style'] == 'dark':
-        style = Style.dark()
-    if params['style'] == 'light':
-        style = Style.light()
-
-    run(sim=sim, style=style)
