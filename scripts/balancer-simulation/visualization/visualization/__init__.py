@@ -24,7 +24,7 @@ def plot_workloads(data: Data, sim: Simulation, style: Style):
     '''
 
     plt.style.use(style.plt.sheet)
-    fig, ax = plt.subplots(constrained_layout=style.plt.is_layout_constrained)
+    fig, ax = plt.subplots()
     ax.set_title(f'workloads {data.iteration}')
     plot_collection = ax.scatter(
         x=data.lons,
@@ -34,17 +34,20 @@ def plot_workloads(data: Data, sim: Simulation, style: Style):
         alpha=style.scatter.pos_integer.alpha,
         edgecolors=style.scatter.pos_integer.edgecolors,
         cmap=style.scatter.pos_integer.cmap,
-        norm=style.scatter.pos_integer.norm
+        norm=style.scatter.pos_integer.norm,
+        rasterized=True
     )
     ax.set_xlabel('longitude')
     ax.set_ylabel('latitude')
-    # ax.set_aspect(1 / np.cos(np.deg2rad(49))) # TODO set aspect
+    ax.set_aspect(1.0 / np.cos(np.deg2rad(data.lats_mid)))
     fig.colorbar(
         mappable=plot_collection,
-        shrink=1.0,
+        label=style.fig.colorbar.label,
+        shrink=style.fig.colorbar.shrink,
         extend=style.fig.colorbar.extend
     )
     plt.grid(False)
+    plt.tight_layout()
     plt.savefig(f'{sim.results_dir}/{data.iteration}/stats/workloads.png')
     # plt.show()
     plt.close()
@@ -56,7 +59,7 @@ def plot_delta_workloads(data: Data, sim: Simulation, style: Style):
     '''
 
     plt.style.use(style.plt.sheet)
-    fig, ax = plt.subplots(constrained_layout=style.plt.is_layout_constrained)
+    fig, ax = plt.subplots()
     ax.set_title(f'delta-workloads {data.iteration}')
     plot_collection = ax.scatter(
         x=data.lons,
@@ -70,13 +73,15 @@ def plot_delta_workloads(data: Data, sim: Simulation, style: Style):
     )
     ax.set_xlabel('longitude')
     ax.set_ylabel('latitude')
-    # ax.set_aspect(1 / np.cos(np.deg2rad(49))) # TODO set aspect
+    ax.set_aspect(1 / np.cos(np.deg2rad(data.lats_mid)))
     fig.colorbar(
         mappable=plot_collection,
+        label=style.fig.colorbar.label,
         shrink=style.fig.colorbar.shrink,
         extend=style.fig.colorbar.extend
     )
     plt.grid(False)
+    plt.tight_layout()
     plt.savefig(
         f'{sim.results_dir}/{data.iteration}/stats/delta_workloads.png')
     # plt.show()
@@ -91,7 +96,7 @@ def plot_workload_histogram(data: Data, sim: Simulation, style: Style):
     num_bins = int(np.ceil(data.workloads.max)) - \
         int(np.floor(data.workloads.min))
     plt.style.use(style.plt.sheet)
-    _fig, ax = plt.subplots(constrained_layout=style.plt.is_layout_constrained)
+    _fig, ax = plt.subplots()
     ax.set_title(f'workloads {data.iteration}')  # TODO
     _plot_collection = ax.hist(
         data.workloads.raw,
@@ -102,6 +107,7 @@ def plot_workload_histogram(data: Data, sim: Simulation, style: Style):
     ax.set_xlabel('workloads')
     ax.set_ylabel('amount')
     plt.grid(False)
+    plt.tight_layout()
     plt.savefig(
         f'{sim.results_dir}/{data.iteration}/stats/workloads_hist.png')
     # plt.show()

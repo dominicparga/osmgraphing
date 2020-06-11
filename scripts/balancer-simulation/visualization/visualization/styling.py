@@ -198,9 +198,14 @@ class Hist():
 
 class Figure():
     class Colorbar():
-        def __init__(self, shrink=1.0, extend='neither'):
+        def __init__(self, label=None, shrink=0.9, extend='neither'):
+            self._label = label
             self._shrink = shrink
             self._extend = extend
+
+        @property
+        def label(self):
+            return self._label
 
         @property
         def shrink(self):
@@ -219,17 +224,12 @@ class Figure():
 
 
 class Plt():
-    def __init__(self, sheet, is_layout_constrained=True):
+    def __init__(self, sheet):
         self._sheet = sheet
-        self._is_layout_constrained = is_layout_constrained
 
     @property
     def sheet(self):
         return self._sheet
-
-    @property
-    def is_layout_constrained(self):
-        return self._is_layout_constrained
 
 
 class Style():
@@ -270,17 +270,18 @@ class Style():
 
     @staticmethod
     def light():
+        base = 2.0
         return Style(
             plt_style=Plt(sheet='default'),
             scatter=Scatter(
                 pos_integer=Scatter.Content(
-                    norm=LogNorm(vcenter=0.0, base=2.0),
+                    norm=LogNorm(vcenter=0.0, base=base),
                     cmap='binary'
                     # cmap='cubehelix_r',
                     # cmap='PuRd',
                 ),
                 integer=Scatter.Content(
-                    norm=LogNorm(vcenter=0.0, base=2.0),
+                    norm=LogNorm(vcenter=0.0, base=base),
                     # cmap='PRGn_r',
                     cmap='seismic',
                     # cmap='PiYG_r', # nice but too lighten
@@ -290,20 +291,23 @@ class Style():
                 fc='k',
                 ec='k'
             ),
-            fig_style=Figure(colorbar=Figure.Colorbar())
+            fig_style=Figure(colorbar=Figure.Colorbar(
+                label='colors scaled with $log_{' + f'{base}' + '}$'
+            ))
         )
 
-    @staticmethod
+    @ staticmethod
     def dark():
+        base = 2.0
         return Style(
             plt_style=Plt(sheet='dark_background'),
             scatter=Scatter(
                 pos_integer=Scatter.Content(
-                    norm=LogNorm(vcenter=0.0, base=2.0),
+                    norm=LogNorm(vcenter=0.0, base=base),
                     cmap='cubehelix',
                 ),
                 integer=Scatter.Content(
-                    norm=LogNorm(vcenter=0.0, base=2.0),
+                    norm=LogNorm(vcenter=0.0, base=base),
                     # cmap='cividis',
                     # cmap='winter',
                     cmap='twilight',
@@ -313,5 +317,7 @@ class Style():
                 fc='w',
                 ec='w'
             ),
-            fig_style=Figure(colorbar=Figure.Colorbar())
+            fig_style=Figure(colorbar=Figure.Colorbar(
+                label='colors scaled with $log_{' + f'{base}' + '}$'
+            ))
         )

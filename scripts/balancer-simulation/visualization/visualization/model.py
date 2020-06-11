@@ -61,6 +61,7 @@ class Data():
     def __init__(self):
         self._iteration = None
         self._lats = []
+        self._lats_mid = None
         self._lons = []
         self._kilometers = []
         self._lane_counts = []
@@ -78,23 +79,29 @@ class Data():
 
         self._delta_workloads = None
 
-    @ property
+    @property
     def iteration(self):
         return self._iteration
 
-    @ property
+    @property
     def lats(self):
         return self._lats
 
-    @ property
+    @property
+    def lats_mid(self):
+        if self._lats_mid is None:
+            self._lats_mid = (np.max(self._lats) + np.min(self._lats)) / 2.0
+        return self._lats_mid
+
+    @property
     def lons(self):
         return self._lons
 
-    @ property
+    @property
     def kilometers(self):
         return self._kilometers
 
-    @ property
+    @property
     def lane_counts(self):
         return self._lane_counts
 
@@ -107,15 +114,15 @@ class Data():
         num_vehicles = max(1.0, self._kilometers[edge_idx] / 0.0075)
         return num_vehicles * self._lane_counts[edge_idx]
 
-    @ property
+    @property
     def old_workloads(self):
         return self._old_workloads
 
-    @ property
+    @property
     def workloads(self):
         return self._workloads
 
-    @ property
+    @property
     def delta_workloads(self):
         if self._delta_workloads is None:
             self._delta_workloads = Workload()
