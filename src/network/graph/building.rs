@@ -425,8 +425,7 @@ impl GraphBuilder {
             // - sort by src-id, then level of dst, then dst-id
             //   -> branch prediction in dijkstra when breaking after level is reached
             let nodes = graph.nodes();
-            proto_edges
-                .sort_unstable_by_key(|e| (e.src_idx, Reverse(nodes.level(e.dst_idx)), e.dst_idx));
+            proto_edges.sort_by_key(|e| (e.src_idx, Reverse(nodes.level(e.dst_idx)), e.dst_idx));
         }
 
         //----------------------------------------------------------------------------------------//
@@ -693,7 +692,7 @@ impl GraphBuilder {
         info!("DO Sort proto-backward-edges by their dst/src-IDs.");
         {
             let nodes = graph.nodes();
-            proto_edges.sort_unstable_by_key(|edge| {
+            proto_edges.sort_by_key(|edge| {
                 (
                     edge.dst_idx,
                     Reverse(nodes.level(edge.src_idx)),
