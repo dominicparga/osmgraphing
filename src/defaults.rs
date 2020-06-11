@@ -31,8 +31,8 @@ pub mod vehicles {
         max(1, (km / Kilometers::new(0.0075)) as u64)
     }
 
-    pub fn update_workload(
-        abs_workloads: &Vec<usize>,
+    pub fn update_new_metric(
+        workloads: &Vec<usize>,
         graph: &mut Graph,
         balancing_cfg: &configs::balancing::Config,
     ) {
@@ -50,7 +50,7 @@ pub mod vehicles {
                     tmp[*balancing_cfg.lane_count_idx] as u64,
                 )
             };
-            let abs_workload = abs_workloads[*edge_idx];
+            let workload = workloads[*edge_idx];
 
             // use correct unit for distance
             let distance = {
@@ -64,9 +64,13 @@ pub mod vehicles {
 
             let num_vehicles = calc_num_vehicles(distance);
             let capacity = lane_count * num_vehicles;
-            let workload = abs_workload as f64 / (capacity as f64);
+            let new_metric = {
+                let new_workload = workload as f64 / (capacity as f64);
+                let old_workload = metrics[edge_idx][*balancing_cfg.workload_idx];
+                old_workload + (new_workload - old_workload) * balancing_cfg.workload_correction
+            };
 
-            metrics[edge_idx][*balancing_cfg.workload_idx] = workload;
+            metrics[edge_idx][*balancing_cfg.workload_idx] = new_metric;
         }
     }
 }
@@ -100,9 +104,13 @@ pub mod routing {
     pub const TOLERATED_SCALE: f64 = std::f64::INFINITY;
 }
 
+pub mod balancing {
+    pub const WORKLOAD_CORRECTION: f64 = 0.01;
+}
+
 pub mod explorating {
     pub mod files {
-        pub const EDGES_WRITER: &str = "src-dst-coords.csv";
+        pub const EDGES_WRITER: &str = "edge-info.csv";
 
         pub fn capacities(i: usize, n: usize) -> String {
             format!("capacities{:0digits$}.csv", i, digits = n.to_string().len())

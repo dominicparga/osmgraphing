@@ -15,7 +15,7 @@ impl Writer {
 impl Writer {
     pub fn write(
         &mut self,
-        abs_workloads: &Vec<usize>,
+        workloads: &Vec<usize>,
         graph: &Graph,
         balancing_cfg: &configs::balancing::Config,
     ) -> err::Feedback {
@@ -49,7 +49,7 @@ impl Writer {
             .iter()
             .filter(|&edge_idx| !fwd_edges.is_shortcut(edge_idx))
         {
-            writeln!(writer, "{}", abs_workloads[*edge_idx])?;
+            writeln!(writer, "{}", workloads[*edge_idx])?;
         }
 
         Ok(())

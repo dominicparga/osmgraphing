@@ -23,7 +23,7 @@ impl Writer {
         // get writers
 
         let mut writer = {
-            let path = balancing_cfg.results_dir.join("workloads.csv");
+            let path = balancing_cfg.results_dir.join("new_metrics.csv");
             let output_file = match OpenOptions::new().write(true).create_new(true).open(&path) {
                 Ok(f) => f,
                 Err(e) => {
@@ -39,7 +39,7 @@ impl Writer {
 
         // write header
 
-        writeln!(writer, "workloads")?;
+        writeln!(writer, "new_metrics")?;
 
         // write data
 

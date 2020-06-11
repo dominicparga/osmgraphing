@@ -2,21 +2,21 @@ use crate::{configs, helpers::err, io::SupportingFileExts, network::Graph};
 use log::info;
 
 mod edges;
-mod num_routes;
-mod workload;
+mod new_metrics;
+mod workloads;
 
 pub struct Writer;
 
 impl Writer {
     pub fn write(
-        abs_workloads: &Vec<usize>,
+        workloads: &Vec<usize>,
         graph: &Graph,
         balancing_cfg: &configs::balancing::Config,
     ) -> err::Feedback {
         info!("START Write graph's route-workload");
         edges::Writer::new().write(graph, balancing_cfg)?;
-        workload::Writer::new().write(graph, balancing_cfg)?;
-        num_routes::Writer::new().write(abs_workloads, graph, balancing_cfg)?;
+        new_metrics::Writer::new().write(graph, balancing_cfg)?;
+        workloads::Writer::new().write(workloads, graph, balancing_cfg)?;
         info!("FINISHED");
         Ok(())
     }

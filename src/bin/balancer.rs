@@ -121,7 +121,7 @@ fn run() -> err::Feedback {
 
         // find all routes and count density on graph
 
-        let mut abs_workload: Vec<usize> = vec![0; graph.fwd_edges().count()];
+        let mut workloads: Vec<usize> = vec![0; graph.fwd_edges().count()];
 
         for &(route_pair, num_routes) in &route_pairs {
             let RoutePair { src, dst } = route_pair.into_node(&graph);
@@ -156,7 +156,7 @@ fn run() -> err::Feedback {
                     debug!("    {}", p);
 
                     for edge_idx in p {
-                        abs_workload[*edge_idx] += 1;
+                        workloads[*edge_idx] += 1;
                     }
                 }
             }
@@ -168,14 +168,14 @@ fn run() -> err::Feedback {
         }
 
         // update graph with new values
-        defaults::vehicles::update_workload(&abs_workload, &mut graph, &balancing_cfg);
+        defaults::vehicles::update_new_metric(&workloads, &mut graph, &balancing_cfg);
 
         // export density
 
         // measure writing-time
         let now = Instant::now();
 
-        match io::balancing::Writer::write(&abs_workload, &graph, &balancing_cfg) {
+        match io::balancing::Writer::write(&workloads, &graph, &balancing_cfg) {
             Ok(()) => (),
             Err(msg) => return Err(format!("{}", msg).into()),
         };

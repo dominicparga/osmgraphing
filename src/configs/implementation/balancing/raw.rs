@@ -13,4 +13,5 @@ pub struct Config {
 pub struct Content {
     pub results_dir: PathBuf,
     pub metric_ids: metrics::raw::Config,
+    pub workload_correction: Option<f64>,
 }
