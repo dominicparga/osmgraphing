@@ -270,21 +270,20 @@ class Style():
 
     @staticmethod
     def light():
-        base = 2.0
         return Style(
             plt_style=Plt(sheet='default'),
             scatter=Scatter(
                 pos_integer=Scatter.Content(
-                    norm=LogNorm(vcenter=0.0, base=base),
-                    cmap='binary'
-                    # cmap='cubehelix_r',
-                    # cmap='PuRd',
+                    # norm=LogNorm(vcenter=0.0, base=50.0), cmap='PuRd'
+                    norm=LogNorm(vcenter=0.0, base=40.0), cmap='binary'
+                    # norm=LogNorm(vcenter=0.0, base=100.0), cmap='Purples'
+                    # norm=LogNorm(vcenter=0.0, base=20.0), cmap='gist_heat_r'
+                    # norm=LogNorm(vcenter=0.0, base=20.0), cmap='cubehelix_r'
                 ),
                 integer=Scatter.Content(
-                    norm=LogNorm(vcenter=0.0, base=base),
-                    # cmap='PRGn_r',
-                    cmap='seismic',
-                    # cmap='PiYG_r', # nice but too lighten
+                    norm=LogNorm(vcenter=0.0, base=20.0), cmap='seismic'
+                    # norm=LogNorm(vcenter=0.0, base=100.0), cmap='PRGn_r'
+                    # norm=LogNorm(vcenter=0.0, base=100.0), cmap='RdGy'
                 ),
             ),
             hist=Hist(
@@ -292,25 +291,20 @@ class Style():
                 ec='k'
             ),
             fig_style=Figure(colorbar=Figure.Colorbar(
-                label='colors scaled with $log_{' + f'{base}' + '}$'
+                # label='colors scaled with $log_{' + f'{base}' + '}$'
             ))
         )
 
-    @ staticmethod
+    @staticmethod
     def dark():
-        base = 2.0
         return Style(
             plt_style=Plt(sheet='dark_background'),
             scatter=Scatter(
                 pos_integer=Scatter.Content(
-                    norm=LogNorm(vcenter=0.0, base=base),
-                    cmap='cubehelix',
+                    norm=LogNorm(vcenter=0.0, base=50.0), cmap='copper',
                 ),
                 integer=Scatter.Content(
-                    norm=LogNorm(vcenter=0.0, base=base),
-                    # cmap='cividis',
-                    # cmap='winter',
-                    cmap='twilight',
+                    norm=LogNorm(vcenter=0.0, base=1000.0), cmap='twilight',
                 ),
             ),
             hist=Hist(
@@ -318,6 +312,6 @@ class Style():
                 ec='w'
             ),
             fig_style=Figure(colorbar=Figure.Colorbar(
-                label='colors scaled with $log_{' + f'{base}' + '}$'
+                # label='colors scaled with $log_{' + f'{base}' + '}$'
             ))
         )
