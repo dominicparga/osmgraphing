@@ -60,7 +60,7 @@ def plot_delta_workloads(data: Data, sim: Simulation, style: Style):
 
     plt.style.use(style.plt.sheet)
     fig, ax = plt.subplots()
-    ax.set_title(f'delta-workloads {data.iteration}')
+    ax.set_title(f'delta-workloads {data.iteration - 1} to {data.iteration}')
     plot_collection = ax.scatter(
         x=data.lons,
         y=data.lats,
