@@ -133,49 +133,53 @@ class LogNorm(Norm):
 
 
 class Scatter():
-    def __init__(
-        self,
-        *,
-        norm,
-        cmap,
-        s=2,
-        alpha=1.0,
-        edgecolors='none'
-    ):
-        self._norm = norm
-        self._cmap = cmap
-        self._s = s
-        self._alpha = alpha
-        self._edgecolors = edgecolors
+    class Content():
+        def __init__(
+            self,
+            *,
+            norm,
+            cmap,
+            s=2,
+            alpha=1.0,
+            edgecolors='none'
+        ):
+            self._norm = norm
+            self._cmap = cmap
+            self._s = s
+            self._alpha = alpha
+            self._edgecolors = edgecolors
 
-    @ property
-    def norm(self):
-        return self._norm
+        @property
+        def norm(self):
+            return self._norm
 
-    @ property
-    def cmap(self):
-        return self._cmap
+        @property
+        def cmap(self):
+            return self._cmap
 
-    @ property
-    def s(self):
-        return self._s
+        @property
+        def s(self):
+            return self._s
 
-    @ property
-    def alpha(self):
-        return self._alpha
+        @property
+        def alpha(self):
+            return self._alpha
 
-    @ property
-    def edgecolors(self):
-        return self._edgecolors
+        @property
+        def edgecolors(self):
+            return self._edgecolors
 
-    def as_dict(self):
-        return {
-            'norm': self._norm,
-            'cmap': self._cmap,
-            's': self._s,
-            'alpha': self._alpha,
-            'edgecolors': self._edgecolors
-        }
+    def __init__(self, pos_integer: Content, integer: Content):
+        self._pos_integer = pos_integer
+        self._integer = integer
+
+    @property
+    def integer(self) -> Content:
+        return self._integer
+
+    @property
+    def pos_integer(self) -> Content:
+        return self._pos_integer
 
 
 class Hist():
@@ -183,13 +187,49 @@ class Hist():
         self._fc = fc
         self._ec = ec
 
-    @ property
+    @property
     def fc(self):
         return self._fc
 
-    @ property
+    @property
     def ec(self):
         return self._ec
+
+
+class Figure():
+    class Colorbar():
+        def __init__(self, shrink=1.0, extend='neither'):
+            self._shrink = shrink
+            self._extend = extend
+
+        @property
+        def shrink(self):
+            return self._shrink
+
+        @property
+        def extend(self):
+            return self._extend
+
+    def __init__(self, colorbar: Colorbar):
+        self._colorbar = colorbar
+
+    @property
+    def colorbar(self):
+        return self._colorbar
+
+
+class Plt():
+    def __init__(self, sheet, is_layout_constrained=True):
+        self._sheet = sheet
+        self._is_layout_constrained = is_layout_constrained
+
+    @property
+    def sheet(self):
+        return self._sheet
+
+    @property
+    def is_layout_constrained(self):
+        return self._is_layout_constrained
 
 
 class Style():
@@ -204,67 +244,74 @@ class Style():
     '''
 
     def __init__(
-        self, *, plt_style, pos_integer: Scatter, integer: Scatter, hist: Hist
+        self, *, plt_style: Plt, scatter: Scatter, hist: Hist,
+        fig_style: Figure
     ):
         self._plt_style = plt_style
-        self._pos_integer = pos_integer
-        self._integer = integer
+        self._scatter = scatter
         self._hist = hist
+        self._fig_style = fig_style
 
-    @ property
+    @property
     def plt(self):
         return self._plt_style
 
-    @ property
-    def integer(self) -> Scatter:
-        return self._integer
+    @property
+    def scatter(self) -> Scatter:
+        return self._scatter
 
-    @ property
-    def pos_integer(self) -> Scatter:
-        return self._pos_integer
-
-    @ property
+    @property
     def hist(self) -> Hist:
         return self._hist
 
-    @ staticmethod
+    @property
+    def fig(self) -> Figure:
+        return self._fig_style
+
+    @staticmethod
     def light():
         return Style(
-            plt_style='default',
-            pos_integer=Scatter(
-                norm=LogNorm(vcenter=0.0, base=2.0),
-                cmap='binary'
-                # cmap='cubehelix_r',
-                # cmap='PuRd',
-            ),
-            integer=Scatter(
-                norm=LogNorm(vcenter=0.0, base=2.0),
-                # cmap='PRGn_r',
-                cmap='seismic',
-                # cmap='PiYG_r', # nice but too lighten
+            plt_style=Plt(sheet='default'),
+            scatter=Scatter(
+                pos_integer=Scatter.Content(
+                    norm=LogNorm(vcenter=0.0, base=2.0),
+                    cmap='binary'
+                    # cmap='cubehelix_r',
+                    # cmap='PuRd',
+                ),
+                integer=Scatter.Content(
+                    norm=LogNorm(vcenter=0.0, base=2.0),
+                    # cmap='PRGn_r',
+                    cmap='seismic',
+                    # cmap='PiYG_r', # nice but too lighten
+                ),
             ),
             hist=Hist(
                 fc='k',
                 ec='k'
-            )
+            ),
+            fig_style=Figure(colorbar=Figure.Colorbar())
         )
 
-    @ staticmethod
+    @staticmethod
     def dark():
         return Style(
-            plt_style='dark_background',
-            pos_integer=Scatter(
-                norm=Norm,
-                cmap='cubehelix',
-            ),
-            integer=Scatter(
-                norm=Norm,
-                # cmap='cividis',
-                # cmap='winter',
-                cmap='twilight',
+            plt_style=Plt(sheet='dark_background'),
+            scatter=Scatter(
+                pos_integer=Scatter.Content(
+                    norm=LogNorm(vcenter=0.0, base=2.0),
+                    cmap='cubehelix',
+                ),
+                integer=Scatter.Content(
+                    norm=LogNorm(vcenter=0.0, base=2.0),
+                    # cmap='cividis',
+                    # cmap='winter',
+                    cmap='twilight',
+                ),
             ),
             hist=Hist(
                 fc='w',
                 ec='w'
-            )
+            ),
+            fig_style=Figure(colorbar=Figure.Colorbar())
         )
