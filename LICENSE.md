@@ -26,7 +26,7 @@ The following description gives an (incomplete) overview about this repository (
 This repository `osmgraphing` parses maps of own format or maps from openstreetmap.
 To do this, a binary `osmgraphing` is built and an own-defined config-file can be provided to specify parser- and routing-settings.
 Besides that, a binary `mapgenerator` is built and can be used to generate map-files.
-Besides that, this repository also explorates graphs and optimizes resulting routes with the module `exploration` and the binary `balancer`.
+Further, this repository also explorates graphs and optimizes resulting routes with the module `exploration` and the binary `balancer`.
 
 
 ## Apache-2.0
@@ -43,7 +43,7 @@ See the License for the specific language governing permissions and limitations 
 
 ## GPL-3.0
 
-Besides that, this repository contains one script `./scripts/balancer-simulation/run.sh`, which uses `multi-ch-constructor` licensed under `GPL-3.0`.
+This repository contains one script `./scripts/balancer-simulation/run.sh`, which uses `multi-ch-constructor` licensed under `GPL-3.0`.
 Thus, this particular script is licensed under the `GPL-3.0` as well.
 You may obtain a copy of the License at
 
