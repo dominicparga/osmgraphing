@@ -259,7 +259,6 @@ pub fn assert_graph(
     }
 }
 
-#[allow(dead_code)]
 pub fn assert_graph_sloppy(expected_node_count: usize, expected_edge_count: usize, graph: &Graph) {
     let _nodes = graph.nodes();
     let nodes = graph.nodes(); // calling twice should be fine
@@ -296,7 +295,7 @@ pub fn assert_graph_sloppy(expected_node_count: usize, expected_edge_count: usiz
         bwd_edges.count()
     );
 
-    // check consistency
+    // check shortcut-consistency
 
     for edge_idx in &fwd_edges {
         if let Some(&[sc_edge_0, sc_edge_1]) = fwd_edges.sc_edges(edge_idx) {

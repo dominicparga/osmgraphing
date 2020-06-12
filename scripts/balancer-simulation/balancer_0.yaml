@@ -4,15 +4,15 @@ parsing:
     category: 'Car'
     are-drivers-picky: false
   nodes:
-  - meta: { info: 'NodeId', id: 'node-id' } # node-idx
-  - ignored # node-id
+  - ignored # node-idx
+  - meta: { info: 'NodeId', id: 'node-id' } # osm-id
   - metric: { unit: 'Latitude', id: 'latitude' }
   - metric: { unit: 'Longitude', id: 'longitude' }
   - ignored # height
   - meta: { info: 'CHLevel', id: 'ch-level' }
   edges:
-  - meta: { info: 'SrcId', id: 'src-id' } # src-idx
-  - meta: { info: 'DstId', id: 'dst-id' } # dst-idx
+  - meta: { info: 'SrcId', id: 'src-id' }
+  - meta: { info: 'DstId', id: 'dst-id' }
   - metric: { unit: 'Kilometers', id: 'kilometers' }
   - metric: { unit: 'Hours', id: 'hours' }
   - metric: { unit: 'LaneCount', id: 'lane-count' }
@@ -53,8 +53,8 @@ writing:
     - ignored # height
     - ignored # ch-level
     edges:
-    - id: 'src-idx'
-    - id: 'dst-idx'
+    - id: 'src-idx' # idx needed for multi-ch-constructor
+    - id: 'dst-idx' # idx needed for multi-ch-constructor
     - id: 'kilometers'
     - id: 'hours'
     - id: 'lane-count'

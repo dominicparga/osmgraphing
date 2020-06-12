@@ -95,7 +95,6 @@ create_ch_fmi_from_iteration() {
     --using-osm-ids \
     --text "${iter_dir}/graph.fmi" \
     --percent "${percent}" \
-    --stats \
     --write "${iter_dir}/graph.ch.fmi"
 
     cd "${osmgraphing_dir}" || exit 1
