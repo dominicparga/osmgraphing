@@ -5,7 +5,7 @@ set -e
 # build
 
 cwd="$(dirname "$(pwd)"/"${0}")"
-"${cwd}/build.sh"
+cargo build --release
 osmgraphing_dir="${cwd}/.."
 
 for map_name in \
