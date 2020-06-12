@@ -4,8 +4,8 @@ parsing:
     category: 'Car'
     are-drivers-picky: false
   nodes:
-  - meta: { info: 'NodeId', id: 'node-id' } # node-idx
-  - ignored # osm-id
+  - ignored # node-idx
+  - meta: { info: 'NodeId', id: 'node-id' } # osm-id
   - metric: { unit: 'Latitude', id: 'latitude' }
   - metric: { unit: 'Longitude', id: 'longitude' }
   edges:

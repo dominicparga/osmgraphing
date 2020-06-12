@@ -92,6 +92,7 @@ create_ch_fmi_from_iteration() {
     cmake --build build
 
     ./build/multi-ch \
+    --using-osm-ids \
     --text "${iter_dir}/graph.fmi" \
     --percent "${percent}" \
     --stats \
