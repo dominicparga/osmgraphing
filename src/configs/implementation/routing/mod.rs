@@ -32,30 +32,6 @@ impl SupportingFileExts for Config {
 }
 
 impl Config {
-    /// Takes all metrics from graph with default settings
-    pub fn try_from_all_metrics(parsing_cfg: &configs::parsing::Config) -> Result<Config, String> {
-        let mut proto_routing_cfg = parsing_cfg
-            .edges
-            .metrics
-            .ids
-            .iter()
-            .map(|simple_id| format!("{{ id: '{}' }},", simple_id.0))
-            .fold(String::from("routing: { metrics: ["), |acc, id| {
-                format!("{} {}", acc, id)
-            });
-        proto_routing_cfg.push_str("] }");
-
-        Config::try_from_str(&proto_routing_cfg, parsing_cfg)
-    }
-
-    /// Takes all metrics from graph with default settings
-    pub fn from_all_metrics(parsing_cfg: &configs::parsing::Config) -> Config {
-        match Config::try_from_all_metrics(parsing_cfg) {
-            Ok(cfg) => cfg,
-            Err(msg) => panic!("{}", msg),
-        }
-    }
-
     pub fn try_from_str(
         yaml_str: &str,
         parsing_cfg: &configs::parsing::Config,

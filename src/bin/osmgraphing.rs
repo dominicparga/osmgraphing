@@ -119,6 +119,7 @@ fn run() -> err::Feedback {
     if args.is_writing_routes {
         // get config by provided user-input
 
+        let routing_cfg = configs::routing::Config::try_from_yaml(&args.routing_cfg, graph.cfg())?;
         let writing_cfg =
             configs::writing::routing::Config::try_from_yaml(&args.writing_routes_cfg)?;
 
@@ -136,7 +137,7 @@ fn run() -> err::Feedback {
         // measure writing-time
         let now = Instant::now();
 
-        match io::routing::Writer::write(&graph, &writing_cfg) {
+        match io::routing::Writer::write(&graph, &routing_cfg, &writing_cfg) {
             Ok(()) => (),
             Err(msg) => return Err(err::Msg::from(format!("{}", msg))),
         };

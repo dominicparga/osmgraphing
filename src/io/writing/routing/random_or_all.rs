@@ -1,5 +1,5 @@
 use crate::{
-    configs::{self, writing},
+    configs,
     helpers::err,
     network::{Graph, NodeIdx},
     routing,
@@ -28,8 +28,13 @@ impl Writer {
     }
 }
 
-impl super::Writing for Writer {
-    fn write(&self, graph: &Graph, writing_cfg: &writing::routing::Config) -> err::Feedback {
+impl Writer {
+    pub fn write(
+        &self,
+        graph: &Graph,
+        routing_cfg: &configs::routing::Config,
+        writing_cfg: &configs::writing::routing::Config,
+    ) -> err::Feedback {
         // prepare
 
         let output_file = OpenOptions::new()
@@ -53,7 +58,6 @@ impl super::Writing for Writer {
             let mut rng = rand_pcg::Pcg32::seed_from_u64(self.seed);
             let die = Uniform::from(0..nodes.count());
 
-            let routing_cfg = configs::routing::Config::from_all_metrics(graph.cfg());
             let mut dijkstra = routing::Dijkstra::new();
 
             if num_possible_routes <= self.max_count {
