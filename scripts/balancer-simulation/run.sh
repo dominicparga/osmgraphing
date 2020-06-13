@@ -188,6 +188,6 @@ done
 
 # visualize all generated data
 
-"${cwd}/visualization.py" \
+py "${cwd}/visualization" \
 --results-dir "${results_dir}" \
 --num-iter "${num_iter}"

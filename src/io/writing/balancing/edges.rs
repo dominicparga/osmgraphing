@@ -51,7 +51,7 @@ impl Writer {
 
         writeln!(
             writer,
-            "src-lat src-lon dst-lat dst-lon kilometers lane_count"
+            "src_lat src_lon dst_lat dst_lon kilometers lane_count"
         )?;
 
         // write data

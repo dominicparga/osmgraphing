@@ -4,15 +4,15 @@ parsing:
     category: 'Car'
     are-drivers-picky: false
   nodes:
-  - meta: { info: 'NodeId', id: 'node-id' } # node-idx
-  - ignored # node-id
+  - ignored # node-idx
+  - meta: { info: 'NodeId', id: 'node-id' } # osm-id
   - metric: { unit: 'Latitude', id: 'latitude' }
   - metric: { unit: 'Longitude', id: 'longitude' }
   - ignored # height
   - meta: { info: 'CHLevel', id: 'ch-level' }
   edges:
-  - meta: { info: 'SrcId', id: 'src-id' } # src-idx
-  - meta: { info: 'DstId', id: 'dst-id' } # dst-idx
+  - meta: { info: 'SrcId', id: 'src-id' }
+  - meta: { info: 'DstId', id: 'dst-id' }
   - metric: { unit: 'Kilometers', id: 'kilometers' }
   - metric: { unit: 'Hours', id: 'hours' }
   - ignored # lane-count
@@ -22,3 +22,7 @@ writing:
   route-pairs:
     file: '${iter_0_dir}/10_000.route-pairs'
     random_or_all: { seed: 42, max_count: 10000 }
+routing:
+  is-ch-dijkstra: true
+  metrics:
+  - id: 'kilometers'

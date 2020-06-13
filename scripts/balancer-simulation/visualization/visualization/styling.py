@@ -1,4 +1,5 @@
 import math
+from copy import deepcopy
 import numpy as np
 import matplotlib as plt
 import matplotlib.colors as colors
@@ -14,6 +15,9 @@ class Norm(colors.Normalize):
         super().__init__(vmin=vmin, vmax=vmax, clip=clip)
 
     def __call__(self, value, clip=None):
+        # remember for next run
+        old_vmin, old_vmax = self.vmin, self.vmax
+        self.vmin, self.vmax = None, None
         if self.vmin is None:
             self.vmin = np.min(value)
         if self.vmax is None:
@@ -37,7 +41,12 @@ class Norm(colors.Normalize):
         else:
             new_value = self.do_mapping(new_value)
 
-        return np.ma.masked_array(new_value)
+        result = np.ma.masked_array(new_value)
+
+        # reset for next run
+        self.vmin, self.vmax = old_vmin, old_vmax
+
+        return result
 
     def check_inputs(self):
         if self.vmax < self.vmin:
@@ -139,7 +148,7 @@ class Scatter():
             *,
             norm,
             cmap,
-            s=2,
+            s=0.3,
             alpha=1.0,
             edgecolors='none'
         ):
@@ -244,29 +253,34 @@ class Style():
     '''
 
     def __init__(
-        self, *, plt_style: Plt, scatter: Scatter, hist: Hist,
+        self, *, dpi=1024, plt_style: Plt, scatter: Scatter, hist: Hist,
         fig_style: Figure
     ):
         self._plt_style = plt_style
         self._scatter = scatter
         self._hist = hist
         self._fig_style = fig_style
+        self._dpi = dpi
+
+    @property
+    def dpi(self):
+        return deepcopy(self._dpi)
 
     @property
     def plt(self):
-        return self._plt_style
+        return deepcopy(self._plt_style)
 
     @property
     def scatter(self) -> Scatter:
-        return self._scatter
+        return deepcopy(self._scatter)
 
     @property
     def hist(self) -> Hist:
-        return self._hist
+        return deepcopy(self._hist)
 
     @property
     def fig(self) -> Figure:
-        return self._fig_style
+        return deepcopy(self._fig_style)
 
     @staticmethod
     def light():
@@ -275,7 +289,7 @@ class Style():
             scatter=Scatter(
                 pos_integer=Scatter.Content(
                     # norm=LogNorm(vcenter=0.0, base=50.0), cmap='PuRd'
-                    norm=LogNorm(vcenter=0.0, base=40.0), cmap='binary'
+                    norm=LogNorm(base=40.0), cmap='binary'
                     # norm=LogNorm(vcenter=0.0, base=100.0), cmap='Purples'
                     # norm=LogNorm(vcenter=0.0, base=20.0), cmap='gist_heat_r'
                     # norm=LogNorm(vcenter=0.0, base=20.0), cmap='cubehelix_r'
@@ -301,7 +315,7 @@ class Style():
             plt_style=Plt(sheet='dark_background'),
             scatter=Scatter(
                 pos_integer=Scatter.Content(
-                    norm=LogNorm(vcenter=0.0, base=50.0), cmap='copper',
+                    norm=LogNorm(base=50.0), cmap='copper',
                 ),
                 integer=Scatter.Content(
                     norm=LogNorm(vcenter=0.0, base=1000.0), cmap='twilight',

@@ -13,7 +13,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 
-from .styling import Style
+from .styling import Style, Norm, LogNorm
 from .simulating import Simulation
 from .model import Workload, Data
 
@@ -26,6 +26,8 @@ def plot_workloads(data: Data, sim: Simulation, style: Style):
     plt.style.use(style.plt.sheet)
     fig, ax = plt.subplots()
     ax.set_title(f'workloads {data.iteration}')
+    print(style.scatter.pos_integer.norm.vmin)
+    print(style.scatter.pos_integer.norm.vmax)
     plot_collection = ax.scatter(
         x=data.lons,
         y=data.lats,
@@ -34,9 +36,11 @@ def plot_workloads(data: Data, sim: Simulation, style: Style):
         alpha=style.scatter.pos_integer.alpha,
         edgecolors=style.scatter.pos_integer.edgecolors,
         cmap=style.scatter.pos_integer.cmap,
-        norm=style.scatter.pos_integer.norm,
-        rasterized=True
+        norm=deepcopy(style.scatter.pos_integer.norm),
+        rasterized=None
     )
+    print(style.scatter.pos_integer.norm.vmin)
+    print(style.scatter.pos_integer.norm.vmax)
     ax.set_xlabel('longitude')
     ax.set_ylabel('latitude')
     ax.set_aspect(1.0 / np.cos(np.deg2rad(data.lats_mid)))
@@ -48,7 +52,15 @@ def plot_workloads(data: Data, sim: Simulation, style: Style):
     )
     plt.grid(False)
     plt.tight_layout()
-    plt.savefig(f'{sim.results_dir}/{data.iteration}/stats/workloads.png')
+    plt.savefig(
+        os.path.join(
+            sim.results_dir,
+            f'{data.iteration}',
+            'stats',
+            'workloads.png'
+        ),
+        dpi=style.dpi
+    )
     # plt.show()
     plt.close()
 
@@ -83,7 +95,14 @@ def plot_delta_workloads(data: Data, sim: Simulation, style: Style):
     plt.grid(False)
     plt.tight_layout()
     plt.savefig(
-        f'{sim.results_dir}/{data.iteration}/stats/delta_workloads.png')
+        os.path.join(
+            sim.results_dir,
+            f'{data.iteration}',
+            'stats',
+            'delta_workloads.png'
+        ),
+        dpi=style.dpi
+    )
     # plt.show()
     plt.close()
 
@@ -109,20 +128,71 @@ def plot_workload_histogram(data: Data, sim: Simulation, style: Style):
     plt.grid(False)
     plt.tight_layout()
     plt.savefig(
-        f'{sim.results_dir}/{data.iteration}/stats/workloads_hist.png')
+        os.path.join(
+            sim.results_dir,
+            f'{data.iteration}',
+            'stats',
+            'workloads_hist.png'
+        ),
+        dpi=style.dpi
+    )
     # plt.show()
     plt.close()
 
 
-def plot_boxplots(sim: Simulation, data: Data, style: Style):
+def plot_sorted_workloads(sim: Simulation, data: Data, style: Style):
     '''
     https://matplotlib.org/3.1.1/gallery/pyplots/boxplot_demo_pyplot.html#sphx-glr-gallery-pyplots-boxplot-demo-pyplot-py
     '''
-    pass
 
+    LAT_IDX = 0
+    LON_IDX = 1
+    WLD_IDX = 2
+    sorted_workloads = np.array(sorted(
+        list(map(list, zip(data.lats, data.lons, data.workloads.raw))),
+        key=lambda x: x[WLD_IDX]
+    ))
+    n = len(sorted_workloads)
+    (q_low, q_high) = (int(0.25 * n), int(0.95 * n))
+    sorted_workloads = sorted_workloads[q_low: q_high]
+    print(sorted_workloads)
 
-def plot_workloads_sorted(sim: Simulation, data: Data, style: Style):
-    pass
+    plt.style.use(style.plt.sheet)
+    fig, ax = plt.subplots()
+    ax.set_title(f'sorted workloads {data.iteration}')
+    plot_collection = ax.scatter(
+        x=sorted_workloads[:, LON_IDX],
+        y=sorted_workloads[:, LAT_IDX],
+        c=sorted_workloads[:, WLD_IDX],
+        s=style.scatter.pos_integer.s,
+        alpha=style.scatter.pos_integer.alpha,
+        edgecolors=style.scatter.pos_integer.edgecolors,
+        cmap=style.scatter.pos_integer.cmap,
+        norm=Norm(),
+        rasterized=None
+    )
+    ax.set_xlabel('longitude')
+    ax.set_ylabel('latitude')
+    ax.set_aspect(1.0 / np.cos(np.deg2rad(data.lats_mid)))
+    fig.colorbar(
+        mappable=plot_collection,
+        label=style.fig.colorbar.label,
+        shrink=style.fig.colorbar.shrink,
+        extend=style.fig.colorbar.extend
+    )
+    plt.grid(False)
+    plt.tight_layout()
+    plt.savefig(
+        os.path.join(
+            sim.results_dir,
+            f'{data.iteration}',
+            'stats',
+            'sorted_workloads.png'
+        ),
+        dpi=style.dpi
+    )
+    # plt.show()
+    plt.close()
 
 
 def _plot_new_metric_sorted(sim: Simulation, data: Data, style: Style):
@@ -137,16 +207,8 @@ def run(sim: Simulation, style: Style):
     # vis workloads
     data = Data()
     for i in range(sim.num_iter):
-        data.start_new_iteration(iteration=i)
-
-        print(f'iteration {data.iteration}')
-
-        if i == 0:
-            print('Read in edge-info')
-            data.read_in_edge_info(sim=sim)
-
-        print('Read in new metrics')
-        data.read_in_workloads(sim=sim)
+        print(f'Preparing new ITERATION {i}, e.g. reading in new data')
+        data.prepare_new_iteration(sim=sim)
 
         print(f'mean={data.workloads.mean}')
         print(f' std={data.workloads.std}')
@@ -161,9 +223,7 @@ def run(sim: Simulation, style: Style):
         print('plot workloads as histogram')
         plot_workload_histogram(sim=sim, data=data, style=style)
         print('plot boxplots')
-        plot_boxplots(sim=sim, data=data, style=style)
-        print('plot workloads sorted')
-        plot_workloads_sorted(sim=sim, data=data, style=style)
+        plot_sorted_workloads(sim=sim, data=data, style=style)
 
         # new line if next iteration
 
