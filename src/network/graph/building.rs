@@ -4,6 +4,7 @@ use crate::{
     defaults::{
         self,
         capacity::{self, DimVec},
+        routing::IS_USING_CH_LEVEL_SPEEDUP,
     },
     helpers::{approx::ApproxEq, err, MemSize},
 };
@@ -424,8 +425,13 @@ impl GraphBuilder {
             // - memory-peak is here when sorting
             // - sort by src-id, then level of dst, then dst-id
             //   -> branch prediction in dijkstra when breaking after level is reached
-            let nodes = graph.nodes();
-            proto_edges.sort_by_key(|e| (e.src_idx, Reverse(nodes.level(e.dst_idx)), e.dst_idx));
+            if !IS_USING_CH_LEVEL_SPEEDUP {
+                proto_edges.sort_by_key(|e| (e.src_idx, e.dst_idx));
+            } else {
+                let nodes = graph.nodes();
+                proto_edges
+                    .sort_by_key(|e| (e.src_idx, Reverse(nodes.level(e.dst_idx)), e.dst_idx));
+            }
         }
 
         //----------------------------------------------------------------------------------------//
@@ -691,14 +697,18 @@ impl GraphBuilder {
 
         info!("DO Sort proto-backward-edges by their dst/src-IDs.");
         {
-            let nodes = graph.nodes();
-            proto_edges.sort_by_key(|edge| {
-                (
-                    edge.dst_idx,
-                    Reverse(nodes.level(edge.src_idx)),
-                    edge.src_idx,
-                )
-            });
+            if !IS_USING_CH_LEVEL_SPEEDUP {
+                proto_edges.sort_by_key(|edge| (edge.dst_idx, edge.src_idx));
+            } else {
+                let nodes = graph.nodes();
+                proto_edges.sort_by_key(|edge| {
+                    (
+                        edge.dst_idx,
+                        Reverse(nodes.level(edge.src_idx)),
+                        edge.src_idx,
+                    )
+                });
+            }
         }
 
         //----------------------------------------------------------------------------------------//
