@@ -3,7 +3,7 @@ import filecmp
 import numpy as np
 import csv
 
-from .simulating import Simulation
+from visualization.simulating import Simulation
 
 
 class Workload():

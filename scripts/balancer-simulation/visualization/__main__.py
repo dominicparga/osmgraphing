@@ -58,8 +58,8 @@ if __name__ == '__main__':
     )
 
     if params['style'] == 'dark':
-        style = vis.styling.Style.dark()
+        plotting_machine = vis.plotting.dark()
     if params['style'] == 'light':
-        style = vis.styling.Style.light()
+        plotting_machine = vis.plotting.light()
 
-    vis.run(sim=sim, style=style)
+    vis.run(sim=sim, vis=plotting_machine)
