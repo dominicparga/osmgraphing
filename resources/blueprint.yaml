@@ -143,5 +143,6 @@ balancing:
     distance: 'kilometers'
     route-count: 'route-count'
     lane-count: 'lane-count'
-  # optional
-  workload-correction: 0.3
+  explicit_euler:
+    # old + (new - old) * correction
+    correction: 0.3

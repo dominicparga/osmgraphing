@@ -63,5 +63,5 @@ pub mod routing {
 }
 
 pub mod balancing {
-    pub use crate::configs::implementation::balancing::Config;
+    pub use crate::configs::implementation::balancing::{Config, Optimization};
 }

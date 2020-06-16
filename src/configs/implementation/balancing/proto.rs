@@ -1,7 +1,4 @@
-use crate::{
-    configs::{implementation::balancing::raw, SimpleId},
-    defaults,
-};
+use crate::configs::{implementation::balancing::raw, SimpleId};
 use serde::Deserialize;
 use std::{convert::TryFrom, path::PathBuf};
 
@@ -13,7 +10,7 @@ pub struct Config {
     pub workload_id: SimpleId,
     pub lane_count_id: SimpleId,
     pub distance_id: SimpleId,
-    pub workload_correction: f64,
+    pub optimization: Optimization,
 }
 
 impl TryFrom<raw::Config> for Config {
@@ -25,10 +22,22 @@ impl TryFrom<raw::Config> for Config {
             workload_id: raw_cfg.balancing.metric_ids.workload,
             lane_count_id: raw_cfg.balancing.metric_ids.lane_count,
             distance_id: raw_cfg.balancing.metric_ids.distance,
-            workload_correction: raw_cfg
-                .balancing
-                .workload_correction
-                .unwrap_or(defaults::balancing::WORKLOAD_CORRECTION),
+            optimization: Optimization::from(raw_cfg.balancing.optimization),
         })
+    }
+}
+
+#[derive(Debug)]
+pub enum Optimization {
+    ExplicitEuler { correction: f64 },
+}
+
+impl From<raw::Optimization> for Optimization {
+    fn from(raw_optimization: raw::Optimization) -> Optimization {
+        match raw_optimization {
+            raw::Optimization::ExplicitEuler { correction } => Optimization::ExplicitEuler {
+                correction: correction,
+            },
+        }
     }
 }
