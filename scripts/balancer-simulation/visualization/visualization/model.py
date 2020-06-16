@@ -6,7 +6,31 @@ import csv
 from visualization.simulating import Simulation
 
 
-class Workload():
+class GlobalData():
+    def __init__(self):
+        self._max_workload = None
+
+    @property
+    def max_workload(self):
+        return self._max_workload
+
+    @staticmethod
+    def fill(sim: Simulation):
+        global_data = GlobalData()
+
+        data = Data(sim.iteration_0)
+        for i in range(sim.iteration_0, sim.iteration_max + 1):
+            data.prepare_new_iteration(sim=sim)
+            if global_data._max_workload is None:
+                global_data._max_workload = data.workloads.max
+            else:
+                if data.workloads.max > global_data._max_workload:
+                    global_data._max_workload = data.workloads.max
+
+        return global_data
+
+
+class Values():
     '''
     Just a struct of values
     '''
@@ -27,6 +51,7 @@ class Workload():
         self._raw = new_raw
         self._min = None
         self._max = None
+        self._center = None
         self._mean = None
         self._std = None
 
@@ -35,6 +60,12 @@ class Workload():
         if self._min is None:
             self._min = np.min(self._raw)
         return self._min
+
+    @property
+    def center(self):
+        if self._center is None:
+            self._center = (self.min + self.max) / 2.0
+        return self._center
 
     @property
     def max(self):
@@ -60,17 +91,17 @@ class Data():
     Just a struct of values
     '''
 
-    def __init__(self, iteration_0=0):
+    def __init__(self, global_data, iteration_0=0):
         self._iteration = iteration_0 - 1
-        self._iteration_0 = iteration_0
-        self._lats = []
-        self._lats_mid = None
-        self._lons = []
-        self._kilometers = []
-        self._lane_counts = []
-        self._old_workloads = Workload()
-        self._workloads = Workload()
+        self._lats = Values()
+        self._lons = Values()
+        self._kilometers = Values()
+        self._lane_counts = Values()
+        self._old_workloads = Values()
+        self._workloads = Values()
         self._delta_workloads = None
+
+        self._global_data = global_data
 
     def prepare_new_iteration(self, sim: Simulation):
         self._iteration += 1
@@ -86,7 +117,7 @@ class Data():
 
         # continue TODO
 
-        if self.iteration == self._iteration_0:
+        if self.iteration == sim.iteration_0:
             self.check_for_equal_edge_files(sim=sim)
             self.read_in_edge_info(sim=sim)
 
@@ -107,29 +138,27 @@ class Data():
             iteration = self.iteration
         return os.path.join(f'{self._iteration}', 'stats', 'new_metrics.csv')
 
-    @ property
+    @property
+    def global_data(self):
+        return self._global_data
+
+    @property
     def iteration(self):
         return self._iteration
 
-    @ property
+    @property
     def lats(self):
         return self._lats
 
-    @ property
-    def lats_mid(self):
-        if self._lats_mid is None:
-            self._lats_mid = (np.max(self._lats) + np.min(self._lats)) / 2.0
-        return self._lats_mid
-
-    @ property
+    @property
     def lons(self):
         return self._lons
 
-    @ property
+    @property
     def kilometers(self):
         return self._kilometers
 
-    @ property
+    @property
     def lane_counts(self):
         return self._lane_counts
 
@@ -139,21 +168,41 @@ class Data():
 
         Nagel-Schreckenberg-Model: 7.5 m per vehicle
         '''
-        num_vehicles = max(1.0, self._kilometers[edge_idx] / 0.0075)
-        return num_vehicles * self._lane_counts[edge_idx]
+        num_vehicles = max(1.0, self._kilometers.raw[edge_idx] / 0.0075)
+        return num_vehicles * self._lane_counts.raw[edge_idx]
 
-    @ property
+    @property
     def old_workloads(self):
         return self._old_workloads
 
-    @ property
+    @property
     def workloads(self):
         return self._workloads
 
-    @ property
+    def sorted_lon_lat_workloads(self):
+        return np.array(sorted(
+            list(map(list, zip(
+                self.lons.raw,
+                self.lats.raw,
+                self.workloads.raw
+            ))),
+            key=lambda x: x[2]
+        ))
+
+    def sorted_lon_lat_deltas(self):
+        return np.array(sorted(
+            list(map(list, zip(
+                self.lons.raw,
+                self.lats.raw,
+                self.delta_workloads.raw
+            ))),
+            key=lambda x: x[2]
+        ))
+
+    @property
     def delta_workloads(self):
         if self._delta_workloads is None:
-            self._delta_workloads = Workload()
+            self._delta_workloads = Values()
             for new, old in zip(self.workloads.raw, self.old_workloads.raw):
                 self._delta_workloads.raw.append(new - old)
         return self._delta_workloads
@@ -165,11 +214,11 @@ class Data():
         '''
         last_file = os.path.join(
             sim.results_dir,
-            self.path_to_edge_info(self._iteration_0)
+            self.path_to_edge_info(sim.iteration_0)
         )
         for i in range(
-            self._iteration_0 + 1,
-            self._iteration_0 + sim.num_iter
+            sim.iteration_0 + 1,
+            sim.iteration_0 + sim.num_iter
         ):
             next_file = os.path.join(
                 sim.results_dir,
@@ -197,11 +246,11 @@ class Data():
                 dst_lon = float(row['dst_lon'])
                 kilometers = float(row['kilometers'])
                 lane_count = float(row['lane_count'])
-                # take mid-point of an edge as reference
-                self.lats.append((src_lat + dst_lat) / 2.0)
-                self.lons.append((src_lon + dst_lon) / 2.0)
-                self.kilometers.append(kilometers)
-                self.lane_counts.append(lane_count)
+
+                self.lats.raw.append((src_lat + dst_lat) / 2.0)
+                self.lons.raw.append((src_lon + dst_lon) / 2.0)
+                self.kilometers.raw.append(kilometers)
+                self.lane_counts.raw.append(lane_count)
 
     def read_in_workloads(self, sim: Simulation):
         workloads_csv_path = os.path.join(

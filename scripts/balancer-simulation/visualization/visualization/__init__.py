@@ -14,18 +14,21 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from visualization.simulating import Simulation
-from visualization.model import Workload, Data
+from visualization.model import Data, GlobalData
 import visualization.plotting as plotting
 
 
 def run(sim: Simulation, vis: plotting.Machine):
-    '''
-    TODO function docstring
-    '''
+    print('get global data, e.g. maximum workload')
+    global_data = GlobalData.fill(sim=sim)
+    print('plot all sorted workloads')
+    vis.plot_all_sorted_workloads(sim=sim)
+    # print('plot all boxplots')
+    # vis.plot_all_boxplot_workloads(sim=sim)
+    print('')
 
-    # vis workloads
-    data = Data()
-    for i in range(sim.num_iter):
+    data = Data(global_data=global_data, iteration_0=sim.iteration_0)
+    for i in range(sim.iteration_0, sim.iteration_0 + sim.num_iter):
         print(f'Preparing new ITERATION {i}, e.g. reading in new data')
         data.prepare_new_iteration(sim=sim)
 
@@ -36,15 +39,15 @@ def run(sim: Simulation, vis: plotting.Machine):
 
         print('plot workloads')
         vis.plot_workloads(sim=sim, data=data)
+        print('plot workload-quantiles')
+        vis.plot_workload_quantiles(data=data, sim=sim)
         if data.iteration > 0:
             print('plot delta-workloads')
             vis.plot_delta_workloads(sim=sim, data=data)
+            print('plot delta-workload-quantiles')
+            vis.plot_delta_workload_quantiles(sim=sim, data=data)
         print('plot workloads as histogram')
         vis.plot_workload_histogram(sim=sim, data=data)
-        print('plot sorted workloads')
-        vis.plot_sorted_workloads(sim=sim, data=data)
-        print('plot boxplots')
-        # TODO
 
         # new line if next iteration
 

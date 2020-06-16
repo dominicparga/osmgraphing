@@ -4,22 +4,18 @@ from copy import deepcopy
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
+import matplotlib.tri as tri
 
 from visualization.simulating import Simulation
 from visualization.model import Data
-from visualization.helpers import Norm, LogNorm
+from visualization.helpers import TwoSlopeLoggedNorm
 
 
 class Figure():
     class Colorbar():
-        def __init__(self, label=None, shrink=0.9, extend='neither'):
-            self._label = label
+        def __init__(self, shrink=0.9, extend='neither'):
             self._shrink = shrink
             self._extend = extend
-
-        @property
-        def label(self):
-            return self._label
 
         @property
         def shrink(self):
@@ -79,49 +75,200 @@ class Machine():
     def fig(self) -> Figure:
         return deepcopy(self._fig_style)
 
+    def plot_all_sorted_workloads(self, sim: Simulation):
+        # setup simulation
+
+        data = Data(sim.iteration_0)
+
+        # setup figure
+
+        plt.style.use(self.plt_theme)
+        _fig, ax = plt.subplots()
+        ax.set_title(f'all occured workloads')
+
+        #  set cmap
+
+        if self.is_light:
+            cmap = plt.get_cmap('gist_heat_r')
+        else:
+            cmap = plt.get_cmap('copper')
+
+        for iteration in range(sim.iteration_0, sim.iteration_max + 1):
+            data.prepare_new_iteration(sim=sim)
+            sorted_lon_lat_workloads = data.sorted_lon_lat_workloads()[:, 2]
+
+            mapped_values = []
+            for i in range(len(sorted_lon_lat_workloads)):
+                value = sorted_lon_lat_workloads[i]
+                if value > 0.0:
+                    mapped_values.append(value)
+
+            # plot data
+
+            # alpha should vary
+            # dependent on iteration (first iteration should have min alpha)
+            xp, fp = [sim.iteration_0, sim.iteration_max], [0.2, 1.0]
+            alpha = np.interp(x=iteration, xp=xp, fp=fp)
+            color = cmap(alpha)
+
+            ax.plot(
+                range(len(mapped_values)),
+                mapped_values,
+                color=color,
+                alpha=alpha
+            )
+            # plot maximum
+            ax.plot(
+                len(mapped_values)-1,
+                mapped_values[-1],
+                'x',
+                color=color,
+                alpha=alpha
+            )
+
+        # finalize plot
+
+        ax.set_xlabel('')
+        ax.set_ylabel('workload')
+        plt.grid(True)
+        plt.tight_layout()
+
+        # save plot
+
+        plt.savefig(
+            os.path.join(
+                sim.results_dir,
+                'sorted_workloads.png'
+            ),
+            dpi=self.dpi
+        )
+        # plt.show()
+        plt.close()
+
+    def plot_all_boxplot_workloads(self, sim: Simulation):
+        # setup simulation
+
+        data = Data(sim.iteration_0)
+
+        # setup figure
+
+        plt.style.use(self.plt_theme)
+        _fig, ax = plt.subplots()
+        ax.set_title(f'all occured workloads')
+
+        #  set cmap
+
+        if self.is_light:
+            cmap = plt.get_cmap('gist_heat_r')
+        else:
+            cmap = plt.get_cmap('copper')
+
+        for iteration in range(sim.iteration_0, sim.iteration_max + 1):
+            data.prepare_new_iteration(sim=sim)
+            sorted_lon_lat_workloads = data.sorted_lon_lat_workloads()[:, 2]
+
+            mapped_values = []
+            for i in range(len(sorted_lon_lat_workloads)):
+                value = sorted_lon_lat_workloads[i]
+                if value > 0.0:
+                    mapped_values.append(value)
+
+            # plot data
+
+            # alpha should vary
+            # dependent on iteration (first iteration should have min alpha)
+            xp, fp = [sim.iteration_0, sim.iteration_max], [0.2, 1.0]
+            alpha = np.interp(x=iteration, xp=xp, fp=fp)
+            color = cmap(alpha)
+
+            ax.plot(
+                range(len(mapped_values)),
+                mapped_values,
+                color=color,
+                alpha=alpha
+            )
+            # plot maximum
+            ax.plot(
+                len(mapped_values)-1,
+                mapped_values[-1],
+                'x',
+                color=color,
+                alpha=alpha
+            )
+
+        # finalize plot
+
+        ax.set_xlabel('')
+        ax.set_ylabel('workload')
+        plt.grid(True)
+        plt.tight_layout()
+
+        # save plot
+
+        plt.savefig(
+            os.path.join(
+                sim.results_dir,
+                'sorted_workloads.png'
+            ),
+            dpi=self.dpi
+        )
+        # plt.show()
+        plt.close()
+
     def plot_workloads(self, data: Data, sim: Simulation):
+        '''
+        https://matplotlib.org/3.1.1/gallery/pyplots/boxplot_demo_pyplot.html#sphx-glr-gallery-pyplots-boxplot-demo-pyplot-py
+        '''
+
+        # setup data
+
+        sorted_lon_lat_workloads = data.sorted_lon_lat_workloads()
+
         # setup figure
 
         plt.style.use(self.plt_theme)
         fig, ax = plt.subplots()
-        ax.set_title(f'workloads {data.iteration}')
+        ax.set_title(
+            f'workloads {data.iteration} in [{data.workloads.min}, {data.workloads.max}]')
 
         # set norm and cmap
 
         if self.is_light:
-            norm, cmap = [
-                [LogNorm(base=50.0), 'PuRd'],
-                [LogNorm(base=40.0), 'binary'],
-                [LogNorm(base=100.0), 'Purples'],
-                [LogNorm(base=20.0), 'gist_heat_r'],
-                [LogNorm(base=20.0), 'cubehelix_r']
-            ][1]
+            cmap = 'cubehelix_r'
         else:
-            norm, cmap = [
-                [LogNorm(base=50.0), 'copper']
-            ][0]
+            cmap = 'copper'
+        norm = {
+            # light
+            'PuRd': TwoSlopeLoggedNorm(),
+            'binary': TwoSlopeLoggedNorm(base=40.0),
+            'Purples': TwoSlopeLoggedNorm(base=100.0),
+            'gist_heat_r': TwoSlopeLoggedNorm(base=20.0),
+            'cubehelix_r': TwoSlopeLoggedNorm(),
+            # dark
+            'copper': TwoSlopeLoggedNorm(base=50.0),
+        }.get(cmap, colors.Normalize())
+        norm.vmax = data.global_data.max_workload
 
         # plot data
 
         plot_collection = ax.scatter(
-            x=data.lons,
-            y=data.lats,
-            c=data.workloads.raw,
-            s=0.3,
+            x=sorted_lon_lat_workloads[:, 0],
+            y=sorted_lon_lat_workloads[:, 1],
+            c=sorted_lon_lat_workloads[:, 2],
+            s=2,  # 0.1
             alpha=1.0,
             edgecolors='none',
-            norm=norm,
             cmap=cmap,
+            norm=norm,
         )
 
         # finalize plot
 
         ax.set_xlabel('longitude')
         ax.set_ylabel('latitude')
-        ax.set_aspect(1.0 / np.cos(np.deg2rad(data.lats_mid)))
+        ax.set_aspect(1.0 / np.cos(np.deg2rad(data.lats.center)))
         fig.colorbar(
             mappable=plot_collection,
-            label=self.fig.colorbar.label,
             shrink=self.fig.colorbar.shrink,
             extend=self.fig.colorbar.extend
         )
@@ -142,7 +289,107 @@ class Machine():
         # plt.show()
         plt.close()
 
+    def plot_workload_quantiles(self, data: Data, sim: Simulation):
+        '''
+        https://matplotlib.org/3.1.1/gallery/pyplots/boxplot_demo_pyplot.html#sphx-glr-gallery-pyplots-boxplot-demo-pyplot-py
+        '''
+
+        # setup data
+
+        sorted_lon_lat_workloads = data.sorted_lon_lat_workloads()
+        n = len(sorted_lon_lat_workloads)
+        q_low, q_mid, q_high = 0.0, 0.5, 0.95
+        q_low_idx, q_mid_idx, q_high_idx = (
+            int(q_low * n),
+            int(q_mid * n),
+            int(q_high * n)
+        )
+        q_low_val, q_mid_val, q_high_val = (
+            sorted_lon_lat_workloads[q_low_idx, 2],
+            sorted_lon_lat_workloads[q_mid_idx, 2],
+            sorted_lon_lat_workloads[q_high_idx, 2]
+        )
+
+        # setup figure
+
+        plt.style.use(self.plt_theme)
+        fig, ax = plt.subplots()
+        ax.set_title(
+            f'upper {100 * (1.0 - q_high):3.1f} % of workloads {data.iteration} in [{data.workloads.min}, {data.workloads.max}]'
+        )
+
+        # set norm and cmap
+
+        if self.is_light:
+            cmap = 'cubehelix_r'
+        else:
+            cmap = 'copper'
+        cmap = plt.get_cmap(cmap)
+
+        # set boundaries
+
+        boundaries = []
+        if q_low_val > 0.0:
+            boundaries.append(0.0)
+        boundaries.extend([q_low_val, q_high_val])
+        if q_high_val < data.global_data.max_workload:
+            boundaries.append(data.global_data.max_workload)
+        norm = colors.BoundaryNorm(
+            boundaries=boundaries,
+            ncolors=cmap.N
+        )
+
+        # plot data
+
+        plot_collection = ax.scatter(
+            x=sorted_lon_lat_workloads[:, 0],
+            y=sorted_lon_lat_workloads[:, 1],
+            c=sorted_lon_lat_workloads[:, 2],
+            s=2,  # 0.1
+            alpha=1.0,
+            edgecolors='none',
+            cmap=cmap,
+            norm=norm,
+        )
+
+        # finalize plot
+
+        ax.set_xlabel('longitude')
+        ax.set_ylabel('latitude')
+        ax.set_aspect(1.0 / np.cos(np.deg2rad(data.lats.center)))
+        fig.colorbar(
+            mappable=plot_collection,
+            shrink=self.fig.colorbar.shrink,
+            extend=self.fig.colorbar.extend
+        )
+        plt.grid(False)
+        plt.tight_layout()
+
+        # save plot
+
+        plt.savefig(
+            os.path.join(
+                sim.results_dir,
+                f'{data.iteration}',
+                'stats',
+                'workload-quantiles.png'
+            ),
+            dpi=self.dpi
+        )
+        # plt.show()
+        plt.close()
+
     def plot_delta_workloads(self, data: Data, sim: Simulation):
+        # setup data
+
+        sorted_lon_lat_deltas = data.sorted_lon_lat_deltas()
+        n = len(sorted_lon_lat_deltas)
+        (q_low, q_high) = (int(0.25 * n), int(0.95 * n))
+        (q_low, q_high) = (
+            sorted_lon_lat_deltas[q_low][2],
+            sorted_lon_lat_deltas[q_high][2]
+        )
+
         # setup figure
 
         plt.style.use(self.plt_theme)
@@ -153,21 +400,23 @@ class Machine():
         # set norm and cmap
 
         if self.is_light:
-            norm, cmap = [
-                [LogNorm(vcenter=0.0, base=20.0), 'seismic'],
-                [LogNorm(vcenter=0.0, base=100.0), 'PRGn_r'],
-                [LogNorm(vcenter=0.0, base=100.0), 'RdGy']
-            ][0]
+            cmap = 'seismic'
         else:
-            norm, cmap = [
-                [LogNorm(vcenter=0.0, base=1000.0), 'twilight']
-            ][0]
+            cmap = 'twilight'
+        norm = {
+            # light
+            'seismic': colors.TwoSlopeNorm(vcenter=0.0),
+            'PRGn_r': TwoSlopeLoggedNorm(vcenter=0.0),
+            'RdGy': TwoSlopeLoggedNorm(vcenter=0.0),
+            # dark
+            'twilight': TwoSlopeLoggedNorm(vcenter=0.0),
+        }.get(cmap, colors.TwoSlopeNorm(vcenter=0.0))
 
         # plot data
 
         plot_collection = ax.scatter(
-            x=data.lons,
-            y=data.lats,
+            x=data.lons.raw,
+            y=data.lats.raw,
             c=data.delta_workloads.raw,
             s=0.3,
             alpha=1.0,
@@ -180,10 +429,10 @@ class Machine():
 
         ax.set_xlabel('longitude')
         ax.set_ylabel('latitude')
-        ax.set_aspect(1 / np.cos(np.deg2rad(data.lats_mid)))
+        ax.set_aspect(1 / np.cos(np.deg2rad(data.lats.center)))
         fig.colorbar(
             mappable=plot_collection,
-            label=self.fig.colorbar.label,
+            label='',
             shrink=self.fig.colorbar.shrink,
             extend=self.fig.colorbar.extend
         )
@@ -204,101 +453,60 @@ class Machine():
         # plt.show()
         plt.close()
 
-    def plot_workload_histogram(self, data: Data, sim: Simulation):
-        # setup figure
+    def plot_delta_workload_quantiles(self, data: Data, sim: Simulation):
+        # setup data
 
-        plt.style.use(self.plt_theme)
-        _fig, ax = plt.subplots()
-        ax.set_title(f'workloads-density-function {data.iteration}')
-
-        #  set cmap
-
-        if self.is_light:
-            fc = 'w'
-            ec = 'w'
-        else:
-            fc = 'k'
-            ec = 'k'
-
-        # plot data
-
-        num_bins = int(np.ceil(data.workloads.max)) - \
-            int(np.floor(data.workloads.min))
-        _plot_collection = ax.hist(
-            data.workloads.raw,
-            bins=num_bins,
-            fc=fc,
-            ec=ec
+        sorted_lon_lat_deltas = data.sorted_lon_lat_deltas()
+        n = len(sorted_lon_lat_deltas)
+        q_low, q_high = 0.05, 0.95
+        q_low_idx, q_high_idx = (
+            int(q_low * n),
+            int(q_high * n)
         )
-
-        # finalize plot
-
-        ax.set_xlabel('workloads')
-        ax.set_ylabel('amount')
-        plt.grid(False)
-        plt.tight_layout()
-
-        # save plot
-
-        plt.savefig(
-            os.path.join(
-                sim.results_dir,
-                f'{data.iteration}',
-                'stats',
-                'workloads_hist.png'
-            ),
-            dpi=self.dpi
+        q_low_val, q_high_val = (
+            sorted_lon_lat_deltas[q_low_idx, 2],
+            sorted_lon_lat_deltas[q_high_idx, 2]
         )
-        # plt.show()
-        plt.close()
-
-    def plot_sorted_workloads(self, sim: Simulation, data: Data):
-        '''
-        https://matplotlib.org/3.1.1/gallery/pyplots/boxplot_demo_pyplot.html#sphx-glr-gallery-pyplots-boxplot-demo-pyplot-py
-        '''
-
-        # set norm and cmap
-
-        if self.is_light:
-            norm, cmap = [
-                [LogNorm(base=50.0), 'PuRd'],
-                [LogNorm(base=40.0), 'binary'],
-                [LogNorm(base=100.0), 'Purples'],
-                [LogNorm(base=20.0), 'gist_heat_r'],
-                [LogNorm(base=20.0), 'cubehelix_r']
-            ][1]
-        else:
-            norm, cmap = [
-                [LogNorm(base=50.0), 'copper']
-            ][0]
-
-        LAT_IDX = 0
-        LON_IDX = 1
-        WLD_IDX = 2
-        sorted_workloads = np.array(sorted(
-            list(map(list, zip(data.lats, data.lons, data.workloads.raw))),
-            key=lambda x: x[WLD_IDX]
-        ))
-        n = len(sorted_workloads)
-        (q_low, q_high) = (int(0.25 * n), int(0.95 * n))
-        print(sorted_workloads)
-
-        norm.vmin = sorted_workloads[q_low][WLD_IDX]
-        norm.vmax = sorted_workloads[q_high][WLD_IDX]
 
         # setup figure
 
         plt.style.use(self.plt_theme)
         fig, ax = plt.subplots()
-        ax.set_title(f'sorted workloads {data.iteration}')
+        ax.set_title(
+            f'lower {100 * (q_low):3.1f} % and upper {100 * (1.0 - q_high):3.1f} % of delta-workloads {data.iteration - 1} to {data.iteration}'
+        )
+
+        # set norm and cmap
+
+        if self.is_light:
+            cmap = 'seismic'
+        else:
+            cmap = 'twilight'
+        cmap = plt.get_cmap(cmap)
+
+        # set boundaries
+
+        abs_max_delta = max(
+            data.delta_workloads.max, -data.delta_workloads.min
+        )
+        boundaries = [
+            -abs_max_delta,
+            q_low_val,
+            q_high_val,
+            abs_max_delta
+        ]
+        norm = colors.BoundaryNorm(
+            boundaries=boundaries,
+            ncolors=cmap.N
+        )
 
         # plot data
 
         plot_collection = ax.scatter(
-            x=sorted_workloads[:, LON_IDX],
-            y=sorted_workloads[:, LAT_IDX],
-            c=sorted_workloads[:, WLD_IDX],
-            s=0.3,
+            x=data.lons.raw,
+            y=data.lats.raw,
+            c=data.delta_workloads.raw,
+            s=2,  # 0.3
             alpha=1.0,
             edgecolors='none',
             norm=norm,
@@ -309,10 +517,9 @@ class Machine():
 
         ax.set_xlabel('longitude')
         ax.set_ylabel('latitude')
-        ax.set_aspect(1.0 / np.cos(np.deg2rad(data.lats_mid)))
+        ax.set_aspect(1 / np.cos(np.deg2rad(data.lats.center)))
         fig.colorbar(
             mappable=plot_collection,
-            label=self.fig.colorbar.label,
             shrink=self.fig.colorbar.shrink,
             extend=self.fig.colorbar.extend
         )
@@ -326,7 +533,55 @@ class Machine():
                 sim.results_dir,
                 f'{data.iteration}',
                 'stats',
-                'sorted_workloads.png'
+                'delta_workloads-quantiles.png'
+            ),
+            dpi=self.dpi
+        )
+        # plt.show()
+        plt.close()
+
+    def plot_workload_histogram(self, data: Data, sim: Simulation):
+        # setup figure
+
+        plt.style.use(self.plt_theme)
+        _fig, ax = plt.subplots()
+        ax.set_title(f'workloads-density-function {data.iteration}')
+
+        #  set cmap
+
+        if self.is_light:
+            fc = 'k'
+            ec = 'k'
+        else:
+            fc = 'w'
+            ec = 'w'
+
+        # plot data
+
+        num_bins = int(np.ceil(data.workloads.max)) - \
+            int(np.floor(data.workloads.min))
+        _n, _bins, _patches = ax.hist(
+            data.workloads.raw,
+            bins=num_bins,
+            fc=fc,
+            ec=ec
+        )
+
+        # finalize plot
+
+        ax.set_xlabel('workloads')
+        ax.set_ylabel('amount of occurence')
+        plt.grid(False)
+        plt.tight_layout()
+
+        # save plot
+
+        plt.savefig(
+            os.path.join(
+                sim.results_dir,
+                f'{data.iteration}',
+                'stats',
+                'workloads_hist.png'
             ),
             dpi=self.dpi
         )
