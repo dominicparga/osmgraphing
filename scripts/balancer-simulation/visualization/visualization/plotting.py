@@ -150,57 +150,37 @@ class Machine():
 
         data = Data(sim.iteration_0)
 
+        q_low, q_high = 5, 95
+
         # setup figure
 
         plt.style.use(self.plt_theme)
         _fig, ax = plt.subplots()
-        ax.set_title(f'all occured workloads')
+        ax.set_title(f'all workloads in [{q_low} %, {q_high} %]')
 
         #  set cmap
 
-        if self.is_light:
-            cmap = plt.get_cmap('gist_heat_r')
-        else:
-            cmap = plt.get_cmap('copper')
-
         for iteration in range(sim.iteration_0, sim.iteration_max + 1):
             data.prepare_new_iteration(sim=sim)
-            sorted_lon_lat_workloads = data.sorted_lon_lat_workloads()[:, 2]
-
-            mapped_values = []
-            for i in range(len(sorted_lon_lat_workloads)):
-                value = sorted_lon_lat_workloads[i]
-                if value > 0.0:
-                    mapped_values.append(value)
+            mapped_values = np.array(list(filter(
+                lambda x: x > 0.0,
+                data.workloads.raw
+            )))
 
             # plot data
 
-            # alpha should vary
-            # dependent on iteration (first iteration should have min alpha)
-            xp, fp = [sim.iteration_0, sim.iteration_max], [0.2, 1.0]
-            alpha = np.interp(x=iteration, xp=xp, fp=fp)
-            color = cmap(alpha)
-
-            ax.plot(
-                range(len(mapped_values)),
+            ax.boxplot(
                 mapped_values,
-                color=color,
-                alpha=alpha
-            )
-            # plot maximum
-            ax.plot(
-                len(mapped_values)-1,
-                mapped_values[-1],
-                'x',
-                color=color,
-                alpha=alpha
+                positions=[iteration],
+                showfliers=False,
+                whis=[q_low, q_high]
             )
 
         # finalize plot
 
-        ax.set_xlabel('')
+        ax.set_xlabel('iteration')
         ax.set_ylabel('workload')
-        plt.grid(True)
+        plt.grid(False)
         plt.tight_layout()
 
         # save plot
@@ -208,7 +188,7 @@ class Machine():
         plt.savefig(
             os.path.join(
                 sim.results_dir,
-                'sorted_workloads.png'
+                'workload-boxplots.png'
             ),
             dpi=self.dpi
         )

@@ -23,8 +23,8 @@ def run(sim: Simulation, vis: plotting.Machine):
     global_data = GlobalData.fill(sim=sim)
     print('plot all sorted workloads')
     vis.plot_all_sorted_workloads(sim=sim)
-    # print('plot all boxplots')
-    # vis.plot_all_boxplot_workloads(sim=sim)
+    print('plot all boxplots')
+    vis.plot_all_boxplot_workloads(sim=sim)
     print('')
 
     data = Data(global_data=global_data, iteration_0=sim.iteration_0)
