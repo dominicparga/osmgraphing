@@ -25,6 +25,8 @@ def run(sim: Simulation, vis: plotting.Machine):
     vis.plot_all_sorted_workloads(sim=sim)
     print('plot all boxplots')
     vis.plot_all_boxplot_workloads(sim=sim)
+    print('plot all max workloads')
+    vis.plot_all_max_workloads(sim=sim)
     print('')
 
     data = Data(global_data=global_data, iteration_0=sim.iteration_0)
@@ -41,7 +43,7 @@ def run(sim: Simulation, vis: plotting.Machine):
         vis.plot_workloads(sim=sim, data=data)
         print('plot workload-quantiles')
         vis.plot_workload_quantiles(data=data, sim=sim)
-        if data.iteration > 0:
+        if data.iteration > sim.iteration_0:
             print('plot delta-workloads')
             vis.plot_delta_workloads(sim=sim, data=data)
             print('plot delta-workload-quantiles')

@@ -195,6 +195,87 @@ class Machine():
         # plt.show()
         plt.close()
 
+    def plot_all_max_workloads(self, sim: Simulation):
+        # setup simulation
+
+        data = Data(sim.iteration_0)
+
+        # setup figure
+
+        plt.style.use(self.plt_theme)
+        _fig, ax = plt.subplots()
+        ax.set_title(f'all max (delta-) workloads')
+
+        #  set cmap
+
+        if self.is_light:
+            c_max = 'k'
+            cmap = plt.get_cmap('seismic')
+            c_delta_max = cmap(0.75)
+            c_delta_min = cmap(0.25)
+        else:
+            c_max = 'w'
+            cmap = plt.get_cmap('twilight')
+            c_delta_max = cmap(0.75)
+            c_delta_min = cmap(0.25)
+
+        max_workloads = []
+        max_delta_workloads = []
+        min_delta_workloads = []
+        for _ in range(sim.iteration_0, sim.iteration_max + 1):
+            data.prepare_new_iteration(sim=sim)
+            max_workloads.append(data.workloads.max)
+            if data.iteration > sim.iteration_0:
+                max_delta_workloads.append(data.delta_workloads.max)
+                min_delta_workloads.append(data.delta_workloads.min)
+
+        # plot data
+
+        # plot max workloads
+        ax.plot(
+            range(len(max_workloads)),
+            max_workloads,
+            'x-',
+            color=c_max,
+            label='max workloads'
+        )
+        # plot max delta-workloads
+        ax.plot(
+            np.array(range(len(max_delta_workloads))) + 0.5,
+            max_delta_workloads,
+            'x-',
+            color=c_delta_max,
+            label='max delta-workloads'
+        )
+        # plot min delta-workloads
+        ax.plot(
+            np.array(range(len(min_delta_workloads))) + 0.5,
+            min_delta_workloads,
+            'x-',
+            color=c_delta_min,
+            label='min delta-workloads'
+        )
+
+        # finalize plot
+
+        ax.set_xlabel('iteration')
+        ax.set_ylabel('(delta-) workload')
+        plt.grid(True)
+        plt.legend()
+        plt.tight_layout()
+
+        # save plot
+
+        plt.savefig(
+            os.path.join(
+                sim.results_dir,
+                'max_workloads.png'
+            ),
+            dpi=self.dpi
+        )
+        # plt.show()
+        plt.close()
+
     def plot_workloads(self, data: Data, sim: Simulation):
         '''
         https://matplotlib.org/3.1.1/gallery/pyplots/boxplot_demo_pyplot.html#sphx-glr-gallery-pyplots-boxplot-demo-pyplot-py
@@ -214,18 +295,18 @@ class Machine():
         # set norm and cmap
 
         if self.is_light:
-            cmap = 'cubehelix_r'
+            cmap = 'binary'
         else:
             cmap = 'copper'
         norm = {
             # light
-            'PuRd': TwoSlopeLoggedNorm(),
-            'binary': TwoSlopeLoggedNorm(base=40.0),
-            'Purples': TwoSlopeLoggedNorm(base=100.0),
-            'gist_heat_r': TwoSlopeLoggedNorm(base=20.0),
+            'PuRd': colors.Normalize(),
+            'binary': TwoSlopeLoggedNorm(base=5),
+            'Purples': TwoSlopeLoggedNorm(base=10),
+            'gist_heat_r': TwoSlopeLoggedNorm(base=20),
             'cubehelix_r': TwoSlopeLoggedNorm(),
             # dark
-            'copper': TwoSlopeLoggedNorm(base=50.0),
+            'copper': TwoSlopeLoggedNorm(base=50),
         }.get(cmap, colors.Normalize())
         norm.vmax = data.global_data.max_workload
 
@@ -541,7 +622,7 @@ class Machine():
         num_bins = int(np.ceil(data.workloads.max)) - \
             int(np.floor(data.workloads.min))
         _n, _bins, _patches = ax.hist(
-            data.workloads.raw,
+            data.workloads.raw_nz,
             bins=num_bins,
             fc=fc,
             ec=ec
@@ -549,7 +630,7 @@ class Machine():
 
         # finalize plot
 
-        ax.set_xlabel('workloads')
+        ax.set_xlabel('workloads > 0')
         ax.set_ylabel('amount of occurence')
         plt.grid(False)
         plt.tight_layout()
@@ -567,9 +648,6 @@ class Machine():
         )
         # plt.show()
         plt.close()
-
-    def _plot_new_metric_sorted(self, sim: Simulation, data: Data):
-        pass
 
 
 def light():

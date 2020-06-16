@@ -43,7 +43,7 @@ class Values():
         return self._raw
 
     @property
-    def _raw_nz(self):
+    def raw_nz(self):
         return list(filter(lambda w: w > 0.0, self._raw))
 
     @raw.setter
