@@ -276,6 +276,60 @@ class Machine():
         # plt.show()
         plt.close()
 
+    def plot_all_unique_edges(self, sim: Simulation):
+        # setup simulation
+
+        data = Data(sim.iteration_0)
+
+        # setup figure
+
+        plt.style.use(self.plt_theme)
+        _fig, ax = plt.subplots()
+        ax.set_title(f'number of unique edges')
+
+        #  set cmap
+
+        if self.is_light:
+            color = 'k'
+        else:
+            color = 'w'
+
+        num_unique_edges = []
+        for _ in range(sim.iteration_0, sim.iteration_max + 1):
+            data.prepare_new_iteration(sim=sim)
+            num_unique_edges.append(
+                np.array(data.workloads.raw).astype(bool).sum()
+            )
+
+        # plot data
+
+        # plot max workloads
+        ax.plot(
+            range(len(num_unique_edges)),
+            num_unique_edges,
+            'x-',
+            color=color,
+        )
+
+        # finalize plot
+
+        ax.set_xlabel('iteration')
+        ax.set_ylabel('amount of unique edges')
+        plt.grid(True)
+        plt.tight_layout()
+
+        # save plot
+
+        plt.savefig(
+            os.path.join(
+                sim.results_dir,
+                'num_unique_edges.png'
+            ),
+            dpi=self.dpi
+        )
+        # plt.show()
+        plt.close()
+
     def plot_workloads(self, data: Data, sim: Simulation):
         '''
         https://matplotlib.org/3.1.1/gallery/pyplots/boxplot_demo_pyplot.html#sphx-glr-gallery-pyplots-boxplot-demo-pyplot-py
@@ -290,7 +344,7 @@ class Machine():
         plt.style.use(self.plt_theme)
         fig, ax = plt.subplots()
         ax.set_title(
-            f'workloads {data.iteration} in [{data.workloads.min}, {data.workloads.max}]')
+            f'workloads$_{data.iteration}$ in [{data.workloads.min}, {data.workloads.max}]')
 
         # set norm and cmap
 
@@ -376,8 +430,7 @@ class Machine():
         plt.style.use(self.plt_theme)
         fig, ax = plt.subplots()
         ax.set_title(
-            f'upper {100 * (1.0 - q_high):3.1f} % of workloads {data.iteration} in [{data.workloads.min}, {data.workloads.max}]'
-        )
+            f'workloads$_{data.iteration}$ in [{data.workloads.min}, {data.workloads.max}]')
 
         # set norm and cmap
 
@@ -419,6 +472,7 @@ class Machine():
         ax.set_ylabel('latitude')
         ax.set_aspect(1.0 / np.cos(np.deg2rad(data.lats.center)))
         fig.colorbar(
+            label=f'upper {100 * (1.0 - q_high):3.1f} % of workloads$_{data.iteration}$',
             mappable=plot_collection,
             shrink=self.fig.colorbar.shrink,
             extend=self.fig.colorbar.extend
@@ -456,7 +510,10 @@ class Machine():
         plt.style.use(self.plt_theme)
         fig, ax = plt.subplots()
         ax.set_title(
-            f'delta-workloads {data.iteration - 1} to {data.iteration}')
+            'delta-workloads$_{' +
+            f'{data.iteration-1}, {data.iteration}' + '}$' +
+            f' in [{data.delta_workloads.min}, {data.delta_workloads.max}]'
+        )
 
         # set norm and cmap
 
@@ -479,7 +536,7 @@ class Machine():
             x=data.lons.raw,
             y=data.lats.raw,
             c=data.delta_workloads.raw,
-            s=0.3,
+            s=2,  # 0.3
             alpha=1.0,
             edgecolors='none',
             norm=norm,
@@ -493,7 +550,6 @@ class Machine():
         ax.set_aspect(1 / np.cos(np.deg2rad(data.lats.center)))
         fig.colorbar(
             mappable=plot_collection,
-            label='',
             shrink=self.fig.colorbar.shrink,
             extend=self.fig.colorbar.extend
         )
@@ -534,7 +590,9 @@ class Machine():
         plt.style.use(self.plt_theme)
         fig, ax = plt.subplots()
         ax.set_title(
-            f'lower {100 * (q_low):3.1f} % and upper {100 * (1.0 - q_high):3.1f} % of delta-workloads {data.iteration - 1} to {data.iteration}'
+            'delta-workloads$_{' +
+            f'{data.iteration-1}, {data.iteration}' + '}$' +
+            f' in [{data.delta_workloads.min}, {data.delta_workloads.max}]'
         )
 
         # set norm and cmap
@@ -547,14 +605,11 @@ class Machine():
 
         # set boundaries
 
-        abs_max_delta = max(
-            data.delta_workloads.max, -data.delta_workloads.min
-        )
         boundaries = [
-            -abs_max_delta,
+            data.delta_workloads.min,
             q_low_val,
             q_high_val,
-            abs_max_delta
+            data.delta_workloads.max,
         ]
         norm = colors.BoundaryNorm(
             boundaries=boundaries,
@@ -580,6 +635,9 @@ class Machine():
         ax.set_ylabel('latitude')
         ax.set_aspect(1 / np.cos(np.deg2rad(data.lats.center)))
         fig.colorbar(
+            label=f'lower {100 * (q_low):3.1f} % and upper {100 * (1.0 - q_high):3.1f} % \n' +
+            'of delta-workloads_${' +
+            f'{data.iteration - 1}, {data.iteration}'+'}$',
             mappable=plot_collection,
             shrink=self.fig.colorbar.shrink,
             extend=self.fig.colorbar.extend
@@ -606,7 +664,7 @@ class Machine():
 
         plt.style.use(self.plt_theme)
         _fig, ax = plt.subplots()
-        ax.set_title(f'workloads-density-function {data.iteration}')
+        ax.set_title(f'density-function of workloads$_{data.iteration}$ > 0')
 
         #  set cmap
 
@@ -630,7 +688,7 @@ class Machine():
 
         # finalize plot
 
-        ax.set_xlabel('workloads > 0')
+        ax.set_xlabel('workloads')
         ax.set_ylabel('amount of occurence')
         plt.grid(False)
         plt.tight_layout()

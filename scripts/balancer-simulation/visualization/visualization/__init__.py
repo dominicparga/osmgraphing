@@ -27,6 +27,8 @@ def run(sim: Simulation, vis: plotting.Machine):
     vis.plot_all_boxplot_workloads(sim=sim)
     print('plot all max workloads')
     vis.plot_all_max_workloads(sim=sim)
+    print('plot number of unique edges')
+    vis.plot_all_unique_edges(sim=sim)
     print('')
 
     data = Data(global_data=global_data, iteration_0=sim.iteration_0)
