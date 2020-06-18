@@ -1,33 +1,36 @@
 use log::{debug, error, info};
 use osmgraphing::{
-    configs, defaults, helpers, io,
-    network::{EdgeIdx, RoutePair},
+    configs, defaults,
+    helpers::{err, init_logging},
+    io,
+    network::RoutePair,
     routing,
 };
+use progressing::{Bar, MappingBar};
 use rand::{
     distributions::{Distribution, Uniform},
     SeedableRng,
 };
-use std::{path::PathBuf, time::Instant};
+use std::{fs, path::PathBuf, time::Instant};
 
 fn main() {
     let result = run();
     if let Err(msg) = result {
         error!("{}\n", msg);
-        panic!("{}", msg);
+        std::process::exit(1);
     }
 }
 
-fn run() -> Result<(), String> {
+fn run() -> err::Feedback {
     // process user-input
 
     let args = parse_cmdline();
-    match helpers::init_logging(&args.max_log_level, vec!["balancer"]) {
+    match init_logging(&args.max_log_level, &["balancer"]) {
         Ok(_) => (),
-        Err(msg) => return Err(format!("{}", msg)),
+        Err(msg) => return Err(format!("{}", msg).into()),
     };
 
-    info!("EXECUTE {}", env!("CARGO_PKG_NAME"));
+    info!("EXECUTE balancer");
 
     // parse graph
 
@@ -38,7 +41,7 @@ fn run() -> Result<(), String> {
             let raw_parsing_cfg = PathBuf::from(args.cfg);
             match configs::parsing::Config::try_from_yaml(&raw_parsing_cfg) {
                 Ok(cfg) => cfg,
-                Err(msg) => return Err(format!("{}", msg)),
+                Err(msg) => return Err(format!("{}", msg).into()),
             }
         };
 
@@ -49,10 +52,10 @@ fn run() -> Result<(), String> {
 
         let graph = match io::network::Parser::parse_and_finalize(parsing_cfg) {
             Ok(graph) => graph,
-            Err(msg) => return Err(format!("{}", msg)),
+            Err(msg) => return Err(format!("{}", msg).into()),
         };
         info!(
-            "Finished parsing in {} seconds ({} µs).",
+            "FINISHED Parsed graph in {} seconds ({} µs).",
             now.elapsed().as_secs(),
             now.elapsed().as_micros(),
         );
@@ -63,74 +66,64 @@ fn run() -> Result<(), String> {
         graph
     };
 
-    // routing-example
+    // execute routing-example and count workload
 
-    let mut routing_cfg =
-        match configs::routing::Config::try_from_yaml(&args.routing_cfg, graph.cfg()) {
-            Ok(cfg) => cfg,
-            Err(msg) => return Err(format!("{}", msg)),
+    {
+        let routing_cfg =
+            match configs::routing::Config::try_from_yaml(&args.routing_cfg, graph.cfg()) {
+                Ok(cfg) => cfg,
+                Err(msg) => return Err(format!("{}", msg).into()),
+            };
+
+        let balancing_cfg = {
+            // parse config
+
+            let balancing_cfg =
+                match configs::balancing::Config::try_from_yaml(&args.balancing_cfg, graph.cfg()) {
+                    Ok(cfg) => cfg,
+                    Err(msg) => return Err(format!("{}", msg).into()),
+                };
+
+            // check if new file does already exist
+
+            if balancing_cfg.results_dir.exists() {
+                return Err(format!(
+                    "Directory {} for results does already exist. Please remove it.",
+                    balancing_cfg.results_dir.display()
+                )
+                .into());
+            } else {
+                fs::create_dir_all(&balancing_cfg.results_dir).map_err(err::Msg::from)?
+            }
+
+            balancing_cfg
         };
 
-    let balancing_cfg = {
-        // parse config
+        let mut dijkstra = routing::Dijkstra::new();
+        let mut explorator = routing::ConvexHullExplorator::new();
 
-        let balancing_cfg = match configs::balancing::Config::try_from_yaml(&args.balancing_cfg) {
-            Ok(cfg) => cfg,
-            Err(msg) => return Err(format!("{}", msg)),
-        };
+        info!(
+            "Explorate several routes for metrics {:?} of dimension {}",
+            graph.cfg().edges.metrics.units,
+            graph.metrics().dim()
+        );
 
-        // check if new file does already exist
+        // calculate best paths and analyze workload
 
-        if balancing_cfg.results_file.exists() {
-            return Err(format!(
-                "New results-dir {} does already exist. Please remove it.",
-                balancing_cfg.results_file.display()
-            ));
-        }
+        let route_pairs = io::routing::Parser::parse(&routing_cfg)?;
+        let mut rng = rand_pcg::Pcg32::seed_from_u64(defaults::SEED);
 
-        balancing_cfg
-    };
+        // simple init-logging
 
-    let mut dijkstra = routing::Dijkstra::new();
-    let mut explorator = routing::ConvexHullExplorator::new();
-
-    info!(
-        "Explorate several routes for metrics {:?} of dimension {}",
-        graph.cfg().edges.metrics.units,
-        graph.metrics().dim()
-    );
-
-    // calculate best paths
-
-    // collect all metric-info to edit them
-
-    let metric_id = defaults::balancing::ROUTE_COUNT_ID;
-    let metric_idx = match graph.cfg().edges.metrics.idx_of(metric_id) {
-        Some(idx) => idx,
-        None => {
-            return Err(format!(
-                "Metric-id {} should be existent in graph, but isn't.",
-                metric_id
-            ))
-        }
-    };
-
-    let route_pairs = io::routing::Parser::parse(&routing_cfg)?;
-    let mut rng = rand_pcg::Pcg32::seed_from_u64(42); // TODO
-    for iteration in 0..balancing_cfg.num_iterations {
-        let mut next_workload: Vec<usize> = vec![0; graph.fwd_edges().count()];
-
-        // look for best paths wrt
-
-        if iteration <= 0 {
-            routing_cfg.alphas[*metric_idx] = 0.0;
-        } else {
-            routing_cfg.alphas[*metric_idx] = 1.0;
-        }
+        info!("START Executing routes and analyzing workload",);
+        let mut progress_bar = MappingBar::new(0..=route_pairs.len());
+        info!("{}", progress_bar);
 
         // find all routes and count density on graph
 
-        for &(route_pair, route_count) in route_pairs.iter() {
+        let mut workloads: Vec<usize> = vec![0; graph.fwd_edges().count()];
+
+        for &(route_pair, num_routes) in &route_pairs {
             let RoutePair { src, dst } = route_pair.into_node(&graph);
 
             // find explorated routes
@@ -157,33 +150,69 @@ fn run() -> Result<(), String> {
 
             if found_paths.len() > 0 {
                 let die = Uniform::from(0..found_paths.len());
-                for _ in 0..route_count {
-                    let p = &found_paths[die.sample(&mut rng)];
+                for _ in 0..num_routes {
+                    let p = found_paths[die.sample(&mut rng)].clone().flatten(&graph);
 
                     debug!("    {}", p);
 
-                    for &edge_idx in p {
-                        next_workload[*edge_idx] += 1;
+                    for edge_idx in p {
+                        workloads[*edge_idx] += 1;
                     }
                 }
+            }
+
+            progress_bar.add(true);
+            if progress_bar.progress() % (1 + (progress_bar.end() / 10)) == 0 {
+                info!("{}", progress_bar);
             }
         }
 
         // update graph with new values
-        for (edge_idx, workload) in next_workload.into_iter().enumerate() {
-            graph.metrics_mut()[EdgeIdx(edge_idx)][*metric_idx] = workload as f64;
-
-            // TODO update shortcuts-metrics
-        }
+        defaults::vehicles::update_new_metric(&workloads, &mut graph, &balancing_cfg);
 
         // export density
 
         // measure writing-time
         let now = Instant::now();
 
-        match io::balancing::Writer::write(iteration, &graph, &balancing_cfg) {
+        match io::balancing::Writer::write(&workloads, &graph, &balancing_cfg) {
             Ok(()) => (),
-            Err(msg) => return Err(format!("{}", msg)),
+            Err(msg) => return Err(format!("{}", msg).into()),
+        };
+        info!(
+            "FINISHED Written in {} seconds ({} µs).",
+            now.elapsed().as_secs(),
+            now.elapsed().as_micros(),
+        );
+        info!("");
+
+        info!("FINISHED",);
+    }
+
+    // write fmi-graph
+
+    {
+        // get config by provided user-input
+        let writing_cfg =
+            configs::writing::network::Config::try_from_yaml(&args.writing_graph_cfg)?;
+
+        // check if new file does already exist
+
+        if writing_cfg.map_file.exists() {
+            return Err(err::Msg::from(format!(
+                "New map-file {} does already exist. Please remove it.",
+                writing_cfg.map_file.display()
+            )));
+        }
+
+        // writing to file
+
+        // measure writing-time
+        let now = Instant::now();
+
+        match io::network::Writer::write(&graph, &writing_cfg) {
+            Ok(()) => (),
+            Err(msg) => return Err(err::Msg::from(format!("{}", msg))),
         };
         info!(
             "Finished writing in {} seconds ({} µs).",
@@ -252,6 +281,7 @@ mod constants {
         pub const CFG: &str = "cfg";
         pub const ROUTING_CFG: &str = "routing-cfg";
         pub const BALANCING_CFG: &str = "balancing-cfg";
+        pub const WRITING_GRAPH_CFG: &str = "writing-graph-cfg";
     }
 }
 
@@ -260,6 +290,7 @@ struct CmdlineArgs {
     cfg: String,
     routing_cfg: String,
     balancing_cfg: String,
+    writing_graph_cfg: String,
 }
 
 impl<'a> From<clap::ArgMatches<'a>> for CmdlineArgs {
@@ -278,12 +309,17 @@ impl<'a> From<clap::ArgMatches<'a>> for CmdlineArgs {
             Some(path) => path,
             None => &cfg,
         };
+        let writing_graph_cfg = match matches.value_of(constants::ids::WRITING_GRAPH_CFG) {
+            Some(path) => path,
+            None => &cfg,
+        };
 
         CmdlineArgs {
             max_log_level: String::from(max_log_level),
             cfg: String::from(cfg),
             routing_cfg: String::from(routing_cfg),
             balancing_cfg: String::from(balancing_cfg),
+            writing_graph_cfg: String::from(writing_graph_cfg),
         }
     }
 }

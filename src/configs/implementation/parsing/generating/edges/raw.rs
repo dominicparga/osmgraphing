@@ -40,6 +40,4 @@ pub enum Category {
 pub enum MetaInfo {
     SrcIdx,
     DstIdx,
-    ShortcutIdx0,
-    ShortcutIdx1,
 }

@@ -4,12 +4,13 @@ use crate::{
     defaults::{
         self,
         capacity::{self, DimVec},
+        routing::IS_USING_CH_LEVEL_SPEEDUP,
     },
-    helpers::{approx::ApproxEq, MemSize},
+    helpers::{approx::ApproxEq, err, MemSize},
 };
 use kissunits::geo::Coordinate;
 use log::{debug, info};
-use progressing::{self, Bar};
+use progressing::{Bar, MappingBar};
 use std::{cmp::Reverse, mem, ops::RangeFrom};
 
 /// private stuff for graph-building
@@ -21,7 +22,7 @@ impl Graph {
             node_ids: Vec::new(),
             // node-metrics
             node_coords: Vec::new(),
-            node_levels: Vec::new(),
+            node_ch_levels: Vec::new(),
             // edges
             fwd_dsts: Vec::new(),
             fwd_offsets: Vec::new(),
@@ -53,7 +54,7 @@ impl Graph {
     }
 
     /// The provided edge is interpreted as forward-edge.
-    fn add_metrics(&mut self, proto_edge: &mut ProtoEdgeB) -> Result<(), String> {
+    fn add_metrics(&mut self, proto_edge: &mut ProtoEdgeB) -> err::Feedback {
         let cfg = &self.cfg;
 
         for (metric_idx, raw_value) in proto_edge.metrics.iter_mut().enumerate() {
@@ -78,7 +79,7 @@ impl Graph {
 pub struct ProtoNode {
     pub id: i64,
     pub coord: Coordinate,
-    pub level: Option<usize>,
+    pub ch_level: Option<usize>,
 }
 
 pub struct ProtoShortcut {
@@ -238,13 +239,13 @@ impl EdgeBuilder {
 
         let mut node_coords = vec![None; self.node_ids.len()];
         node_coords.shrink_to_fit();
-        let mut node_levels = vec![defaults::network::nodes::LEVEL; self.node_ids.len()];
-        node_levels.shrink_to_fit();
+        let mut node_ch_levels = vec![defaults::network::nodes::LEVEL; self.node_ids.len()];
+        node_ch_levels.shrink_to_fit();
         NodeBuilder {
             cfg: self.cfg,
             node_ids: self.node_ids,
             node_coords,
-            node_levels,
+            node_ch_levels,
             proto_edges: self.proto_edges,
             proto_shortcuts: self.proto_shortcuts,
         }
@@ -255,7 +256,7 @@ pub struct NodeBuilder {
     cfg: parsing::Config,
     node_ids: Vec<i64>,
     node_coords: Vec<Option<Coordinate>>,
-    node_levels: Vec<usize>,
+    node_ch_levels: Vec<usize>,
     proto_edges: Vec<ProtoEdgeA>,
     proto_shortcuts: Vec<[EdgeIdx; 2]>,
 }
@@ -269,8 +270,8 @@ impl NodeBuilder {
     pub fn insert(&mut self, proto_node: ProtoNode) -> bool {
         if let Ok(idx) = self.node_ids.binary_search(&proto_node.id) {
             self.node_coords[idx] = Some(proto_node.coord);
-            if let Some(level) = proto_node.level {
-                self.node_levels[idx] = level;
+            if let Some(ch_level) = proto_node.ch_level {
+                self.node_ch_levels[idx] = ch_level;
             }
             true
         } else {
@@ -278,12 +279,12 @@ impl NodeBuilder {
         }
     }
 
-    pub fn next(self) -> Result<GraphBuilder, String> {
+    pub fn next(self) -> err::Result<GraphBuilder> {
         Ok(GraphBuilder {
             cfg: self.cfg,
             node_ids: self.node_ids,
             node_coords: self.node_coords,
-            node_levels: self.node_levels,
+            node_ch_levels: self.node_ch_levels,
             proto_edges: self.proto_edges,
             proto_shortcuts: self.proto_shortcuts,
         })
@@ -294,7 +295,7 @@ pub struct GraphBuilder {
     cfg: parsing::Config,
     node_ids: Vec<i64>,
     node_coords: Vec<Option<Coordinate>>,
-    node_levels: Vec<usize>,
+    node_ch_levels: Vec<usize>,
     proto_edges: Vec<ProtoEdgeA>,
     proto_shortcuts: Vec<[EdgeIdx; 2]>,
 }
@@ -319,7 +320,7 @@ impl GraphBuilder {
         }
     }
 
-    pub fn finalize(mut self) -> Result<Graph, String> {
+    pub fn finalize(mut self) -> err::Result<Graph> {
         //----------------------------------------------------------------------------------------//
         // init graph
 
@@ -342,12 +343,13 @@ impl GraphBuilder {
                     return Err(format!(
                         "Proto-node (id: {}) has no coordinates, but belongs to an edge.",
                         self.node_ids[idx]
-                    ));
+                    )
+                    .into());
                 }
             }
             graph.node_ids = self.node_ids;
             graph.node_coords = self.node_coords.into_iter().map(Option::unwrap).collect();
-            graph.node_levels = self.node_levels;
+            graph.node_ch_levels = self.node_ch_levels;
             graph.shrink_to_fit();
         }
 
@@ -360,7 +362,7 @@ impl GraphBuilder {
 
             let mut new_proto_edges = vec![];
 
-            let mut progress_bar = progressing::MappingBar::new(0..=self.proto_edges.len());
+            let mut progress_bar = MappingBar::new(0..=self.proto_edges.len());
 
             // Work off proto-edges in chunks to keep memory-usage lower.
             let max_chunk_size = capacity::MAX_BYTE_PER_CHUNK / ProtoEdgeB::mem_size_b();
@@ -423,9 +425,13 @@ impl GraphBuilder {
             // - memory-peak is here when sorting
             // - sort by src-id, then level of dst, then dst-id
             //   -> branch prediction in dijkstra when breaking after level is reached
-            let nodes = graph.nodes();
-            proto_edges
-                .sort_unstable_by_key(|e| (e.src_idx, Reverse(nodes.level(e.dst_idx)), e.dst_idx));
+            if !IS_USING_CH_LEVEL_SPEEDUP {
+                proto_edges.sort_by_key(|e| (e.src_idx, e.dst_idx));
+            } else {
+                let nodes = graph.nodes();
+                proto_edges
+                    .sort_by_key(|e| (e.src_idx, Reverse(nodes.level(e.dst_idx)), e.dst_idx));
+            }
         }
 
         //----------------------------------------------------------------------------------------//
@@ -536,7 +542,7 @@ impl GraphBuilder {
         let mut proto_edges = {
             let mut new_proto_edges = vec![];
 
-            let mut progress_bar = progressing::MappingBar::new(0..=proto_edges.len());
+            let mut progress_bar = MappingBar::new(0..=proto_edges.len());
             let mut edge_idx: usize = 0;
 
             // Work off proto-edges in chunks to keep memory-usage lower.
@@ -637,7 +643,7 @@ impl GraphBuilder {
         // logging
         info!("START Create the forward-offset-array and the forward-mapping.");
         {
-            let mut progress_bar = progressing::MappingBar::new(0..=proto_edges.len());
+            let mut progress_bar = MappingBar::new(0..=proto_edges.len());
             // start looping
             let mut src_idx = NodeIdx(0);
             let mut offset = 0;
@@ -691,14 +697,18 @@ impl GraphBuilder {
 
         info!("DO Sort proto-backward-edges by their dst/src-IDs.");
         {
-            let nodes = graph.nodes();
-            proto_edges.sort_unstable_by_key(|edge| {
-                (
-                    edge.dst_idx,
-                    Reverse(nodes.level(edge.src_idx)),
-                    edge.src_idx,
-                )
-            });
+            if !IS_USING_CH_LEVEL_SPEEDUP {
+                proto_edges.sort_by_key(|edge| (edge.dst_idx, edge.src_idx));
+            } else {
+                let nodes = graph.nodes();
+                proto_edges.sort_by_key(|edge| {
+                    (
+                        edge.dst_idx,
+                        Reverse(nodes.level(edge.src_idx)),
+                        edge.src_idx,
+                    )
+                });
+            }
         }
 
         //----------------------------------------------------------------------------------------//
@@ -706,7 +716,7 @@ impl GraphBuilder {
 
         info!("START Create the backward-offset-array.");
         {
-            let mut progress_bar = progressing::MappingBar::new(0..=proto_edges.len());
+            let mut progress_bar = MappingBar::new(0..=proto_edges.len());
             // start looping
             let mut src_idx = NodeIdx(0);
             let mut offset = 0;
@@ -780,7 +790,8 @@ impl GraphBuilder {
                                     return Err(format!(
                                         "Node-meta-info {:?} has id {}, which does already exist.",
                                         info, new_id
-                                    ));
+                                    )
+                                    .into());
                                 }
 
                                 // add new category
@@ -788,12 +799,13 @@ impl GraphBuilder {
                                 graph.cfg.nodes.categories.push(category.clone().into());
                             }
                             generating::nodes::MetaInfo::NodeId
-                            | generating::nodes::MetaInfo::Level => {
+                            | generating::nodes::MetaInfo::CHLevel => {
                                 return Err(format!(
                                     "Node-meta-info {:?} (id: {}) cannot be created \
                                      and has to be provided.",
                                     info, new_id
-                                ))
+                                )
+                                .into())
                             }
                         }
                     }
@@ -853,7 +865,8 @@ impl GraphBuilder {
                             return Err(format!(
                                 "Id {} should be generated, but does already exist.",
                                 new_id
-                            ));
+                            )
+                            .into());
                         }
                     }
                     generating::edges::Category::Convert { from: _, to: _ } => {
@@ -866,12 +879,10 @@ impl GraphBuilder {
 
             for category in generating_cfg.edges.categories.iter() {
                 match category {
-                    generating::edges::Category::Meta { info, id: _ } => {
+                    generating::edges::Category::Meta { info, id: new_id } => {
                         match info {
                             generating::edges::MetaInfo::SrcIdx
-                            | generating::edges::MetaInfo::DstIdx
-                            | generating::edges::MetaInfo::ShortcutIdx0
-                            | generating::edges::MetaInfo::ShortcutIdx1 => {
+                            | generating::edges::MetaInfo::DstIdx => {
                                 // update graph
                                 //
                                 // -> already done
@@ -879,6 +890,15 @@ impl GraphBuilder {
                                 // update config
 
                                 graph.cfg.edges.categories.push(category.clone().into());
+                            }
+                            generating::edges::MetaInfo::ShortcutIdx0
+                            | generating::edges::MetaInfo::ShortcutIdx1 => {
+                                return Err(format!(
+                                    "Edge-meta-info {:?} (id: {}) cannot be created \
+                                     and has to be provided.",
+                                    info, new_id
+                                )
+                                .into())
                             }
                         }
                     }
@@ -913,7 +933,8 @@ impl GraphBuilder {
                                 "Haversine creates {:?}, but you may convert \
                                 the resulting value afterwards.",
                                 generating::edges::metrics::UnitInfo::Kilometers
-                            ));
+                            )
+                            .into());
                         }
 
                         // calculate haversine-distance and update graph and config
@@ -932,7 +953,8 @@ impl GraphBuilder {
                             let distance = {
                                 let km =
                                     kissunits::geo::haversine_distance_km(&src_coord, &dst_coord);
-                                generating::edges::metrics::UnitInfo::Kilometers.convert(unit, *km)
+                                generating::edges::metrics::UnitInfo::Kilometers
+                                    .try_convert(unit, *km)?
                             };
 
                             // update graph
@@ -967,7 +989,7 @@ impl GraphBuilder {
 
                             let new_raw_value = {
                                 let old_raw_value = graph.metrics[edge_idx][metric_idx];
-                                from.unit.convert(&to.unit, old_raw_value)
+                                from.unit.try_convert(&to.unit, old_raw_value)?
                             };
 
                             // update graph
@@ -1002,7 +1024,7 @@ impl GraphBuilder {
 
                             let new_raw_value = {
                                 let old_raw_value = graph.metrics[edge_idx][metric_idx];
-                                from.unit.convert(&to.unit, old_raw_value)
+                                from.unit.try_convert(&to.unit, old_raw_value)?
                             };
 
                             // update graph
@@ -1066,7 +1088,9 @@ impl GraphBuilder {
                             let new_raw_value = {
                                 let old_raw_a = graph.metrics[edge_idx][idx_a];
                                 let old_raw_b = graph.metrics[edge_idx][idx_b];
-                                result.unit.calc(&a.unit, old_raw_a, &b.unit, old_raw_b)
+                                result
+                                    .unit
+                                    .try_calc(&a.unit, old_raw_a, &b.unit, old_raw_b)?
                             };
 
                             // update graph

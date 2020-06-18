@@ -4,6 +4,7 @@ use crate::{
         parsing::{self, nodes},
     },
     defaults::{self, capacity::DimVec},
+    helpers::err,
     network::{EdgeBuilder, EdgeIdx, NodeBuilder, ProtoEdge, ProtoNode, ProtoShortcut},
 };
 use kissunits::geo;
@@ -34,7 +35,7 @@ impl Parser {
 
 impl super::Parsing for Parser {
     /// Remembers range of edge-lines and node-lines
-    fn preprocess(&mut self, cfg: &parsing::Config) -> Result<(), String> {
+    fn preprocess(&mut self, cfg: &parsing::Config) -> err::Feedback {
         info!("START Start preprocessing fmi-parser.");
         super::check_config(cfg)?;
 
@@ -43,7 +44,10 @@ impl super::Parsing for Parser {
         let mut is_taking_counts = false;
         // counts are only metric-count, node-count, edge-count (in this order)
         let mut counts = vec![];
-        let file = OpenOptions::new().read(true).open(&cfg.map_file).unwrap();
+        let file = OpenOptions::new()
+            .read(true)
+            .open(&cfg.map_file)
+            .expect(&format!("Couldn't open {}", cfg.map_file.display()));
         for line in BufReader::new(file)
             .lines()
             .map(Result::unwrap)
@@ -71,13 +75,14 @@ impl super::Parsing for Parser {
         if counts.len() < 2 {
             return Err(format!(
                 "The provided fmi-map-file doesn't have enough (edge-, node-) counts."
-            ));
+            )
+            .into());
         }
 
         // Current state: Last line-number is first node-line.
         // Further, the last two counts are the node- and edge-counts.
-        let edge_count = counts.pop().unwrap();
-        let node_count = counts.pop().unwrap();
+        let edge_count = counts.pop().expect("Expect counts.len() >= 2.");
+        let node_count = counts.pop().expect("Expect counts.len() >= 2.");
 
         // nodes
         let start = line_number;
@@ -93,13 +98,16 @@ impl super::Parsing for Parser {
         Ok(())
     }
 
-    fn parse_ways(&self, builder: &mut EdgeBuilder) -> Result<(), String> {
+    fn parse_ways(&self, builder: &mut EdgeBuilder) -> err::Feedback {
         info!("START Create edges from input-file.");
         let mut line_number = 0;
         let file = OpenOptions::new()
             .read(true)
             .open(&builder.cfg().map_file)
-            .unwrap();
+            .expect(&format!(
+                "Couldn't open {}",
+                builder.cfg().map_file.display()
+            ));
         for line in BufReader::new(file)
             .lines()
             .map(Result::unwrap)
@@ -121,13 +129,16 @@ impl super::Parsing for Parser {
         Ok(())
     }
 
-    fn parse_nodes(&self, builder: &mut NodeBuilder) -> Result<(), String> {
+    fn parse_nodes(&self, builder: &mut NodeBuilder) -> err::Feedback {
         info!("START Create nodes from input-file.");
         let mut line_number = 0;
         let file = OpenOptions::new()
             .read(true)
             .open(&builder.cfg().map_file)
-            .unwrap();
+            .expect(&format!(
+                "Couldn't open {}",
+                builder.cfg().map_file.display()
+            ));
         for line in BufReader::new(file)
             .lines()
             .map(Result::unwrap)
@@ -266,10 +277,10 @@ impl ProtoShortcut {
         );
 
         let sc_edges = {
-            if sc_edge_0.is_none() && sc_edge_1.is_none() {
-                None
+            if let (Some(sc_edge_0), Some(sc_edge_1)) = (sc_edge_0, sc_edge_1) {
+                Some([EdgeIdx(sc_edge_0), EdgeIdx(sc_edge_1)])
             } else {
-                Some([EdgeIdx(sc_edge_0.unwrap()), EdgeIdx(sc_edge_1.unwrap())])
+                None
             }
         };
 
@@ -289,7 +300,7 @@ impl ProtoNode {
         let mut node_id = None;
         let mut lat = None;
         let mut lon = None;
-        let mut level = None;
+        let mut ch_level = None;
 
         // Loop over node-categories and parse params accordingly.
         let params: Vec<&str> = line.split_whitespace().collect();
@@ -313,12 +324,12 @@ impl ProtoNode {
                             }
                         };
                     }
-                    nodes::MetaInfo::Level => {
-                        level = match param.parse::<usize>() {
-                            Ok(level) => Some(level),
+                    nodes::MetaInfo::CHLevel => {
+                        ch_level = match param.parse::<usize>() {
+                            Ok(ch_level) => Some(ch_level),
                             Err(_) => {
                                 return Err(format!(
-                                    "Parsing level '{:?}' from fmi-file, which is not usize.",
+                                    "Parsing ch-level '{:?}' from fmi-file, which is not usize.",
                                     param
                                 ))
                             }
@@ -365,7 +376,7 @@ impl ProtoNode {
         Ok(ProtoNode {
             id: node_id,
             coord: geo::Coordinate { lat, lon },
-            level,
+            ch_level,
         })
     }
 }

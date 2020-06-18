@@ -10,7 +10,7 @@ use crate::{
     network::{Graph, NodeIdx},
     routing::{paths::Path, Dijkstra},
 };
-use log::debug;
+use log::{debug, trace};
 use smallvec::smallvec;
 
 pub struct ConvexHullExplorator {}
@@ -75,13 +75,13 @@ impl ConvexHullExplorator {
             // and if path exists
             // -> remember it as convex-hull-member
 
-            if let Some(best_path) =
+            if let Some(mut best_path) =
                 dijkstra.compute_best_path(src_idx, dst_idx, graph, &routing_cfg)
             {
-                let best_path = best_path.flatten(graph);
+                best_path.calc_costs(graph);
                 // Remember tolerated costs for filtering in the end.
                 // The costs have to be checked in the end, since this iterative algorithm could
-                // find a tolerated path by using a unacceptable path.
+                // find a tolerated path by using an unacceptable path.
                 if routing_cfg.tolerated_scales[i] == std::f64::INFINITY {
                     tolerated[i] = routing_cfg.tolerated_scales[i];
                 } else {
@@ -144,8 +144,8 @@ impl ConvexHullExplorator {
                 }
             }
 
-            debug!("rows = {:?}", rows);
-            debug!("b = {:?}", b);
+            trace!("rows = {:?}", rows);
+            trace!("b = {:?}", b);
 
             // calculate alphas
             // TODO check if points lay on a line
@@ -160,9 +160,9 @@ impl ConvexHullExplorator {
             } else {
                 continue;
             };
-            debug!("alphas = {:?}", routing_cfg.alphas);
+            trace!("alphas = {:?}", routing_cfg.alphas);
             for i in 0..candidate.len() {
-                debug!(
+                trace!(
                     "alphas * costs[c{}] = {:?}",
                     i,
                     helpers::dot_product(&routing_cfg.alphas, found_paths[candidate[i]].costs())
@@ -171,11 +171,12 @@ impl ConvexHullExplorator {
 
             // find new path with new alpha
 
-            if let Some(best_path) =
+            if let Some(mut best_path) =
                 dijkstra.compute_best_path(src_idx, dst_idx, graph, &routing_cfg)
             {
-                let new_p = best_path.flatten(graph);
-                debug!(
+                best_path.calc_costs(graph);
+                let new_p = best_path;
+                trace!(
                     "alphas * new_costs = {:?}",
                     helpers::dot_product(&routing_cfg.alphas, new_p.costs())
                 );
@@ -194,7 +195,7 @@ impl ConvexHullExplorator {
                     }
 
                     if is_already_found {
-                        debug!("already found path {}", new_p);
+                        trace!("already found path {}", new_p);
                         continue;
                     }
                 }
@@ -240,7 +241,12 @@ impl ConvexHullExplorator {
                 //
                 // remember path
                 found_paths.push(new_p);
-                debug!("found path: {}", found_paths.last().unwrap());
+                debug!(
+                    "found path: {}",
+                    found_paths
+                        .last()
+                        .expect("Expects at least one found path.")
+                );
                 debug!("found paths: {}", found_paths.len());
 
                 // Add new facets by replacing every cost with the new path's cost.

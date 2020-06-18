@@ -26,7 +26,8 @@ Maybe, it is concept for later documentation, or just keep-up-the-good-work (`ku
     - Get population from osm-data
       - Take nodes/ways and distribute according to max-speed (low speed <-> high population-density).
       - Take city-level and let routes go from lower to higher levels.
-- Replace all `unwrap()` at least by `expect(callee)`.
+- Reduce visibility of modules and control public-access, e.g. of module `defaults`, which is only needed in tests.
+- Mention and explain cargo-features somewhere.
 
 
 ### Build-script
@@ -52,13 +53,15 @@ Maybe, it is concept for later documentation, or just keep-up-the-good-work (`ku
   - Create graph of 2 nodes and 8 edges, where 3 edges are dominated by the others.
   - At least `2d + 1` edges are needed.
   - Test restriction(?)
+- Test created route-files.
 
 
 ### Extend configs
 
 - Warn user when parsing `pbf`-map, if unused categories are provided in the config.
-- Don't convert `kilometers` to `meters` to store the graph and convert it back when parsing the graph.
 - Write parser __parsing all configs__ at once.
+- Cleanup `kebab-cases` and `snake_cases` etc.
+- Check if writing-cfg contains shortcut-indices when `is-ch-graph == false`.
 
 
 ### Extend parsing
@@ -81,6 +84,11 @@ Maybe, it is concept for later documentation, or just keep-up-the-good-work (`ku
 - Update route-counts of shortcuts after updating normal edges.
 - Add to config, which metric-id is used as route-count.
 - The explorator finds too many routes.
+- Flatten the found routes after the loops and cumulate all workloads for sc-edges at once.
+  This reduces the access to edges.
+- Use `ch-constructor` (written in `c/cpp`) as binary or build wrapping rust-crate?
+  - [How to invoke a system-cmd?][stackoverflow/invoke-system-cmd]
+  - [C with Rust][rust-docs/c-with-rust]
 
 
 ## Info
@@ -141,15 +149,17 @@ To correct this issue, stop the query after polling a node of a sub-distance, wh
 
 
 [acm/micro-travel-demand]: https://dl.acm.org/doi/10.1145/3347146.3359361
-[destatis]: https://www.destatis.de/DE/Service/Statistik-Visualisiert/RegionalatlasAktuell.html
-[statistik-bw]: https://www.statistik-bw.de/Intermaptiv/?re=gemeinde&ags=08317057&i=01202&r=0&g=0001&afk=5&fkt=besetzung&fko=mittel
 [atlas.zensus2011.de]: https://atlas.zensus2011.de/
-[statistikportal]: https://www.statistikportal.de/de/flaechenatlas
+[destatis]: https://www.destatis.de/DE/Service/Statistik-Visualisiert/RegionalatlasAktuell.html
 [github/rust-lang/cargo/issues/5624]: https://github.com/rust-lang/cargo/issues/5624
 [github/vbuchhold/routing-framework]: https://github.com/vbuchhold/routing-framework
 [gnu/licenses/gpl-faq/gplplugins]: https://www.gnu.org/licenses/gpl-faq.html#GPLPlugins
 [kde/marble]: http://api.kde.org/4.x-api/kdeedu-apidocs/marble/html/namespaceMarble.html
 [leafletjs]: https://leafletjs.com/
 [osm/wiki/jmapviewer]: https://wiki.openstreetmap.org/wiki/JMapViewer
+[rust-docs/c-with-rust]: https://rust-embedded.github.io/book/interoperability/c-with-rust.html
+[stackoverflow/invoke-system-cmd]: https://stackoverflow.com/questions/21011330/how-do-i-invoke-a-system-command-in-rust-and-capture-its-output
+[statistik-bw]: https://www.statistik-bw.de/Intermaptiv/?re=gemeinde&ags=08317057&i=01202&r=0&g=0001&afk=5&fkt=besetzung&fko=mittel
+[statistikportal]: https://www.statistikportal.de/de/flaechenatlas
 [taginfo]: https://taginfo.openstreetmap.org/
 [worldometers/germany]: https://www.worldometers.info/world-population/germany-population/

@@ -17,6 +17,7 @@ pub struct AnotherConfig {
 #[serde(deny_unknown_fields, rename_all = "kebab-case")]
 pub struct Content {
     pub map_file: PathBuf,
+    pub is_ch_graph: Option<bool>,
     pub nodes: nodes::raw::Config,
     pub edges: edges::raw::Config,
 }

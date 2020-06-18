@@ -1,3 +1,5 @@
+pub const SEED: u64 = 42;
+
 pub mod accuracy {
     /// value is good because it refers to
     /// - 1 mm for km
@@ -14,15 +16,80 @@ pub mod accuracy {
     pub const F64_FMT_DIGITS: usize = 6;
 }
 
+pub mod vehicles {
+    use crate::{
+        configs,
+        network::{EdgeIdx, Graph},
+    };
+    use kissunits::distance::Kilometers;
+    use std::cmp::max;
+
+    /// Nagel-Schreckenberg-Model -> `7.5 m` space for every vehicle
+    ///
+    /// Returns at least 1
+    pub fn calc_num_vehicles(km: Kilometers) -> u64 {
+        max(1, (km / Kilometers::new(0.0075)) as u64)
+    }
+
+    pub fn update_new_metric(
+        workloads: &Vec<usize>,
+        graph: &mut Graph,
+        balancing_cfg: &configs::balancing::Config,
+    ) {
+        let egde_iter = (0..graph.fwd_edges().count()).into_iter().map(EdgeIdx);
+        let distance_unit = graph.cfg().edges.metrics.units[*balancing_cfg.distance_idx];
+
+        let mut metrics = graph.metrics_mut();
+
+        for edge_idx in egde_iter {
+            // read metrics-data from graph
+            let (raw_distance, lane_count) = {
+                let tmp = &metrics[edge_idx];
+                (
+                    tmp[*balancing_cfg.distance_idx],
+                    tmp[*balancing_cfg.lane_count_idx] as u64,
+                )
+            };
+            let workload = workloads[*edge_idx];
+
+            // use correct unit for distance
+            let distance = {
+                // convert value to meters
+                let raw_value = distance_unit.convert(
+                    &configs::parsing::edges::metrics::UnitInfo::Kilometers,
+                    raw_distance,
+                );
+                Kilometers(raw_value)
+            };
+
+            let num_vehicles = calc_num_vehicles(distance);
+            let capacity = lane_count * num_vehicles;
+
+            let new_metric = {
+                let new_workload = workload as f64 / (capacity as f64);
+                let old_workload = metrics[edge_idx][*balancing_cfg.workload_idx];
+
+                match balancing_cfg.optimization {
+                    configs::balancing::Optimization::ExplicitEuler { correction } => {
+                        old_workload + (new_workload - old_workload) * correction
+                    }
+                }
+            };
+
+            metrics[edge_idx][*balancing_cfg.workload_idx] = new_metric;
+        }
+    }
+}
+
 pub mod speed {
-    pub const MAX_KMH: u16 = 130;
+    const _MAX_KMH: u16 = 130;
     pub const MIN_KMH: u8 = 5;
 }
 
 pub mod capacity {
     // For optimal performance and memory-usage:
     // Change this value before compiling, dependent of your number of stored metrics in the graph.
-    pub const SMALL_VEC_INLINE_SIZE: usize = 4;
+    pub const SMALL_VEC_INLINE_SIZE: usize = 5;
     pub type DimVec<T> = smallvec::SmallVec<[T; SMALL_VEC_INLINE_SIZE]>;
     pub const MAX_BYTE_PER_CHUNK: usize = 200 * 1_000_000;
 }
@@ -41,10 +108,22 @@ pub mod routing {
     pub const ALPHA: f64 = 1.0;
     pub const TOLERATED_SCALE_INF: f64 = std::f64::INFINITY;
     pub const TOLERATED_SCALE: f64 = std::f64::INFINITY;
+    /// If true, the edges are sorted by their dsts' ch-level to speedup routing.
+    /// This sort isn't stable in combination with a ch-construction and varying metrics, because a ch-constructor sets the ch-levels dependent on the metrics.
+    /// In result, edges can't be identified in balancer.
+    pub const IS_USING_CH_LEVEL_SPEEDUP: bool = false;
 }
 
-pub mod balancing {
-    pub const ROUTE_COUNT_ID: &str = "route-count";
+pub mod balancing {}
+
+pub mod explorating {
+    pub mod files {
+        pub const EDGES_WRITER: &str = "edge-info.csv";
+
+        pub fn capacities(i: usize, n: usize) -> String {
+            format!("capacities{:0digits$}.csv", i, digits = n.to_string().len())
+        }
+    }
 }
 
 pub mod network {
@@ -189,9 +268,6 @@ pub mod network {
                 StreetCategory::Path => true,
             }
         }
-
-        //--------------------------------------------------------------------------------------------//
-        // parsing
 
         pub fn from(way: &Way) -> Option<StreetCategory> {
             // read highway-tag from way

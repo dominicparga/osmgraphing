@@ -1,6 +1,6 @@
 pub mod building;
 mod indexing;
-pub use indexing::{EdgeIdx, MetricIdx, NodeIdx};
+pub use indexing::{EdgeIdx, EdgeIdxIterator, MetricIdx, NodeIdx, NodeIdxIterator};
 
 use crate::{configs::parsing::Config, defaults::capacity::DimVec};
 use kissunits::geo::Coordinate;
@@ -82,7 +82,7 @@ pub struct Graph {
     node_ids: Vec<i64>,
     // node-metrics
     node_coords: Vec<Coordinate>,
-    node_levels: Vec<usize>,
+    node_ch_levels: Vec<usize>,
     // node_heights: Vec<f64>,
     // edges: offset-graph and mappings, e.g. for metrics
     fwd_dsts: Vec<NodeIdx>,
@@ -108,7 +108,7 @@ impl Graph {
         NodeAccessor {
             node_ids: &self.node_ids,
             node_coords: &self.node_coords,
-            node_levels: &self.node_levels,
+            node_ch_levels: &self.node_ch_levels,
         }
     }
 
@@ -337,7 +337,7 @@ impl Node {
         self.coord
     }
 
-    pub fn level(&self) -> usize {
+    pub fn ch_level(&self) -> usize {
         self.level
     }
 }
@@ -415,10 +415,32 @@ impl<'a> Display for HalfEdge<'a> {
 pub struct NodeAccessor<'a> {
     node_ids: &'a Vec<i64>,
     node_coords: &'a Vec<Coordinate>,
-    node_levels: &'a Vec<usize>,
+    node_ch_levels: &'a Vec<usize>,
+}
+
+impl IntoIterator for NodeAccessor<'_> {
+    type Item = NodeIdx;
+    type IntoIter = NodeIdxIterator;
+
+    fn into_iter(self) -> NodeIdxIterator {
+        (0..self.count()).into()
+    }
+}
+
+impl<'a> IntoIterator for &'a NodeAccessor<'_> {
+    type Item = NodeIdx;
+    type IntoIter = NodeIdxIterator;
+
+    fn into_iter(self) -> NodeIdxIterator {
+        (0..self.count()).into()
+    }
 }
 
 impl<'a> NodeAccessor<'a> {
+    pub fn iter(&self) -> NodeIdxIterator {
+        self.into_iter()
+    }
+
     pub fn count(&self) -> usize {
         self.node_ids.len()
     }
@@ -432,7 +454,7 @@ impl<'a> NodeAccessor<'a> {
     }
 
     pub fn level(&self, idx: NodeIdx) -> usize {
-        self.node_levels[*idx]
+        self.node_ch_levels[*idx]
     }
 
     pub fn idx_from(&self, id: i64) -> Result<NodeIdx, NodeIdx> {
@@ -477,7 +499,29 @@ pub struct EdgeAccessor<'a> {
     sc_edges: &'a Vec<[EdgeIdx; 2]>,
 }
 
+impl IntoIterator for EdgeAccessor<'_> {
+    type Item = EdgeIdx;
+    type IntoIter = EdgeIdxIterator;
+
+    fn into_iter(self) -> EdgeIdxIterator {
+        (0..self.count()).into()
+    }
+}
+
+impl<'a> IntoIterator for &'a EdgeAccessor<'_> {
+    type Item = EdgeIdx;
+    type IntoIter = EdgeIdxIterator;
+
+    fn into_iter(self) -> EdgeIdxIterator {
+        (0..self.count()).into()
+    }
+}
+
 impl<'a> EdgeAccessor<'a> {
+    pub fn iter(&self) -> EdgeIdxIterator {
+        self.into_iter()
+    }
+
     pub fn count(&self) -> usize {
         self.edge_dsts.len()
     }

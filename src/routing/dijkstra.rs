@@ -1,6 +1,7 @@
 use super::paths::Path;
 use crate::{
     configs::routing::Config,
+    defaults::routing::IS_USING_CH_LEVEL_SPEEDUP,
     helpers,
     network::{EdgeIdx, Graph, NodeIdx},
 };
@@ -242,8 +243,12 @@ impl Dijkstra {
                 if self.is_ch_dijkstra
                     && nodes.level(current.idx) > nodes.level(leaving_edge.dst_idx())
                 {
-                    // break because leaving-edges are sorted by level
-                    break;
+                    if !IS_USING_CH_LEVEL_SPEEDUP {
+                        continue;
+                    } else {
+                        // break because leaving-edges are sorted by level
+                        break;
+                    }
                 }
 
                 let new_cost = current.cost
@@ -301,7 +306,13 @@ impl Dijkstra {
                 cur_idx = xwd_edges[opp_dir].dst_idx(leaving_idx);
             }
 
-            Some(Path::new(src_idx, dst_idx, proto_path))
+            Some(Path::new(
+                src_idx,
+                nodes.id(src_idx),
+                dst_idx,
+                nodes.id(dst_idx),
+                proto_path,
+            ))
         } else {
             None
         }

@@ -1,0 +1,28 @@
+parsing:
+  map-file: '${iter_0_dir}/graph.ch.fmi'
+  vehicles:
+    category: 'Car'
+    are-drivers-picky: false
+  nodes:
+  - ignored # node-idx
+  - meta: { info: 'NodeId', id: 'node-id' } # osm-id
+  - metric: { unit: 'Latitude', id: 'latitude' }
+  - metric: { unit: 'Longitude', id: 'longitude' }
+  - ignored # height
+  - meta: { info: 'CHLevel', id: 'ch-level' }
+  edges:
+  - meta: { info: 'SrcId', id: 'src-id' }
+  - meta: { info: 'DstId', id: 'dst-id' }
+  - metric: { unit: 'Kilometers', id: 'kilometers' }
+  - metric: { unit: 'Hours', id: 'hours' }
+  - ignored # lane-count
+  - meta: { info: 'ShortcutIdx0', id: 'sc-idx-0'}
+  - meta: { info: 'ShortcutIdx1', id: 'sc-idx-1'}
+writing:
+  route-pairs:
+    file: '${iter_0_dir}/10_000.route-pairs'
+    random_or_all: { seed: 42, max_count: 10000 }
+routing:
+  is-ch-dijkstra: true
+  metrics:
+  - id: 'kilometers'

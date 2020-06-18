@@ -8,7 +8,7 @@ pub struct Config {
 }
 
 #[derive(Debug, Deserialize)]
-#[serde(deny_unknown_fields, rename_all = "kebab-case")]
+#[serde(rename_all = "kebab-case")]
 pub struct AnotherConfig {
     pub route_pairs: Content,
 }
@@ -22,7 +22,7 @@ pub struct Content {
 }
 
 #[derive(Clone, Debug, Deserialize)]
-#[serde(rename_all = "lowercase")]
 pub enum Category {
-    Random { seed: u64, count: usize },
+    #[serde(rename = "random_or_all")]
+    RandomOrAll { seed: Option<u64>, max_count: usize },
 }

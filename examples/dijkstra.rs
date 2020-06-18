@@ -1,23 +1,31 @@
-use log::info;
+use log::{error, info};
 use osmgraphing::{
-    configs, helpers,
+    configs,
+    helpers::{err, init_logging},
     io::network::Parser,
     network::NodeIdx,
     routing::{self},
 };
 use std::{path::PathBuf, time::Instant};
 
-fn main() -> Result<(), String> {
-    helpers::init_logging("INFO", vec!["dijkstra"]).expect("LogLevel 'INFO' does exist.");
+fn main() {
+    init_logging("INFO", &["dijkstra"]).expect("LogLevel 'INFO' does exist.");
+    if let Err(msg) = run() {
+        error!("{}", msg);
+        panic!("{}", msg);
+    }
+}
+
+fn run() -> err::Feedback {
     info!("Executing example: A*");
 
-    let raw_cfg = PathBuf::from("resources/configs/simple-stuttgart.fmi.yaml");
+    let raw_cfg = PathBuf::from("resources/simple_stuttgart/fmi.yaml");
 
     // parsing
 
     let parsing_cfg = match configs::parsing::Config::try_from_yaml(&raw_cfg) {
         Ok(parsing_cfg) => parsing_cfg,
-        Err(msg) => return Err(format!("{}", msg)),
+        Err(msg) => return Err(err::Msg::from(format!("{}", msg))),
     };
 
     // measure parsing-time
@@ -27,7 +35,7 @@ fn main() -> Result<(), String> {
 
     let graph = match Parser::parse_and_finalize(parsing_cfg) {
         Ok(graph) => graph,
-        Err(msg) => return Err(format!("{}", msg)),
+        Err(msg) => return Err(format!("{}", msg).into()),
     };
     info!(
         "Finished parsing in {} seconds ({} µs).",
@@ -41,7 +49,7 @@ fn main() -> Result<(), String> {
 
     let routing_cfg = match configs::routing::Config::try_from_yaml(&raw_cfg, graph.cfg()) {
         Ok(routing_cfg) => routing_cfg,
-        Err(msg) => return Err(format!("{}", msg)),
+        Err(msg) => return Err(format!("{}", msg).into()),
     };
     let mut dijkstra = routing::Dijkstra::new();
 

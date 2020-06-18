@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 
 set -e
+cur_dir="$(dirname "$(pwd)"/"${0}")"
 
 # build
-cur_dir="$(dirname "$(pwd)"/"${0}")"
-"${cur_dir}/build.sh"
+cargo build --release
 
 # cargo install flamegraph, see https://github.com/killercup/cargo-flamegraph
-cargo flamegraph --bin osmgraphing -- --config "${cur_dir}/../custom/resources/config.yaml"
+cargo flamegraph --bin osmgraphing -- --config "${cur_dir}/../custom/config.yaml"

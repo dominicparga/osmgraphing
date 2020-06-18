@@ -1,7 +1,7 @@
 use std::{
     cmp::Ord,
     fmt::{self, Display},
-    ops::{Deref, DerefMut},
+    ops::{Deref, DerefMut, Range},
 };
 
 //------------------------------------------------------------------------------------------------//
@@ -29,6 +29,32 @@ impl DerefMut for NodeIdx {
     }
 }
 
+pub struct NodeIdxIterator {
+    range: Range<usize>,
+}
+
+impl Iterator for NodeIdxIterator {
+    type Item = NodeIdx;
+
+    fn next(&mut self) -> Option<NodeIdx> {
+        Some(NodeIdx(self.range.next()?))
+    }
+}
+
+impl From<Range<NodeIdx>> for NodeIdxIterator {
+    fn from(range: Range<NodeIdx>) -> NodeIdxIterator {
+        NodeIdxIterator {
+            range: range.start.0..range.end.0,
+        }
+    }
+}
+
+impl From<Range<usize>> for NodeIdxIterator {
+    fn from(range: Range<usize>) -> NodeIdxIterator {
+        NodeIdxIterator { range }
+    }
+}
+
 //------------------------------------------------------------------------------------------------//
 
 #[derive(Copy, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
@@ -51,6 +77,32 @@ impl Deref for EdgeIdx {
 impl DerefMut for EdgeIdx {
     fn deref_mut(&mut self) -> &mut usize {
         &mut self.0
+    }
+}
+
+pub struct EdgeIdxIterator {
+    range: Range<usize>,
+}
+
+impl Iterator for EdgeIdxIterator {
+    type Item = EdgeIdx;
+
+    fn next(&mut self) -> Option<EdgeIdx> {
+        Some(EdgeIdx(self.range.next()?))
+    }
+}
+
+impl From<Range<EdgeIdx>> for EdgeIdxIterator {
+    fn from(range: Range<EdgeIdx>) -> EdgeIdxIterator {
+        EdgeIdxIterator {
+            range: range.start.0..range.end.0,
+        }
+    }
+}
+
+impl From<Range<usize>> for EdgeIdxIterator {
+    fn from(range: Range<usize>) -> EdgeIdxIterator {
+        EdgeIdxIterator { range }
     }
 }
 

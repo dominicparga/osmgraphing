@@ -12,6 +12,7 @@ pub mod raw;
 #[serde(from = "raw::Config")]
 pub struct Config {
     pub map_file: PathBuf,
+    pub is_ch_graph: bool,
     pub nodes: nodes::Config,
     pub edges: edges::Config,
 }
@@ -28,6 +29,7 @@ impl From<raw::Config> for Config {
 
         Config {
             map_file: raw_cfg.map_file,
+            is_ch_graph: raw_cfg.is_ch_graph.unwrap_or(false),
             nodes: nodes::Config::from(raw_cfg.nodes),
             edges: edges::Config::from(raw_cfg.edges),
         }
@@ -36,9 +38,13 @@ impl From<raw::Config> for Config {
 
 impl Config {
     pub fn try_from_yaml<P: AsRef<Path> + ?Sized>(path: &P) -> Result<Config, String> {
+        let path = path.as_ref();
         let file = {
             Config::find_supported_ext(path)?;
-            OpenOptions::new().read(true).open(path).unwrap()
+            OpenOptions::new()
+                .read(true)
+                .open(path)
+                .expect(&format!("Couldn't open {}", path.display()))
         };
 
         let cfg: Config = match serde_yaml::from_reader(file) {

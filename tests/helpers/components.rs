@@ -1,4 +1,4 @@
-use kissunits::{distance::Kilometers, geo::Coordinate, speed::KilometersPerHour, time::Minutes};
+use kissunits::{distance::Kilometers, geo::Coordinate, speed::KilometersPerHour, time::Hours};
 use osmgraphing::{
     defaults::capacity::DimVec,
     helpers::approx::ApproxEq,
@@ -14,7 +14,7 @@ pub struct TestNode {
     pub id: i64,
     pub idx: NodeIdx,
     pub coord: Coordinate,
-    pub level: usize,
+    pub ch_level: usize,
 }
 
 impl From<Node> for TestNode {
@@ -24,7 +24,7 @@ impl From<Node> for TestNode {
             id: node.id(),
             idx: node.idx(),
             coord: node.coord(),
-            level: node.level(),
+            ch_level: node.ch_level(),
         }
     }
 }
@@ -40,13 +40,13 @@ impl PartialEq for TestNode {
         self.id == other.id
             && self.idx == other.idx
             && self.coord.approx_eq(&other.coord)
-            && self.level == other.level
+            && self.ch_level == other.ch_level
     }
 }
 
 impl TestNode {
     #[allow(dead_code)]
-    pub fn new(name: &str, id: i64, coord: Coordinate, level: usize, graph: &Graph) -> TestNode {
+    pub fn new(name: &str, id: i64, coord: Coordinate, ch_level: usize, graph: &Graph) -> TestNode {
         let idx = graph
             .nodes()
             .idx_from(id)
@@ -56,7 +56,7 @@ impl TestNode {
             id,
             idx,
             coord,
-            level,
+            ch_level,
         }
     }
 }
@@ -80,7 +80,7 @@ impl TestEdge {
         dst: &TestNode,
         distance: Kilometers,
         maxspeed: KilometersPerHour,
-        duration: Minutes,
+        duration: Hours,
     ) -> TestEdge {
         TestEdge {
             name: (name.unwrap_or(&format!("{}->{}", src.name, dst.name))).to_owned(),
@@ -100,7 +100,7 @@ impl TestEdge {
         dst: &TestNode,
         distance: Kilometers,
         maxspeed: KilometersPerHour,
-        duration: Minutes,
+        duration: Hours,
     ) -> TestEdge {
         TestEdge {
             name: (name.unwrap_or(&format!("{}->{}", src.name, dst.name))).to_owned(),
@@ -241,8 +241,13 @@ impl TestPath {
 
             // check path
 
-            let expected_path =
-                routing::paths::Path::new(self.src.idx, self.dst.idx, own_proto_path);
+            let expected_path = routing::paths::Path::new(
+                self.src.idx,
+                self.src.id,
+                self.dst.idx,
+                self.dst.id,
+                own_proto_path,
+            );
             if expected_path != flattened_actual_path {
                 wrong_path_result = Some((expected_path, &flattened_actual_path));
                 continue;

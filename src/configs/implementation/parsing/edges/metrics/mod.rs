@@ -1,6 +1,7 @@
 use crate::{
     configs::{parsing::generating::edges::metrics as gen, SimpleId},
     defaults::capacity::DimVec,
+    helpers::err,
     network::MetricIdx,
 };
 use kissunits::{
@@ -17,7 +18,7 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn idx_of<S>(&self, id: S) -> Option<MetricIdx>
+    pub fn try_idx_of<S>(&self, id: S) -> Option<MetricIdx>
     where
         S: AsRef<str>,
     {
@@ -25,6 +26,17 @@ impl Config {
             self.ids
                 .iter()
                 .position(|self_id| self_id.0 == id.as_ref())?,
+        ))
+    }
+
+    /// Panics if id doesn't exist
+    pub fn idx_of<S>(&self, id: S) -> MetricIdx
+    where
+        S: AsRef<str>,
+    {
+        self.try_idx_of(&id).expect(&format!(
+            "Metric-id {} should be existent in graph, but isn't.",
+            id.as_ref()
         ))
     }
 }
@@ -72,7 +84,7 @@ impl From<gen::UnitInfo> for UnitInfo {
 }
 
 impl UnitInfo {
-    pub fn convert(&self, to: &UnitInfo, raw_value: f64) -> f64 {
+    pub fn try_convert(&self, to: &UnitInfo, raw_value: f64) -> err::Result<f64> {
         let new_raw_value = match self {
             UnitInfo::Meters => match to {
                 UnitInfo::Meters | UnitInfo::F64 => Some(raw_value),
@@ -141,9 +153,16 @@ impl UnitInfo {
         };
 
         if let Some(new_raw_value) = new_raw_value {
-            new_raw_value
+            Ok(new_raw_value)
         } else {
-            panic!("Unit {:?} can't be converted to {:?}.", self, to)
+            Err(format!("Unit {:?} can't be converted to {:?}.", self, to).into())
+        }
+    }
+
+    pub fn convert(&self, to: &UnitInfo, raw_value: f64) -> f64 {
+        match self.try_convert(to, raw_value) {
+            Ok(new_raw_value) => new_raw_value,
+            Err(msg) => panic!("{}", msg),
         }
     }
 }

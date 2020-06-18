@@ -1,0 +1,30 @@
+parsing:
+  map-file: 'resources/isle_of_man_2020-03-14/graph.osm.pbf'
+  vehicles:
+    category: 'Car'
+    are-drivers-picky: false
+  nodes:
+  - meta: { info: 'NodeId', id: 'node-id' }
+  - metric: { unit: 'Latitude', id: 'latitude' }
+  - metric: { unit: 'Longitude', id: 'longitude' }
+  edges:
+  - meta: { info: 'SrcId', id: 'src-id' }
+  - meta: { info: 'DstId', id: 'dst-id' }
+  - ignored # shouldn't matter, so add it here to test this
+  - metric: { unit: 'KilometersPerHour', id: 'kmph' }
+  - metric: { unit: 'LaneCount', id: 'lanecount' }
+  generating:
+    nodes:
+    - meta: { info: 'NodeIdx', id: 'node-idx' }
+    edges:
+    - meta: { info: 'SrcIdx', id: 'src-idx' }
+    - meta: { info: 'DstIdx', id: 'dst-idx' }
+    - haversine: { unit: 'Kilometers', id: 'kilometers' }
+    - calc:
+        result: { unit: 'Hours', id: 'hours' }
+        a: { unit: 'Kilometers', id: 'kilometers' }
+        b: { unit: 'KilometersPerHour', id: 'kmph' }
+writing:
+  route-pairs:
+    file: 'resources/isle_of_man_2020-03-14/100.osm.pbf.route-pairs'
+    random_or_all: { max_count: 100 }

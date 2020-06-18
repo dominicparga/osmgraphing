@@ -1,4 +1,7 @@
-use crate::io::{routing::Writer, SupportingFileExts};
+use crate::{
+    defaults,
+    io::{routing::Writer, SupportingFileExts},
+};
 use serde::Deserialize;
 use std::{
     fs::OpenOptions,
@@ -32,9 +35,13 @@ impl From<raw::Config> for Config {
 
 impl Config {
     pub fn try_from_yaml<P: AsRef<Path> + ?Sized>(path: &P) -> Result<Config, String> {
+        let path = path.as_ref();
         let file = {
             Config::find_supported_ext(path)?;
-            OpenOptions::new().read(true).open(path).unwrap()
+            OpenOptions::new()
+                .read(true)
+                .open(path)
+                .expect(&format!("Couldn't open {}", path.display()))
         };
 
         let cfg: Config = match serde_yaml::from_reader(file) {
@@ -58,13 +65,16 @@ impl Config {
 
 #[derive(Debug)]
 pub enum Category {
-    Random { seed: u64, count: usize },
+    RandomOrAll { seed: u64, max_count: usize },
 }
 
 impl From<raw::Category> for Category {
     fn from(raw_category: raw::Category) -> Category {
         match raw_category {
-            raw::Category::Random { seed, count } => Category::Random { seed, count },
+            raw::Category::RandomOrAll { seed, max_count } => Category::RandomOrAll {
+                seed: seed.unwrap_or(defaults::SEED),
+                max_count,
+            },
         }
     }
 }

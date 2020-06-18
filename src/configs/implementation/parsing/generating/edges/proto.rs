@@ -91,8 +91,6 @@ impl From<raw::MetaInfo> for MetaInfo {
         match raw_info {
             raw::MetaInfo::SrcIdx => MetaInfo::SrcIdx,
             raw::MetaInfo::DstIdx => MetaInfo::DstIdx,
-            raw::MetaInfo::ShortcutIdx0 => MetaInfo::ShortcutIdx0,
-            raw::MetaInfo::ShortcutIdx1 => MetaInfo::ShortcutIdx1,
         }
     }
 }

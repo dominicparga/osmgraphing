@@ -28,7 +28,7 @@ impl From<proto::Category> for Category {
 pub enum MetaInfo {
     NodeId,
     NodeIdx,
-    Level,
+    CHLevel,
 }
 
 impl From<proto::MetaInfo> for MetaInfo {
