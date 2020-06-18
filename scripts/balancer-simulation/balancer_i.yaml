@@ -31,13 +31,15 @@ balancing:
     distance: 'kilometers'
     lane-count: 'lane-count'
     workload: 'workload'
-  workload-correction: 0.1
+  explicit_euler:
+    correction: 0.3
 routing:
   route-pairs-file: '${iter_0_dir}/10_000.route-pairs'
   is-ch-dijkstra: true
   metrics:
   - id: 'kilometers'
   - id: 'hours'
+    tolerated-scale: 1.3
   - id: 'workload'
 writing:
   graph:

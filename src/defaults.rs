@@ -64,10 +64,16 @@ pub mod vehicles {
 
             let num_vehicles = calc_num_vehicles(distance);
             let capacity = lane_count * num_vehicles;
+
             let new_metric = {
                 let new_workload = workload as f64 / (capacity as f64);
                 let old_workload = metrics[edge_idx][*balancing_cfg.workload_idx];
-                old_workload + (new_workload - old_workload) * balancing_cfg.workload_correction
+
+                match balancing_cfg.optimization {
+                    configs::balancing::Optimization::ExplicitEuler { correction } => {
+                        old_workload + (new_workload - old_workload) * correction
+                    }
+                }
             };
 
             metrics[edge_idx][*balancing_cfg.workload_idx] = new_metric;
@@ -108,9 +114,7 @@ pub mod routing {
     pub const IS_USING_CH_LEVEL_SPEEDUP: bool = false;
 }
 
-pub mod balancing {
-    pub const WORKLOAD_CORRECTION: f64 = 0.01;
-}
+pub mod balancing {}
 
 pub mod explorating {
     pub mod files {

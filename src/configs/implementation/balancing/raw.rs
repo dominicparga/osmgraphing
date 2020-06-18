@@ -13,5 +13,17 @@ pub struct Config {
 pub struct Content {
     pub results_dir: PathBuf,
     pub metric_ids: metrics::raw::Config,
-    pub workload_correction: Option<f64>,
+    #[serde(flatten)]
+    pub optimization: Optimization,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "snake_case", deny_unknown_fields)]
+pub enum Optimization {
+    ExplicitEuler {
+        #[serde(rename = "correction")]
+        correction: f64,
+    },
+    // some kind of correction-function:
+    // interpolating linear between point-pairs given in a file?
 }
