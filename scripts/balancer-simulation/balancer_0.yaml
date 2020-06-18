@@ -42,6 +42,7 @@ routing:
   metrics:
   - id: 'kilometers'
   - id: 'hours'
+    tolerated-scale: 1.3
 writing:
   graph:
     map-file: '${iter_1_dir}/graph.fmi'
