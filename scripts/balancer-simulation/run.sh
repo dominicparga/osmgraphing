@@ -68,27 +68,19 @@ create_route_pairs() {
     --writing-routes
 }
 
-set_dim_in_multi_ch_constructor() {
-    dim="${1}"
-
-    sed -i \
-    "s/^  static const size_t dim = .*;/  static const size_t dim = ${dim};/" \
-    "${multi_ch_constructor_dir}/src/multi_lib/graph.hpp"
-}
-
 create_ch_fmi_from_iteration() {
     iter="${1}"
     if [ "${iter}" -eq '0' ]; then
         # with 3 metrics
-        set_dim_in_multi_ch_constructor '3'
+        GRAPH_DIM='3'
     else
         # with 4 metrics
-        set_dim_in_multi_ch_constructor '4'
+        GRAPH_DIM='4'
     fi
 
     cd "${multi_ch_constructor_dir}" || exit 1
 
-    cmake -Bbuild
+    cmake -Bbuild -D GRAPH_DIM="${GRAPH_DIM}"
     cmake --build build
 
     ./build/multi-ch \
