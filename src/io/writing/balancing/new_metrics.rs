@@ -43,13 +43,18 @@ impl Writer {
 
         // write data
 
+        let workload_idx = graph
+            .cfg()
+            .edges
+            .metrics
+            .try_idx_of(&balancing_cfg.workload_id)?;
         let metrics = graph.metrics();
 
         for edge_idx in fwd_edges
             .iter()
             .filter(|&edge_idx| !fwd_edges.is_shortcut(edge_idx))
         {
-            writeln!(writer, "{}", metrics[edge_idx][*balancing_cfg.workload_idx])?;
+            writeln!(writer, "{}", metrics[edge_idx][*workload_idx])?;
         }
 
         Ok(())
