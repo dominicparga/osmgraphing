@@ -1,4 +1,4 @@
-use crate::{configs, io::SupportingFileExts, network::MetricIdx};
+use crate::{configs::SimpleId, io::SupportingFileExts};
 use std::{
     fs::OpenOptions,
     path::{Path, PathBuf},
@@ -10,9 +10,9 @@ pub mod raw;
 #[derive(Clone, Debug)]
 pub struct Config {
     pub results_dir: PathBuf,
-    pub workload_idx: MetricIdx,
-    pub lane_count_idx: MetricIdx,
-    pub distance_idx: MetricIdx,
+    pub workload_id: SimpleId,
+    pub lane_count_id: SimpleId,
+    pub distance_id: SimpleId,
     pub optimization: Optimization,
 }
 
@@ -23,50 +23,41 @@ impl SupportingFileExts for Config {
 }
 
 impl Config {
-    pub fn try_from_str(
-        yaml_str: &str,
-        parsing_cfg: &configs::parsing::Config,
-    ) -> Result<Config, String> {
+    pub fn try_from_str(yaml_str: &str) -> Result<Config, String> {
         let proto_cfg = {
             match serde_yaml::from_str(yaml_str) {
                 Ok(proto_cfg) => proto_cfg,
                 Err(e) => return Err(format!("{}", e)),
             }
         };
-        Config::try_from_proto(proto_cfg, parsing_cfg)
+        Config::try_from_proto(proto_cfg)
     }
 
-    pub fn from_str(yaml_str: &str, parsing_cfg: &configs::parsing::Config) -> Config {
-        match Config::try_from_str(yaml_str, parsing_cfg) {
+    pub fn from_str(yaml_str: &str) -> Config {
+        match Config::try_from_str(yaml_str) {
             Ok(cfg) => cfg,
             Err(msg) => panic!("{}", msg),
         }
     }
 
-    fn try_from_proto(
-        proto_cfg: proto::Config,
-        parsing_cfg: &configs::parsing::Config,
-    ) -> Result<Config, String> {
+    fn try_from_proto(proto_cfg: proto::Config) -> Result<Config, String> {
         Ok(Config {
             results_dir: proto_cfg.results_dir,
-            workload_idx: parsing_cfg.edges.metrics.idx_of(&proto_cfg.workload_id),
-            lane_count_idx: parsing_cfg.edges.metrics.idx_of(&proto_cfg.lane_count_id),
-            distance_idx: parsing_cfg.edges.metrics.idx_of(&proto_cfg.distance_id),
+            workload_id: proto_cfg.workload_id,
+            lane_count_id: proto_cfg.lane_count_id,
+            distance_id: proto_cfg.distance_id,
             optimization: Optimization::from(proto_cfg.optimization),
         })
     }
 
-    fn _from_proto(proto_cfg: proto::Config, parsing_cfg: &configs::parsing::Config) -> Config {
-        match Config::try_from_proto(proto_cfg, parsing_cfg) {
+    fn _from_proto(proto_cfg: proto::Config) -> Config {
+        match Config::try_from_proto(proto_cfg) {
             Ok(cfg) => cfg,
             Err(msg) => panic!("{}", msg),
         }
     }
 
-    pub fn try_from_yaml<P: AsRef<Path> + ?Sized>(
-        path: &P,
-        parsing_cfg: &configs::parsing::Config,
-    ) -> Result<Config, String> {
+    pub fn try_from_yaml<P: AsRef<Path> + ?Sized>(path: &P) -> Result<Config, String> {
         let path = path.as_ref();
         let file = {
             Config::find_supported_ext(path)?;
@@ -80,14 +71,11 @@ impl Config {
             Ok(proto_cfg) => proto_cfg,
             Err(e) => return Err(format!("{}", e)),
         };
-        Config::try_from_proto(proto_cfg, parsing_cfg)
+        Config::try_from_proto(proto_cfg)
     }
 
-    pub fn from_yaml<P: AsRef<Path> + ?Sized>(
-        path: &P,
-        parsing_cfg: &configs::parsing::Config,
-    ) -> Config {
-        match Config::try_from_yaml(path, parsing_cfg) {
+    pub fn from_yaml<P: AsRef<Path> + ?Sized>(path: &P) -> Config {
+        match Config::try_from_yaml(path) {
             Ok(cfg) => cfg,
             Err(msg) => panic!("{}", msg),
         }

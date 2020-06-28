@@ -36,8 +36,16 @@ pub mod vehicles {
         graph: &mut Graph,
         balancing_cfg: &configs::balancing::Config,
     ) {
+        let distance_idx = graph.cfg().edges.metrics.idx_of(&balancing_cfg.distance_id);
+        let lane_count_idx = graph
+            .cfg()
+            .edges
+            .metrics
+            .idx_of(&balancing_cfg.lane_count_id);
+        let workload_idx = graph.cfg().edges.metrics.idx_of(&balancing_cfg.workload_id);
+
         let egde_iter = (0..graph.fwd_edges().count()).into_iter().map(EdgeIdx);
-        let distance_unit = graph.cfg().edges.metrics.units[*balancing_cfg.distance_idx];
+        let distance_unit = graph.cfg().edges.metrics.units[*distance_idx];
 
         let mut metrics = graph.metrics_mut();
 
@@ -45,10 +53,7 @@ pub mod vehicles {
             // read metrics-data from graph
             let (raw_distance, lane_count) = {
                 let tmp = &metrics[edge_idx];
-                (
-                    tmp[*balancing_cfg.distance_idx],
-                    tmp[*balancing_cfg.lane_count_idx] as u64,
-                )
+                (tmp[*distance_idx], tmp[*lane_count_idx] as u64)
             };
             let workload = workloads[*edge_idx];
 
@@ -67,7 +72,7 @@ pub mod vehicles {
 
             let new_metric = {
                 let new_workload = workload as f64 / (capacity as f64);
-                let old_workload = metrics[edge_idx][*balancing_cfg.workload_idx];
+                let old_workload = metrics[edge_idx][*workload_idx];
 
                 match balancing_cfg.optimization {
                     configs::balancing::Optimization::ExplicitEuler { correction } => {
@@ -76,7 +81,7 @@ pub mod vehicles {
                 }
             };
 
-            metrics[edge_idx][*balancing_cfg.workload_idx] = new_metric;
+            metrics[edge_idx][*workload_idx] = new_metric;
         }
     }
 }

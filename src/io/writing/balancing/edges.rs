@@ -56,7 +56,13 @@ impl Writer {
 
         // write data
 
-        let distance_unit = graph.cfg().edges.metrics.units[*balancing_cfg.distance_idx];
+        let distance_idx = graph.cfg().edges.metrics.idx_of(&balancing_cfg.distance_id);
+        let lane_count_idx = graph
+            .cfg()
+            .edges
+            .metrics
+            .idx_of(&balancing_cfg.lane_count_id);
+        let distance_unit = graph.cfg().edges.metrics.units[*distance_idx];
 
         for edge_idx in fwd_edges
             .iter()
@@ -75,10 +81,7 @@ impl Writer {
 
             let (raw_distance, lane_count) = {
                 let tmp = &metrics[edge_idx];
-                (
-                    tmp[*balancing_cfg.distance_idx],
-                    tmp[*balancing_cfg.lane_count_idx] as u64,
-                )
+                (tmp[*distance_idx], tmp[*lane_count_idx] as u64)
             };
             // use correct unit for distance
             let distance = {
