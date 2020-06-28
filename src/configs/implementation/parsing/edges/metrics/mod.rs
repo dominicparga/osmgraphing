@@ -18,14 +18,21 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn try_idx_of<S>(&self, id: S) -> Option<MetricIdx>
+    pub fn try_idx_of<S>(&self, id: S) -> err::Result<MetricIdx>
     where
         S: AsRef<str>,
     {
-        Some(MetricIdx(
-            self.ids
-                .iter()
-                .position(|self_id| self_id.0 == id.as_ref())?,
+        Ok(MetricIdx(
+            match self.ids.iter().position(|self_id| self_id.0 == id.as_ref()) {
+                Some(idx) => idx,
+                None => {
+                    return Err(format!(
+                        "Metric-id {} should be existent in graph, but isn't.",
+                        id.as_ref()
+                    )
+                    .into())
+                }
+            },
         ))
     }
 
@@ -34,10 +41,10 @@ impl Config {
     where
         S: AsRef<str>,
     {
-        self.try_idx_of(&id).expect(&format!(
-            "Metric-id {} should be existent in graph, but isn't.",
-            id.as_ref()
-        ))
+        match self.try_idx_of(&id) {
+            Ok(idx) => idx,
+            Err(msg) => panic!("{}", msg),
+        }
     }
 }
 
