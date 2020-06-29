@@ -1,6 +1,7 @@
 use crate::{
     configs,
     defaults::{self, capacity::DimVec},
+    helpers::err,
     io::SupportingFileExts,
 };
 use smallvec::smallvec;
@@ -35,11 +36,11 @@ impl Config {
     pub fn try_from_str(
         yaml_str: &str,
         parsing_cfg: &configs::parsing::Config,
-    ) -> Result<Config, String> {
+    ) -> err::Result<Config> {
         let proto_cfg = {
             match serde_yaml::from_str(yaml_str) {
                 Ok(proto_cfg) => proto_cfg,
-                Err(e) => return Err(format!("{}", e)),
+                Err(e) => return Err(format!("{}", e).into()),
             }
         };
         Config::try_from_proto(proto_cfg, parsing_cfg)
@@ -55,7 +56,7 @@ impl Config {
     fn try_from_proto(
         proto_cfg: proto::Config,
         parsing_cfg: &configs::parsing::Config,
-    ) -> Result<Config, String> {
+    ) -> err::Result<Config> {
         let dim = parsing_cfg.edges.metrics.units.len();
 
         // Alpha is 0.0 because non-mentioned id will not be considered.
@@ -64,21 +65,9 @@ impl Config {
         let mut tolerated_scales = smallvec![defaults::routing::TOLERATED_SCALE_INF; dim];
 
         for entry in proto_cfg.metrics.into_iter() {
-            if let Some(metric_idx) = parsing_cfg
-                .edges
-                .metrics
-                .ids
-                .iter()
-                .position(|id| id == &entry.id)
-            {
-                alphas[metric_idx] = entry.alpha;
-                tolerated_scales[metric_idx] = entry.tolerated_scale;
-            } else {
-                return Err(format!(
-                    "The given id {} should get alpha {}, but doesn't exist.",
-                    entry.id, entry.alpha
-                ));
-            }
+            let metric_idx = parsing_cfg.edges.metrics.try_idx_of(&entry.id)?;
+            alphas[*metric_idx] = entry.alpha;
+            tolerated_scales[*metric_idx] = entry.tolerated_scale;
         }
 
         Ok(Config {
@@ -99,7 +88,7 @@ impl Config {
     pub fn try_from_yaml<P: AsRef<Path> + ?Sized>(
         path: &P,
         parsing_cfg: &configs::parsing::Config,
-    ) -> Result<Config, String> {
+    ) -> err::Result<Config> {
         let path = path.as_ref();
         let file = {
             Config::find_supported_ext(path)?;
@@ -111,7 +100,7 @@ impl Config {
 
         let proto_cfg = match serde_yaml::from_reader(file) {
             Ok(proto_cfg) => proto_cfg,
-            Err(e) => return Err(format!("{}", e)),
+            Err(e) => return Err(format!("{}", e).into()),
         };
         Config::try_from_proto(proto_cfg, parsing_cfg)
     }

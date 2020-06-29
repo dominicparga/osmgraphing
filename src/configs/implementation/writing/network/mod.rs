@@ -6,13 +6,14 @@ use std::{
 };
 pub mod edges;
 pub mod nodes;
+pub mod proto;
 pub mod raw;
 
 #[derive(Debug, Deserialize)]
-#[serde(from = "raw::Config")]
+#[serde(from = "proto::Config")]
 pub struct Config {
     pub map_file: PathBuf,
-    pub is_ch_graph: bool,
+    pub is_writing_shortcuts: bool,
     pub nodes: nodes::Config,
     pub edges: edges::Config,
 }
@@ -23,15 +24,13 @@ impl SupportingFileExts for Config {
     }
 }
 
-impl From<raw::Config> for Config {
-    fn from(raw_cfg: raw::Config) -> Config {
-        let raw_cfg = raw_cfg.writing.graph;
-
+impl From<proto::Config> for Config {
+    fn from(proto_cfg: proto::Config) -> Config {
         Config {
-            map_file: raw_cfg.map_file,
-            is_ch_graph: raw_cfg.is_ch_graph.unwrap_or(false),
-            nodes: nodes::Config::from(raw_cfg.nodes),
-            edges: edges::Config::from(raw_cfg.edges),
+            map_file: proto_cfg.map_file,
+            is_writing_shortcuts: proto_cfg.is_writing_shortcuts.unwrap_or(false),
+            nodes: nodes::Config::from(proto_cfg.nodes),
+            edges: edges::Config::from(proto_cfg.edges),
         }
     }
 }

@@ -14,10 +14,12 @@ pub struct AnotherConfig {
 }
 
 #[derive(Debug, Deserialize)]
-#[serde(deny_unknown_fields, rename_all = "kebab-case")]
+#[serde(deny_unknown_fields)]
 pub struct Content {
+    #[serde(rename = "map-file")]
     pub map_file: PathBuf,
-    pub is_ch_graph: Option<bool>,
+    #[serde(rename = "with_shortcuts")]
+    pub is_writing_shortcuts: Option<bool>,
     pub nodes: nodes::raw::Config,
     pub edges: edges::raw::Config,
 }

@@ -9,14 +9,15 @@ pub struct Writer;
 
 impl Writer {
     pub fn write(
+        iter: usize,
         workloads: &Vec<usize>,
         graph: &Graph,
         balancing_cfg: &configs::balancing::Config,
     ) -> err::Feedback {
         info!("START Write graph's route-workload");
-        edges::Writer::new().write(graph, balancing_cfg)?;
-        new_metrics::Writer::new().write(graph, balancing_cfg)?;
-        workloads::Writer::new().write(workloads, graph, balancing_cfg)?;
+        edges::Writer::new().write(iter, graph, balancing_cfg)?;
+        new_metrics::Writer::new().write(iter, graph, balancing_cfg)?;
+        workloads::Writer::new().write(iter, workloads, graph, balancing_cfg)?;
         info!("FINISHED");
         Ok(())
     }

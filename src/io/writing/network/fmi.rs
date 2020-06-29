@@ -87,7 +87,8 @@ impl super::Writing for Writer {
             "{}",
             fwd_edges
                 .iter()
-                .filter(|&edge_idx| !fwd_edges.is_shortcut(edge_idx) || writing_cfg.is_ch_graph)
+                .filter(|&edge_idx| !fwd_edges.is_shortcut(edge_idx)
+                    || writing_cfg.is_writing_shortcuts)
                 .count()
         )?;
 
@@ -198,10 +199,9 @@ impl super::Writing for Writer {
         // write edges
 
         // for every edge
-        for edge_idx in fwd_edges
-            .iter()
-            .filter(|&edge_idx| !fwd_edges.is_shortcut(edge_idx) || writing_cfg.is_ch_graph)
-        {
+        for edge_idx in fwd_edges.iter().filter(|&edge_idx| {
+            !fwd_edges.is_shortcut(edge_idx) || writing_cfg.is_writing_shortcuts
+        }) {
             // loop over graphs config
             // and print respective data
             // if id fits

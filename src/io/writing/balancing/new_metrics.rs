@@ -1,4 +1,4 @@
-use crate::{configs, helpers::err, network::Graph};
+use crate::{configs, defaults, helpers::err, network::Graph};
 use std::{
     fs::OpenOptions,
     io::{BufWriter, Write},
@@ -13,6 +13,7 @@ impl Writer {
 
     pub fn write(
         &mut self,
+        iter: usize,
         graph: &Graph,
         balancing_cfg: &configs::balancing::Config,
     ) -> err::Feedback {
@@ -23,7 +24,11 @@ impl Writer {
         // get writers
 
         let mut writer = {
-            let path = balancing_cfg.results_dir.join("new_metrics.csv");
+            let path = balancing_cfg
+                .results_dir
+                .join(format!("{}", iter))
+                .join(defaults::balancing::stats::DIR)
+                .join(defaults::balancing::stats::files::NEW_METRICS);
             let output_file = match OpenOptions::new().write(true).create_new(true).open(&path) {
                 Ok(f) => f,
                 Err(e) => {
@@ -43,13 +48,18 @@ impl Writer {
 
         // write data
 
+        let workload_idx = graph
+            .cfg()
+            .edges
+            .metrics
+            .try_idx_of(&balancing_cfg.workload_id)?;
         let metrics = graph.metrics();
 
         for edge_idx in fwd_edges
             .iter()
             .filter(|&edge_idx| !fwd_edges.is_shortcut(edge_idx))
         {
-            writeln!(writer, "{}", metrics[edge_idx][*balancing_cfg.workload_idx])?;
+            writeln!(writer, "{}", metrics[edge_idx][*workload_idx])?;
         }
 
         Ok(())

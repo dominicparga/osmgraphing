@@ -27,6 +27,7 @@ default = []
 # https://testing.googleblog.com/2010/12/test-sizes.html
 custom = []
 custom_only = ['custom']
+'gpl-3.0' = []
 
 
 [[bin]]
@@ -34,6 +35,7 @@ name = 'osmgraphing' # bin/osmgraphing.rs
 
 [[bin]]
 name = 'balancer' # bin/balancer.rs
+required-features = ['gpl-3.0']
 
 
 [[example]]
@@ -79,6 +81,7 @@ harness = false
 
 
 [dependencies]
+chrono = '0.4' # date and time
 clap = '2.33' # cmdline-parsing
 env_logger = '0.6' # logging for external use, e.g. main.rs and examples
 kissunits = '1' # units like Meters or Coordinate

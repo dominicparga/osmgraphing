@@ -62,14 +62,26 @@ pub enum MapFileExt {
     FMI,
 }
 
-pub trait SupportingMapFileExts: SupportingFileExts {
+impl SupportingFileExts for MapFileExt {
+    fn supported_exts<'a>() -> &'a [&'a str] {
+        &["osm.pbf", "pbf", "fmi"]
+    }
+}
+
+impl SupportingMapFileExts for MapFileExt {
     fn from_path<P: AsRef<Path> + ?Sized>(path: &P) -> Result<MapFileExt, String> {
         match Self::find_supported_ext(path)? {
-            "pbf" => Ok(MapFileExt::PBF),
+            "osm.pbf" | "pbf" => Ok(MapFileExt::PBF),
             "fmi" => Ok(MapFileExt::FMI),
             _ => Err(String::from(
                 "Should not happen, since 'find_supported_ext(...)' should cover this.",
             )),
         }
+    }
+}
+
+pub trait SupportingMapFileExts: SupportingFileExts {
+    fn from_path<P: AsRef<Path> + ?Sized>(path: &P) -> Result<MapFileExt, String> {
+        MapFileExt::from_path(path)
     }
 }

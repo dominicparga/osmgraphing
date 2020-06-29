@@ -25,7 +25,7 @@ fn routing_config_from_str() {
     configs::routing::Config::from_str(yaml_str, &parsing_cfg);
 
     let yaml_str = &format!(
-        "routing: {{ route-pairs-file: 'asdf', metrics: [{{ id: '{}' }}], is-ch-dijkstra: true }}",
+        "routing: {{ route-pairs-file: 'asdf', metrics: [{{ id: '{}' }}], is_ch-dijkstra: true }}",
         defaults::SPEED_ID
     );
     let routing_cfg = configs::routing::Config::from_str(yaml_str, &parsing_cfg);
@@ -35,7 +35,7 @@ fn routing_config_from_str() {
     );
 
     let yaml_str = &format!(
-        "routing: {{ route-pairs-file: 'asdf', metrics: [{{ id: '{}' }}], is-ch-dijkstra: false }}",
+        "routing: {{ route-pairs-file: 'asdf', metrics: [{{ id: '{}' }}], is_ch-dijkstra: false }}",
         defaults::SPEED_ID
     );
     let routing_cfg = configs::routing::Config::from_str(yaml_str, &parsing_cfg);
