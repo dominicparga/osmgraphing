@@ -54,11 +54,10 @@ Rust has a build-tool called `cargo`, which can be used to run everything except
 
 ```zsh
 # Build the binary for parsing maps and do routing
-cargo build --release
-# Parse isle-of-man
-./target/release/osmgraphing --config resources/isle-of-man_2020-03-14/osm.pbf.yaml
+# and parse isle-of-man.
+cargo run --release --bin osmgraphing -- --config resources/isle_of_man_2020-03-14/osm.pbf.yaml
 # Further execution-info
-./target/release/osmgraphing --help
+cargo run --release --bin osmgraphing -- --help
 ```
 
 Above binary will throw an error, since you probably haven't downloaded the map-file mentioned in the config.
@@ -70,9 +69,9 @@ For using the balancer, you have to enable features licensed under the `GPL-3.0`
 ```zsh
 # Update git-submodules used in the balancer
 git submodule update --init --recursive
-# Also build features licensed under the `GPL-3.0`.
-cargo build --release --features 'gpl-3.0'
-./target/release/balancer --help
+# Build also features licensed under the `GPL-3.0`.
+# Build with GRAPH_DIM=6.
+GRAPH_DIM=6 cargo run --release --features 'gpl-3.0' --bin balancer -- --config resources/isle_of_man_2020-03-14/balancing/config.yaml
 ```
 
 You can find a detailled config-blueprint in `resources/` and a balancer-example in `resources/isle_of_man/`.
