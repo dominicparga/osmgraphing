@@ -79,6 +79,7 @@ harness = false
 
 
 [dependencies]
+chrono = '0.4' # date and time
 clap = '2.33' # cmdline-parsing
 env_logger = '0.6' # logging for external use, e.g. main.rs and examples
 kissunits = '1' # units like Meters or Coordinate

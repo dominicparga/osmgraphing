@@ -126,7 +126,7 @@ parsing:
   map-file: 'resources/isle_of_man_2020-03-14/graph.osm.pbf'
   vehicles:
     category: 'Car'
-    are-drivers-picky: false
+    are_drivers_picky: false
   nodes:
   - meta: { info: 'NodeId', id: 'node-id' }
   - metric: { unit: 'Latitude', id: 'latitude' }

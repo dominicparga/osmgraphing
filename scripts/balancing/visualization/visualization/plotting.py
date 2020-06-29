@@ -7,7 +7,7 @@ import matplotlib.colors as colors
 import matplotlib.tri as tri
 
 from visualization.simulating import Simulation
-from visualization.model import Data
+from visualization.model import Data, GlobalData
 from visualization.helpers import TwoSlopeLoggedNorm
 
 
@@ -75,10 +75,14 @@ class Machine():
     def fig(self) -> Figure:
         return deepcopy(self._fig_style)
 
-    def plot_all_sorted_workloads(self, sim: Simulation):
+    def plot_all_sorted_workloads(
+        self,
+        global_data: GlobalData,
+        sim: Simulation
+    ):
         # setup simulation
 
-        data = Data(sim.iteration_0)
+        data = Data(global_data=global_data)
 
         # setup figure
 
@@ -93,7 +97,7 @@ class Machine():
         else:
             cmap = plt.get_cmap('copper')
 
-        for iteration in range(sim.iteration_0, sim.iteration_max + 1):
+        for iteration in range(sim.num_iter):
             data.prepare_new_iteration(sim=sim)
             sorted_lon_lat_workloads = data.sorted_lon_lat_workloads()[:, 2]
 
@@ -107,7 +111,7 @@ class Machine():
 
             # alpha should vary
             # dependent on iteration (first iteration should have min alpha)
-            xp, fp = [sim.iteration_0, sim.iteration_max], [0.2, 1.0]
+            xp, fp = [0, sim.num_iter - 1], [0.2, 1.0]
             alpha = np.interp(x=iteration, xp=xp, fp=fp)
             color = cmap(alpha)
 
@@ -145,10 +149,14 @@ class Machine():
         # plt.show()
         plt.close()
 
-    def plot_all_boxplot_workloads(self, sim: Simulation):
+    def plot_all_boxplot_workloads(
+        self,
+        global_data: GlobalData,
+        sim: Simulation
+    ):
         # setup simulation
 
-        data = Data(sim.iteration_0)
+        data = Data(global_data=global_data)
 
         q_low, q_high = 5, 95
 
@@ -160,7 +168,7 @@ class Machine():
 
         #  set cmap
 
-        for iteration in range(sim.iteration_0, sim.iteration_max + 1):
+        for iteration in range(sim.iteration_max + 1):
             data.prepare_new_iteration(sim=sim)
             mapped_values = np.array(list(filter(
                 lambda x: x > 0.0,
@@ -195,10 +203,10 @@ class Machine():
         # plt.show()
         plt.close()
 
-    def plot_all_max_workloads(self, sim: Simulation):
+    def plot_all_max_workloads(self, global_data: GlobalData, sim: Simulation):
         # setup simulation
 
-        data = Data(sim.iteration_0)
+        data = Data(global_data=global_data)
 
         # setup figure
 
@@ -222,10 +230,10 @@ class Machine():
         max_workloads = []
         max_delta_workloads = []
         min_delta_workloads = []
-        for _ in range(sim.iteration_0, sim.iteration_max + 1):
+        for _ in range(sim.num_iter):
             data.prepare_new_iteration(sim=sim)
             max_workloads.append(data.workloads.max)
-            if data.iteration > sim.iteration_0:
+            if data.iteration > 0:
                 max_delta_workloads.append(data.delta_workloads.max)
                 min_delta_workloads.append(data.delta_workloads.min)
 
@@ -276,10 +284,10 @@ class Machine():
         # plt.show()
         plt.close()
 
-    def plot_all_unique_edges(self, sim: Simulation):
+    def plot_all_unique_edges(self, global_data: GlobalData, sim: Simulation):
         # setup simulation
 
-        data = Data(sim.iteration_0)
+        data = Data(global_data=global_data)
 
         # setup figure
 
@@ -295,7 +303,7 @@ class Machine():
             color = 'w'
 
         num_unique_edges = []
-        for _ in range(sim.iteration_0, sim.iteration_max + 1):
+        for _ in range(sim.num_iter):
             data.prepare_new_iteration(sim=sim)
             num_unique_edges.append(
                 np.array(data.workloads.raw).astype(bool).sum()
@@ -419,7 +427,7 @@ class Machine():
             int(q_mid * n),
             int(q_high * n)
         )
-        q_low_val, q_mid_val, q_high_val = (
+        q_low_val, _q_mid_val, q_high_val = (
             sorted_lon_lat_workloads[q_low_idx, 2],
             sorted_lon_lat_workloads[q_mid_idx, 2],
             sorted_lon_lat_workloads[q_high_idx, 2]

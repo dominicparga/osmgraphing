@@ -18,6 +18,7 @@ impl Writer {
 
     pub fn write(
         &mut self,
+        iter: usize,
         graph: &Graph,
         balancing_cfg: &configs::balancing::Config,
     ) -> err::Feedback {
@@ -33,7 +34,9 @@ impl Writer {
         let mut writer = {
             let path = balancing_cfg
                 .results_dir
-                .join(defaults::explorating::files::EDGES_WRITER);
+                .join(format!("{}", iter))
+                .join(defaults::balancing::stats::DIR)
+                .join(defaults::balancing::stats::files::EDGES_WRITER);
             let output_file = match OpenOptions::new().write(true).create_new(true).open(&path) {
                 Ok(f) => f,
                 Err(e) => {

@@ -18,8 +18,8 @@ class GlobalData():
     def fill(sim: Simulation):
         global_data = GlobalData()
 
-        data = Data(sim.iteration_0)
-        for i in range(sim.iteration_0, sim.iteration_max + 1):
+        data = Data(global_data)
+        for i in range(sim.num_iter):
             data.prepare_new_iteration(sim=sim)
             if global_data._max_workload is None:
                 global_data._max_workload = data.workloads.max
@@ -91,8 +91,8 @@ class Data():
     Just a struct of values
     '''
 
-    def __init__(self, global_data, iteration_0=0):
-        self._iteration = iteration_0 - 1
+    def __init__(self, global_data):
+        self._iteration = -1
         self._lats = Values()
         self._lons = Values()
         self._kilometers = Values()
@@ -117,7 +117,7 @@ class Data():
 
         # continue TODO
 
-        if self.iteration == sim.iteration_0:
+        if self.iteration == 0:
             self.check_for_equal_edge_files(sim=sim)
             self.read_in_edge_info(sim=sim)
 
@@ -214,12 +214,9 @@ class Data():
         '''
         last_file = os.path.join(
             sim.results_dir,
-            self.path_to_edge_info(sim.iteration_0)
+            self.path_to_edge_info(0)
         )
-        for i in range(
-            sim.iteration_0 + 1,
-            sim.iteration_0 + sim.num_iter
-        ):
+        for i in range(1, sim.num_iter):
             next_file = os.path.join(
                 sim.results_dir,
                 self.path_to_edge_info(i)

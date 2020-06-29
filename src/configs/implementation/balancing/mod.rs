@@ -1,4 +1,4 @@
-use crate::{configs::SimpleId, io::SupportingFileExts};
+use crate::{configs::SimpleId, defaults, io::SupportingFileExts};
 use std::{
     fs::OpenOptions,
     path::{Path, PathBuf},
@@ -10,6 +10,10 @@ pub mod raw;
 #[derive(Clone, Debug)]
 pub struct Config {
     pub results_dir: PathBuf,
+    pub multi_ch_constructor: MultiChConstructor,
+    pub num_iter: usize,
+    pub iter_0_cfg: PathBuf,
+    pub iter_i_cfg: PathBuf,
     pub workload_id: SimpleId,
     pub lane_count_id: SimpleId,
     pub distance_id: SimpleId,
@@ -43,6 +47,13 @@ impl Config {
     fn try_from_proto(proto_cfg: proto::Config) -> Result<Config, String> {
         Ok(Config {
             results_dir: proto_cfg.results_dir,
+            multi_ch_constructor: MultiChConstructor {
+                dir: PathBuf::from(defaults::balancing::paths::multi_ch_constructor::DIR),
+                contraction_ratio: String::from(defaults::balancing::CONTRACTION_RATIO),
+            },
+            num_iter: proto_cfg.num_iter,
+            iter_0_cfg: proto_cfg.iter_0_cfg,
+            iter_i_cfg: proto_cfg.iter_i_cfg,
             workload_id: proto_cfg.workload_id,
             lane_count_id: proto_cfg.lane_count_id,
             distance_id: proto_cfg.distance_id,
@@ -80,6 +91,12 @@ impl Config {
             Err(msg) => panic!("{}", msg),
         }
     }
+}
+
+#[derive(Debug, Clone)]
+pub struct MultiChConstructor {
+    pub dir: PathBuf,
+    pub contraction_ratio: String,
 }
 
 #[derive(Debug, Clone)]

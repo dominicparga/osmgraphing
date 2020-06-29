@@ -22,17 +22,17 @@ def run(sim: Simulation, vis: plotting.Machine):
     print('get global data, e.g. maximum workload')
     global_data = GlobalData.fill(sim=sim)
     print('plot all sorted workloads')
-    vis.plot_all_sorted_workloads(sim=sim)
+    vis.plot_all_sorted_workloads(global_data=global_data, sim=sim)
     print('plot all boxplots')
-    vis.plot_all_boxplot_workloads(sim=sim)
+    vis.plot_all_boxplot_workloads(global_data=global_data, sim=sim)
     print('plot all max workloads')
-    vis.plot_all_max_workloads(sim=sim)
+    vis.plot_all_max_workloads(global_data=global_data, sim=sim)
     print('plot number of unique edges')
-    vis.plot_all_unique_edges(sim=sim)
+    vis.plot_all_unique_edges(global_data=global_data, sim=sim)
     print('')
 
-    data = Data(global_data=global_data, iteration_0=sim.iteration_0)
-    for i in range(sim.iteration_0, sim.iteration_0 + sim.num_iter):
+    data = Data(global_data=global_data)
+    for i in range(sim.num_iter):
         print(f'Preparing new ITERATION {i}, e.g. reading in new data')
         data.prepare_new_iteration(sim=sim)
 
@@ -45,7 +45,7 @@ def run(sim: Simulation, vis: plotting.Machine):
         vis.plot_workloads(sim=sim, data=data)
         print('plot workload-quantiles')
         vis.plot_workload_quantiles(data=data, sim=sim)
-        if data.iteration > sim.iteration_0:
+        if data.iteration > 0:
             print('plot delta-workloads')
             vis.plot_delta_workloads(sim=sim, data=data)
             print('plot delta-workload-quantiles')

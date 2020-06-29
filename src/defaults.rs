@@ -17,10 +17,6 @@ pub mod accuracy {
 }
 
 pub mod vehicles {
-    use crate::{
-        configs,
-        network::{EdgeIdx, Graph},
-    };
     use kissunits::distance::Kilometers;
     use std::cmp::max;
 
@@ -30,6 +26,69 @@ pub mod vehicles {
     pub fn calc_num_vehicles(km: Kilometers) -> u64 {
         max(1, (km / Kilometers::new(0.0075)) as u64)
     }
+}
+
+pub mod speed {
+    const _MAX_KMH: u16 = 130;
+    pub const MIN_KMH: u8 = 5;
+}
+
+pub mod capacity {
+    // For optimal performance and memory-usage:
+    // Change this value before compiling, dependent of your number of stored metrics in the graph.
+    pub const SMALL_VEC_INLINE_SIZE: usize = 5;
+    pub type DimVec<T> = smallvec::SmallVec<[T; SMALL_VEC_INLINE_SIZE]>;
+    pub const MAX_BYTE_PER_CHUNK: usize = 200 * 1_000_000;
+}
+
+pub mod parsing {
+    // provided by multi-ch-constructor
+    pub const NO_SHORTCUT_IDX: &str = "-1";
+}
+
+pub mod writing {
+    pub use super::parsing::NO_SHORTCUT_IDX;
+    pub const IGNORE_STR: &str = "_";
+}
+
+pub mod routing {
+    pub const ALPHA: f64 = 1.0;
+    pub const TOLERATED_SCALE_INF: f64 = std::f64::INFINITY;
+    pub const TOLERATED_SCALE: f64 = std::f64::INFINITY;
+    /// If true, the edges are sorted by their dsts' ch-level to speedup routing.
+    /// This sort isn't stable in combination with a ch-construction and varying metrics, because a ch-constructor sets the ch-levels dependent on the metrics.
+    /// In result, edges can't be identified in balancer.
+    pub const IS_USING_CH_LEVEL_SPEEDUP: bool = false;
+}
+
+pub mod balancing {
+    pub const CONTRACTION_RATIO: &str = "99.85";
+
+    pub mod stats {
+        pub const DIR: &str = "stats";
+
+        pub mod files {
+            pub const EDGES_WRITER: &str = "edge-info.csv";
+            pub const ABS_WORKLOADS: &str = "abs_workloads.csv";
+            pub const NEW_METRICS: &str = "new_metrics.csv";
+        }
+    }
+
+    pub mod files {
+        pub const ITERATION_CFG: &str = "iteration.yaml";
+    }
+
+    pub mod paths {
+        pub mod multi_ch_constructor {
+            pub const DIR: &str = "externals/multi-ch-constructor";
+        }
+    }
+
+    use crate::{
+        configs,
+        network::{EdgeIdx, Graph},
+    };
+    use kissunits::distance::Kilometers;
 
     pub fn update_new_metric(
         workloads: &Vec<usize>,
@@ -67,7 +126,7 @@ pub mod vehicles {
                 Kilometers(raw_value)
             };
 
-            let num_vehicles = calc_num_vehicles(distance);
+            let num_vehicles = super::vehicles::calc_num_vehicles(distance);
             let capacity = lane_count * num_vehicles;
 
             let new_metric = {
@@ -86,44 +145,8 @@ pub mod vehicles {
     }
 }
 
-pub mod speed {
-    const _MAX_KMH: u16 = 130;
-    pub const MIN_KMH: u8 = 5;
-}
-
-pub mod capacity {
-    // For optimal performance and memory-usage:
-    // Change this value before compiling, dependent of your number of stored metrics in the graph.
-    pub const SMALL_VEC_INLINE_SIZE: usize = 5;
-    pub type DimVec<T> = smallvec::SmallVec<[T; SMALL_VEC_INLINE_SIZE]>;
-    pub const MAX_BYTE_PER_CHUNK: usize = 200 * 1_000_000;
-}
-
-pub mod parsing {
-    // provided by multi-ch-constructor
-    pub const NO_SHORTCUT_IDX: &str = "-1";
-}
-
-pub mod writing {
-    pub use super::parsing::NO_SHORTCUT_IDX;
-    pub const IGNORE_STR: &str = "_";
-}
-
-pub mod routing {
-    pub const ALPHA: f64 = 1.0;
-    pub const TOLERATED_SCALE_INF: f64 = std::f64::INFINITY;
-    pub const TOLERATED_SCALE: f64 = std::f64::INFINITY;
-    /// If true, the edges are sorted by their dsts' ch-level to speedup routing.
-    /// This sort isn't stable in combination with a ch-construction and varying metrics, because a ch-constructor sets the ch-levels dependent on the metrics.
-    /// In result, edges can't be identified in balancer.
-    pub const IS_USING_CH_LEVEL_SPEEDUP: bool = false;
-}
-
-pub mod balancing {}
-
 pub mod explorating {
     pub mod files {
-        pub const EDGES_WRITER: &str = "edge-info.csv";
 
         pub fn capacities(i: usize, n: usize) -> String {
             format!("capacities{:0digits$}.csv", i, digits = n.to_string().len())

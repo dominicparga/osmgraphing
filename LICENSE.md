@@ -53,6 +53,13 @@ You may obtain a copy of the License at
 ## Dependencies
 
 ```text
+chrono
+https://github.com/chronotope/chrono
+Copyright (c) 2014--2017, Kang Seonghoon and contributors
+License MIT OR Apache-2.0
+```
+
+```text
 clap
 https://github.com/clap-rs/clap
 Copyright (c) 2015-2016 Kevin B. Knapp
