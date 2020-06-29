@@ -19,6 +19,8 @@ keywords = ['osm', 'route', 'routing', 'pbf', 'xml']
 categories = ['algorithms', 'data-structures', 'parser-implementations', 'parsing']
 license = 'Apache-2.0'
 
+build = "build.rs"
+
 
 [features]
 default = []
