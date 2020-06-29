@@ -11,6 +11,7 @@ pub mod raw;
 pub struct Config {
     pub results_dir: PathBuf,
     pub multi_ch_constructor: MultiChConstructor,
+    pub new_graph_dim: usize,
     pub num_iter: usize,
     pub iter_0_cfg: PathBuf,
     pub iter_i_cfg: PathBuf,
@@ -51,6 +52,7 @@ impl Config {
                 dir: PathBuf::from(defaults::balancing::paths::multi_ch_constructor::DIR),
                 contraction_ratio: String::from(defaults::balancing::CONTRACTION_RATIO),
             },
+            new_graph_dim: proto_cfg.new_graph_dim,
             num_iter: proto_cfg.num_iter,
             iter_0_cfg: proto_cfg.iter_0_cfg,
             iter_i_cfg: proto_cfg.iter_i_cfg,

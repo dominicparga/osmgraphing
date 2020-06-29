@@ -16,6 +16,7 @@ writing:
     - id: 'hours'
     - id: 'lane-count'
     - id: 'workload'
+    - id: 'dummy'
     - ignored # sc-idx-0
     - ignored # sc-idx-1
 parsing:
@@ -37,6 +38,7 @@ parsing:
   - metric: { unit: 'Hours', id: 'hours' }
   - metric: { unit: 'LaneCount', id: 'lane-count' }
   - metric: { unit: 'F64', id: 'workload' }
+  - metric: { unit: 'Kilometers', id: 'dummy' }
   - meta: { info: 'ShortcutIdx0', id: 'sc-idx-0'}
   - meta: { info: 'ShortcutIdx1', id: 'sc-idx-1'}
   generating:

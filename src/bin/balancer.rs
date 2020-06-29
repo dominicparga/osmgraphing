@@ -173,16 +173,16 @@ mod simulation_pipeline {
     ) -> err::Feedback {
         let iter_dir = balancing_cfg.results_dir.join(format!("{}", iter));
 
-        let basic_graph_dim = {
+        let graph_dim = {
             let is_using_new_metric = iter > 0;
-            if !is_using_new_metric {
-                3 // distance + duration + lane_count
+            if is_using_new_metric {
+                balancing_cfg.new_graph_dim
             } else {
-                4 // + new_metric
+                balancing_cfg.new_graph_dim - 1 // without new metric
             }
         };
 
-        let cmd_args = &["-Bbuild", "-D", &format!("GRAPH_DIM={}", basic_graph_dim)];
+        let cmd_args = &["-Bbuild", "-D", &format!("GRAPH_DIM={}", graph_dim)];
         let is_successful = std::process::Command::new("cmake")
             .current_dir(fs::canonicalize(&balancing_cfg.multi_ch_constructor.dir)?)
             .args(cmd_args)

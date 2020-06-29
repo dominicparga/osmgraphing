@@ -20,6 +20,9 @@ parsing:
     - meta: { info: 'SrcIdx', id: 'src-idx' }
     - meta: { info: 'DstIdx', id: 'dst-idx' }
     - haversine: { unit: 'Kilometers', id: 'kilometers' }
+    - copy:
+        from: { unit: 'Kilometers', id: 'kilometers' }
+        to: { unit: 'Kilometers', id: 'dummy' }
     - calc:
         result: { unit: 'Hours', id: 'hours' }
         a: { unit: 'Kilometers', id: 'kilometers' }
@@ -34,6 +37,7 @@ balancing:
   number_of_iterations: 10
   iter-0-cfg: 'resources/isle_of_man_2020-03-14/balancing/init.yaml'
   iter-i-cfg: 'resources/isle_of_man_2020-03-14/balancing/iteration.yaml'
+  new_graph-dim: 5
   metric-ids:
     distance: 'kilometers'
     lane-count: 'lane-count'
@@ -67,3 +71,4 @@ writing:
     - id: 'hours'
     - id: 'lane-count'
     - id: 'workload'
+    - id: 'dummy'

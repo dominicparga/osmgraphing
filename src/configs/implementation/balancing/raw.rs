@@ -17,6 +17,8 @@ pub struct Content {
     pub iter_0_cfg: PathBuf,
     #[serde(rename = "iter-i-cfg")]
     pub iter_i_cfg: PathBuf,
+    #[serde(rename = "new_graph-dim")]
+    pub new_graph_dim: usize,
     pub number_of_iterations: usize,
     #[serde(rename = "metric-ids")]
     pub metric_ids: metrics::raw::Config,

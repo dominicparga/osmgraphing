@@ -7,6 +7,7 @@ use std::{convert::TryFrom, path::PathBuf};
 #[serde(try_from = "raw::Config")]
 pub struct Config {
     pub results_dir: PathBuf,
+    pub new_graph_dim: usize,
     pub num_iter: usize,
     pub iter_0_cfg: PathBuf,
     pub iter_i_cfg: PathBuf,
@@ -22,6 +23,7 @@ impl TryFrom<raw::Config> for Config {
     fn try_from(raw_cfg: raw::Config) -> Result<Config, String> {
         Ok(Config {
             results_dir: raw_cfg.balancing.results_dir,
+            new_graph_dim: raw_cfg.balancing.new_graph_dim,
             num_iter: raw_cfg.balancing.number_of_iterations,
             iter_0_cfg: raw_cfg.balancing.iter_0_cfg,
             iter_i_cfg: raw_cfg.balancing.iter_i_cfg,
