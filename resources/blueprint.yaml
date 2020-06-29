@@ -14,6 +14,7 @@
 #
 # ---
 
+# optional
 # Reads in a graph and generates further information from the provided ones.
 # After generating metrics, the generating-sub-config will be deleted and added to the parsing-config directly.
 parsing:
@@ -22,7 +23,7 @@ parsing:
   vehicles:
     category: 'Car' # | 'Bicycle' | 'Pedestrian'
     # Value `false` leads to more edges, because edges are added, which are okay, but not suitable for this vehicle-category.
-    are-drivers-picky: false
+    are_drivers_picky: false
   # With nodes, the order matters, if the map-file has a order, like `fmi`-files. Behaviour with multiple occurences is undefined, but it probably overwrites previous ones.
   nodes:
   - meta: { info: 'NodeId', id: 'node-id' }
@@ -84,6 +85,42 @@ parsing:
         id: 'some-value'
         default: 0.0 # optional; default is 0.0
 # optional
+# This config is used for the balancer-binary.
+balancing:
+  results-dir: 'custom/results/isle_of_man_2020-03-14'
+  number_of_iterations: 3
+  iter-0-cfg: 'resources/isle_of_man_2020-03-14/balancing/init.yaml'
+  iter-i-cfg: 'resources/isle_of_man_2020-03-14/balancing/iteration.yaml'
+  # these metrics are needed for balancing (calculating edge-capacity)
+  metric-ids:
+    distance: 'kilometers'
+    lane-count: 'lane-count'
+    workload: 'workload'
+  explicit_euler:
+    # old + (new - old) * correction
+    correction: 0.3
+# optional
+# The metrics, which should be considered in routing, are listed here.
+# The given alphas are used as scale.
+# The ch-flag specifies the routing-algorithm.
+# It doesn't change correctness, but effects performance positively and
+# negatively depending on the provided map.
+# It is recommended to set this properly.
+routing:
+  route-pairs-file: 'relative-path-to-file-containing-route-pairs'
+  # optional; default is false
+  is_ch-dijkstra: true
+  # list of routing-relevant metrics
+  metrics:
+  - id: 'kilometers'
+    # optional; default is 1.0
+    alpha: 169.0
+    # optional; default is inf
+    tolerated-scale: 1.3
+  - id: 'minutes'
+    # optional; default is 1.0
+    alpha: 331.0
+# optional
 # After parsing and generating the graph, it may be written to an external fmi-file.
 # The following lines define the columns of the new fmi-file.
 writing:
@@ -91,6 +128,9 @@ writing:
   graph:
     # output-map-file
     map-file: 'relative-path-to-map-file'
+    # optional; default is false
+    # If false, no shortcuts are written to the file.
+    with_shortcuts: false
     nodes:
     - id: 'node-idx'
     - id: 'latitude'
@@ -114,35 +154,3 @@ writing:
       # optional
       seed: 42
       max_count: 100
-# optional
-# The metrics, which should be considered in routing, are listed here.
-# The given alphas are used as scale.
-# The ch-flag specifies the routing-algorithm.
-# It doesn't change correctness, but effects performance positively and
-# negatively depending on the provided map.
-# It is recommended to set this properly.
-routing:
-  route-pairs-file: 'relative-path-to-file-containing-route-pairs'
-  # optional; default is false
-  is-ch-dijkstra: true
-  # list of routing-relevant metrics
-  metrics:
-  - id: 'kilometers'
-    # optional; default is 1.0
-    alpha: 169.0
-    # optional; default is inf
-    tolerated-scale: 1.3
-  - id: 'minutes'
-    # optional; default is 1.0
-    alpha: 331.0
-# used for the balancer-binary
-balancing:
-  results-dir: 'relative-path-to-results-dir'
-  # these metrics are needed for balancing
-  metric-ids:
-    distance: 'kilometers'
-    route-count: 'route-count'
-    lane-count: 'lane-count'
-  explicit_euler:
-    # old + (new - old) * correction
-    correction: 0.3

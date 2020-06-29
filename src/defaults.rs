@@ -17,10 +17,6 @@ pub mod accuracy {
 }
 
 pub mod vehicles {
-    use crate::{
-        configs,
-        network::{EdgeIdx, Graph},
-    };
     use kissunits::distance::Kilometers;
     use std::cmp::max;
 
@@ -29,55 +25,6 @@ pub mod vehicles {
     /// Returns at least 1
     pub fn calc_num_vehicles(km: Kilometers) -> u64 {
         max(1, (km / Kilometers::new(0.0075)) as u64)
-    }
-
-    pub fn update_new_metric(
-        workloads: &Vec<usize>,
-        graph: &mut Graph,
-        balancing_cfg: &configs::balancing::Config,
-    ) {
-        let egde_iter = (0..graph.fwd_edges().count()).into_iter().map(EdgeIdx);
-        let distance_unit = graph.cfg().edges.metrics.units[*balancing_cfg.distance_idx];
-
-        let mut metrics = graph.metrics_mut();
-
-        for edge_idx in egde_iter {
-            // read metrics-data from graph
-            let (raw_distance, lane_count) = {
-                let tmp = &metrics[edge_idx];
-                (
-                    tmp[*balancing_cfg.distance_idx],
-                    tmp[*balancing_cfg.lane_count_idx] as u64,
-                )
-            };
-            let workload = workloads[*edge_idx];
-
-            // use correct unit for distance
-            let distance = {
-                // convert value to meters
-                let raw_value = distance_unit.convert(
-                    &configs::parsing::edges::metrics::UnitInfo::Kilometers,
-                    raw_distance,
-                );
-                Kilometers(raw_value)
-            };
-
-            let num_vehicles = calc_num_vehicles(distance);
-            let capacity = lane_count * num_vehicles;
-
-            let new_metric = {
-                let new_workload = workload as f64 / (capacity as f64);
-                let old_workload = metrics[edge_idx][*balancing_cfg.workload_idx];
-
-                match balancing_cfg.optimization {
-                    configs::balancing::Optimization::ExplicitEuler { correction } => {
-                        old_workload + (new_workload - old_workload) * correction
-                    }
-                }
-            };
-
-            metrics[edge_idx][*balancing_cfg.workload_idx] = new_metric;
-        }
     }
 }
 
@@ -114,11 +61,92 @@ pub mod routing {
     pub const IS_USING_CH_LEVEL_SPEEDUP: bool = false;
 }
 
-pub mod balancing {}
+pub mod balancing {
+    pub const CONTRACTION_RATIO: &str = "99.85";
+
+    pub mod stats {
+        pub const DIR: &str = "stats";
+
+        pub mod files {
+            pub const EDGES_WRITER: &str = "edge-info.csv";
+            pub const ABS_WORKLOADS: &str = "abs_workloads.csv";
+            pub const NEW_METRICS: &str = "new_metrics.csv";
+        }
+    }
+
+    pub mod files {
+        pub const ITERATION_CFG: &str = "iteration.yaml";
+    }
+
+    pub mod paths {
+        pub mod multi_ch_constructor {
+            pub const DIR: &str = "externals/multi-ch-constructor";
+        }
+    }
+
+    use crate::{
+        configs,
+        network::{EdgeIdx, Graph},
+    };
+    use kissunits::distance::Kilometers;
+
+    pub fn update_new_metric(
+        workloads: &Vec<usize>,
+        graph: &mut Graph,
+        balancing_cfg: &configs::balancing::Config,
+    ) {
+        let distance_idx = graph.cfg().edges.metrics.idx_of(&balancing_cfg.distance_id);
+        let lane_count_idx = graph
+            .cfg()
+            .edges
+            .metrics
+            .idx_of(&balancing_cfg.lane_count_id);
+        let workload_idx = graph.cfg().edges.metrics.idx_of(&balancing_cfg.workload_id);
+
+        let egde_iter = (0..graph.fwd_edges().count()).into_iter().map(EdgeIdx);
+        let distance_unit = graph.cfg().edges.metrics.units[*distance_idx];
+
+        let mut metrics = graph.metrics_mut();
+
+        for edge_idx in egde_iter {
+            // read metrics-data from graph
+            let (raw_distance, lane_count) = {
+                let tmp = &metrics[edge_idx];
+                (tmp[*distance_idx], tmp[*lane_count_idx] as u64)
+            };
+            let workload = workloads[*edge_idx];
+
+            // use correct unit for distance
+            let distance = {
+                // convert value to meters
+                let raw_value = distance_unit.convert(
+                    &configs::parsing::edges::metrics::UnitInfo::Kilometers,
+                    raw_distance,
+                );
+                Kilometers(raw_value)
+            };
+
+            let num_vehicles = super::vehicles::calc_num_vehicles(distance);
+            let capacity = lane_count * num_vehicles;
+
+            let new_metric = {
+                let new_workload = workload as f64 / (capacity as f64);
+                let old_workload = metrics[edge_idx][*workload_idx];
+
+                match balancing_cfg.optimization {
+                    configs::balancing::Optimization::ExplicitEuler { correction } => {
+                        old_workload + (new_workload - old_workload) * correction
+                    }
+                }
+            };
+
+            metrics[edge_idx][*workload_idx] = new_metric;
+        }
+    }
+}
 
 pub mod explorating {
     pub mod files {
-        pub const EDGES_WRITER: &str = "edge-info.csv";
 
         pub fn capacities(i: usize, n: usize) -> String {
             format!("capacities{:0digits$}.csv", i, digits = n.to_string().len())

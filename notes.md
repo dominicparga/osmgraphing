@@ -61,7 +61,7 @@ Maybe, it is concept for later documentation, or just keep-up-the-good-work (`ku
 - Warn user when parsing `pbf`-map, if unused categories are provided in the config.
 - Write parser __parsing all configs__ at once.
 - Cleanup `kebab-cases` and `snake_cases` etc.
-- Check if writing-cfg contains shortcut-indices when `is-ch-graph == false`.
+- Check if writing-cfg contains shortcut-indices when `is_ch-graph == false`.
 
 
 ### Extend parsing

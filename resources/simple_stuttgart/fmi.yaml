@@ -2,7 +2,7 @@ parsing:
   map-file: 'resources/simple_stuttgart/graph.fmi'
   vehicles:
     category: 'Car'
-    are-drivers-picky: false
+    are_drivers_picky: false
   nodes:
   - meta: { info: 'NodeId', id: 'node-id' }
   - metric: { unit: 'Latitude', id: 'latitude' }

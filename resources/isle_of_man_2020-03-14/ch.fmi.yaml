@@ -2,7 +2,7 @@ parsing:
   map-file: 'resources/isle_of_man_2020-03-14/graph.ch.fmi'
   vehicles:
     category: 'Car'
-    are-drivers-picky: false
+    are_drivers_picky: false
   nodes:
   - ignored # node-idx
   - meta: { info: 'NodeId', id: 'node-id' } # osm-id

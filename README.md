@@ -14,19 +14,26 @@
 Welcome to the `osmgraphing`-repo! `:)`
 Goal of this repo is parsing [openstreetmap][osm]-data to calculate traffic-routes and different related use-cases on it.
 This repo will be involved in dealing with the analysis of selfish routing and learning metrics for balancing load in street-networks.
-However, if a parser-module does exist, every supported map-format (e.g. own `csv`-like formats) can be used, which doesn't need to be a street-network.
+However, if a self-written parser-module does exist, every map-format supported by this module (e.g. own `csv`-like formats) can be used, which doesn't need to be a street-network.
 
-All calculations will be optimized for a single desktop instead of an more expensive cluster.
+All calculations will be optimized for a single desktop instead of a more expensive cluster.
+
 
 ## Reason for `version < 1.0.0` <a name="version"></a>
 
 I'm currently building this library for my master-thesis (submission `August 2020`), leading to interface-changes with breaking changes (at least) every few weeks, why version `1.0.0` is not supported yet.
-However, the underlying parser and graph-structure are working very stable, efficiently, tested with different maps (see `resources/`), and will be used until to simulate different routing-scenarios, so version `1.0.0` should be reached soon. `:)`
+However, the underlying parser and graph-structure are working very stable, efficiently, tested with different maps (see `resources/`), and will be used to simulate different routing-scenarios, so version `1.0.0` should be reached soon. `:)`
+
+
+## Copyright and License <a name="copyright_and_license"></a>
+
+Please refer to `LICENSE.md`.
 
 
 ## Table of contents <a name="toc"></a>
 
 1. [Reason for version < 1.0.0][self/version]
+1. [Copyright and License][self/copyright_and_license]
 1. [Table of contents][self/toc]
 1. [Setup and usage][self/setup-and-usage]
     1. [Long story short][self/long-story-short]
@@ -49,7 +56,7 @@ Rust has a build-tool called `cargo`, which can be used to run everything except
 # Build the binary for parsing maps and do routing
 cargo build --release
 # Parse isle-of-man
-./target/release/osmgraphing --config resources/isle-of-man_2020-03-14/pbf.yaml
+./target/release/osmgraphing --config resources/isle-of-man_2020-03-14/osm.pbf.yaml
 # Further execution-info
 ./target/release/osmgraphing --help
 ```
@@ -58,6 +65,18 @@ Above binary will throw an error, since you probably haven't downloaded the map-
 You can download `pbf`-files from [geofabrik][geofabrik].
 When editing the config, take [`resources/blueprint.yaml`][github/self/blob/blueprint.yaml] as guide.
 
+For using the balancer, you have to enable features licensed under the `GPL-3.0`.
+
+```zsh
+# Update git-submodules used in the balancer
+git submodule update --init --recursive
+# Also build features licensed under the `GPL-3.0`.
+cargo build --release --features 'gpl-3.0'
+./target/release/balancer --help
+```
+
+You can find a detailled config-blueprint in `resources/` and a balancer-example in `resources/isle_of_man/`.
+The results can be visualized with the python-module in `scripts/`.
 
 ### Downloading and generating maps <a name="downloading-and-generating"></a>
 
@@ -67,13 +86,13 @@ Problems will be the size-limit when downloading from [openstreetmap][osm], but 
 For testing, some simple text-based format `fmi` is used.
 Since they are created manually for certain tasks, parsing them - generally speaking - is unstable.
 However, this repository has a generator, which can create such `fmi`-files from `pbf`- or other `fmi`-files (e.g. for different metric-order).
-A tool for creating `fmi`-map-files, containing graphs contracted via contraction-hierarchies, is [multi-ch-constructor][github/lesstat/multi-ch-constructor].
+A tool for creating `fmi`-map-files, containing graphs contracted via contraction-hierarchies, is [multi-ch-constructor][github/lesstat/multi-ch-constructor], which is used in the balancer.
 
 
 ### Editing the config <a name="editing-the-config"></a>
 
 Every option of a config is described in [`resources/blueprint.yaml`][github/self/blob/blueprint.yaml].
-The binary `osmgraphing` (binaries are in `target/release` after release-building) uses the config for different use-cases.
+The binaries `osmgraphing` and `balancer` (binaries are in `target/release` after release-building) use the config for different use-cases.
 
 ### Inlined metrics <a name="inlined-metrics"></a>
 
@@ -101,7 +120,7 @@ Hence you could expect around `2x` `RAM`-usage for `4x` graph-size (meaning `4x`
   An `Astar` is not used anymore, because its only purpose is reducing the search-space, which can be reduced much more using [`Contraction Hierarchies`][self/contraction-hierarchies].
   Further, `Astar` has issues when it comes to multiple or custom metrics, because of the metrics' heuristics.
 
-Small maps like `Isle-of-Man.pbf` (~50_000 nodes, ~107_000 edges) run on every machine and are parsed in less than a second.
+Small maps like `Isle_of_Man.pbf` (~50_000 nodes, ~107_000 edges) run on every machine and are parsed in less than a second.
 
 The German state `Baden-Württemberg.pbf` (~9 million nodes, ~18 million edges) needs less than __5 GB RAM__ at peak and around __30 seconds__ to parse.
 
@@ -110,65 +129,16 @@ The German state `Baden-Württemberg.pbf` (~9 million nodes, ~18 million edges) 
 
 For speedup, this repository supports graphs contracted via contraction-hierarchies.
 The repository [`lesstat/multi-ch-constructor`][github/lesstat/multi-ch-constructor] generates contracted graphs from `fmi`-files of a certain format (see below).
-This repository, `osmgraphing`, uses the `lesstat/multi-ch-constructor/master`-branch (commit `bec548c1a1ebeae7ac19d3250d5473199336d6fe`) for its ch-graphs.
+This repository, `osmgraphing`, uses the fork `dominicparga/multi-ch-constructor` as submodule for its ch-graphs.
 For reproducability, the used steps are listed below.
 
 First of all, the tool `multi-ch` needs an `fmi`-map-file of specific format as input.
-To generate such a `fmi`-map-file in the correct format, the binary `osmgraphing` can be used with a `writing-config` shown below, following the [defined requirements][github/lesstat/cyclops/blob/README].
+To generate such a `fmi`-map-file in the correct format, the binary `osmgraphing` can be used with a config following the [defined requirements][github/lesstat/cyclops/blob/README].
+See `resources/blueprint.yaml` for detailled infos about configs.
 
-The `ignored`s and placeholders (e.g. `ch-level`) are important, because the `multi-ch-constructor` needs them.
+The `ignored`s and placeholders (e.g. `ch-level`) in the config are important, because the `multi-ch-constructor` needs them.
 Besides that, the `multi-ch-constructor` uses node-indices as ids, leading to errors when the mapping `node -> indices [0; n]` is not surjective.
-
-```yaml
-# Create a fmi-file from the pbf-file
-
-parsing:
-  map-file: 'resources/isle_of_man_2020-03-14/graph.osm.pbf'
-  vehicles:
-    category: 'Car'
-    are-drivers-picky: false
-  nodes:
-  - meta: { info: 'NodeId', id: 'node-id' }
-  - metric: { unit: 'Latitude', id: 'latitude' }
-  - metric: { unit: 'Longitude', id: 'longitude' }
-  edges:
-  - meta: { info: 'SrcId', id: 'src-id' }
-  - meta: { info: 'DstId', id: 'dst-id' }
-  - metric: { unit: 'KilometersPerHour', id: 'kmph' }
-  - metric: { unit: 'LaneCount', id: 'lane-count' }
-  generating:
-    nodes:
-    - meta: { info: 'CHLevel', id: 'ch-level' }
-    edges:
-    - meta: { info: 'SrcIdx', id: 'src-idx'},
-    - meta: { info: 'DstIdx', id: 'dst-idx'},
-    - meta: { info: 'ShortcutIdx0', id: 'sc-idx-0'},
-    - meta: { info: 'ShortcutIdx1', id: 'sc-idx-1'},
-    - haversine: { unit: 'Kilometers', id: 'kilometers' }
-    - calc:
-        result: { unit: 'Hours', id: 'hours' }
-        a: { unit: 'Kilometers', id: 'kilometers' }
-        b: { unit: 'KilometersPerHour', id: 'kmph' }
-writing:
-  graph:
-    # below, this is called path/to/fmi/graph
-    map-file: 'resources/isle_of_man_2020-03-14/graph.fmi'
-    nodes:
-    - id: 'node-idx'
-    - id: 'node-id'
-    - id: 'latitude'
-    - id: 'longitude'
-    - ignored # height
-    - id: 'ch-level'
-    edges:
-    - id: 'src-idx'
-    - id: 'dst-idx'
-    - id: 'kilometers'
-    - id: 'hours'
-    - id: 'lane-count'
-    - id: 'sc-idx-0'
-    - id: 'sc-idx-1'
-```
+Therefore, export the graph's edges using `src-idx` and `dst-idx` instead of `srd-id` and `dst-id`.
 
 The `multi-ch`-tool needs 3 counts at the file-beginning: metric-count (dimension), node-count, edge-count.
 The `osmgraphing`-binary does add these counts in this order.
@@ -176,16 +146,8 @@ The `osmgraphing`-binary does add these counts in this order.
 Before the `multi-ch`-tool can be used, it has to be built.
 For the sake of optimization, you have to set the metric-count as dimension in [multi-ch-constructor/src/multi_lib/graph.hpp, line 49][github/lesstat/multi-ch-constructor/change-dim].
 Set this dimension according to the dimension in the previously generated `fmi`-file.
-
-```zsh
-git clone --recursive https://github.com/lesstat/multi-ch-constructor
-cd multi-ch-constructor
-
-cmake -Bbuild
-cmake --build build
-
-./build/multi-ch --text path/to/fmi/graph --percent 99.85 --stats --write path/to/new/fmi/graph
-```
+The fork allows this via `cmake`.
+See its README for more info.
 
 > Note that the multi-ch-constructor is not deterministic (March 12th, 2020).
 > Using it does only speedup your queries, but due to a different resulting order in the priority, or rounding-errors, it could lead to different paths of same weight.
@@ -193,7 +155,7 @@ cmake --build build
 
 ## Balancing <a name="balancing"></a>
 
-> TODO
+See `./target/balancer --help`.
 
 
 ## Credits <a name="credits"></a>
@@ -233,7 +195,7 @@ He has implemented the first (and running) approach of the `A*`-algorithm.
 [github/self/last-commit]: https://github.com/dominicparga/osmgraphing/commits
 [github/self/last-commit/badge]: https://img.shields.io/github/last-commit/dominicparga/osmgraphing?style=for-the-badge
 [github/self/license]: https://github.com/dominicparga/osmgraphing/blob/nightly/LICENSE.md
-[github/self/license/badge]: https://img.shields.io/badge/LICENSE-Apache--2.0-green?style=for-the-badge
+[github/self/license/badge]: https://img.shields.io/badge/LICENSE-Apache--2.0%20OR%20GPL--3.0-green?style=for-the-badge
 [github/self/tags]: https://github.com/dominicparga/osmgraphing/tags
 [github/self/tags/badge]: https://img.shields.io/github/v/tag/dominicparga/osmgraphing?sort=semver&style=for-the-badge
 [github/self/tree/examples]: https://github.com/dominicparga/osmgraphing/tree/nightly/examples
@@ -242,6 +204,7 @@ He has implemented the first (and running) approach of the `A*`-algorithm.
 [osm]: https://openstreetmap.org
 [self/balancing]: #balancing
 [self/contraction-hierarchies]: #contraction-hierarchies
+[self/copyright_and_license]: #copyright_and_license
 [self/credits]: #credits
 [self/downloading-and-generating]: #downloading-and-generating
 [self/editing-the-config]: #editing-the-config

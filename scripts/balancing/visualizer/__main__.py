@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import argparse
-import visualization as vis
+import visualizing as vis
 import os
 
 
@@ -11,14 +11,6 @@ def parse_cmdline():
     parser = argparse.ArgumentParser(
         description='Visualize results from balancer-binary.')
 
-    help_msg = 'Maximum number of iterations, starting with the provided index.'
-    parser.add_argument(
-        '--num-iter',
-        metavar=('NUM_ITER'),
-        required=True,
-        type=int,
-        help=help_msg
-    )
     help_msg = 'Directory where results are laying.'
     parser.add_argument(
         '--results-dir',
@@ -44,7 +36,6 @@ def parse_cmdline():
     results_dir = os.path.join(cwd, '..', '..', '..')
     return {
         'results_dir': os.path.join(results_dir, args.results_dir),
-        'num_iter': args.num_iter,
         'style': args.style
     }
 
@@ -54,7 +45,6 @@ if __name__ == '__main__':
 
     sim = vis.Simulation(
         results_dir=params['results_dir'],
-        num_iter=params['num_iter']
     )
 
     if params['style'] == 'dark':

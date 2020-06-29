@@ -18,6 +18,7 @@ impl Writer {
 
     pub fn write(
         &mut self,
+        iter: usize,
         graph: &Graph,
         balancing_cfg: &configs::balancing::Config,
     ) -> err::Feedback {
@@ -33,7 +34,9 @@ impl Writer {
         let mut writer = {
             let path = balancing_cfg
                 .results_dir
-                .join(defaults::explorating::files::EDGES_WRITER);
+                .join(format!("{}", iter))
+                .join(defaults::balancing::stats::DIR)
+                .join(defaults::balancing::stats::files::EDGES_WRITER);
             let output_file = match OpenOptions::new().write(true).create_new(true).open(&path) {
                 Ok(f) => f,
                 Err(e) => {
@@ -56,7 +59,13 @@ impl Writer {
 
         // write data
 
-        let distance_unit = graph.cfg().edges.metrics.units[*balancing_cfg.distance_idx];
+        let distance_idx = graph.cfg().edges.metrics.idx_of(&balancing_cfg.distance_id);
+        let lane_count_idx = graph
+            .cfg()
+            .edges
+            .metrics
+            .idx_of(&balancing_cfg.lane_count_id);
+        let distance_unit = graph.cfg().edges.metrics.units[*distance_idx];
 
         for edge_idx in fwd_edges
             .iter()
@@ -75,10 +84,7 @@ impl Writer {
 
             let (raw_distance, lane_count) = {
                 let tmp = &metrics[edge_idx];
-                (
-                    tmp[*balancing_cfg.distance_idx],
-                    tmp[*balancing_cfg.lane_count_idx] as u64,
-                )
+                (tmp[*distance_idx], tmp[*lane_count_idx] as u64)
             };
             // use correct unit for distance
             let distance = {

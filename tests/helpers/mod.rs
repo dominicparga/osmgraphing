@@ -98,7 +98,7 @@ pub fn test_dijkstra(
         "routing:",
         format!("  route-pairs-file: '{}'", routes_cfg.file.display()),
         format!(
-            "  is-ch-dijkstra: {}",
+            "  is_ch-dijkstra: {}",
             if is_ch_dijkstra { "true" } else { "false" }
         ),
         "  metrics:",

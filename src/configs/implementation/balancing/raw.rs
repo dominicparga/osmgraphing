@@ -9,9 +9,16 @@ pub struct Config {
 }
 
 #[derive(Debug, Deserialize)]
-#[serde(rename_all = "kebab-case", deny_unknown_fields)]
+#[serde(deny_unknown_fields)]
 pub struct Content {
+    #[serde(rename = "results-dir")]
     pub results_dir: PathBuf,
+    #[serde(rename = "iter-0-cfg")]
+    pub iter_0_cfg: PathBuf,
+    #[serde(rename = "iter-i-cfg")]
+    pub iter_i_cfg: PathBuf,
+    pub number_of_iterations: usize,
+    #[serde(rename = "metric-ids")]
     pub metric_ids: metrics::raw::Config,
     #[serde(flatten)]
     pub optimization: Optimization,

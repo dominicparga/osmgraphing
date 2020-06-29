@@ -1,4 +1,4 @@
-use crate::{configs, helpers::err, network::Graph};
+use crate::{configs, defaults, helpers::err, network::Graph};
 use std::{
     fs::OpenOptions,
     io::{BufWriter, Write},
@@ -15,6 +15,7 @@ impl Writer {
 impl Writer {
     pub fn write(
         &mut self,
+        iter: usize,
         workloads: &Vec<usize>,
         graph: &Graph,
         balancing_cfg: &configs::balancing::Config,
@@ -24,7 +25,11 @@ impl Writer {
         // get writers
 
         let mut writer = {
-            let path = balancing_cfg.results_dir.join("abs_workloads.csv");
+            let path = balancing_cfg
+                .results_dir
+                .join(format!("{}", iter))
+                .join(defaults::balancing::stats::DIR)
+                .join(defaults::balancing::stats::files::ABS_WORKLOADS);
             let output_file = match OpenOptions::new().write(true).create_new(true).open(&path) {
                 Ok(f) => f,
                 Err(e) => {
