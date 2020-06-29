@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import argparse
-import visualization as vis
+import visualizing as vis
 import os
 
 

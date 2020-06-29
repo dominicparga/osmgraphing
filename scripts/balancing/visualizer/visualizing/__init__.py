@@ -13,9 +13,9 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 
-from visualization.simulating import Simulation
-from visualization.model import Data, GlobalData
-import visualization.plotting as plotting
+from visualizing.simulating import Simulation
+from visualizing.model import Data, GlobalData
+import visualizing.plotting as plotting
 
 
 def run(sim: Simulation, vis: plotting.Machine):

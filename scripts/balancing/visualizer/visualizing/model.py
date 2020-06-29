@@ -3,7 +3,7 @@ import filecmp
 import numpy as np
 import csv
 
-from visualization.simulating import Simulation
+from visualizing.simulating import Simulation
 
 
 class GlobalData():

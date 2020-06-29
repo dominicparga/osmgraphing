@@ -6,9 +6,9 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 import matplotlib.tri as tri
 
-from visualization.simulating import Simulation
-from visualization.model import Data, GlobalData
-from visualization.helpers import TwoSlopeLoggedNorm
+from visualizing.simulating import Simulation
+from visualizing.model import Data, GlobalData
+from visualizing.helpers import TwoSlopeLoggedNorm
 
 
 class Figure():

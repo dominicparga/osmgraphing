@@ -78,7 +78,7 @@ fn run() -> err::Feedback {
     write_graph(&graph, &writing_cfg)?;
 
     info!(
-        "Execute py ./scripts/balancing/visualization --results-dir {} to visualize.",
+        "Execute py ./scripts/balancing/visualizer --results-dir {} to visualize.",
         balancing_cfg.results_dir.display()
     );
 
@@ -506,7 +506,7 @@ fn parse_cmdline<'a>() -> CmdlineArgs {
                 "- A writing-config for exporting the balanced graph.",
                 "",
                 "You can visualize the results with the python-module",
-                "py ./scripts/balancing/visualization --results-dir <RESULTS_DIR/DATE>",
+                "py ./scripts/balancing/visualizer --results-dir <RESULTS_DIR/DATE>",
             ]
             .join("\n"))
                 .as_ref(),

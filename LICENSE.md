@@ -13,10 +13,10 @@ Copyright 2019 Dominic Parga Cacheiro
 License Apache-2.0
 
 
-Only needed, if the script is used
+Only needed, if the respective features are built.
 
-balancer-simulation
-https://github.com/dominicparga/osmgraphing/blob/nightly/scripts/balancer-simulation/run.sh
+balancing
+https://github.com/dominicparga/osmgraphing
 Copyright 2020 Dominic Parga Cacheiro
 License GPL-3.0-only
 ```
@@ -24,8 +24,7 @@ License GPL-3.0-only
 The following description gives an (incomplete) overview about this repository (and resulting binaries), for which the above copyright-notice holds.
 
 This repository `osmgraphing` parses maps of own format or maps from openstreetmap.
-To do this, a binary `osmgraphing` is built and an own-defined config-file can be provided to specify parser- and routing-settings.
-Besides that, a binary `mapgenerator` is built and can be used to generate map-files.
+To do this, a binary `osmgraphing` is built and an own-defined config-file can be provided to specify parsing-, writing- and routing-settings.
 Further, this repository also explorates graphs and optimizes resulting routes with the module `exploration` and the binary `balancer`.
 
 
@@ -43,8 +42,8 @@ See the License for the specific language governing permissions and limitations 
 
 ## GPL-3.0
 
-This repository contains one script `./scripts/balancer-simulation/run.sh`, which uses `multi-ch-constructor` licensed under `GPL-3.0`.
-Thus, this particular script is licensed under the `GPL-3.0` as well.
+This repository allows to build the binary `balancer`, which uses the git-submodule `multi-ch-constructor` licensed under `GPL-3.0`.
+Thus, this particular binary and respective code-parts are licensed under the `GPL-3.0`.
 You may obtain a copy of the License at
 
 `https://www.gnu.org/licenses/`
@@ -89,7 +88,7 @@ License MIT OR Apache-2.0
 
 ```text
 multi-ch-constructor
-https://github.com/lesstat/multi-ch-constructor
+https://github.com/dominicparga/multi-ch-constructor
 License GPL-3.0-only
 ```
 
