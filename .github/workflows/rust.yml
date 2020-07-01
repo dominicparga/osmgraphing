@@ -25,6 +25,7 @@ jobs:
         cargo fmt -- --check
     - name: Run binaries
       run: |
+        cargo run --release --bin osmgraphing -- --config resources/isle_of_man_2020-03-14/osm.pbf.yaml
         GRAPH_DIM=6 cargo run --release --features 'gpl-3.0' --bin balancer -- --config resources/isle_of_man_2020-03-14/balancing/config.yaml
     - name: Build docs
       run: cargo doc
@@ -50,6 +51,7 @@ jobs:
         cargo fmt -- --check
     - name: Run binaries
       run: |
+        cargo run --release --bin osmgraphing -- --config resources/isle_of_man_2020-03-14/osm.pbf.yaml
         GRAPH_DIM=6 cargo run --release --features 'gpl-3.0' --bin balancer -- --config resources/isle_of_man_2020-03-14/balancing/config.yaml
   nightly:
     runs-on: ubuntu-latest
@@ -76,6 +78,7 @@ jobs:
         cargo fmt -- --check
     - name: Run binaries
       run: |
+        cargo run --release --bin osmgraphing -- --config resources/isle_of_man_2020-03-14/osm.pbf.yaml
         GRAPH_DIM=6 cargo run --release --features 'gpl-3.0' --bin balancer -- --config resources/isle_of_man_2020-03-14/balancing/config.yaml
       continue-on-error: true
   benches:
