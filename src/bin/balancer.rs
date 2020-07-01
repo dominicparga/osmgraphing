@@ -10,22 +10,20 @@ use rand::SeedableRng;
 use std::{path::Path, time::Instant};
 
 fn main() {
-    let result = run();
+    let args = parse_cmdline();
+    let result = init_logging(&args.max_log_level, &["balancer"]);
     if let Err(msg) = result {
-        error!("{}\n", msg);
-        std::process::exit(1);
+        error!("{}", msg);
+        panic!("{}", msg);
+    }
+    let result = run(args);
+    if let Err(msg) = result {
+        error!("{}", msg);
+        panic!("{}", msg);
     }
 }
 
-fn run() -> err::Feedback {
-    // process user-input
-
-    let args = parse_cmdline();
-    match init_logging(&args.max_log_level, &["balancer"]) {
-        Ok(_) => (),
-        Err(msg) => return Err(format!("{}", msg).into()),
-    };
-
+fn run(args: CmdlineArgs) -> err::Feedback {
     // check writing-cfg
     let _ = configs::writing::network::Config::try_from_yaml(&args.cfg)?;
     let mut balancing_cfg = configs::balancing::Config::try_from_yaml(&args.cfg)?;

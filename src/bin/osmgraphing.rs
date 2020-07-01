@@ -29,21 +29,20 @@ use std::{path::PathBuf, time::Instant};
 //------------------------------------------------------------------------------------------------//
 
 fn main() {
-    if let Err(msg) = run() {
-        error!("{}\n", msg);
-        std::process::exit(1);
+    let args = parse_cmdline();
+    let result = init_logging(&args.max_log_level, &[]);
+    if let Err(msg) = result {
+        error!("{}", msg);
+        panic!("{}", msg);
+    }
+    let result = run(args);
+    if let Err(msg) = result {
+        error!("{}", msg);
+        panic!("{}", msg);
     }
 }
 
-fn run() -> err::Feedback {
-    // process user-input
-
-    let args = parse_cmdline();
-    match init_logging(&args.max_log_level, &[]) {
-        Ok(_) => (),
-        Err(msg) => return Err(err::Msg::from(format!("{}", msg))),
-    };
-
+fn run(args: CmdlineArgs) -> err::Feedback {
     info!("EXECUTE {}", env!("CARGO_PKG_NAME"));
 
     // parse graph
@@ -52,7 +51,7 @@ fn run() -> err::Feedback {
         // get config by provided user-input
 
         let parsing_cfg = {
-            let raw_parsing_cfg = PathBuf::from(args.cfg);
+            let raw_parsing_cfg = PathBuf::from(args.cfg.clone());
             match configs::parsing::Config::try_from_yaml(&raw_parsing_cfg) {
                 Ok(cfg) => cfg,
                 Err(msg) => return Err(err::Msg::from(format!("{}", msg))),
@@ -85,8 +84,7 @@ fn run() -> err::Feedback {
     if args.is_writing_graph {
         // get config by provided user-input
 
-        let writing_cfg =
-            configs::writing::network::Config::try_from_yaml(&args.writing_graph_cfg)?;
+        let writing_cfg = configs::writing::network::Config::try_from_yaml(&args.cfg)?;
 
         // check if new file does already exist
 
@@ -119,9 +117,8 @@ fn run() -> err::Feedback {
     if args.is_writing_routes {
         // get config by provided user-input
 
-        let routing_cfg = configs::routing::Config::try_from_yaml(&args.routing_cfg, graph.cfg())?;
-        let writing_cfg =
-            configs::writing::routing::Config::try_from_yaml(&args.writing_routes_cfg)?;
+        let routing_cfg = configs::routing::Config::try_from_yaml(&args.cfg, graph.cfg())?;
+        let writing_cfg = configs::writing::routing::Config::try_from_yaml(&args.cfg)?;
 
         // check if new file does already exist
 
@@ -154,7 +151,7 @@ fn run() -> err::Feedback {
     if args.is_routing {
         // get config by provided user-input
 
-        let routing_cfg = configs::routing::Config::try_from_yaml(&args.routing_cfg, graph.cfg())?;
+        let routing_cfg = configs::routing::Config::try_from_yaml(&args.cfg, graph.cfg())?;
 
         info!("EXECUTE Do routing with alphas: {:?}", routing_cfg.alphas);
 
@@ -267,21 +264,15 @@ mod constants {
     pub mod ids {
         pub const MAX_LOG_LEVEL: &str = "max-log-level";
         pub const CFG: &str = "cfg";
-        pub const WRITING_GRAPH_CFG: &str = "writing-graph-cfg";
-        pub const WRITING_ROUTES_CFG: &str = "writing-routes-cfg";
-        pub const ROUTING_CFG: &str = "routing-cfg";
-        pub const IS_WRITING_GRAPH: &str = "is-writing-graph";
-        pub const IS_WRITING_ROUTES: &str = "is-writing-routes";
-        pub const IS_ROUTING: &str = "is-routing";
+        pub const IS_WRITING_GRAPH: &str = "is_writing_graph";
+        pub const IS_WRITING_ROUTES: &str = "is_writing_routes";
+        pub const IS_ROUTING: &str = "is_routing";
     }
 }
 
 struct CmdlineArgs {
     max_log_level: String,
     cfg: String,
-    writing_graph_cfg: String,
-    writing_routes_cfg: String,
-    routing_cfg: String,
     is_writing_graph: bool,
     is_writing_routes: bool,
     is_routing: bool,
@@ -295,18 +286,6 @@ impl<'a> From<clap::ArgMatches<'a>> for CmdlineArgs {
         let cfg = matches
             .value_of(constants::ids::CFG)
             .expect(&format!("cmdline-arg: {}", constants::ids::CFG));
-        let writing_graph_cfg = match matches.value_of(constants::ids::WRITING_GRAPH_CFG) {
-            Some(path) => path,
-            None => &cfg,
-        };
-        let writing_routes_cfg = match matches.value_of(constants::ids::WRITING_ROUTES_CFG) {
-            Some(path) => path,
-            None => &cfg,
-        };
-        let routing_cfg = match matches.value_of(constants::ids::ROUTING_CFG) {
-            Some(path) => path,
-            None => &cfg,
-        };
         let is_writing_graph = matches.is_present(constants::ids::IS_WRITING_GRAPH);
         let is_writing_routes = matches.is_present(constants::ids::IS_WRITING_ROUTES);
         let is_routing = matches.is_present(constants::ids::IS_ROUTING);
@@ -314,9 +293,6 @@ impl<'a> From<clap::ArgMatches<'a>> for CmdlineArgs {
         CmdlineArgs {
             max_log_level: String::from(max_log_level),
             cfg: String::from(cfg),
-            writing_graph_cfg: String::from(writing_graph_cfg),
-            writing_routes_cfg: String::from(writing_routes_cfg),
-            routing_cfg: String::from(routing_cfg),
             is_writing_graph,
             is_writing_routes,
             is_routing,

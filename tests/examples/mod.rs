@@ -11,6 +11,7 @@ fn dijkstra() {
             }
         }
     }
+
     example::test();
 }
 
@@ -27,5 +28,6 @@ fn parser() {
             }
         }
     }
+
     example::test();
 }

@@ -8,7 +8,8 @@ use std::{path::PathBuf, time::Instant};
 
 fn main() {
     init_logging("INFO", &["parser"]).expect("LogLevel 'INFO' does exist.");
-    if let Err(msg) = run() {
+    let result = run();
+    if let Err(msg) = result {
         error!("{}", msg);
         panic!("{}", msg);
     }
