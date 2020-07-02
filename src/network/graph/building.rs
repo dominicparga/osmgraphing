@@ -188,10 +188,23 @@ impl EdgeBuilder {
             sc_edges,
         } = proto_edge.into();
 
-        // Most of the time, nodes are added for edges of one street,
+        // Most of the time, nodes are added for consecutive edges of one street,
         // so duplicates are next to each other.
-        // Duplicates are removed later, but checking here saves a memory.
+        // Duplicates are removed later, but checking here saves memory.
         // -> check k neighbours
+        //
+        // Example: adding street (bidirectional) a->b->c->d->c->b->a
+        // Adding proto-edges (a->b), then (b->c), then (c->d) and so on
+        // would result in a nodes-array [a, b, b, c, c, d, d, c, c, b, b, a].
+        // With checking previous nodes:
+        // (0): nodes: []
+        // (1): Adding (a->b) results in [a, b]
+        // (2): When adding (b->c), b is seen, thus [a, b, c] is the resulting array.
+        //
+        // k=2 is chosen for the case, when many small bidirectional streets are added,
+        // which start in the same node:
+        // With k=1, (a->b), (b->a), (a->c), (c->a) would result in [a, b, a, c, a].
+        // With k=2, it results in [a, b, c]
         let n = self.node_ids.len();
         let k = 2;
         if n < k {
