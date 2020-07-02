@@ -107,7 +107,8 @@ impl super::Parsing for Parser {
             } else {
                 // if not oneway
                 // -> add node-IDs reversed to generate edges forwards and backwards
-                0..way.nodes.len() - 1
+                // -> don't use last one, to not use it twice (a->b->c->c->b->a)
+                0..(way.nodes.len() - 1)
             };
             let nodes: Vec<i64> = way
                 .nodes
