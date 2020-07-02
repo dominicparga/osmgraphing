@@ -48,6 +48,9 @@ Please refer to `LICENSE.md`.
 
 ## Setup and usage <a name="setup-and-usage"></a>
 
+Please find instructions and info below.
+
+
 ### Long story short <a name="long-story-short"></a>
 
 Rust has a build-tool called `cargo`, which can be used to run everything except scripts in `scripts/`.
@@ -65,6 +68,7 @@ You can download `pbf`-files from [geofabrik][geofabrik].
 When editing the config, take [`resources/blueprint.yaml`][github/self/blob/blueprint.yaml] as guide.
 
 For using the balancer, you have to enable features licensed under the `GPL-3.0`.
+Besides that, please find installation-info about the submodule in the [`multi-ch-constructor`-repo][github/lesstat/multi-ch-constructor].
 
 ```zsh
 # Update git-submodules used in the balancer
