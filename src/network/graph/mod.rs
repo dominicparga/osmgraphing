@@ -270,7 +270,7 @@ impl Display for Graph {
                     }
                     writeln!(
                         f,
-                        "{}offset: {{ id: {}, offset: {} }}",
+                        "{}offset: {{ node-id: {}, offset: {} }}",
                         xwd_prefix, i, xwd_offsets[i]
                     )?;
                 } else {
