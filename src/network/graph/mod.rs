@@ -237,9 +237,12 @@ impl Display for Graph {
                     let metrics = half_edge.metrics();
                     writeln!(
                         f,
-                        "{}edge: {{ id: {}, idx: {}, sc-offset: {}, (idx: {})-{:?}->(idx: {}) }}",
+                        "{}edge: {{ {}idx: {}, sc-offset: {}, (idx: {})-{:?}->(idx: {}) }}",
                         xwd_prefix,
-                        fwd_edges.id(edge_idx),
+                        match fwd_edges.try_id(edge_idx) {
+                            Some(id) => format!("id: {}, ", id),
+                            None => String::from(""),
+                        },
                         j,
                         self.sc_offsets[j],
                         *src_idx,
@@ -541,6 +544,10 @@ impl<'a> EdgeAccessor<'a> {
             idx,
             edge_accessor: self,
         }
+    }
+
+    pub fn try_id(&self, idx: EdgeIdx) -> Option<usize> {
+        self.edge_ids[*idx]
     }
 
     pub fn id(&self, idx: EdgeIdx) -> usize {
