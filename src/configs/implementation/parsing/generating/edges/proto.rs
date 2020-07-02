@@ -80,6 +80,7 @@ impl From<raw::Category> for Category {
 
 #[derive(Copy, Clone, Debug, Deserialize, Eq, PartialEq)]
 pub enum MetaInfo {
+    EdgeId,
     SrcIdx,
     DstIdx,
     ShortcutIdx0,
@@ -89,6 +90,7 @@ pub enum MetaInfo {
 impl From<raw::MetaInfo> for MetaInfo {
     fn from(raw_info: raw::MetaInfo) -> MetaInfo {
         match raw_info {
+            raw::MetaInfo::EdgeId => MetaInfo::EdgeId,
             raw::MetaInfo::SrcIdx => MetaInfo::SrcIdx,
             raw::MetaInfo::DstIdx => MetaInfo::DstIdx,
         }

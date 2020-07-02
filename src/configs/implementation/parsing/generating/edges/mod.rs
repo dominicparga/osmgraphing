@@ -79,6 +79,7 @@ impl From<proto::Category> for Category {
 
 #[derive(Copy, Clone, Debug, Deserialize, Eq, PartialEq)]
 pub enum MetaInfo {
+    EdgeId,
     SrcIdx,
     DstIdx,
     ShortcutIdx0,
@@ -88,6 +89,7 @@ pub enum MetaInfo {
 impl From<proto::MetaInfo> for MetaInfo {
     fn from(proto_info: proto::MetaInfo) -> MetaInfo {
         match proto_info {
+            proto::MetaInfo::EdgeId => MetaInfo::EdgeId,
             proto::MetaInfo::SrcIdx => MetaInfo::SrcIdx,
             proto::MetaInfo::DstIdx => MetaInfo::DstIdx,
             proto::MetaInfo::ShortcutIdx0 => MetaInfo::ShortcutIdx0,

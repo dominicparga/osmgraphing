@@ -29,7 +29,8 @@ impl super::Parsing for Parser {
                     edges::MetaInfo::SrcId | edges::MetaInfo::DstId => {
                         // already checked in check_config(...)
                     }
-                    edges::MetaInfo::SrcIdx
+                    edges::MetaInfo::EdgeId
+                    | edges::MetaInfo::SrcIdx
                     | edges::MetaInfo::DstIdx
                     | edges::MetaInfo::ShortcutIdx0
                     | edges::MetaInfo::ShortcutIdx1 => {
@@ -155,6 +156,7 @@ impl super::Parsing for Parser {
             for node_idx in 0..(nodes.len() - 1) {
                 // add proto-edge to graph
                 builder.insert(ProtoEdge {
+                    id: None,
                     src_id: nodes[node_idx],
                     dst_id: nodes[node_idx + 1],
                     metrics: metrics.clone(),

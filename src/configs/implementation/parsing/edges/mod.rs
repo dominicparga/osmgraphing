@@ -150,6 +150,7 @@ impl From<generating::edges::Category> for Category {
 
 #[derive(Copy, Clone, Debug, Deserialize, Eq, PartialEq)]
 pub enum MetaInfo {
+    EdgeId,
     SrcId,
     SrcIdx,
     DstId,
@@ -172,6 +173,7 @@ impl From<proto::MetaInfo> for MetaInfo {
 impl From<generating::edges::MetaInfo> for MetaInfo {
     fn from(gen_info: generating::edges::MetaInfo) -> MetaInfo {
         match gen_info {
+            generating::edges::MetaInfo::EdgeId => MetaInfo::EdgeId,
             generating::edges::MetaInfo::SrcIdx => MetaInfo::SrcIdx,
             generating::edges::MetaInfo::DstIdx => MetaInfo::DstIdx,
             generating::edges::MetaInfo::ShortcutIdx0 => MetaInfo::ShortcutIdx0,

@@ -223,6 +223,10 @@ impl super::Writing for Writer {
                                 }
 
                                 match info {
+                                    edges::MetaInfo::EdgeId => {
+                                        let edge_id = fwd_edges.id(edge_idx);
+                                        write!(writer, "{}", edge_id)?;
+                                    }
                                     edges::MetaInfo::SrcId => {
                                         let src_idx = bwd_edges.dst_idx(edge_idx);
                                         let src_id = nodes.id(src_idx);

@@ -189,6 +189,7 @@ fn check_config(cfg: &parsing::Config) -> err::Feedback {
     }
 
     // check count of shortcut-edge-indices
+    // -> only 0 or 2 allowed
 
     let count =
         cfg.edges
@@ -198,7 +199,8 @@ fn check_config(cfg: &parsing::Config) -> err::Feedback {
                 parsing::edges::Category::Meta { info, id: _ } => match info {
                     parsing::edges::MetaInfo::ShortcutIdx0
                     | parsing::edges::MetaInfo::ShortcutIdx1 => true,
-                    parsing::edges::MetaInfo::SrcId
+                    parsing::edges::MetaInfo::EdgeId
+                    | parsing::edges::MetaInfo::SrcId
                     | parsing::edges::MetaInfo::SrcIdx
                     | parsing::edges::MetaInfo::DstId
                     | parsing::edges::MetaInfo::DstIdx => false,

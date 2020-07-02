@@ -32,6 +32,9 @@ impl Graph {
             bwd_to_fwd_map: Vec::new(),
             // edge-metrics
             metrics: Vec::new(),
+            // edge-ids
+            edge_ids: Vec::new(),
+            edge_ids_to_idx_map: Vec::new(),
             // shortcuts (contraction-hierarchies)
             sc_offsets: Vec::new(),
             sc_edges: Vec::new(),
@@ -49,6 +52,8 @@ impl Graph {
         self.bwd_offsets.shrink_to_fit();
         self.bwd_to_fwd_map.shrink_to_fit();
         self.metrics.shrink_to_fit();
+        self.edge_ids.shrink_to_fit();
+        self.edge_ids_to_idx_map.shrink_to_fit();
         self.sc_offsets.shrink_to_fit();
         self.sc_edges.shrink_to_fit();
     }
@@ -101,6 +106,7 @@ impl ProtoShortcut {
 
 #[derive(Debug)]
 pub struct ProtoEdge {
+    pub id: Option<usize>,
     pub src_id: i64,
     pub dst_id: i64,
     pub metrics: DimVec<f64>,
@@ -121,9 +127,11 @@ impl MemSize for ProtoEdge {
     /// To keep additional memory-needs below 1 MB, the the maximum amount of four f64-values per
     /// worked-off chunk has to be limited to 250_000.
     fn mem_size_b() -> usize {
+        // id: usize
+        mem::size_of::<Option<usize>>()
         // src_id: i64
         // dst_id: i64
-        2 * mem::size_of::<i64>()
+        + 2 * mem::size_of::<i64>()
         // metrics: DimVec<Option<f64>>
         + capacity::SMALL_VEC_INLINE_SIZE * mem::size_of::<f64>()
     }
@@ -131,6 +139,7 @@ impl MemSize for ProtoEdge {
 
 struct ProtoEdgeA {
     pub idx: usize,
+    pub id: Option<usize>,
     pub src_id: i64,
     pub dst_id: i64,
     pub metrics: DimVec<f64>,
@@ -139,6 +148,7 @@ struct ProtoEdgeA {
 
 struct ProtoEdgeB {
     pub idx: usize,
+    pub id: Option<usize>,
     pub src_idx: NodeIdx,
     pub dst_idx: NodeIdx,
     pub metrics: DimVec<f64>,
@@ -149,6 +159,8 @@ impl MemSize for ProtoEdgeB {
     fn mem_size_b() -> usize {
         // idx
         mem::size_of::<usize>()
+        // id: usize
+        +mem::size_of::<Option<usize>>()
         // src_idx
         // dst_idx
         + 2 * mem::size_of::<usize>()
@@ -164,7 +176,8 @@ impl MemSize for ProtoEdgeB {
 struct ProtoEdgeC {
     src_idx: NodeIdx,
     dst_idx: NodeIdx,
-    edge_idx: usize,
+    idx: usize,
+    id: Option<usize>,
 }
 
 pub struct EdgeBuilder {
@@ -224,6 +237,7 @@ impl EdgeBuilder {
             // save index to shortcut in proto-edge
             self.proto_edges.push(ProtoEdgeA {
                 idx,
+                id: proto_edge.id,
                 src_id: proto_edge.src_id,
                 dst_id: proto_edge.dst_id,
                 metrics: proto_edge.metrics,
@@ -233,6 +247,7 @@ impl EdgeBuilder {
         } else {
             self.proto_edges.push(ProtoEdgeA {
                 idx,
+                id: proto_edge.id,
                 src_id: proto_edge.src_id,
                 dst_id: proto_edge.dst_id,
                 metrics: proto_edge.metrics,
@@ -403,6 +418,7 @@ impl GraphBuilder {
                 for edge in chunk.into_iter() {
                     new_proto_edges.push(ProtoEdgeB {
                         idx: edge.idx,
+                        id: edge.id,
                         src_idx: nodes.idx_from(edge.src_id).expect(&format!(
                             "The given src-id `{:?}` doesn't exist as node",
                             edge.src_id
@@ -547,7 +563,7 @@ impl GraphBuilder {
 
         //----------------------------------------------------------------------------------------//
         // build metrics
-        // If metrics are built before indices and offsets are built, the need of memory while
+        // If metrics are built before indices and offsets are built, the total need of memory while
         // building is reduced.
 
         info!("START Store metrics.");
@@ -587,12 +603,13 @@ impl GraphBuilder {
 
                 for mut edge in chunk.into_iter() {
                     // add to graph and remember ids
-                    // -> nodes are needed to map NodeId -> NodeIdx
+                    // -> nodes are needed to be finished here to map NodeId -> NodeIdx
                     graph.add_metrics(&mut edge)?;
                     new_proto_edges.push(ProtoEdgeC {
                         src_idx: edge.src_idx,
                         dst_idx: edge.dst_idx,
-                        edge_idx: 0, // used later for offset-arrays
+                        idx: 0, // used later for offset-arrays
+                        id: edge.id,
                     });
 
                     // remember sc-edges for setting offsets later
@@ -622,7 +639,17 @@ impl GraphBuilder {
 
         //----------------------------------------------------------------------------------------//
         // set ch-shortcut-offsets
-        // do it here to reduce memory-needs by processing metrics first
+        // do it here to reduce total memory-needs by processing metrics first
+        //
+        // Why offsets for m edges? Assume one memory-unit to equal one usize.
+        //
+        // Storing all shortcuts (or None) in a vector of Option<[usize; usize]> results in
+        // a memory-consumption of `2*m`, even if the graph has no shortcuts at all.
+        //
+        // Storing all k shortcuts in a separate vector results in
+        // a memory-consumption `2*k + m`. This saves `m - 2*k` memory, which is especially low when
+        // the graph has no shortcuts at all (k=0). Besides that, the sc-edge-indices doesn't need
+        // being wrapped by Option.
 
         info!("DO Create ch-shortcut-offsets-array");
         {
@@ -662,12 +689,13 @@ impl GraphBuilder {
             let mut offset = 0;
             graph.fwd_offsets.push(offset);
             // high-level-idea
-            // count offset for each proto_edge (sorted) and apply offset as far as src doesn't change
+            // count offset for each proto_edge (sorted)
+            // and apply offset as far as src doesn't change
             let mut edge_idx = 0;
             for proto_edge in proto_edges.iter_mut() {
                 // Add edge-idx here to remember it for indirect mapping bwd->fwd.
                 // Update it at the end of the loop.
-                proto_edge.edge_idx = edge_idx;
+                proto_edge.idx = edge_idx;
 
                 // do not swap src and dst since this is a forward-edge
                 let edge_src_idx = proto_edge.src_idx;
@@ -686,6 +714,11 @@ impl GraphBuilder {
                 graph.fwd_dsts.push(edge_dst_idx);
                 // mapping fwd to fwd is just the identity
                 graph.fwd_to_fwd_map.push(EdgeIdx(edge_idx));
+                // edge-ids
+                graph.edge_ids.push(proto_edge.id);
+                if let Some(id) = proto_edge.id {
+                    graph.edge_ids_to_idx_map.push((id, EdgeIdx(edge_idx)));
+                }
 
                 // print progress
                 progress_bar.set(edge_idx);
@@ -702,6 +735,21 @@ impl GraphBuilder {
             info!("{}", progress_bar);
             // reduce and optimize memory-usage
             // already dropped via iterator: drop(self.proto_edges);
+            graph.shrink_to_fit();
+        }
+
+        // cleanup and sort by edge-ids for finding the edge-idx with a given id
+
+        if graph.edge_ids_to_idx_map.len() > 0 {
+            let old_len = graph.edge_ids_to_idx_map.len();
+            info!("DO Sort mapping from edge-ids to indices.");
+            graph
+                .edge_ids_to_idx_map
+                .sort_unstable_by_key(|&(id, _idx)| id);
+            graph.edge_ids_to_idx_map.dedup_by_key(|&mut (id, _idx)| id);
+            if graph.edge_ids_to_idx_map.len() != old_len {
+                return Err("The graph contains multiple edges of same id.".into());
+            }
             graph.shrink_to_fit();
         }
 
@@ -755,7 +803,7 @@ impl GraphBuilder {
                 // but applied to forward-sorted-edges.
                 // Now, that's used to generate the mapping from backward to forward,
                 // which is needed for the offset-arrays.
-                graph.bwd_to_fwd_map.push(EdgeIdx(proto_edge.edge_idx));
+                graph.bwd_to_fwd_map.push(EdgeIdx(proto_edge.idx));
 
                 // print progress
                 progress_bar.set(edge_idx);
@@ -894,6 +942,19 @@ impl GraphBuilder {
                 match category {
                     generating::edges::Category::Meta { info, id: new_id } => {
                         match info {
+                            generating::edges::MetaInfo::EdgeId => {
+                                // add edge-idx as id to graph
+                                graph.edge_ids = (0..graph.fwd_edges().count()).map(Some).collect();
+                                graph.edge_ids_to_idx_map = (0..graph.fwd_edges().count())
+                                    .enumerate()
+                                    .map(|(idx, id)| (id, EdgeIdx(idx)))
+                                    .collect();
+                                // already sorted by id
+                                //graph.edge_ids_to_idx_map.sort_unstable_by_key(|&(id, _idx)| id);
+
+                                // update config
+                                graph.cfg.edges.categories.push(category.clone().into());
+                            }
                             generating::edges::MetaInfo::SrcIdx
                             | generating::edges::MetaInfo::DstIdx => {
                                 // update graph
@@ -901,7 +962,6 @@ impl GraphBuilder {
                                 // -> already done
 
                                 // update config
-
                                 graph.cfg.edges.categories.push(category.clone().into());
                             }
                             generating::edges::MetaInfo::ShortcutIdx0
@@ -917,7 +977,6 @@ impl GraphBuilder {
                     }
                     generating::edges::Category::Custom { unit, id, default } => {
                         // update graph
-
                         graph
                             .metrics
                             .iter_mut()

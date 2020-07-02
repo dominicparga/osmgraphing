@@ -52,6 +52,7 @@ Maybe, it is concept for later documentation, or just keep-up-the-good-work (`ku
   - At least `2d + 1` edges are needed.
   - Test restriction(?)
 - Test created route-files.
+- Test edge-ids (especially parsing).
 
 
 ### Extend configs

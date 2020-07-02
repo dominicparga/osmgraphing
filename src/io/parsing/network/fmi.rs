@@ -167,6 +167,7 @@ impl ProtoShortcut {
     /// - When NodeIds are parsed, the first one is interpreted as src-id and the second one as dst-id.
     pub fn from_str(line: &str, cfg: &parsing::edges::Config) -> Result<ProtoShortcut, String> {
         let mut metric_values = DimVec::new();
+        let mut edge_id = None;
         let mut src_id = None;
         let mut dst_id = None;
         let mut sc_edge_0 = None;
@@ -186,6 +187,14 @@ impl ProtoShortcut {
 
             match category {
                 edges::Category::Meta { info, id: _ } => match info {
+                    edges::MetaInfo::EdgeId => {
+                        edge_id = Some({
+                            param.parse::<usize>().ok().ok_or(format!(
+                                "Parsing {:?} '{}' of edge-param #{} didn't work.",
+                                category, param, param_idx
+                            ))?
+                        });
+                    }
                     edges::MetaInfo::SrcId => {
                         if src_id.is_none() {
                             src_id = Some(param.parse::<i64>().ok().ok_or(format!(
@@ -286,6 +295,7 @@ impl ProtoShortcut {
 
         Ok(ProtoShortcut {
             proto_edge: ProtoEdge {
+                id: edge_id,
                 src_id: src_id.ok_or("Proto-edge should have a src-id, but doesn't.".to_owned())?,
                 dst_id: dst_id.ok_or("Proto-edge should have a dst-id, but doesn't.".to_owned())?,
                 metrics: metric_values,
