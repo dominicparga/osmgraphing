@@ -32,9 +32,7 @@ Maybe, it is concept for later documentation, or just keep-up-the-good-work (`ku
 
 ### Build-script
 
-- A build-script could, maybe, build the inline-size for `SmallVec` dependent of an env-var when compiling.
-  The command `include!(...)` could help.
-  More info in [this cargo-issue][github/rust-lang/cargo/issues/5624].
+\-
 
 
 ### Documentation
@@ -74,25 +72,20 @@ Maybe, it is concept for later documentation, or just keep-up-the-good-work (`ku
 
 ### Extend routing
 
-- Implement little parser for a file containing routes.
-  Preferred is a format, where every line defines `src, dst`.
-  To make this less dependent of a certain map, every node is represented by its coordinate or id instead of its index.
+\-
 
 
 ### Extend balancing
 
 - Update route-counts of shortcuts after updating normal edges.
-- Add to config, which metric-id is used as route-count.
-- The explorator finds too many routes.
 - Flatten the found routes after the loops and cumulate all workloads for sc-edges at once.
   This reduces the access to edges.
 - Use `ch-constructor` (written in `c/cpp`) as binary or build wrapping rust-crate?
-  - [How to invoke a system-cmd?][stackoverflow/invoke-system-cmd]
-  - [C with Rust][rust-docs/c-with-rust]
 
 
 ## Info
 
+- [C with Rust][rust-docs/c-with-rust]
 - [OSM-tags][taginfo]
 - serde-yaml
   - `https://stackoverflow.com/questions/53243795/how-do-you-read-a-yaml-file-in-rust`
@@ -109,40 +102,6 @@ Maybe, it is concept for later documentation, or just keep-up-the-good-work (`ku
   - [JMapViewer (Java)][osm/wiki/jmapviewer]
 
 
-### Proof of correctness for bidirectional Dijkstra
-
-The termination of the bidirectional Astar is based on the first node v, that is marked by both, the forward- and the backward-subroutine.
-However, this common node v is part of the shortest path s->t wrt to this particular hop-distance H, but doesn't have to be part of the shortest path s->t wrt to edge-weights.
-
-Every node, that is not settled in any of the both subroutines, has a longer distance to both s and t than the already found common node v and hence can not be part of the shortest path (wrt to edge-weights).
-Otherwise, it would have been settled before v since the priority-queues sort by weights.
-In other words, only already settled nodes and their neighbors (which are already enqueued) can be part of the shortest path.
-
-In conclusion, emptying the remaining nodes in the queues and picking the shortest path of the resulting common nodes leads to the shortest path wrt to edge-weights from s to t.
-
-
-### Proof of correctness for bidirectional Dijkstra for contracted graphs
-
-Here, the proof for bidirectional Dijkstra doesn't hold, because each sub-graph doesn't visit every node of the total graph, due to the level-filter when pushing edges to the queue.
-Hence, the forward- and the backward-query are not balanced wrt weights.
-Thus, after finding the first meeting-node, the hop-distance of the shortest-path could be arbitrary.
-This leads to wrong paths with normal bidirectional Dijkstra.
-To correct this issue, stop the query after polling a node of a sub-distance, which is higher than the currently best meeting-node's total distance.
-
-
-### Sources
-
-```text
-@book{mehlhorn2008algorithms,
-  title={Algorithms and data structures: The basic toolbox},
-  author={Mehlhorn, Kurt and Sanders, Peter},
-  year={2008},
-  publisher={Springer Science \& Business Media}
-}
--> adjacency-array (= offset-graph)
-```
-
-
 ### License
 
 [When is a program and its plug-ins considered a single combined program?][gnu/licenses/gpl-faq/gplplugins]
@@ -151,14 +110,12 @@ To correct this issue, stop the query after polling a node of a sub-distance, wh
 [acm/micro-travel-demand]: https://dl.acm.org/doi/10.1145/3347146.3359361
 [atlas.zensus2011.de]: https://atlas.zensus2011.de/
 [destatis]: https://www.destatis.de/DE/Service/Statistik-Visualisiert/RegionalatlasAktuell.html
-[github/rust-lang/cargo/issues/5624]: https://github.com/rust-lang/cargo/issues/5624
 [github/vbuchhold/routing-framework]: https://github.com/vbuchhold/routing-framework
 [gnu/licenses/gpl-faq/gplplugins]: https://www.gnu.org/licenses/gpl-faq.html#GPLPlugins
 [kde/marble]: http://api.kde.org/4.x-api/kdeedu-apidocs/marble/html/namespaceMarble.html
 [leafletjs]: https://leafletjs.com/
 [osm/wiki/jmapviewer]: https://wiki.openstreetmap.org/wiki/JMapViewer
 [rust-docs/c-with-rust]: https://rust-embedded.github.io/book/interoperability/c-with-rust.html
-[stackoverflow/invoke-system-cmd]: https://stackoverflow.com/questions/21011330/how-do-i-invoke-a-system-command-in-rust-and-capture-its-output
 [statistik-bw]: https://www.statistik-bw.de/Intermaptiv/?re=gemeinde&ags=08317057&i=01202&r=0&g=0001&afk=5&fkt=besetzung&fko=mittel
 [statistikportal]: https://www.statistikportal.de/de/flaechenatlas
 [taginfo]: https://taginfo.openstreetmap.org/

@@ -50,7 +50,7 @@ impl ConvexHullExplorator {
             .iter()
             .filter(|&&is_considered| is_considered)
             .count();
-        debug!("is-metric-considered: {:?}", is_metric_considered);
+        debug!("is_metric_considered: {:?}", is_metric_considered);
 
         // return these paths in the end
         let mut found_paths = Vec::new();
