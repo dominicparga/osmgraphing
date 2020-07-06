@@ -25,7 +25,7 @@ fn main() {
 
 fn run(args: CmdlineArgs) -> err::Feedback {
     // check writing-cfg
-    let _ = configs::writing::network::Config::try_from_yaml(&args.cfg)?;
+    let _ = configs::writing::network::graph::Config::try_from_yaml(&args.cfg)?;
     let mut balancing_cfg = configs::balancing::Config::try_from_yaml(&args.cfg)?;
 
     info!("EXECUTE balancer");
@@ -67,7 +67,7 @@ fn run(args: CmdlineArgs) -> err::Feedback {
 
     // store balanced graph
 
-    let mut writing_cfg = configs::writing::network::Config::try_from_yaml(&args.cfg)?;
+    let mut writing_cfg = configs::writing::network::graph::Config::try_from_yaml(&args.cfg)?;
     writing_cfg.map_file = balancing_cfg
         .results_dir
         .join(writing_cfg.map_file.file_name().ok_or(err::Msg::from(
@@ -156,7 +156,7 @@ mod simulation_pipeline {
         iter: usize,
     ) -> err::Feedback {
         let iter_dir = balancing_cfg.results_dir.join(format!("{}", iter));
-        let mut writing_cfg = configs::writing::network::Config::try_from_yaml(
+        let mut writing_cfg = configs::writing::network::graph::Config::try_from_yaml(
             &iter_dir.join(defaults::balancing::files::ITERATION_CFG),
         )?;
         // path is relative to results-dir
@@ -411,7 +411,7 @@ fn _extract_map_name<P: AsRef<Path>>(map_file: P) -> err::Result<String> {
 fn parse_graph(parsing_cfg: configs::parsing::Config) -> err::Result<Graph> {
     let now = Instant::now();
 
-    let graph = io::network::Parser::parse_and_finalize(parsing_cfg)?;
+    let graph = io::network::graph::Parser::parse_and_finalize(parsing_cfg)?;
 
     info!(
         "FINISHED Parsed graph in {} seconds ({} µs).",
@@ -425,7 +425,10 @@ fn parse_graph(parsing_cfg: configs::parsing::Config) -> err::Result<Graph> {
     Ok(graph)
 }
 
-fn write_graph(graph: &Graph, writing_cfg: &configs::writing::network::Config) -> err::Feedback {
+fn write_graph(
+    graph: &Graph,
+    writing_cfg: &configs::writing::network::graph::Config,
+) -> err::Feedback {
     // check if new file does already exist
 
     if writing_cfg.map_file.exists() {
@@ -439,7 +442,7 @@ fn write_graph(graph: &Graph, writing_cfg: &configs::writing::network::Config) -
 
     let now = Instant::now();
 
-    io::network::Writer::write(&graph, &writing_cfg)?;
+    io::network::graph::Writer::write(&graph, &writing_cfg)?;
     info!(
         "Finished writing in {} seconds ({} µs).",
         now.elapsed().as_secs(),

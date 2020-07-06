@@ -157,6 +157,11 @@ writing:
     - id: 'dst-idx'
     - ignored
     - id: 'meters'
+  edges:
+    - id: 'src-id'
+    - id: 'dst-idx'
+    - ignored
+    - id: 'meters'
   # optional
   route-pairs:
     file: 'relative-path-to-output-file'

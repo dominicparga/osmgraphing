@@ -1,6 +1,6 @@
 use crate::{
     helpers::err,
-    io::{network::Parser, SupportingFileExts},
+    io::{network::graph::Parser, SupportingFileExts},
 };
 use serde::Deserialize;
 use std::{

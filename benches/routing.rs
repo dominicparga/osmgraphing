@@ -2,7 +2,7 @@ use criterion::{black_box, Criterion};
 use log::error;
 use osmgraphing::{
     configs, helpers,
-    io::network::Parser,
+    io::network::graph::Parser,
     network::{Graph, NodeIdx},
     routing,
 };

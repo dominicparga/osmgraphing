@@ -44,7 +44,7 @@ impl Writer {
 
         // write header
 
-        writeln!(writer, "new_metrics")?;
+        writeln!(writer, "edge-id new_metrics")?;
 
         // write data
 
@@ -59,7 +59,9 @@ impl Writer {
             .iter()
             .filter(|&edge_idx| !fwd_edges.is_shortcut(edge_idx))
         {
-            writeln!(writer, "{}", metrics[edge_idx][*workload_idx])?;
+            let edge_id = fwd_edges.id(edge_idx);
+
+            writeln!(writer, "{} {}", edge_id, metrics[edge_idx][*workload_idx])?;
         }
 
         Ok(())

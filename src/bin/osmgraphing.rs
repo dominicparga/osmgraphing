@@ -63,7 +63,7 @@ fn run(args: CmdlineArgs) -> err::Feedback {
         // measure parsing-time
         let now = Instant::now();
 
-        let graph = match io::network::Parser::parse_and_finalize(parsing_cfg) {
+        let graph = match io::network::graph::Parser::parse_and_finalize(parsing_cfg) {
             Ok(graph) => graph,
             Err(msg) => return Err(err::Msg::from(format!("{}", msg))),
         };
@@ -84,7 +84,7 @@ fn run(args: CmdlineArgs) -> err::Feedback {
     if args.is_writing_graph {
         // get config by provided user-input
 
-        let writing_cfg = configs::writing::network::Config::try_from_yaml(&args.cfg)?;
+        let writing_cfg = configs::writing::network::graph::Config::try_from_yaml(&args.cfg)?;
 
         // check if new file does already exist
 
@@ -100,7 +100,7 @@ fn run(args: CmdlineArgs) -> err::Feedback {
         // measure writing-time
         let now = Instant::now();
 
-        match io::network::Writer::write(&graph, &writing_cfg) {
+        match io::network::graph::Writer::write(&graph, &writing_cfg) {
             Ok(()) => (),
             Err(msg) => return Err(err::Msg::from(format!("{}", msg))),
         };

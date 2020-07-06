@@ -1,5 +1,5 @@
 use crate::{
-    configs::implementation::writing::network::{
+    configs::implementation::writing::network::graph::{
         edges::proto as edges, nodes::proto as nodes, raw,
     },
     io::SupportingFileExts,
@@ -11,7 +11,6 @@ use std::path::PathBuf;
 #[serde(from = "raw::Config")]
 pub struct Config {
     pub map_file: PathBuf,
-    pub is_writing_shortcuts: Option<bool>,
     pub nodes: nodes::Config,
     pub edges: edges::Config,
 }
@@ -28,7 +27,6 @@ impl From<raw::Config> for Config {
 
         Config {
             map_file: raw_cfg.map_file,
-            is_writing_shortcuts: raw_cfg.is_writing_shortcuts,
             nodes: nodes::Config::from(raw_cfg.nodes),
             edges: edges::Config::from(raw_cfg.edges),
         }

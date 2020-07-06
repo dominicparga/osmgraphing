@@ -50,7 +50,9 @@ pub mod parsing {
 
 pub mod writing {
     pub mod network {
-        pub use crate::configs::implementation::writing::network::Config;
+        pub mod graph {
+            pub use crate::configs::implementation::writing::network::graph::Config;
+        }
     }
 
     pub mod routing {

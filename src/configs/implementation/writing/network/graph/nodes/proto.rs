@@ -1,4 +1,4 @@
-use crate::configs::{implementation::writing::network::nodes::raw, SimpleId};
+use crate::configs::{implementation::writing::network::graph::nodes::raw, SimpleId};
 
 #[derive(Debug)]
 pub struct Config {

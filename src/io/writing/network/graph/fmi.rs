@@ -22,8 +22,12 @@ impl Writer {
     }
 }
 
-impl super::Writing for Writer {
-    fn write(&self, graph: &Graph, writing_cfg: &writing::network::Config) -> err::Feedback {
+impl Writer {
+    pub fn write(
+        &self,
+        graph: &Graph,
+        writing_cfg: &writing::network::graph::Config,
+    ) -> err::Feedback {
         // prepare
 
         let output_file = OpenOptions::new()
@@ -88,7 +92,7 @@ impl super::Writing for Writer {
             fwd_edges
                 .iter()
                 .filter(|&edge_idx| !fwd_edges.is_shortcut(edge_idx)
-                    || writing_cfg.is_writing_shortcuts)
+                    || writing_cfg.edges.is_writing_shortcuts)
                 .count()
         )?;
 
@@ -200,7 +204,7 @@ impl super::Writing for Writer {
 
         // for every edge
         for edge_idx in fwd_edges.iter().filter(|&edge_idx| {
-            !fwd_edges.is_shortcut(edge_idx) || writing_cfg.is_writing_shortcuts
+            !fwd_edges.is_shortcut(edge_idx) || writing_cfg.edges.is_writing_shortcuts
         }) {
             // loop over graphs config
             // and print respective data

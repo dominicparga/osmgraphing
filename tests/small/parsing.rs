@@ -11,7 +11,9 @@ use osmgraphing::{configs, network::EdgeIdx};
 #[test]
 fn ch_fmi_yaml() {
     let parsing_cfg = configs::parsing::Config::from_yaml(resources::CH_FMI_YAML);
-    assert!(configs::writing::network::Config::try_from_yaml(resources::CH_FMI_YAML).is_err());
+    assert!(
+        configs::writing::network::graph::Config::try_from_yaml(resources::CH_FMI_YAML).is_err()
+    );
     configs::writing::routing::Config::from_yaml(resources::CH_FMI_YAML);
     assert!(configs::routing::Config::try_from_yaml(resources::CH_FMI_YAML, &parsing_cfg).is_err());
 }
@@ -19,7 +21,7 @@ fn ch_fmi_yaml() {
 #[test]
 fn fmi_yaml() {
     let parsing_cfg = configs::parsing::Config::from_yaml(resources::FMI_YAML);
-    assert!(configs::writing::network::Config::try_from_yaml(resources::FMI_YAML).is_err());
+    assert!(configs::writing::network::graph::Config::try_from_yaml(resources::FMI_YAML).is_err());
     configs::writing::routing::Config::from_yaml(resources::FMI_YAML);
     assert!(configs::routing::Config::try_from_yaml(resources::FMI_YAML, &parsing_cfg).is_err());
 }
