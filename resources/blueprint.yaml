@@ -145,7 +145,6 @@ writing:
     map-file: 'relative-path-to-map-file'
     # optional; default is false
     # If false, no shortcuts are written to the file.
-    with_shortcuts: false
     nodes:
     - id: 'node-idx'
     - id: 'latitude'
@@ -153,11 +152,16 @@ writing:
     - id: 'level'
     - id: 'longitude'
     edges:
-    - id: 'src-id'
-    - id: 'dst-idx'
-    - ignored
-    - id: 'meters'
-  edges:
+      with_shortcuts: false
+      ids:
+      - id: 'src-id'
+      - id: 'dst-idx'
+      - ignored
+      - id: 'meters'
+  edges-info:
+    map-file: 'relative-path-to-map-file'
+    with_shortcuts: false
+    ids:
     - id: 'src-id'
     - id: 'dst-idx'
     - ignored

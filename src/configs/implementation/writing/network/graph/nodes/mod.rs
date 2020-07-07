@@ -2,7 +2,7 @@ use crate::configs::SimpleId;
 pub mod proto;
 pub mod raw;
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Config {
     pub ids: Vec<Option<SimpleId>>,
 }

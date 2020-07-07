@@ -1,6 +1,6 @@
 use serde::Deserialize;
 
-use crate::configs::implementation::parsing::generating::{edges, nodes};
+use super::{edges, nodes};
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "kebab-case", deny_unknown_fields)]

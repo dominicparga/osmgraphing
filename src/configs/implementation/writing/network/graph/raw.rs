@@ -18,8 +18,6 @@ pub struct AnotherConfig {
 pub struct Content {
     #[serde(rename = "map-file")]
     pub map_file: PathBuf,
-    #[serde(rename = "with_shortcuts")]
-    pub is_writing_shortcuts: Option<bool>,
     pub nodes: nodes::raw::Config,
     pub edges: edges::raw::Config,
 }

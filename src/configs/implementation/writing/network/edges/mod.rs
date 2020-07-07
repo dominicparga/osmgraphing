@@ -1,14 +1,14 @@
 use crate::{
+    configs::{writing::network::graph, SimpleId},
+    defaults,
     helpers::err,
-    io::{network::graph::Writer, SupportingFileExts},
+    io::{network::edges::Writer, SupportingFileExts},
 };
 use serde::Deserialize;
 use std::{
     fs::OpenOptions,
     path::{Path, PathBuf},
 };
-pub mod edges;
-pub mod nodes;
 pub mod proto;
 pub mod raw;
 
@@ -16,8 +16,9 @@ pub mod raw;
 #[serde(from = "proto::Config")]
 pub struct Config {
     pub map_file: PathBuf,
-    pub nodes: nodes::Config,
-    pub edges: edges::Config,
+    pub is_writing_shortcuts: bool,
+    pub is_writing_header: bool,
+    pub ids: Vec<Option<SimpleId>>,
 }
 
 impl SupportingFileExts for Config {
@@ -30,8 +31,22 @@ impl From<proto::Config> for Config {
     fn from(proto_cfg: proto::Config) -> Config {
         Config {
             map_file: proto_cfg.map_file,
-            nodes: nodes::Config::from(proto_cfg.nodes),
-            edges: edges::Config::from(proto_cfg.edges),
+            is_writing_shortcuts: proto_cfg
+                .is_writing_shortcuts
+                .unwrap_or(defaults::parsing::IS_USING_SHORTCUTS),
+            is_writing_header: true,
+            ids: proto_cfg.ids,
+        }
+    }
+}
+
+impl From<graph::Config> for Config {
+    fn from(graph_cfg: graph::Config) -> Config {
+        Config {
+            map_file: graph_cfg.map_file,
+            is_writing_shortcuts: graph_cfg.edges.is_writing_shortcuts,
+            is_writing_header: false,
+            ids: graph_cfg.edges.ids,
         }
     }
 }

@@ -1,4 +1,4 @@
-use crate::configs::implementation::balancing::metrics;
+use super::metrics;
 use serde::Deserialize;
 use std::path::PathBuf;
 

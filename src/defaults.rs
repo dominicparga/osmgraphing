@@ -46,6 +46,7 @@ pub mod capacity {
 pub mod parsing {
     // provided by multi-ch-constructor
     pub const NO_SHORTCUT_IDX: &str = "-1";
+    pub const IS_USING_SHORTCUTS: bool = false;
 }
 
 pub mod writing {

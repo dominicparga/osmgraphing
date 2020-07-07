@@ -456,7 +456,7 @@ fn write_graph(
 fn parse_cmdline<'a>() -> CmdlineArgs {
     // arg: quiet
     let tmp = &[
-        "Sets the logging-level by setting environment-variable 'RUST_LOG'.",
+        "Sets the logging-level according to the env-variable 'RUST_LOG'.",
         "The env-variable 'RUST_LOG' has precedence.",
         "It takes values of modules, e.g.",
         "export RUST_LOG='warn,osmgraphing=info'",

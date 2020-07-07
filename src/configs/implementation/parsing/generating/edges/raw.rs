@@ -1,4 +1,5 @@
-use crate::configs::{implementation::parsing::generating::edges::metrics, SimpleId};
+use super::metrics;
+use crate::configs::SimpleId;
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]

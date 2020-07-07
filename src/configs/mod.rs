@@ -50,6 +50,10 @@ pub mod parsing {
 
 pub mod writing {
     pub mod network {
+        pub mod edges {
+            pub use crate::configs::implementation::writing::network::edges::Config;
+        }
+
         pub mod graph {
             pub use crate::configs::implementation::writing::network::graph::Config;
         }

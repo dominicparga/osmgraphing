@@ -53,6 +53,7 @@ Maybe, it is concept for later documentation, or just keep-up-the-good-work (`ku
   - Test restriction(?)
 - Test created route-files.
 - Test edge-ids (especially parsing).
+- Write config-tests without checking content, so configs can be checked automatically.
 
 
 ### Extend configs

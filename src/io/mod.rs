@@ -6,6 +6,9 @@ pub mod network {
         pub use crate::io::parsing::network::graph::Parser;
         pub use crate::io::writing::network::graph::Writer;
     }
+    pub mod edges {
+        pub use crate::io::writing::network::edges::Writer;
+    }
 }
 pub mod routing {
     pub use crate::io::parsing::routing::Parser;

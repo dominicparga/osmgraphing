@@ -1,4 +1,5 @@
-use crate::configs::{implementation::balancing::raw, SimpleId};
+use super::raw;
+use crate::configs::SimpleId;
 use serde::Deserialize;
 use std::{convert::TryFrom, path::PathBuf};
 
