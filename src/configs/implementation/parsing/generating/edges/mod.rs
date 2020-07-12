@@ -1,5 +1,7 @@
 use crate::configs::SimpleId;
 use serde::Deserialize;
+use std::path::PathBuf;
+pub mod merge;
 pub mod metrics;
 
 #[derive(Debug, Deserialize)]
@@ -40,6 +42,11 @@ pub enum Category {
         a: metrics::Category,
         b: metrics::Category,
     },
+    // out-of-place
+    Merge {
+        from: PathBuf,
+        edges: Vec<merge::Category>,
+    },
 }
 
 impl From<ProtoCategory> for Category {
@@ -70,6 +77,10 @@ impl From<ProtoCategory> for Category {
                 result: result.into(),
                 a: a.into(),
                 b: b.into(),
+            },
+            ProtoCategory::Merge { from, edges } => Category::Merge {
+                from,
+                edges: edges.into_iter().map(merge::Category::from).collect(),
             },
         }
     }
@@ -135,6 +146,10 @@ pub enum ProtoCategory {
         a: metrics::ProtoCategory,
         b: metrics::ProtoCategory,
     },
+    Merge {
+        from: PathBuf,
+        edges: Vec<merge::ProtoCategory>,
+    },
 }
 
 impl From<RawCategory> for ProtoCategory {
@@ -165,6 +180,10 @@ impl From<RawCategory> for ProtoCategory {
                 result: metrics::ProtoCategory::from(result),
                 a: metrics::ProtoCategory::from(a),
                 b: metrics::ProtoCategory::from(b),
+            },
+            RawCategory::Merge { from, edges } => ProtoCategory::Merge {
+                from,
+                edges: edges.into_iter().map(merge::ProtoCategory::from).collect(),
             },
         }
     }
@@ -221,6 +240,10 @@ pub enum RawCategory {
         result: metrics::RawCategory,
         a: metrics::RawCategory,
         b: metrics::RawCategory,
+    },
+    Merge {
+        from: PathBuf,
+        edges: Vec<merge::RawCategory>,
     },
 }
 

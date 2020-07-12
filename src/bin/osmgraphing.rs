@@ -112,10 +112,10 @@ fn run(args: CmdlineArgs) -> err::Feedback {
 
         // check if new file does already exist
 
-        if writing_cfg.map_file.exists() {
+        if writing_cfg.file.exists() {
             return Err(err::Msg::from(format!(
-                "New map-file {} does already exist. Please remove it.",
-                writing_cfg.map_file.display()
+                "New file {} does already exist. Please remove it.",
+                writing_cfg.file.display()
             )));
         }
 

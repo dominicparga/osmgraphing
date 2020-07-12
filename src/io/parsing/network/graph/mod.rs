@@ -149,23 +149,26 @@ fn check_config(cfg: &parsing::Config) -> err::Feedback {
                 .edges
                 .categories
                 .iter()
-                .filter(|category| match category {
-                    generating::edges::Category::Meta { info: _, id: _ } => false,
-                    generating::edges::Category::Convert { from: _, to: _ } => false,
+                .map(|category| match category {
+                    generating::edges::Category::Meta { info: _, id: _ } => 0,
+                    generating::edges::Category::Convert { from: _, to: _ } => 0,
                     generating::edges::Category::Calc {
                         result: _,
                         a: _,
                         b: _,
-                    } => true,
-                    generating::edges::Category::Copy { from: _, to: _ } => true,
-                    generating::edges::Category::Haversine { unit: _, id: _ } => true,
+                    } => 1,
+                    generating::edges::Category::Copy { from: _, to: _ } => 1,
+                    generating::edges::Category::Haversine { unit: _, id: _ } => 1,
                     generating::edges::Category::Custom {
                         unit: _,
                         id: _,
                         default: _,
-                    } => true,
+                    } => 1,
+                    generating::edges::Category::Merge { from: _, edges } => {
+                        edges.iter().filter(|category| category.is_metric()).count()
+                    }
                 })
-                .count()
+                .sum()
         } else {
             0
         };

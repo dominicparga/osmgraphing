@@ -22,6 +22,7 @@ fn write_edges_to_file<W: Write>(
 
     // write header
 
+    write!(writer, "# ")?;
     if writing_cfg.is_writing_header {
         for (i, edge_info) in writing_cfg
             .ids

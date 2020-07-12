@@ -100,6 +100,22 @@ pub enum Category {
     Ignored,
 }
 
+impl Category {
+    pub fn is_metric(&self) -> bool {
+        match self {
+            Category::Meta { info: _, id: _ } | Category::Ignored => false,
+            Category::Metric { unit: _, id: _ } => true,
+        }
+    }
+
+    pub fn is_ignored(&self) -> bool {
+        match self {
+            Category::Meta { info: _, id: _ } | Category::Metric { unit: _, id: _ } => false,
+            Category::Ignored => true,
+        }
+    }
+}
+
 impl From<ProtoCategory> for Category {
     fn from(proto_category: ProtoCategory) -> Category {
         match proto_category {
@@ -112,37 +128,6 @@ impl From<ProtoCategory> for Category {
                 id,
             },
             ProtoCategory::Ignored => Category::Ignored,
-        }
-    }
-}
-
-/// The generating-categories specify, how a metric is generated, but it will be stored as any other parsed category, why this implementation is needed.
-impl From<generating::edges::Category> for Category {
-    fn from(gen_category: generating::edges::Category) -> Category {
-        match gen_category {
-            generating::edges::Category::Meta { info, id } => Category::Meta {
-                info: MetaInfo::from(info),
-                id,
-            },
-            generating::edges::Category::Custom {
-                unit,
-                id,
-                default: _,
-            }
-            | generating::edges::Category::Haversine { unit, id } => Category::Metric {
-                unit: metrics::UnitInfo::from(unit),
-                id,
-            },
-            generating::edges::Category::Copy { from: _, to }
-            | generating::edges::Category::Convert { from: _, to }
-            | generating::edges::Category::Calc {
-                result: to,
-                a: _,
-                b: _,
-            } => Category::Metric {
-                unit: metrics::UnitInfo::from(to.unit),
-                id: to.id,
-            },
         }
     }
 }
@@ -177,6 +162,14 @@ impl From<generating::edges::MetaInfo> for MetaInfo {
             generating::edges::MetaInfo::DstIdx => MetaInfo::DstIdx,
             generating::edges::MetaInfo::ShortcutIdx0 => MetaInfo::ShortcutIdx0,
             generating::edges::MetaInfo::ShortcutIdx1 => MetaInfo::ShortcutIdx1,
+        }
+    }
+}
+
+impl From<generating::edges::merge::MetaInfo> for MetaInfo {
+    fn from(gen_info: generating::edges::merge::MetaInfo) -> MetaInfo {
+        match gen_info {
+            generating::edges::merge::MetaInfo::EdgeId => MetaInfo::EdgeId,
         }
     }
 }

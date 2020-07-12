@@ -6,12 +6,18 @@ use crate::{
         capacity::{self, DimVec},
         routing::IS_USING_CH_LEVEL_SPEEDUP,
     },
-    helpers::{approx::ApproxEq, err, MemSize},
+    helpers::{self, approx::ApproxEq, err, MemSize},
 };
 use kissunits::geo::Coordinate;
 use log::{debug, info};
 use progressing::{Bar, MappingBar};
-use std::{cmp::Reverse, mem, ops::RangeFrom};
+use std::{
+    cmp::Reverse,
+    fs::OpenOptions,
+    io::{BufRead, BufReader},
+    mem,
+    ops::RangeFrom,
+};
 
 /// private stuff for graph-building
 impl Graph {
@@ -107,8 +113,8 @@ impl ProtoShortcut {
 #[derive(Debug)]
 pub struct ProtoEdge {
     pub id: Option<usize>,
-    pub src_id: i64,
-    pub dst_id: i64,
+    pub src_id: Option<i64>,
+    pub dst_id: Option<i64>,
     pub metrics: DimVec<f64>,
 }
 
@@ -192,7 +198,7 @@ impl EdgeBuilder {
         &self.cfg
     }
 
-    pub fn insert<E>(&mut self, proto_edge: E)
+    pub fn insert<E>(&mut self, proto_edge: E) -> err::Feedback
     where
         E: Into<ProtoShortcut>,
     {
@@ -200,6 +206,12 @@ impl EdgeBuilder {
             proto_edge,
             sc_edges,
         } = proto_edge.into();
+        let src_id = proto_edge
+            .src_id
+            .ok_or("Proto-edge should have a src-id, but doesn't.".to_owned())?;
+        let dst_id = proto_edge
+            .dst_id
+            .ok_or("Proto-edge should have a dst-id, but doesn't.".to_owned())?;
 
         // Most of the time, nodes are added for consecutive edges of one street,
         // so duplicates are next to each other.
@@ -221,10 +233,10 @@ impl EdgeBuilder {
         let n = self.node_ids.len();
         let k = 2;
         if n < k {
-            self.node_ids.push(proto_edge.src_id);
-            self.node_ids.push(proto_edge.dst_id);
+            self.node_ids.push(src_id);
+            self.node_ids.push(dst_id);
         } else {
-            for new_id in &[proto_edge.src_id, proto_edge.dst_id] {
+            for new_id in &[src_id, dst_id] {
                 if !self.node_ids[(n - k)..n].contains(new_id) {
                     self.node_ids.push(*new_id);
                 }
@@ -238,8 +250,8 @@ impl EdgeBuilder {
             self.proto_edges.push(ProtoEdgeA {
                 idx,
                 id: proto_edge.id,
-                src_id: proto_edge.src_id,
-                dst_id: proto_edge.dst_id,
+                src_id,
+                dst_id,
                 metrics: proto_edge.metrics,
                 sc_edges: Some(self.proto_shortcuts.len()),
             });
@@ -248,12 +260,14 @@ impl EdgeBuilder {
             self.proto_edges.push(ProtoEdgeA {
                 idx,
                 id: proto_edge.id,
-                src_id: proto_edge.src_id,
-                dst_id: proto_edge.dst_id,
+                src_id,
+                dst_id,
                 metrics: proto_edge.metrics,
                 sc_edges: None,
             });
         }
+
+        Ok(())
     }
 
     pub fn next(mut self) -> NodeBuilder {
@@ -923,11 +937,40 @@ impl GraphBuilder {
                                 parsing::edges::Category::Ignored => false,
                             })
                         {
-                            return Err(format!(
+                            return Err(err::Msg::from(format!(
                                 "Id {} should be generated, but does already exist.",
                                 new_id
-                            )
-                            .into());
+                            )));
+                        }
+                    }
+                    generating::edges::Category::Merge { from: _, edges } => {
+                        for category in &graph.cfg.edges.categories {
+                            match category {
+                                parsing::edges::Category::Meta { info: _, id }
+                                | parsing::edges::Category::Metric { unit: _, id } => {
+                                    // loop over edges
+                                    if edges.iter().any(|category| match category {
+                                        generating::edges::merge::Category::Meta {
+                                            info: _,
+                                            id: new_id,
+                                        }
+                                        | generating::edges::merge::Category::Metric {
+                                            unit: _,
+                                            id: new_id,
+                                        } => {
+                                            // and check, if a new id does already exist
+                                            new_id == id
+                                        }
+                                        generating::edges::merge::Category::Ignored => false,
+                                    }) {
+                                        return Err(err::Msg::from(format!(
+                                            "Id {} should be generated, but does already exist.",
+                                            id
+                                        )));
+                                    }
+                                }
+                                parsing::edges::Category::Ignored => continue,
+                            }
                         }
                     }
                     generating::edges::Category::Convert { from: _, to: _ } => {
@@ -953,25 +996,52 @@ impl GraphBuilder {
                                 //graph.edge_ids_to_idx_map.sort_unstable_by_key(|&(id, _idx)| id);
 
                                 // update config
-                                graph.cfg.edges.categories.push(category.clone().into());
+                                graph
+                                    .cfg
+                                    .edges
+                                    .categories
+                                    .push(parsing::edges::Category::Meta {
+                                        info: parsing::edges::MetaInfo::EdgeId,
+                                        id: new_id.clone(),
+                                    });
                             }
-                            generating::edges::MetaInfo::SrcIdx
-                            | generating::edges::MetaInfo::DstIdx => {
+                            generating::edges::MetaInfo::SrcIdx => {
                                 // update graph
                                 //
                                 // -> already done
 
                                 // update config
-                                graph.cfg.edges.categories.push(category.clone().into());
+                                graph
+                                    .cfg
+                                    .edges
+                                    .categories
+                                    .push(parsing::edges::Category::Meta {
+                                        info: parsing::edges::MetaInfo::SrcIdx,
+                                        id: new_id.clone(),
+                                    });
+                            }
+                            generating::edges::MetaInfo::DstIdx => {
+                                // update graph
+                                //
+                                // -> already done
+
+                                // update config
+                                graph
+                                    .cfg
+                                    .edges
+                                    .categories
+                                    .push(parsing::edges::Category::Meta {
+                                        info: parsing::edges::MetaInfo::DstIdx,
+                                        id: new_id.clone(),
+                                    });
                             }
                             generating::edges::MetaInfo::ShortcutIdx0
                             | generating::edges::MetaInfo::ShortcutIdx1 => {
-                                return Err(format!(
+                                return Err(err::Msg::from(format!(
                                     "Edge-meta-info {:?} (id: {}) cannot be created \
                                      and has to be provided.",
                                     info, new_id
-                                )
-                                .into())
+                                )))
                             }
                         }
                     }
@@ -984,7 +1054,14 @@ impl GraphBuilder {
 
                         // update config
 
-                        graph.cfg.edges.categories.push(category.clone().into());
+                        graph
+                            .cfg
+                            .edges
+                            .categories
+                            .push(parsing::edges::Category::Metric {
+                                unit: parsing::edges::metrics::UnitInfo::from(*unit),
+                                id: id.clone(),
+                            });
                         graph.cfg.edges.metrics.units.push((*unit).into());
                         graph.cfg.edges.metrics.ids.push(id.clone());
                     }
@@ -1036,7 +1113,14 @@ impl GraphBuilder {
 
                         // update config
 
-                        graph.cfg.edges.categories.push(category.clone().into());
+                        graph
+                            .cfg
+                            .edges
+                            .categories
+                            .push(parsing::edges::Category::Metric {
+                                unit: parsing::edges::metrics::UnitInfo::from(*unit),
+                                id: id.clone(),
+                            });
                         graph.cfg.edges.metrics.units.push((*unit).into());
                         graph.cfg.edges.metrics.ids.push(id.clone());
                     }
@@ -1071,7 +1155,14 @@ impl GraphBuilder {
 
                         // update config
 
-                        graph.cfg.edges.categories.push(category.clone().into());
+                        graph
+                            .cfg
+                            .edges
+                            .categories
+                            .push(parsing::edges::Category::Metric {
+                                unit: parsing::edges::metrics::UnitInfo::from(to.unit),
+                                id: to.id.clone(),
+                            });
                         graph.cfg.edges.metrics.units.push(to.unit.into());
                         graph.cfg.edges.metrics.ids.push(to.id.clone());
                     }
@@ -1172,9 +1263,95 @@ impl GraphBuilder {
 
                         // update config
 
-                        graph.cfg.edges.categories.push(category.clone().into());
+                        graph
+                            .cfg
+                            .edges
+                            .categories
+                            .push(parsing::edges::Category::Metric {
+                                unit: parsing::edges::metrics::UnitInfo::from(result.unit),
+                                id: result.id.clone(),
+                            });
                         graph.cfg.edges.metrics.units.push(result.unit.into());
                         graph.cfg.edges.metrics.ids.push(result.id.clone());
+                    }
+                    generating::edges::Category::Merge { from, edges } => {
+                        info!("START Create edges from merge-file.");
+                        // convert generating-categories into parsing-categories
+                        let edges = edges
+                            .into_iter()
+                            .map(|category| match category {
+                                generating::edges::merge::Category::Meta { info, id } => {
+                                    parsing::edges::Category::Meta {
+                                        info: parsing::edges::MetaInfo::from(*info),
+                                        id: id.clone(),
+                                    }
+                                }
+                                generating::edges::merge::Category::Metric { unit, id } => {
+                                    parsing::edges::Category::Metric {
+                                        unit: parsing::edges::metrics::UnitInfo::from(*unit),
+                                        id: id.clone(),
+                                    }
+                                }
+                                generating::edges::merge::Category::Ignored => {
+                                    parsing::edges::Category::Ignored
+                                }
+                            })
+                            .collect();
+
+                        // open file
+
+                        let file = OpenOptions::new()
+                            .read(true)
+                            .open(&from)
+                            .expect(&format!("Couldn't open {}", from.display()));
+
+                        // parse edges
+
+                        for line in BufReader::new(file)
+                            .lines()
+                            .map(Result::unwrap)
+                            .filter(helpers::is_line_functional)
+                        {
+                            let proto_sc = ProtoShortcut::try_from_str(&line, &edges)?;
+                            let edge_idx =
+                                graph
+                                    .fwd_edges()
+                                    .idx_from(proto_sc.proto_edge.id.expect(
+                                        "An edge-id has to be given when merging edge-infos.",
+                                    ))
+                                    .expect(&format!(
+                                        "{}{}",
+                                        "A provided edge-id, which should be merged, ",
+                                        "is not in the graph.",
+                                    ));
+                            for metric in proto_sc.proto_edge.metrics {
+                                graph.metrics[*edge_idx].push(metric)
+                            }
+                        }
+
+                        // check if graph has all metrics
+
+                        for i in 0..(graph.metrics.len() - 1) {
+                            if graph.metrics[i].len() != graph.metrics[i + 1].len() {
+                                return Err(err::Msg::from(format!(
+                                    "{}{}",
+                                    "The graph's metric-distribution should be uniform, but isn't.",
+                                    "In other words: Some edges have a different amount of metrics."
+                                )));
+                            }
+                        }
+
+                        info!("FINISHED");
+
+                        // update config
+
+                        for category in edges {
+                            if let parsing::edges::Category::Metric { unit, id } = &category {
+                                graph.cfg.edges.metrics.units.push(unit.clone());
+                                graph.cfg.edges.metrics.ids.push(id.clone());
+                                graph.cfg.edges.categories.push(category);
+                            }
+                        }
                     }
                 }
             }

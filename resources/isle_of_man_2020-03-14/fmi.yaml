@@ -14,7 +14,28 @@ parsing:
   - metric: { unit: 'Kilometers', id: 'kilometers' }
   - metric: { unit: 'Hours', id: 'hours' }
   - ignored # lane-count
+  generating:
+    nodes: []
+    edges:
+    - meta: { info: 'EdgeId', id: 'edge-id' }
+    # - custom:
+    #     unit: 'F64' # optional; default is f64
+    #     id: 'some-value'
+    #     default: 42.0 # optional; default is 0.0
+    - merge:
+        from: 'resources/isle_of_man_2020-03-14/blub.csv'
+        edges:
+        - meta: { info: 'EdgeId', id: 'edge-id' }
+        - ignored
+        - metric: { unit: 'F64', id: 'some-value' }
 writing:
   route-pairs:
     file: 'resources/isle_of_man_2020-03-14/100.fmi.route-pairs'
     random_or_all: { max_count: 100 }
+  edges-info:
+    file: 'resources/isle_of_man_2020-03-14/blub.csv'
+    with_shortcuts: false
+    ids:
+    - id: 'edge-id'
+    - ignored
+    - id: 'some-value'

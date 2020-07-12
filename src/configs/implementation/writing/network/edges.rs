@@ -13,7 +13,7 @@ use std::{
 #[derive(Clone, Debug, Deserialize)]
 #[serde(from = "WrappedProtoConfig")]
 pub struct Config {
-    pub map_file: PathBuf,
+    pub file: PathBuf,
     pub is_writing_shortcuts: bool,
     pub is_writing_header: bool,
     pub ids: Vec<Option<SimpleId>>,
@@ -28,7 +28,7 @@ impl SupportingFileExts for Config {
 impl From<WrappedProtoConfig> for Config {
     fn from(proto_cfg: WrappedProtoConfig) -> Config {
         Config {
-            map_file: proto_cfg.map_file,
+            file: proto_cfg.file,
             is_writing_shortcuts: proto_cfg
                 .is_writing_shortcuts
                 .unwrap_or(defaults::parsing::IS_USING_SHORTCUTS),
@@ -38,10 +38,11 @@ impl From<WrappedProtoConfig> for Config {
     }
 }
 
+/// Used when writing graph's edges
 impl From<graph::Config> for Config {
     fn from(graph_cfg: graph::Config) -> Config {
         Config {
-            map_file: graph_cfg.map_file,
+            file: graph_cfg.map_file,
             is_writing_shortcuts: graph_cfg.edges.is_writing_shortcuts,
             is_writing_header: false,
             ids: graph_cfg.edges.ids,
@@ -65,7 +66,7 @@ impl Config {
             Err(e) => return Err(err::Msg::from(format!("{}", e))),
         };
 
-        match Writer::find_supported_ext(&cfg.map_file) {
+        match Writer::find_supported_ext(&cfg.file) {
             Ok(_) => Ok(cfg),
             Err(msg) => Err(err::Msg::from(format!("Wrong writer-map-file: {}", msg))),
         }
@@ -82,7 +83,7 @@ impl Config {
 #[derive(Debug, Deserialize)]
 #[serde(from = "WrappedRawConfig")]
 pub struct WrappedProtoConfig {
-    pub map_file: PathBuf,
+    pub file: PathBuf,
     pub is_writing_shortcuts: Option<bool>,
     pub ids: Vec<Option<SimpleId>>,
 }
@@ -92,7 +93,7 @@ impl From<WrappedRawConfig> for WrappedProtoConfig {
         let raw_cfg = raw_cfg.writing.edges_info;
 
         WrappedProtoConfig {
-            map_file: raw_cfg.map_file,
+            file: raw_cfg.file,
             is_writing_shortcuts: raw_cfg.is_writing_shortcuts,
             ids: raw_cfg
                 .ids
@@ -118,10 +119,9 @@ pub struct RawConfig {
 }
 
 #[derive(Debug, Deserialize)]
-#[serde(tag = "edges-info")]
 pub struct RawContent {
-    #[serde(rename = "map-file")]
-    pub map_file: PathBuf,
+    #[serde(rename = "file")]
+    pub file: PathBuf,
     #[serde(rename = "with_shortcuts")]
     pub is_writing_shortcuts: Option<bool>,
     pub ids: Vec<RawCategory>,

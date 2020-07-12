@@ -4,7 +4,7 @@ use crate::{
         parsing::{self, nodes},
     },
     defaults::{self, capacity::DimVec},
-    helpers::err,
+    helpers::{self, err},
     network::{EdgeBuilder, EdgeIdx, NodeBuilder, ProtoEdge, ProtoNode, ProtoShortcut},
 };
 use kissunits::geo;
@@ -27,10 +27,6 @@ impl Parser {
             edge_lines: 1..0,
         }
     }
-
-    fn is_line_functional(line: &String) -> bool {
-        line.len() > 0 && line.chars().next() != Some('#')
-    }
 }
 
 impl super::Parsing for Parser {
@@ -51,7 +47,7 @@ impl super::Parsing for Parser {
         for line in BufReader::new(file)
             .lines()
             .map(Result::unwrap)
-            .filter(Self::is_line_functional)
+            .filter(helpers::is_line_functional)
         {
             // If there is a count, remember it.
             // The first occuring count let `is_taking_counts` getting true.
@@ -111,7 +107,7 @@ impl super::Parsing for Parser {
         for line in BufReader::new(file)
             .lines()
             .map(Result::unwrap)
-            .filter(Self::is_line_functional)
+            .filter(helpers::is_line_functional)
         {
             // check if line contains edge
             if !self.edge_lines.contains(&line_number) {
@@ -121,8 +117,8 @@ impl super::Parsing for Parser {
             line_number += 1;
 
             // create edge and add it
-            let proto_edge = ProtoShortcut::from_str(&line, &builder.cfg().edges)?;
-            builder.insert(proto_edge);
+            let proto_edge = ProtoShortcut::try_from_str(&line, &builder.cfg().edges.categories)?;
+            builder.insert(proto_edge)?;
         }
         info!("FINISHED");
 
@@ -142,7 +138,7 @@ impl super::Parsing for Parser {
         for line in BufReader::new(file)
             .lines()
             .map(Result::unwrap)
-            .filter(Self::is_line_functional)
+            .filter(helpers::is_line_functional)
         {
             // check if line contains edge
             if !self.node_lines.contains(&line_number) {
@@ -165,7 +161,10 @@ impl ProtoShortcut {
     /// Parse a line of metrics into an edge.
     ///
     /// - When NodeIds are parsed, the first one is interpreted as src-id and the second one as dst-id.
-    pub fn from_str(line: &str, cfg: &parsing::edges::Config) -> Result<ProtoShortcut, String> {
+    pub fn try_from_str(
+        line: &str,
+        categories: &Vec<parsing::edges::Category>,
+    ) -> Result<ProtoShortcut, String> {
         let mut metric_values = DimVec::new();
         let mut edge_id = None;
         let mut src_id = None;
@@ -177,7 +176,7 @@ impl ProtoShortcut {
         let params: Vec<&str> = line.split_whitespace().collect();
 
         // Param-idx has to be counted separatedly because some metrics could be calculated.
-        for (param_idx, category) in cfg.categories.iter().enumerate() {
+        for (param_idx, category) in categories.iter().enumerate() {
             let param = *params.get(param_idx).ok_or(&format!(
                 "The fmi-map-file is expected to have more edge-params (> {}) \
                  than actually has ({}).",
@@ -277,14 +276,6 @@ impl ProtoShortcut {
             }
         }
 
-        debug_assert_eq!(
-            cfg.metrics.units.len(),
-            metric_values.len(),
-            "Metric-vec of proto-edge has {} elements, but should have {}.",
-            metric_values.len(),
-            cfg.metrics.units.len()
-        );
-
         let sc_edges = {
             if let (Some(sc_edge_0), Some(sc_edge_1)) = (sc_edge_0, sc_edge_1) {
                 Some([EdgeIdx(sc_edge_0), EdgeIdx(sc_edge_1)])
@@ -296,8 +287,8 @@ impl ProtoShortcut {
         Ok(ProtoShortcut {
             proto_edge: ProtoEdge {
                 id: edge_id,
-                src_id: src_id.ok_or("Proto-edge should have a src-id, but doesn't.".to_owned())?,
-                dst_id: dst_id.ok_or("Proto-edge should have a dst-id, but doesn't.".to_owned())?,
+                src_id,
+                dst_id,
                 metrics: metric_values,
             },
             sc_edges,

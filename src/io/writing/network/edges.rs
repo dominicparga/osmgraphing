@@ -13,13 +13,11 @@ impl Writer {
     pub fn write(graph: &Graph, writing_cfg: &WritingConfig) -> err::Feedback {
         info!(
             "START Write the graph's edges with {}",
-            writing_cfg.map_file.display()
+            writing_cfg.file.display()
         );
 
-        if !Self::is_file_supported(&writing_cfg.map_file) {
-            return Err(
-                format!("No support for writing {}.", writing_cfg.map_file.display()).into(),
-            );
+        if !Self::is_file_supported(&writing_cfg.file) {
+            return Err(format!("No support for writing {}.", writing_cfg.file.display()).into());
         }
 
         // prepare
@@ -27,7 +25,7 @@ impl Writer {
         let output_file = OpenOptions::new()
             .write(true)
             .create_new(true)
-            .open(&writing_cfg.map_file)?;
+            .open(&writing_cfg.file)?;
         let mut writer = BufWriter::new(output_file);
 
         write_edges_to_file(&mut writer, graph, writing_cfg)?;

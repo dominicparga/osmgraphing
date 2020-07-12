@@ -159,7 +159,7 @@ writing:
       - ignored
       - id: 'meters'
   edges-info:
-    map-file: 'relative-path-to-map-file'
+    file: 'relative-path-to-map-file'
     with_shortcuts: false
     ids:
     - id: 'src-id'

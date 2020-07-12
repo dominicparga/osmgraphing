@@ -1,5 +1,8 @@
 use crate::{
-    configs::{parsing::generating::edges::metrics as gen, SimpleId},
+    configs::{
+        parsing::generating::edges::{merge::metrics as merge_gen, metrics as gen},
+        SimpleId,
+    },
     defaults::capacity::DimVec,
     helpers::err,
     network::MetricIdx,
@@ -85,6 +88,20 @@ impl From<gen::UnitInfo> for UnitInfo {
             gen::UnitInfo::KilometersPerHour => UnitInfo::KilometersPerHour,
             gen::UnitInfo::LaneCount => UnitInfo::LaneCount,
             gen::UnitInfo::F64 => UnitInfo::F64,
+        }
+    }
+}
+impl From<merge_gen::UnitInfo> for UnitInfo {
+    fn from(gen_unit: merge_gen::UnitInfo) -> UnitInfo {
+        match gen_unit {
+            merge_gen::UnitInfo::Meters => UnitInfo::Meters,
+            merge_gen::UnitInfo::Kilometers => UnitInfo::Kilometers,
+            merge_gen::UnitInfo::Seconds => UnitInfo::Seconds,
+            merge_gen::UnitInfo::Minutes => UnitInfo::Minutes,
+            merge_gen::UnitInfo::Hours => UnitInfo::Hours,
+            merge_gen::UnitInfo::KilometersPerHour => UnitInfo::KilometersPerHour,
+            merge_gen::UnitInfo::LaneCount => UnitInfo::LaneCount,
+            merge_gen::UnitInfo::F64 => UnitInfo::F64,
         }
     }
 }

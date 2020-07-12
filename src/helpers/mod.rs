@@ -5,6 +5,10 @@ pub mod algebra;
 pub mod approx;
 pub mod err;
 
+pub fn is_line_functional(line: &String) -> bool {
+    line.len() > 0 && line.chars().next() != Some('#')
+}
+
 pub fn add(a: &DimVec<f64>, b: &DimVec<f64>) -> DimVec<f64> {
     a.iter().zip(b).map(|(aa, bb)| aa + bb).collect()
 }
