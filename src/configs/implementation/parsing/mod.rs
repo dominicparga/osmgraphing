@@ -12,7 +12,6 @@ use std::{
 pub mod edges;
 pub mod generating;
 pub mod nodes;
-pub mod proto;
 pub mod vehicles;
 
 /// # Set config-values with yaml-file (TODO update this text)
@@ -27,7 +26,7 @@ pub mod vehicles;
 ///
 /// Keep in mind, that metrics (except for id) are stored as `f64` for better maintainability and efficiency.
 #[derive(Debug, Deserialize)]
-#[serde(try_from = "proto::Config")]
+#[serde(try_from = "ProtoConfig")]
 pub struct Config {
     pub map_file: PathBuf,
     pub vehicles: vehicles::Config,
@@ -42,10 +41,10 @@ impl SupportingFileExts for Config {
     }
 }
 
-impl TryFrom<proto::Config> for Config {
+impl TryFrom<ProtoConfig> for Config {
     type Error = err::Msg;
 
-    fn try_from(proto_cfg: proto::Config) -> err::Result<Config> {
+    fn try_from(proto_cfg: ProtoConfig) -> err::Result<Config> {
         let proto_cfg = proto_cfg.parsing;
 
         Ok(Config {
@@ -89,4 +88,20 @@ impl Config {
             Err(msg) => panic!("{}", msg),
         }
     }
+}
+
+/// Don't deny unknown fields to allow multiple configs in one yaml-file.
+#[derive(Debug, Deserialize)]
+pub struct ProtoConfig {
+    pub parsing: ProtoContent,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "kebab-case", deny_unknown_fields)]
+pub struct ProtoContent {
+    pub map_file: PathBuf,
+    pub vehicles: vehicles::ProtoConfig,
+    pub nodes: nodes::ProtoConfig,
+    pub edges: edges::ProtoConfig,
+    pub generating: Option<generating::ProtoConfig>,
 }

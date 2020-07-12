@@ -1,8 +1,6 @@
 use crate::configs::SimpleId;
 use serde::Deserialize;
 pub mod metrics;
-pub mod proto;
-pub mod raw;
 
 #[derive(Debug, Deserialize)]
 pub struct Config {
@@ -44,31 +42,31 @@ pub enum Category {
     },
 }
 
-impl From<proto::Category> for Category {
-    fn from(proto_category: proto::Category) -> Category {
+impl From<ProtoCategory> for Category {
+    fn from(proto_category: ProtoCategory) -> Category {
         match proto_category {
-            proto::Category::Meta { info, id } => Category::Meta {
+            ProtoCategory::Meta { info, id } => Category::Meta {
                 info: info.into(),
                 id,
             },
-            proto::Category::Custom { unit, id, default } => Category::Custom {
+            ProtoCategory::Custom { unit, id, default } => Category::Custom {
                 unit: unit.into(),
                 id,
                 default,
             },
-            proto::Category::Haversine { unit, id } => Category::Haversine {
+            ProtoCategory::Haversine { unit, id } => Category::Haversine {
                 unit: unit.into(),
                 id,
             },
-            proto::Category::Copy { from, to } => Category::Copy {
+            ProtoCategory::Copy { from, to } => Category::Copy {
                 from: from.into(),
                 to: to.into(),
             },
-            proto::Category::Convert { from, to } => Category::Convert {
+            ProtoCategory::Convert { from, to } => Category::Convert {
                 from: from.into(),
                 to: to.into(),
             },
-            proto::Category::Calc { result, a, b } => Category::Calc {
+            ProtoCategory::Calc { result, a, b } => Category::Calc {
                 result: result.into(),
                 a: a.into(),
                 b: b.into(),
@@ -86,14 +84,149 @@ pub enum MetaInfo {
     ShortcutIdx1,
 }
 
-impl From<proto::MetaInfo> for MetaInfo {
-    fn from(proto_info: proto::MetaInfo) -> MetaInfo {
+impl From<ProtoMetaInfo> for MetaInfo {
+    fn from(proto_info: ProtoMetaInfo) -> MetaInfo {
         match proto_info {
-            proto::MetaInfo::EdgeId => MetaInfo::EdgeId,
-            proto::MetaInfo::SrcIdx => MetaInfo::SrcIdx,
-            proto::MetaInfo::DstIdx => MetaInfo::DstIdx,
-            proto::MetaInfo::ShortcutIdx0 => MetaInfo::ShortcutIdx0,
-            proto::MetaInfo::ShortcutIdx1 => MetaInfo::ShortcutIdx1,
+            ProtoMetaInfo::EdgeId => MetaInfo::EdgeId,
+            ProtoMetaInfo::SrcIdx => MetaInfo::SrcIdx,
+            ProtoMetaInfo::DstIdx => MetaInfo::DstIdx,
+            ProtoMetaInfo::ShortcutIdx0 => MetaInfo::ShortcutIdx0,
+            ProtoMetaInfo::ShortcutIdx1 => MetaInfo::ShortcutIdx1,
         }
     }
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields, from = "RawConfig")]
+pub struct ProtoConfig(pub Vec<ProtoCategory>);
+
+impl From<RawConfig> for ProtoConfig {
+    fn from(raw_cfg: RawConfig) -> ProtoConfig {
+        ProtoConfig(raw_cfg.0.into_iter().map(ProtoCategory::from).collect())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum ProtoCategory {
+    Meta {
+        info: ProtoMetaInfo,
+        id: SimpleId,
+    },
+    Custom {
+        unit: metrics::ProtoUnitInfo,
+        id: SimpleId,
+        default: f64,
+    },
+    Haversine {
+        unit: metrics::ProtoUnitInfo,
+        id: SimpleId,
+    },
+    Copy {
+        from: metrics::ProtoCategory,
+        to: metrics::ProtoCategory,
+    },
+    Convert {
+        from: metrics::ProtoCategory,
+        to: metrics::ProtoCategory,
+    },
+    Calc {
+        result: metrics::ProtoCategory,
+        a: metrics::ProtoCategory,
+        b: metrics::ProtoCategory,
+    },
+}
+
+impl From<RawCategory> for ProtoCategory {
+    fn from(raw_category: RawCategory) -> ProtoCategory {
+        match raw_category {
+            RawCategory::Meta { info, id } => ProtoCategory::Meta {
+                info: ProtoMetaInfo::from(info),
+                id,
+            },
+            RawCategory::Custom { unit, id, default } => ProtoCategory::Custom {
+                unit: unit.unwrap_or(metrics::RawUnitInfo::F64).into(),
+                id,
+                default: default.unwrap_or_default(),
+            },
+            RawCategory::Haversine { unit, id } => ProtoCategory::Haversine {
+                unit: metrics::ProtoUnitInfo::from(unit),
+                id,
+            },
+            RawCategory::Copy { from, to } => ProtoCategory::Copy {
+                from: metrics::ProtoCategory::from(from),
+                to: metrics::ProtoCategory::from(to),
+            },
+            RawCategory::Convert { from, to } => ProtoCategory::Convert {
+                from: metrics::ProtoCategory::from(from),
+                to: metrics::ProtoCategory::from(to),
+            },
+            RawCategory::Calc { result, a, b } => ProtoCategory::Calc {
+                result: metrics::ProtoCategory::from(result),
+                a: metrics::ProtoCategory::from(a),
+                b: metrics::ProtoCategory::from(b),
+            },
+        }
+    }
+}
+
+#[derive(Copy, Clone, Debug, Deserialize, Eq, PartialEq)]
+pub enum ProtoMetaInfo {
+    EdgeId,
+    SrcIdx,
+    DstIdx,
+    ShortcutIdx0,
+    ShortcutIdx1,
+}
+
+impl From<RawMetaInfo> for ProtoMetaInfo {
+    fn from(raw_info: RawMetaInfo) -> ProtoMetaInfo {
+        match raw_info {
+            RawMetaInfo::EdgeId => ProtoMetaInfo::EdgeId,
+            RawMetaInfo::SrcIdx => ProtoMetaInfo::SrcIdx,
+            RawMetaInfo::DstIdx => ProtoMetaInfo::DstIdx,
+        }
+    }
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct RawConfig(pub Vec<RawCategory>);
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum RawCategory {
+    Meta {
+        info: RawMetaInfo,
+        id: SimpleId,
+    },
+    Custom {
+        unit: Option<metrics::RawUnitInfo>,
+        id: SimpleId,
+        default: Option<f64>,
+    },
+    Haversine {
+        unit: metrics::RawUnitInfo,
+        id: SimpleId,
+    },
+    Copy {
+        from: metrics::RawCategory,
+        to: metrics::RawCategory,
+    },
+    Convert {
+        from: metrics::RawCategory,
+        to: metrics::RawCategory,
+    },
+    Calc {
+        result: metrics::RawCategory,
+        a: metrics::RawCategory,
+        b: metrics::RawCategory,
+    },
+}
+
+#[derive(Copy, Clone, Debug, Deserialize, Eq, PartialEq)]
+pub enum RawMetaInfo {
+    EdgeId,
+    SrcIdx,
+    DstIdx,
 }

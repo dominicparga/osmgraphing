@@ -9,11 +9,9 @@ use std::{
     fs::OpenOptions,
     path::{Path, PathBuf},
 };
-pub mod proto;
-pub mod raw;
 
 #[derive(Clone, Debug, Deserialize)]
-#[serde(from = "proto::Config")]
+#[serde(from = "WrappedProtoConfig")]
 pub struct Config {
     pub map_file: PathBuf,
     pub is_writing_shortcuts: bool,
@@ -27,8 +25,8 @@ impl SupportingFileExts for Config {
     }
 }
 
-impl From<proto::Config> for Config {
-    fn from(proto_cfg: proto::Config) -> Config {
+impl From<WrappedProtoConfig> for Config {
+    fn from(proto_cfg: WrappedProtoConfig) -> Config {
         Config {
             map_file: proto_cfg.map_file,
             is_writing_shortcuts: proto_cfg
@@ -79,4 +77,59 @@ impl Config {
             Err(msg) => panic!("{}", msg),
         }
     }
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(from = "WrappedRawConfig")]
+pub struct WrappedProtoConfig {
+    pub map_file: PathBuf,
+    pub is_writing_shortcuts: Option<bool>,
+    pub ids: Vec<Option<SimpleId>>,
+}
+
+impl From<WrappedRawConfig> for WrappedProtoConfig {
+    fn from(raw_cfg: WrappedRawConfig) -> WrappedProtoConfig {
+        let raw_cfg = raw_cfg.writing.edges_info;
+
+        WrappedProtoConfig {
+            map_file: raw_cfg.map_file,
+            is_writing_shortcuts: raw_cfg.is_writing_shortcuts,
+            ids: raw_cfg
+                .ids
+                .into_iter()
+                .map(|category| match category {
+                    RawCategory::Id(id) => Some(id),
+                    RawCategory::Ignored => None,
+                })
+                .collect(),
+        }
+    }
+}
+
+#[derive(Debug, Deserialize)]
+pub struct WrappedRawConfig {
+    pub writing: RawConfig,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct RawConfig {
+    #[serde(rename = "edges-info")]
+    pub edges_info: RawContent,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(tag = "edges-info")]
+pub struct RawContent {
+    #[serde(rename = "map-file")]
+    pub map_file: PathBuf,
+    #[serde(rename = "with_shortcuts")]
+    pub is_writing_shortcuts: Option<bool>,
+    pub ids: Vec<RawCategory>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum RawCategory {
+    Id(SimpleId),
+    Ignored,
 }

@@ -5,8 +5,6 @@ use kissunits::{
     time::{Hours, Minutes, Seconds},
 };
 use serde::Deserialize;
-pub mod proto;
-pub mod raw;
 
 #[derive(Debug)]
 pub struct Config {
@@ -20,8 +18,8 @@ pub struct Category {
     pub id: SimpleId,
 }
 
-impl From<proto::Category> for Category {
-    fn from(proto_category: proto::Category) -> Category {
+impl From<ProtoCategory> for Category {
+    fn from(proto_category: ProtoCategory) -> Category {
         Category {
             unit: proto_category.unit.into(),
             id: proto_category.id,
@@ -41,17 +39,17 @@ pub enum UnitInfo {
     F64,
 }
 
-impl From<proto::UnitInfo> for UnitInfo {
-    fn from(proto_unit: proto::UnitInfo) -> UnitInfo {
+impl From<ProtoUnitInfo> for UnitInfo {
+    fn from(proto_unit: ProtoUnitInfo) -> UnitInfo {
         match proto_unit {
-            proto::UnitInfo::Meters => UnitInfo::Meters,
-            proto::UnitInfo::Kilometers => UnitInfo::Kilometers,
-            proto::UnitInfo::Seconds => UnitInfo::Seconds,
-            proto::UnitInfo::Minutes => UnitInfo::Minutes,
-            proto::UnitInfo::Hours => UnitInfo::Hours,
-            proto::UnitInfo::KilometersPerHour => UnitInfo::KilometersPerHour,
-            proto::UnitInfo::LaneCount => UnitInfo::LaneCount,
-            proto::UnitInfo::F64 => UnitInfo::F64,
+            ProtoUnitInfo::Meters => UnitInfo::Meters,
+            ProtoUnitInfo::Kilometers => UnitInfo::Kilometers,
+            ProtoUnitInfo::Seconds => UnitInfo::Seconds,
+            ProtoUnitInfo::Minutes => UnitInfo::Minutes,
+            ProtoUnitInfo::Hours => UnitInfo::Hours,
+            ProtoUnitInfo::KilometersPerHour => UnitInfo::KilometersPerHour,
+            ProtoUnitInfo::LaneCount => UnitInfo::LaneCount,
+            ProtoUnitInfo::F64 => UnitInfo::F64,
         }
     }
 }
@@ -263,4 +261,64 @@ impl UnitInfo {
             .into())
         }
     }
+}
+
+#[derive(Clone, Debug, Deserialize)]
+pub struct ProtoCategory {
+    pub unit: ProtoUnitInfo,
+    pub id: SimpleId,
+}
+
+impl From<RawCategory> for ProtoCategory {
+    fn from(raw_category: RawCategory) -> ProtoCategory {
+        ProtoCategory {
+            unit: ProtoUnitInfo::from(raw_category.unit),
+            id: raw_category.id,
+        }
+    }
+}
+
+#[derive(Copy, Clone, Debug, Deserialize, Eq, PartialEq)]
+pub enum ProtoUnitInfo {
+    Meters,
+    Kilometers,
+    Seconds,
+    Minutes,
+    Hours,
+    KilometersPerHour,
+    LaneCount,
+    F64,
+}
+
+impl From<RawUnitInfo> for ProtoUnitInfo {
+    fn from(raw_unit: RawUnitInfo) -> ProtoUnitInfo {
+        match raw_unit {
+            RawUnitInfo::Meters => ProtoUnitInfo::Meters,
+            RawUnitInfo::Kilometers => ProtoUnitInfo::Kilometers,
+            RawUnitInfo::Seconds => ProtoUnitInfo::Seconds,
+            RawUnitInfo::Minutes => ProtoUnitInfo::Minutes,
+            RawUnitInfo::Hours => ProtoUnitInfo::Hours,
+            RawUnitInfo::KilometersPerHour => ProtoUnitInfo::KilometersPerHour,
+            RawUnitInfo::LaneCount => ProtoUnitInfo::LaneCount,
+            RawUnitInfo::F64 => ProtoUnitInfo::F64,
+        }
+    }
+}
+
+#[derive(Clone, Debug, Deserialize)]
+pub struct RawCategory {
+    pub unit: RawUnitInfo,
+    pub id: SimpleId,
+}
+
+#[derive(Copy, Clone, Debug, Deserialize, Eq, PartialEq)]
+pub enum RawUnitInfo {
+    Meters,
+    Kilometers,
+    Seconds,
+    Minutes,
+    Hours,
+    KilometersPerHour,
+    LaneCount,
+    F64,
 }

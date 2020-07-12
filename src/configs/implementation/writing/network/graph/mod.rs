@@ -9,11 +9,9 @@ use std::{
 };
 pub mod edges;
 pub mod nodes;
-pub mod proto;
-pub mod raw;
 
 #[derive(Clone, Debug, Deserialize)]
-#[serde(from = "proto::Config")]
+#[serde(from = "WrappedProtoConfig")]
 pub struct Config {
     pub map_file: PathBuf,
     pub nodes: nodes::Config,
@@ -23,16 +21,6 @@ pub struct Config {
 impl SupportingFileExts for Config {
     fn supported_exts<'a>() -> &'a [&'a str] {
         &["yaml"]
-    }
-}
-
-impl From<proto::Config> for Config {
-    fn from(proto_cfg: proto::Config) -> Config {
-        Config {
-            map_file: proto_cfg.map_file,
-            nodes: nodes::Config::from(proto_cfg.nodes),
-            edges: edges::Config::from(proto_cfg.edges),
-        }
     }
 }
 
@@ -64,4 +52,55 @@ impl Config {
             Err(msg) => panic!("{}", msg),
         }
     }
+}
+
+impl From<WrappedProtoConfig> for Config {
+    fn from(proto_cfg: WrappedProtoConfig) -> Config {
+        Config {
+            map_file: proto_cfg.map_file,
+            nodes: nodes::Config::from(proto_cfg.nodes),
+            edges: edges::Config::from(proto_cfg.edges),
+        }
+    }
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(from = "WrappedRawConfig")]
+pub struct WrappedProtoConfig {
+    pub map_file: PathBuf,
+    pub nodes: nodes::ProtoConfig,
+    pub edges: edges::ProtoConfig,
+}
+
+impl From<WrappedRawConfig> for WrappedProtoConfig {
+    fn from(raw_cfg: WrappedRawConfig) -> WrappedProtoConfig {
+        let raw_cfg = raw_cfg.writing.graph;
+
+        WrappedProtoConfig {
+            map_file: raw_cfg.map_file,
+            nodes: nodes::ProtoConfig::from(raw_cfg.nodes),
+            edges: edges::ProtoConfig::from(raw_cfg.edges),
+        }
+    }
+}
+
+/// Don't deny unknown fields to allow multiple configs in one yaml-file.
+#[derive(Debug, Deserialize)]
+pub struct WrappedRawConfig {
+    pub writing: RawConfig,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct RawConfig {
+    graph: RawContent,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct RawContent {
+    #[serde(rename = "map-file")]
+    map_file: PathBuf,
+    nodes: nodes::RawConfig,
+    edges: edges::RawConfig,
 }
