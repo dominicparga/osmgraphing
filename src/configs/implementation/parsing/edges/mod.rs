@@ -166,14 +166,6 @@ impl From<generating::edges::MetaInfo> for MetaInfo {
     }
 }
 
-impl From<generating::edges::merge::MetaInfo> for MetaInfo {
-    fn from(gen_info: generating::edges::merge::MetaInfo) -> MetaInfo {
-        match gen_info {
-            generating::edges::merge::MetaInfo::EdgeId => MetaInfo::EdgeId,
-        }
-    }
-}
-
 #[derive(Debug, Deserialize)]
 #[serde(from = "RawConfig", deny_unknown_fields)]
 pub struct ProtoConfig {

@@ -46,14 +46,7 @@ pub mod parsing {
             }
 
             pub mod merge {
-                pub use crate::configs::implementation::parsing::generating::edges::merge::{
-                    Category, MetaInfo,
-                };
-
-                pub mod metrics {
-                    use crate::configs::implementation::parsing;
-                    pub use parsing::generating::edges::merge::metrics::{Category, UnitInfo};
-                }
+                pub use crate::configs::implementation::parsing::generating::edges::merge::Category;
             }
         }
     }

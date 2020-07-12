@@ -68,15 +68,15 @@ impl Graph {
     fn add_metrics(&mut self, proto_edge: &mut ProtoEdgeB) -> err::Feedback {
         let cfg = &self.cfg;
 
-        for (metric_idx, raw_value) in proto_edge.metrics.iter_mut().enumerate() {
-            if raw_value.approx_eq(&0.0) {
+        for metric_idx in 0..proto_edge.metrics.len() {
+            if proto_edge.metrics[metric_idx].approx_eq(&0.0) {
                 debug!(
                     "Proto-edge (id:{}->id:{}) has {}=0, hence is corrected to epsilon.",
                     self.nodes().id(proto_edge.src_idx),
                     self.nodes().id(proto_edge.dst_idx),
                     cfg.edges.metrics.ids[metric_idx]
                 );
-                *raw_value = std::f64::EPSILON;
+                proto_edge.metrics[metric_idx] = std::f64::EPSILON;
             }
         }
 
@@ -113,8 +113,8 @@ impl ProtoShortcut {
 #[derive(Debug)]
 pub struct ProtoEdge {
     pub id: Option<usize>,
-    pub src_id: Option<i64>,
-    pub dst_id: Option<i64>,
+    pub src_id: i64,
+    pub dst_id: i64,
     pub metrics: DimVec<f64>,
 }
 
@@ -138,7 +138,7 @@ impl MemSize for ProtoEdge {
         // src_id: i64
         // dst_id: i64
         + 2 * mem::size_of::<i64>()
-        // metrics: DimVec<Option<f64>>
+        // metrics: DimVec<f64>
         + capacity::SMALL_VEC_INLINE_SIZE * mem::size_of::<f64>()
     }
 }
@@ -206,12 +206,6 @@ impl EdgeBuilder {
             proto_edge,
             sc_edges,
         } = proto_edge.into();
-        let src_id = proto_edge
-            .src_id
-            .ok_or("Proto-edge should have a src-id, but doesn't.".to_owned())?;
-        let dst_id = proto_edge
-            .dst_id
-            .ok_or("Proto-edge should have a dst-id, but doesn't.".to_owned())?;
 
         // Most of the time, nodes are added for consecutive edges of one street,
         // so duplicates are next to each other.
@@ -233,10 +227,10 @@ impl EdgeBuilder {
         let n = self.node_ids.len();
         let k = 2;
         if n < k {
-            self.node_ids.push(src_id);
-            self.node_ids.push(dst_id);
+            self.node_ids.push(proto_edge.src_id);
+            self.node_ids.push(proto_edge.dst_id);
         } else {
-            for new_id in &[src_id, dst_id] {
+            for new_id in &[proto_edge.src_id, proto_edge.dst_id] {
                 if !self.node_ids[(n - k)..n].contains(new_id) {
                     self.node_ids.push(*new_id);
                 }
@@ -250,8 +244,8 @@ impl EdgeBuilder {
             self.proto_edges.push(ProtoEdgeA {
                 idx,
                 id: proto_edge.id,
-                src_id,
-                dst_id,
+                src_id: proto_edge.src_id,
+                dst_id: proto_edge.dst_id,
                 metrics: proto_edge.metrics,
                 sc_edges: Some(self.proto_shortcuts.len()),
             });
@@ -260,8 +254,8 @@ impl EdgeBuilder {
             self.proto_edges.push(ProtoEdgeA {
                 idx,
                 id: proto_edge.id,
-                src_id,
-                dst_id,
+                src_id: proto_edge.src_id,
+                dst_id: proto_edge.dst_id,
                 metrics: proto_edge.metrics,
                 sc_edges: None,
             });
@@ -524,7 +518,7 @@ impl GraphBuilder {
                     // compare src-id and dst-id, then metrics approximately
                     if (e0.src_idx, e0.dst_idx) == (e1.src_idx, e1.dst_idx) {
                         for (e0_metric, e1_metric) in e0.metrics.iter().zip(e1.metrics.iter()) {
-                            if e0_metric.approx_eq(&e1_metric) {
+                            if e0_metric.approx_eq(e1_metric) {
                                 continue;
                             }
                             // values are different
@@ -943,37 +937,12 @@ impl GraphBuilder {
                             )));
                         }
                     }
-                    generating::edges::Category::Merge { from: _, edges } => {
-                        for category in &graph.cfg.edges.categories {
-                            match category {
-                                parsing::edges::Category::Meta { info: _, id }
-                                | parsing::edges::Category::Metric { unit: _, id } => {
-                                    // loop over edges
-                                    if edges.iter().any(|category| match category {
-                                        generating::edges::merge::Category::Meta {
-                                            info: _,
-                                            id: new_id,
-                                        }
-                                        | generating::edges::merge::Category::Metric {
-                                            unit: _,
-                                            id: new_id,
-                                        } => {
-                                            // and check, if a new id does already exist
-                                            new_id == id
-                                        }
-                                        generating::edges::merge::Category::Ignored => false,
-                                    }) {
-                                        return Err(err::Msg::from(format!(
-                                            "Id {} should be generated, but does already exist.",
-                                            id
-                                        )));
-                                    }
-                                }
-                                parsing::edges::Category::Ignored => continue,
-                            }
-                        }
+                    generating::edges::Category::Merge {
+                        from: _,
+                        edge_id: _,
+                        edges_info: _,
                     }
-                    generating::edges::Category::Convert { from: _, to: _ } => {
+                    | generating::edges::Category::Convert { from: _, to: _ } => {
                         // do not check because it's in-place, so duplicates would be removed.
                     }
                 }
@@ -1128,23 +1097,13 @@ impl GraphBuilder {
                         // loop over all edges
                         // and add to their metrics
 
-                        let metric_idx = graph
-                            .cfg
-                            .edges
-                            .metrics
-                            .ids
-                            .iter()
-                            .position(|id| id == &from.id)
-                            .expect(&format!(
-                                "Id {} is expected in graph, but doesn't exist.",
-                                from.id
-                            ));
+                        let metric_idx = graph.cfg.edges.metrics.idx_of(&from.id);
                         for edge_idx in 0..graph.metrics.len() {
                             // get old value
                             // and generate new value
 
                             let new_raw_value = {
-                                let old_raw_value = graph.metrics[edge_idx][metric_idx];
+                                let old_raw_value = graph.metrics[edge_idx][*metric_idx];
                                 from.unit.try_convert(&to.unit, old_raw_value)?
                             };
 
@@ -1170,29 +1129,19 @@ impl GraphBuilder {
                         // loop over all edges
                         // and replace their existing metrics
 
-                        let metric_idx = graph
-                            .cfg
-                            .edges
-                            .metrics
-                            .ids
-                            .iter()
-                            .position(|id| id == &from.id)
-                            .expect(&format!(
-                                "Id {} is expected in graph, but doesn't exist.",
-                                from.id
-                            ));
+                        let metric_idx = graph.cfg.edges.metrics.idx_of(&from.id);
                         for edge_idx in 0..graph.metrics.len() {
                             // get old value
                             // and generate new value
 
                             let new_raw_value = {
-                                let old_raw_value = graph.metrics[edge_idx][metric_idx];
+                                let old_raw_value = graph.metrics[edge_idx][*metric_idx];
                                 from.unit.try_convert(&to.unit, old_raw_value)?
                             };
 
                             // update graph
 
-                            graph.metrics[edge_idx][metric_idx] = new_raw_value;
+                            graph.metrics[edge_idx][*metric_idx] = new_raw_value;
                         }
 
                         // update config
@@ -1215,42 +1164,22 @@ impl GraphBuilder {
                                 parsing::edges::Category::Meta { info: _, id: _ }
                                 | parsing::edges::Category::Ignored => (),
                             });
-                        graph.cfg.edges.metrics.units[metric_idx] = to.unit.into();
-                        graph.cfg.edges.metrics.ids[metric_idx] = to.id.clone();
+                        graph.cfg.edges.metrics.units[*metric_idx] = to.unit.into();
+                        graph.cfg.edges.metrics.ids[*metric_idx] = to.id.clone();
                     }
                     generating::edges::Category::Calc { result, a, b } => {
                         // loop over all edges
                         // and replace their existing metrics
 
-                        let idx_a = graph
-                            .cfg
-                            .edges
-                            .metrics
-                            .ids
-                            .iter()
-                            .position(|id| id == &a.id)
-                            .expect(&format!(
-                                "Id {} is expected in graph, but doesn't exist.",
-                                a.id
-                            ));
-                        let idx_b = graph
-                            .cfg
-                            .edges
-                            .metrics
-                            .ids
-                            .iter()
-                            .position(|id| id == &b.id)
-                            .expect(&format!(
-                                "Id {} is expected in graph, but doesn't exist.",
-                                b.id
-                            ));
+                        let metric_idx_a = graph.cfg.edges.metrics.idx_of(&a.id);
+                        let metric_idx_b = graph.cfg.edges.metrics.idx_of(&b.id);
                         for edge_idx in 0..graph.metrics.len() {
                             // get old value
                             // and generate new value
 
                             let new_raw_value = {
-                                let old_raw_a = graph.metrics[edge_idx][idx_a];
-                                let old_raw_b = graph.metrics[edge_idx][idx_b];
+                                let old_raw_a = graph.metrics[edge_idx][*metric_idx_a];
+                                let old_raw_b = graph.metrics[edge_idx][*metric_idx_b];
                                 result
                                     .unit
                                     .try_calc(&a.unit, old_raw_a, &b.unit, old_raw_b)?
@@ -1274,84 +1203,80 @@ impl GraphBuilder {
                         graph.cfg.edges.metrics.units.push(result.unit.into());
                         graph.cfg.edges.metrics.ids.push(result.id.clone());
                     }
-                    generating::edges::Category::Merge { from, edges } => {
-                        info!("START Create edges from merge-file.");
-                        // convert generating-categories into parsing-categories
-                        let edges = edges
-                            .into_iter()
-                            .map(|category| match category {
-                                generating::edges::merge::Category::Meta { info, id } => {
-                                    parsing::edges::Category::Meta {
-                                        info: parsing::edges::MetaInfo::from(*info),
-                                        id: id.clone(),
-                                    }
-                                }
-                                generating::edges::merge::Category::Metric { unit, id } => {
-                                    parsing::edges::Category::Metric {
-                                        unit: parsing::edges::metrics::UnitInfo::from(*unit),
-                                        id: id.clone(),
-                                    }
-                                }
-                                generating::edges::merge::Category::Ignored => {
-                                    parsing::edges::Category::Ignored
-                                }
-                            })
-                            .collect();
-
+                    generating::edges::Category::Merge {
+                        from,
+                        edge_id,
+                        edges_info,
+                    } => {
                         // open file
 
                         let file = OpenOptions::new()
                             .read(true)
                             .open(&from)
                             .expect(&format!("Couldn't open {}", from.display()));
-
-                        // parse edges
-
-                        for line in BufReader::new(file)
+                        let reader = BufReader::new(file)
                             .lines()
                             .map(Result::unwrap)
-                            .filter(helpers::is_line_functional)
-                        {
-                            let proto_sc = ProtoShortcut::try_from_str(&line, &edges)?;
-                            let edge_idx =
-                                graph
-                                    .fwd_edges()
-                                    .idx_from(proto_sc.proto_edge.id.expect(
-                                        "An edge-id has to be given when merging edge-infos.",
-                                    ))
-                                    .expect(&format!(
-                                        "{}{}",
-                                        "A provided edge-id, which should be merged, ",
-                                        "is not in the graph.",
-                                    ));
-                            for metric in proto_sc.proto_edge.metrics {
-                                graph.metrics[*edge_idx].push(metric)
+                            .filter(helpers::is_line_functional);
+
+                        // parse edge-id and metric
+
+                        for line in reader {
+                            let params: Vec<&str> = line.split_whitespace().collect();
+
+                            // get edge-idx
+
+                            let mut edge_idx = None;
+                            for (col_idx, category) in edges_info.iter().enumerate() {
+                                match category {
+                                    generating::edges::merge::Category::Id(id) => {
+                                        let param = params[col_idx];
+
+                                        if id == edge_id {
+                                            let edge_id = param.parse::<usize>().ok().ok_or(
+                                                format!("Parsing edge-id '{}' didn't work.", param),
+                                            )?;
+                                            edge_idx =
+                                                Some(graph.fwd_edges().try_idx_from(edge_id)?);
+                                            break;
+                                        }
+                                    }
+                                    generating::edges::merge::Category::Ignored => continue,
+                                }
+                            }
+                            let edge_idx = edge_idx.ok_or(err::Msg::from(format!(
+                                "The expected edge-id {} is not in the edges-info-file.",
+                                edge_id,
+                            )))?;
+
+                            // update graph with data
+
+                            for (col_idx, category) in edges_info.iter().enumerate() {
+                                match category {
+                                    generating::edges::merge::Category::Id(id) => {
+                                        if id == edge_id {
+                                            continue;
+                                        }
+
+                                        let metric_idx = graph.cfg.edges.metrics.idx_of(id);
+
+                                        let param = params[col_idx];
+                                        if let Ok(raw_value) = param.parse::<f64>() {
+                                            graph.metrics[*edge_idx][*metric_idx] = raw_value;
+                                        } else {
+                                            return Err(err::Msg::from(format!(
+                                                "Parsing '{}' didn't work.",
+                                                param
+                                            )));
+                                        };
+                                    }
+                                    generating::edges::merge::Category::Ignored => continue,
+                                }
                             }
                         }
-
-                        // check if graph has all metrics
-
-                        for i in 0..(graph.metrics.len() - 1) {
-                            if graph.metrics[i].len() != graph.metrics[i + 1].len() {
-                                return Err(err::Msg::from(format!(
-                                    "{}{}",
-                                    "The graph's metric-distribution should be uniform, but isn't.",
-                                    "In other words: Some edges have a different amount of metrics."
-                                )));
-                            }
-                        }
-
-                        info!("FINISHED");
 
                         // update config
-
-                        for category in edges {
-                            if let parsing::edges::Category::Metric { unit, id } = &category {
-                                graph.cfg.edges.metrics.units.push(unit.clone());
-                                graph.cfg.edges.metrics.ids.push(id.clone());
-                                graph.cfg.edges.categories.push(category);
-                            }
-                        }
+                        // -> already up-to-date since just floats has been replaced
                     }
                 }
             }

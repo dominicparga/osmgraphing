@@ -42,10 +42,11 @@ pub enum Category {
         a: metrics::Category,
         b: metrics::Category,
     },
-    // out-of-place
+    // in-place
     Merge {
         from: PathBuf,
-        edges: Vec<merge::Category>,
+        edge_id: SimpleId,
+        edges_info: Vec<merge::Category>,
     },
 }
 
@@ -78,9 +79,14 @@ impl From<ProtoCategory> for Category {
                 a: a.into(),
                 b: b.into(),
             },
-            ProtoCategory::Merge { from, edges } => Category::Merge {
+            ProtoCategory::Merge {
                 from,
-                edges: edges.into_iter().map(merge::Category::from).collect(),
+                edge_id,
+                edges_info,
+            } => Category::Merge {
+                from,
+                edge_id,
+                edges_info: edges_info.into_iter().map(merge::Category::from).collect(),
             },
         }
     }
@@ -148,7 +154,8 @@ pub enum ProtoCategory {
     },
     Merge {
         from: PathBuf,
-        edges: Vec<merge::ProtoCategory>,
+        edge_id: SimpleId,
+        edges_info: Vec<merge::ProtoCategory>,
     },
 }
 
@@ -181,9 +188,17 @@ impl From<RawCategory> for ProtoCategory {
                 a: metrics::ProtoCategory::from(a),
                 b: metrics::ProtoCategory::from(b),
             },
-            RawCategory::Merge { from, edges } => ProtoCategory::Merge {
+            RawCategory::Merge {
                 from,
-                edges: edges.into_iter().map(merge::ProtoCategory::from).collect(),
+                edge_id,
+                edges_info,
+            } => ProtoCategory::Merge {
+                from,
+                edge_id,
+                edges_info: edges_info
+                    .into_iter()
+                    .map(merge::ProtoCategory::from)
+                    .collect(),
             },
         }
     }
@@ -243,7 +258,10 @@ pub enum RawCategory {
     },
     Merge {
         from: PathBuf,
-        edges: Vec<merge::RawCategory>,
+        #[serde(rename = "edge-id")]
+        edge_id: SimpleId,
+        #[serde(rename = "edges-info")]
+        edges_info: Vec<merge::RawCategory>,
     },
 }
 

@@ -2,7 +2,7 @@ pub mod building;
 mod indexing;
 pub use indexing::{EdgeIdx, EdgeIdxIterator, MetricIdx, NodeIdx, NodeIdxIterator};
 
-use crate::{configs::parsing::Config, defaults::capacity::DimVec};
+use crate::{configs::parsing::Config, defaults::capacity::DimVec, helpers::err};
 use kissunits::geo::Coordinate;
 use std::{
     fmt,
@@ -554,10 +554,20 @@ impl<'a> EdgeAccessor<'a> {
         self.edge_ids[*idx].expect(&format!("Edge-id expected at edge-idx {}.", *idx))
     }
 
-    pub fn idx_from(&self, id: usize) -> Result<EdgeIdx, EdgeIdx> {
+    pub fn try_idx_from(&self, id: usize) -> err::Result<EdgeIdx> {
         match self.edge_ids.binary_search(&Some(id)) {
             Ok(idx) => Ok(EdgeIdx(idx)),
-            Err(idx) => Err(EdgeIdx(idx)),
+            Err(_idx) => Err(err::Msg::from(format!(
+                "The provided edge-id {} is expected to be in the graph, but is not.",
+                id
+            ))),
+        }
+    }
+
+    pub fn idx_from(&self, id: usize) -> EdgeIdx {
+        match self.try_idx_from(id) {
+            Ok(edge_idx) => edge_idx,
+            Err(msg) => panic!("{}", msg),
         }
     }
 

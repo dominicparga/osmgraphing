@@ -92,12 +92,15 @@ parsing:
       # Read the edge-data from the provided csv-file and add it to the graph.
     - merge:
         from: 'path/to/csv'
-        edges:
-        - ignored
+        # this is needed to make parsing easier
+        edge-id: 'edge-id'
+        # csv-columns
+        edges-info:
           # one edge-id has to be provided with the same id as above
-        - meta: { info: 'EdgeId', id: 'edge-id' }
-        - meta: { ... }
-        - metric: { ... }
+        - id: 'edge-id'
+        - ignored
+          # metrics can only be overwritten
+        - id: 'some-value'
 # optional
 # This config is used for the balancer-binary.
 balancing:

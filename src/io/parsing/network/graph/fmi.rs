@@ -287,8 +287,8 @@ impl ProtoShortcut {
         Ok(ProtoShortcut {
             proto_edge: ProtoEdge {
                 id: edge_id,
-                src_id,
-                dst_id,
+                src_id: src_id.ok_or("Proto-edge should have a src-id, but doesn't.".to_owned())?,
+                dst_id: dst_id.ok_or("Proto-edge should have a dst-id, but doesn't.".to_owned())?,
                 metrics: metric_values,
             },
             sc_edges,

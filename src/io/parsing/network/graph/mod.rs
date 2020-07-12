@@ -164,9 +164,11 @@ fn check_config(cfg: &parsing::Config) -> err::Feedback {
                         id: _,
                         default: _,
                     } => 1,
-                    generating::edges::Category::Merge { from: _, edges } => {
-                        edges.iter().filter(|category| category.is_metric()).count()
-                    }
+                    generating::edges::Category::Merge {
+                        from: _,
+                        edge_id: _,
+                        edges_info: _,
+                    } => 0,
                 })
                 .sum()
         } else {

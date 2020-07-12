@@ -157,8 +157,8 @@ impl super::Parsing for Parser {
                 // add proto-edge to graph
                 builder.insert(ProtoEdge {
                     id: None,
-                    src_id: Some(nodes[node_idx]),
-                    dst_id: Some(nodes[node_idx + 1]),
+                    src_id: nodes[node_idx],
+                    dst_id: nodes[node_idx + 1],
                     metrics: metrics.clone(),
                 })?;
             }
