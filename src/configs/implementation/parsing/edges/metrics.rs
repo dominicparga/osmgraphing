@@ -9,7 +9,6 @@ use kissunits::{
     time::{Hours, Minutes, Seconds},
 };
 use serde::Deserialize;
-pub mod proto;
 
 #[derive(Debug)]
 pub struct Config {
@@ -60,17 +59,17 @@ pub enum UnitInfo {
     F64,
 }
 
-impl From<proto::UnitInfo> for UnitInfo {
-    fn from(proto_unit: proto::UnitInfo) -> UnitInfo {
+impl From<ProtoUnitInfo> for UnitInfo {
+    fn from(proto_unit: ProtoUnitInfo) -> UnitInfo {
         match proto_unit {
-            proto::UnitInfo::Meters => UnitInfo::Meters,
-            proto::UnitInfo::Kilometers => UnitInfo::Kilometers,
-            proto::UnitInfo::Seconds => UnitInfo::Seconds,
-            proto::UnitInfo::Minutes => UnitInfo::Minutes,
-            proto::UnitInfo::Hours => UnitInfo::Hours,
-            proto::UnitInfo::KilometersPerHour => UnitInfo::KilometersPerHour,
-            proto::UnitInfo::LaneCount => UnitInfo::LaneCount,
-            proto::UnitInfo::F64 => UnitInfo::F64,
+            ProtoUnitInfo::Meters => UnitInfo::Meters,
+            ProtoUnitInfo::Kilometers => UnitInfo::Kilometers,
+            ProtoUnitInfo::Seconds => UnitInfo::Seconds,
+            ProtoUnitInfo::Minutes => UnitInfo::Minutes,
+            ProtoUnitInfo::Hours => UnitInfo::Hours,
+            ProtoUnitInfo::KilometersPerHour => UnitInfo::KilometersPerHour,
+            ProtoUnitInfo::LaneCount => UnitInfo::LaneCount,
+            ProtoUnitInfo::F64 => UnitInfo::F64,
         }
     }
 }
@@ -172,4 +171,43 @@ impl UnitInfo {
             Err(msg) => panic!("{}", msg),
         }
     }
+}
+
+#[derive(Copy, Clone, Debug, Deserialize, Eq, PartialEq)]
+pub enum ProtoUnitInfo {
+    Meters,
+    Kilometers,
+    Seconds,
+    Minutes,
+    Hours,
+    KilometersPerHour,
+    LaneCount,
+    F64,
+}
+
+impl From<RawUnitInfo> for ProtoUnitInfo {
+    fn from(raw_info: RawUnitInfo) -> ProtoUnitInfo {
+        match raw_info {
+            RawUnitInfo::Meters => ProtoUnitInfo::Meters,
+            RawUnitInfo::Kilometers => ProtoUnitInfo::Kilometers,
+            RawUnitInfo::Seconds => ProtoUnitInfo::Seconds,
+            RawUnitInfo::Minutes => ProtoUnitInfo::Minutes,
+            RawUnitInfo::Hours => ProtoUnitInfo::Hours,
+            RawUnitInfo::KilometersPerHour => ProtoUnitInfo::KilometersPerHour,
+            RawUnitInfo::LaneCount => ProtoUnitInfo::LaneCount,
+            RawUnitInfo::F64 => ProtoUnitInfo::F64,
+        }
+    }
+}
+
+#[derive(Copy, Clone, Debug, Deserialize, Eq, PartialEq)]
+pub enum RawUnitInfo {
+    Meters,
+    Kilometers,
+    Seconds,
+    Minutes,
+    Hours,
+    KilometersPerHour,
+    LaneCount,
+    F64,
 }

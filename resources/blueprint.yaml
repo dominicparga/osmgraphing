@@ -24,24 +24,26 @@ parsing:
     category: 'Car' # | 'Bicycle' | 'Pedestrian'
     # Value `false` leads to more edges, because edges are added, which are okay, but not suitable for this vehicle-category.
     are_drivers_picky: false
-  # With nodes, the order matters, if the map-file has a order, like `fmi`-files. Behaviour with multiple occurences is undefined, but it probably overwrites previous ones.
+  # With nodes, the order matters, if the map-file has a order, like `fmi`-files.
+  # Behaviour with multiple occurences is undefined, but it probably overwrites previous ones.
   nodes:
   - meta: { info: 'NodeId', id: 'node-id' }
   - meta: { info: 'CHLevel', id: 'ch-level' }
   - metric: { unit: 'Latitude', id: 'latitude' }
   - metric: { unit: 'Longitude', id: 'longitude' }
   - ignored
-  # With edges, the order matters, if the map-file has a metric-order, like `fmi`-files. Each metric below will be stored in the graph.
-  #
-  # ATTENTION!!!
-  # For best performance and memory-usage, in module 'defaults', set the inline-size accordingly to the number of metrics.
+  # With edges, the order matters, if the map-file has a metric-order, like `fmi`-files.
+  # Each metric below will be stored in the graph.
   edges:
-    # can be provided once
+    # This category can be provided once.
   - meta: { info: 'SrcId', id: 'src-id'}
   - meta: { info: 'DstId', id: 'dst-id'}
-    # used for ch-graph and can be provided once
+    # This category is used for ch-graph and can be provided once.
   - meta: { info: 'ShortcutIdx0', id: 'sc-idx-0'}
   - meta: { info: 'ShortcutIdx1', id: 'sc-idx-1'}
+    # This id can be used to import/export matching edge-data.
+    # This category can be provided once.
+  - meta: { info: 'EdgeId', id: 'edge-id' }
     # metrics, which can be used multiple times (with unique id)
   - metric: { unit: 'Meters', id: 'meters' }
   - metric: { unit: 'Kilometers', id: 'kilometers' }
@@ -59,6 +61,9 @@ parsing:
     - meta: { info: 'NodeIdx', id: 'node-idx' }
     - meta: { info: 'CHLevel', id: 'ch-level' }
     edges:
+      # This id can be used to import/export matching edge-data
+      # This category can be provided once.
+    - meta: { info: 'EdgeId', id: 'edge-id' }
       # Register these ids, so indices could be used as ids in a new graph-file.
     - meta: { info: 'SrcIdx', id: 'src-idx' }
     - meta: { info: 'DstIdx', id: 'dst-idx' }
@@ -84,14 +89,30 @@ parsing:
         unit: 'F64' # optional; default is f64
         id: 'some-value'
         default: 0.0 # optional; default is 0.0
+      # Read the edge-data from the provided csv-file and add it to the graph.
+    - merge:
+        from: 'path/to/csv'
+        # this is needed to make parsing easier
+        edge-id: 'edge-id'
+        # csv-columns
+        edges-info:
+          # one edge-id has to be provided with the same id as above
+        - id: 'edge-id'
+        - ignored
+          # metrics can only be overwritten
+        - id: 'some-value'
 # optional
 # This config is used for the balancer-binary.
 balancing:
+  # every (map-)file is relative to this directory, after this directory was extended by a date
   results-dir: 'custom/results/isle_of_man_2020-03-14'
   number_of_iterations: 3
   iter-0-cfg: 'resources/isle_of_man_2020-03-14/balancing/init.yaml'
   iter-i-cfg: 'resources/isle_of_man_2020-03-14/balancing/iteration.yaml'
-  new_graph-dim: 4 # the custom-graph could have more metrics than used
+  multi-ch-constructor:
+    # This depends on how many metrics are outsourced to edges-info.csv
+    # and includes the new metric as well.
+    dimension: 3
   # these metrics are needed for balancing (calculating edge-capacity)
   metric-ids:
     distance: 'kilometers'
@@ -131,7 +152,6 @@ writing:
     map-file: 'relative-path-to-map-file'
     # optional; default is false
     # If false, no shortcuts are written to the file.
-    with_shortcuts: false
     nodes:
     - id: 'node-idx'
     - id: 'latitude'
@@ -139,6 +159,16 @@ writing:
     - id: 'level'
     - id: 'longitude'
     edges:
+      with_shortcuts: false
+      ids:
+      - id: 'src-id'
+      - id: 'dst-idx'
+      - ignored
+      - id: 'meters'
+  edges-info:
+    file: 'relative-path-to-map-file'
+    with_shortcuts: false
+    ids:
     - id: 'src-id'
     - id: 'dst-idx'
     - ignored

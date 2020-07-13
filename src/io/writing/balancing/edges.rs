@@ -54,7 +54,7 @@ impl Writer {
 
         writeln!(
             writer,
-            "src_lat src_lon dst_lat dst_lon kilometers lane_count"
+            "edge-id src_lat src_lon dst_lat dst_lon kilometers lane_count"
         )?;
 
         // write data
@@ -71,6 +71,8 @@ impl Writer {
             .iter()
             .filter(|&edge_idx| !fwd_edges.is_shortcut(edge_idx))
         {
+            let edge_id = fwd_edges.id(edge_idx);
+
             let (src_lat, src_lon) = {
                 let idx = bwd_edges.dst_idx(edge_idx);
                 let coord = nodes.coord(idx);
@@ -98,8 +100,8 @@ impl Writer {
 
             writeln!(
                 writer,
-                "{} {} {} {} {} {}",
-                src_lat, src_lon, dst_lat, dst_lon, *distance, lane_count
+                "{} {} {} {} {} {} {}",
+                edge_id, src_lat, src_lon, dst_lat, dst_lon, *distance, lane_count
             )?;
         }
 

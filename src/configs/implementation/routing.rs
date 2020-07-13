@@ -1,16 +1,16 @@
 use crate::{
-    configs,
+    configs::{self, SimpleId},
     defaults::{self, capacity::DimVec},
     helpers::err,
     io::SupportingFileExts,
 };
+use serde::Deserialize;
 use smallvec::smallvec;
 use std::{
+    convert::TryFrom,
     fs::OpenOptions,
     path::{Path, PathBuf},
 };
-pub mod proto;
-pub mod raw;
 
 /// # Specifying routing (TODO update text)
 ///
@@ -54,7 +54,7 @@ impl Config {
     }
 
     fn try_from_proto(
-        proto_cfg: proto::Config,
+        proto_cfg: ProtoConfig,
         parsing_cfg: &configs::parsing::Config,
     ) -> err::Result<Config> {
         let dim = parsing_cfg.edges.metrics.units.len();
@@ -78,7 +78,7 @@ impl Config {
         })
     }
 
-    fn _from_proto(proto_cfg: proto::Config, parsing_cfg: &configs::parsing::Config) -> Config {
+    fn _from_proto(proto_cfg: ProtoConfig, parsing_cfg: &configs::parsing::Config) -> Config {
         match Config::try_from_proto(proto_cfg, parsing_cfg) {
             Ok(cfg) => cfg,
             Err(msg) => panic!("{}", msg),
@@ -114,4 +114,86 @@ impl Config {
             Err(msg) => panic!("{}", msg),
         }
     }
+}
+
+/// Don't deny unknown fields to allow multiple configs in one yaml-file.
+#[derive(Debug, Deserialize)]
+#[serde(try_from = "RawConfig")]
+pub struct ProtoConfig {
+    pub route_pairs_file: Option<PathBuf>,
+    pub is_ch_dijkstra: bool,
+    pub metrics: DimVec<ProtoEntry>,
+}
+
+impl TryFrom<RawConfig> for ProtoConfig {
+    type Error = String;
+
+    fn try_from(raw_cfg: RawConfig) -> Result<ProtoConfig, String> {
+        let mut metrics = DimVec::with_capacity(raw_cfg.routing.metrics.len());
+
+        for raw_entry in raw_cfg.routing.metrics {
+            metrics.push(ProtoEntry::try_from(raw_entry)?);
+        }
+
+        Ok(ProtoConfig {
+            route_pairs_file: raw_cfg.routing.route_pairs_file,
+            is_ch_dijkstra: raw_cfg.routing.is_ch_dijkstra.unwrap_or(false),
+            metrics,
+        })
+    }
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(try_from = "RawEntry")]
+pub struct ProtoEntry {
+    pub id: SimpleId,
+    pub alpha: f64,
+    pub tolerated_scale: f64,
+}
+
+impl TryFrom<RawEntry> for ProtoEntry {
+    type Error = String;
+
+    fn try_from(raw_entry: RawEntry) -> Result<ProtoEntry, String> {
+        let tolerated_scale = match &raw_entry.tolerated_scale {
+            Some(snippet) => match snippet.to_ascii_lowercase().as_ref() {
+                "inf" | "infinity" => Ok(defaults::routing::TOLERATED_SCALE_INF),
+                snippet => snippet
+                    .parse::<f64>()
+                    .map_err(|_| format!("Couln't parse f64-value {}", snippet)),
+            },
+            None => Ok(defaults::routing::TOLERATED_SCALE),
+        }?;
+
+        Ok(ProtoEntry {
+            id: raw_entry.id,
+            alpha: raw_entry.alpha.unwrap_or(defaults::routing::ALPHA),
+            tolerated_scale,
+        })
+    }
+}
+
+/// Don't deny unknown fields to allow multiple configs in one yaml-file.
+#[derive(Debug, Deserialize)]
+pub struct RawConfig {
+    pub routing: RawContent,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct RawContent {
+    #[serde(rename = "route-pairs-file")]
+    pub route_pairs_file: Option<PathBuf>,
+    #[serde(rename = "is_ch-dijkstra")]
+    pub is_ch_dijkstra: Option<bool>,
+    pub metrics: Vec<RawEntry>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct RawEntry {
+    pub id: SimpleId,
+    pub alpha: Option<f64>,
+    #[serde(rename = "tolerated-scale")]
+    pub tolerated_scale: Option<String>,
 }

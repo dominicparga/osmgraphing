@@ -46,6 +46,7 @@ pub mod capacity {
 pub mod parsing {
     // provided by multi-ch-constructor
     pub const NO_SHORTCUT_IDX: &str = "-1";
+    pub const IS_USING_SHORTCUTS: bool = false;
 }
 
 pub mod writing {
@@ -60,7 +61,7 @@ pub mod routing {
     /// If true, the edges are sorted by their dsts' ch-level to speedup routing.
     /// This sort isn't stable in combination with a ch-construction and varying metrics, because a ch-constructor sets the ch-levels dependent on the metrics.
     /// In result, edges can't be identified in balancer.
-    pub const IS_USING_CH_LEVEL_SPEEDUP: bool = false;
+    pub const IS_USING_CH_LEVEL_SPEEDUP: bool = true;
 }
 
 pub mod balancing {

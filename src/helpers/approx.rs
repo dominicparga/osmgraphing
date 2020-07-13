@@ -40,6 +40,48 @@ where
     }
 }
 
+impl<T> Approx<Option<T>> for Option<T>
+where
+    T: Approx<T>,
+{
+    fn approx(self) -> Option<T> {
+        Some(self?.approx())
+    }
+}
+
+impl<T> ApproxEq<Option<T>> for Option<T>
+where
+    T: ApproxEq<T>,
+{
+    fn approx_eq(&self, other: &Option<T>) -> bool {
+        match (self, other) {
+            (None, None) => true,
+            (None, Some(_)) | (Some(_), None) => false,
+            (Some(left), Some(right)) => left.approx_eq(right),
+        }
+    }
+}
+
+impl ApproxEq<Option<f64>> for f64 {
+    fn approx_eq(&self, other: &Option<f64>) -> bool {
+        if let Some(other) = other {
+            self.approx_eq(other)
+        } else {
+            false
+        }
+    }
+}
+
+impl ApproxEq<f64> for Option<f64> {
+    fn approx_eq(&self, other: &f64) -> bool {
+        if let Some(this) = self {
+            this.approx_eq(other)
+        } else {
+            false
+        }
+    }
+}
+
 impl Approx<f64> for f64 {
     fn approx(self) -> f64 {
         (self / accuracy::F64_ABS).round() * accuracy::F64_ABS

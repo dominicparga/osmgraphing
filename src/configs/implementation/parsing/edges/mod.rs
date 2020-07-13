@@ -5,7 +5,6 @@ use crate::{
 };
 use serde::Deserialize;
 pub mod metrics;
-pub mod proto;
 use std::convert::TryFrom;
 
 #[derive(Debug)]
@@ -17,37 +16,37 @@ pub struct Config {
     pub metrics: metrics::Config,
 }
 
-impl TryFrom<proto::Config> for Config {
+impl TryFrom<ProtoConfig> for Config {
     type Error = err::Msg;
 
-    fn try_from(proto_cfg: proto::Config) -> err::Result<Config> {
+    fn try_from(proto_cfg: ProtoConfig) -> err::Result<Config> {
         // init datastructures
 
-        let mut categories = Vec::with_capacity(proto_cfg.0.len());
+        let mut categories = Vec::with_capacity(proto_cfg.categories.len());
         let mut metric_units = DimVec::new();
         let mut metric_ids = DimVec::new();
 
         // check if any id is duplicate
 
-        for i in 0..proto_cfg.0.len() {
+        for i in 0..proto_cfg.categories.len() {
             // get i-th id
 
             let id_i = {
-                match &proto_cfg.0[i] {
-                    proto::Category::Ignored => continue,
-                    proto::Category::Meta { info: _, id: id_i }
-                    | proto::Category::Metric { unit: _, id: id_i } => id_i,
+                match &proto_cfg.categories[i] {
+                    ProtoCategory::Ignored => continue,
+                    ProtoCategory::Meta { info: _, id: id_i }
+                    | ProtoCategory::Metric { unit: _, id: id_i } => id_i,
                 }
             };
 
-            for j in (i + 1)..proto_cfg.0.len() {
+            for j in (i + 1)..proto_cfg.categories.len() {
                 // get j-th id
 
                 let id_j = {
-                    match &proto_cfg.0[j] {
-                        proto::Category::Ignored => continue,
-                        proto::Category::Meta { info: _, id: id_j }
-                        | proto::Category::Metric { unit: _, id: id_j } => id_j,
+                    match &proto_cfg.categories[j] {
+                        ProtoCategory::Ignored => continue,
+                        ProtoCategory::Meta { info: _, id: id_j }
+                        | ProtoCategory::Metric { unit: _, id: id_j } => id_j,
                     }
                 };
 
@@ -61,18 +60,18 @@ impl TryFrom<proto::Config> for Config {
 
         // Fill categories, ids and create mapping: id -> idx
 
-        for category in proto_cfg.0.into_iter() {
+        for category in proto_cfg.categories.into_iter() {
             // add category
 
             match &category {
                 // add metrics separatedly
                 // for better access-performance through metric-indices
-                proto::Category::Metric { unit, id } => {
+                ProtoCategory::Metric { unit, id } => {
                     categories.push(category.clone().into());
                     metric_units.push(unit.clone().into());
                     metric_ids.push(id.clone());
                 }
-                proto::Category::Meta { info: _, id: _ } | proto::Category::Ignored => {
+                ProtoCategory::Meta { info: _, id: _ } | ProtoCategory::Ignored => {
                     categories.push(category.clone().into())
                 }
             }
@@ -101,55 +100,41 @@ pub enum Category {
     Ignored,
 }
 
-impl From<proto::Category> for Category {
-    fn from(proto_category: proto::Category) -> Category {
-        match proto_category {
-            proto::Category::Meta { info, id } => Category::Meta {
-                info: info.into(),
-                id,
-            },
-            proto::Category::Metric { unit, id } => Category::Metric {
-                unit: unit.into(),
-                id,
-            },
-            proto::Category::Ignored => Category::Ignored,
+impl Category {
+    pub fn is_metric(&self) -> bool {
+        match self {
+            Category::Meta { info: _, id: _ } | Category::Ignored => false,
+            Category::Metric { unit: _, id: _ } => true,
+        }
+    }
+
+    pub fn is_ignored(&self) -> bool {
+        match self {
+            Category::Meta { info: _, id: _ } | Category::Metric { unit: _, id: _ } => false,
+            Category::Ignored => true,
         }
     }
 }
 
-/// The generating-categories specify, how a metric is generated, but it will be stored as any other parsed category, why this implementation is needed.
-impl From<generating::edges::Category> for Category {
-    fn from(gen_category: generating::edges::Category) -> Category {
-        match gen_category {
-            generating::edges::Category::Meta { info, id } => Category::Meta {
-                info: info.into(),
+impl From<ProtoCategory> for Category {
+    fn from(proto_category: ProtoCategory) -> Category {
+        match proto_category {
+            ProtoCategory::Meta { info, id } => Category::Meta {
+                info: MetaInfo::from(info),
                 id,
             },
-            generating::edges::Category::Custom {
-                unit,
-                id,
-                default: _,
-            }
-            | generating::edges::Category::Haversine { unit, id } => Category::Metric {
-                unit: unit.into(),
+            ProtoCategory::Metric { unit, id } => Category::Metric {
+                unit: metrics::UnitInfo::from(unit),
                 id,
             },
-            generating::edges::Category::Copy { from: _, to }
-            | generating::edges::Category::Convert { from: _, to }
-            | generating::edges::Category::Calc {
-                result: to,
-                a: _,
-                b: _,
-            } => Category::Metric {
-                unit: to.unit.into(),
-                id: to.id,
-            },
+            ProtoCategory::Ignored => Category::Ignored,
         }
     }
 }
 
 #[derive(Copy, Clone, Debug, Deserialize, Eq, PartialEq)]
 pub enum MetaInfo {
+    EdgeId,
     SrcId,
     SrcIdx,
     DstId,
@@ -158,13 +143,14 @@ pub enum MetaInfo {
     ShortcutIdx1,
 }
 
-impl From<proto::MetaInfo> for MetaInfo {
-    fn from(proto_info: proto::MetaInfo) -> MetaInfo {
+impl From<ProtoMetaInfo> for MetaInfo {
+    fn from(proto_info: ProtoMetaInfo) -> MetaInfo {
         match proto_info {
-            proto::MetaInfo::SrcId => MetaInfo::SrcId,
-            proto::MetaInfo::DstId => MetaInfo::DstId,
-            proto::MetaInfo::ShortcutIdx0 => MetaInfo::ShortcutIdx0,
-            proto::MetaInfo::ShortcutIdx1 => MetaInfo::ShortcutIdx1,
+            ProtoMetaInfo::EdgeId => MetaInfo::EdgeId,
+            ProtoMetaInfo::SrcId => MetaInfo::SrcId,
+            ProtoMetaInfo::DstId => MetaInfo::DstId,
+            ProtoMetaInfo::ShortcutIdx0 => MetaInfo::ShortcutIdx0,
+            ProtoMetaInfo::ShortcutIdx1 => MetaInfo::ShortcutIdx1,
         }
     }
 }
@@ -172,10 +158,103 @@ impl From<proto::MetaInfo> for MetaInfo {
 impl From<generating::edges::MetaInfo> for MetaInfo {
     fn from(gen_info: generating::edges::MetaInfo) -> MetaInfo {
         match gen_info {
+            generating::edges::MetaInfo::EdgeId => MetaInfo::EdgeId,
             generating::edges::MetaInfo::SrcIdx => MetaInfo::SrcIdx,
             generating::edges::MetaInfo::DstIdx => MetaInfo::DstIdx,
             generating::edges::MetaInfo::ShortcutIdx0 => MetaInfo::ShortcutIdx0,
             generating::edges::MetaInfo::ShortcutIdx1 => MetaInfo::ShortcutIdx1,
         }
     }
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(from = "RawConfig", deny_unknown_fields)]
+pub struct ProtoConfig {
+    pub categories: Vec<ProtoCategory>,
+}
+
+impl From<RawConfig> for ProtoConfig {
+    fn from(raw_cfg: RawConfig) -> ProtoConfig {
+        ProtoConfig {
+            categories: raw_cfg.0.into_iter().map(ProtoCategory::from).collect(),
+        }
+    }
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum ProtoCategory {
+    Meta {
+        info: ProtoMetaInfo,
+        id: SimpleId,
+    },
+    Metric {
+        unit: metrics::ProtoUnitInfo,
+        id: SimpleId,
+    },
+    Ignored,
+}
+
+impl From<RawCategory> for ProtoCategory {
+    fn from(raw_category: RawCategory) -> ProtoCategory {
+        match raw_category {
+            RawCategory::Meta { info, id } => ProtoCategory::Meta {
+                info: ProtoMetaInfo::from(info),
+                id,
+            },
+            RawCategory::Metric { unit, id } => ProtoCategory::Metric {
+                unit: metrics::ProtoUnitInfo::from(unit),
+                id,
+            },
+            RawCategory::Ignored => ProtoCategory::Ignored,
+        }
+    }
+}
+
+#[derive(Copy, Clone, Debug, Deserialize, Eq, PartialEq)]
+pub enum ProtoMetaInfo {
+    EdgeId,
+    SrcId,
+    DstId,
+    ShortcutIdx0,
+    ShortcutIdx1,
+}
+
+impl From<RawMetaInfo> for ProtoMetaInfo {
+    fn from(raw_info: RawMetaInfo) -> ProtoMetaInfo {
+        match raw_info {
+            RawMetaInfo::EdgeId => ProtoMetaInfo::EdgeId,
+            RawMetaInfo::SrcId => ProtoMetaInfo::SrcId,
+            RawMetaInfo::DstId => ProtoMetaInfo::DstId,
+            RawMetaInfo::ShortcutIdx0 => ProtoMetaInfo::ShortcutIdx0,
+            RawMetaInfo::ShortcutIdx1 => ProtoMetaInfo::ShortcutIdx1,
+        }
+    }
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct RawConfig(pub Vec<RawCategory>);
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum RawCategory {
+    Meta {
+        info: RawMetaInfo,
+        id: SimpleId,
+    },
+    Metric {
+        unit: metrics::RawUnitInfo,
+        id: SimpleId,
+    },
+    Ignored,
+}
+
+#[derive(Copy, Clone, Debug, Deserialize, Eq, PartialEq)]
+pub enum RawMetaInfo {
+    EdgeId,
+    SrcId,
+    DstId,
+    ShortcutIdx0,
+    ShortcutIdx1,
 }

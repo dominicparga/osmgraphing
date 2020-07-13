@@ -56,7 +56,7 @@ pub use components::{TestEdge, TestNode, TestPath};
 
 pub fn parse(cfg: configs::parsing::Config) -> Graph {
     let map_file = cfg.map_file.clone();
-    match io::network::Parser::parse_and_finalize(cfg) {
+    match io::network::graph::Parser::parse_and_finalize(cfg) {
         Ok(graph) => graph,
         Err(msg) => {
             panic!("Could not parse {}. ERROR: {}", map_file.display(), msg);
@@ -135,7 +135,7 @@ pub fn compare_dijkstras(ch_fmi_config_file: &str, metric_id: &str) {
     // parse graph
 
     let parsing_cfg = configs::parsing::Config::from_yaml(ch_fmi_config_file);
-    let graph = io::network::Parser::parse_and_finalize(parsing_cfg)
+    let graph = io::network::graph::Parser::parse_and_finalize(parsing_cfg)
         .expect("Expect parser to be successful when comparing Dijkstras.");
 
     let metric_idx = graph.cfg().edges.metrics.idx_of(metric_id);

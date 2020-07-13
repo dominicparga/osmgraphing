@@ -2,7 +2,7 @@ use log::{error, info};
 use osmgraphing::{
     configs,
     helpers::{err, init_logging},
-    io::network::Parser,
+    io::network::graph::Parser,
     network::NodeIdx,
     routing::{self},
 };

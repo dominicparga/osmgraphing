@@ -1,4 +1,8 @@
-use crate::{configs, helpers::err, network::RoutePair};
+use crate::{
+    configs,
+    helpers::{self, err},
+    network::RoutePair,
+};
 use log::info;
 use std::{
     fs::OpenOptions,
@@ -13,10 +17,6 @@ pub struct Parser {
 impl Parser {
     pub fn new() -> Parser {
         Parser { route_lines: 1..0 }
-    }
-
-    fn is_line_functional(line: &String) -> bool {
-        line.len() > 0 && line.chars().next() != Some('#')
     }
 }
 
@@ -41,7 +41,7 @@ impl super::Parsing for Parser {
         for line in BufReader::new(file)
             .lines()
             .map(Result::unwrap)
-            .filter(Self::is_line_functional)
+            .filter(helpers::is_line_functional)
         {
             // If there is a count, remember it.
             // The first occuring count let `is_taking_counts` getting true.
@@ -97,7 +97,7 @@ impl super::Parsing for Parser {
         for line in BufReader::new(file)
             .lines()
             .map(Result::unwrap)
-            .filter(Self::is_line_functional)
+            .filter(helpers::is_line_functional)
         {
             // check if line contains route
             if !self.route_lines.contains(&line_number) {

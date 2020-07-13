@@ -2,7 +2,7 @@ pub mod building;
 mod indexing;
 pub use indexing::{EdgeIdx, EdgeIdxIterator, MetricIdx, NodeIdx, NodeIdxIterator};
 
-use crate::{configs::parsing::Config, defaults::capacity::DimVec};
+use crate::{configs::parsing::Config, defaults::capacity::DimVec, helpers::err};
 use kissunits::geo::Coordinate;
 use std::{
     fmt,
@@ -78,7 +78,7 @@ use std::{
 #[derive(Debug)]
 pub struct Graph {
     cfg: Config,
-    // nodes
+    // nodes, ids sorted
     node_ids: Vec<i64>,
     // node-metrics
     node_coords: Vec<Coordinate>,
@@ -93,6 +93,9 @@ pub struct Graph {
     bwd_to_fwd_map: Vec<EdgeIdx>,
     // edge-metrics (sorted according to fwd_dsts)
     metrics: Vec<DimVec<f64>>,
+    // mapping from id to EdgeIdx, sorted by id
+    edge_ids: Vec<Option<usize>>,
+    edge_ids_to_idx_map: Vec<(usize, EdgeIdx)>,
     // shortcuts (contraction-hierarchies)
     sc_offsets: Vec<usize>,
     sc_edges: Vec<[EdgeIdx; 2]>,
@@ -114,6 +117,8 @@ impl Graph {
 
     pub fn fwd_edges<'a>(&'a self) -> EdgeAccessor<'a> {
         EdgeAccessor {
+            edge_ids: &self.edge_ids,
+            edge_ids_to_idx_map: &self.edge_ids_to_idx_map,
             edge_dsts: &self.fwd_dsts,
             offsets: &self.fwd_offsets,
             xwd_to_fwd_map: &self.fwd_to_fwd_map,
@@ -125,6 +130,8 @@ impl Graph {
 
     pub fn bwd_edges<'a>(&'a self) -> EdgeAccessor<'a> {
         EdgeAccessor {
+            edge_ids: &self.edge_ids,
+            edge_ids_to_idx_map: &self.edge_ids_to_idx_map,
             edge_dsts: &(self.bwd_dsts),
             offsets: &(self.bwd_offsets),
             xwd_to_fwd_map: &(self.bwd_to_fwd_map),
@@ -209,29 +216,33 @@ impl Display for Graph {
             ),
         ];
         for stuff_idx in 0..graph_stuff.len() {
-            let (fwd_dsts, bwd_dsts, xwd_offsets, xwd_prefix) = &graph_stuff[stuff_idx];
+            let (fwd_edges, bwd_edges, xwd_offsets, xwd_prefix) = &graph_stuff[stuff_idx];
 
             // print up to m xwd-edges
             for mut j in 0..m {
                 // if enough edges are in the graph
-                if j < fwd_dsts.count() {
+                if j < fwd_edges.count() {
                     // if last edge that gets printed
                     if j == m - 1 {
                         // if at least 2 edges are missing -> print `...`
-                        if j + 1 < fwd_dsts.count() {
+                        if j + 1 < fwd_edges.count() {
                             writeln!(f, "{}edge: ...", xwd_prefix)?;
                         }
                         // print last edge
-                        j = fwd_dsts.count() - 1;
+                        j = fwd_edges.count() - 1;
                     }
                     let edge_idx = EdgeIdx(j);
-                    let src_idx = bwd_dsts.dst_idx(edge_idx);
-                    let half_edge = fwd_dsts.half_edge(edge_idx);
+                    let src_idx = bwd_edges.dst_idx(edge_idx);
+                    let half_edge = fwd_edges.half_edge(edge_idx);
                     let metrics = half_edge.metrics();
                     writeln!(
                         f,
-                        "{}edge: {{ idx: {}, sc-offset: {}, (idx: {})-{:?}->(idx: {}) }}",
+                        "{}edge: {{ {}idx: {}, sc-offset: {}, (idx: {})-{:?}->(idx: {}) }}",
                         xwd_prefix,
+                        match fwd_edges.try_id(edge_idx) {
+                            Some(id) => format!("id: {}, ", id),
+                            None => String::from(""),
+                        },
                         j,
                         self.sc_offsets[j],
                         *src_idx,
@@ -259,7 +270,7 @@ impl Display for Graph {
                     }
                     writeln!(
                         f,
-                        "{}offset: {{ id: {}, offset: {} }}",
+                        "{}offset: {{ node-id: {}, offset: {} }}",
                         xwd_prefix, i, xwd_offsets[i]
                     )?;
                 } else {
@@ -489,6 +500,8 @@ impl<'a> NodeAccessor<'a> {
 /// Shallow means that it does only contain references to the graph's data-arrays.
 #[derive(Debug)]
 pub struct EdgeAccessor<'a> {
+    edge_ids: &'a Vec<Option<usize>>,
+    edge_ids_to_idx_map: &'a Vec<(usize, EdgeIdx)>,
     edge_dsts: &'a Vec<NodeIdx>,
     offsets: &'a Vec<usize>,
     // indirect mapping to save memory
@@ -530,6 +543,43 @@ impl<'a> EdgeAccessor<'a> {
         HalfEdge {
             idx,
             edge_accessor: self,
+        }
+    }
+
+    pub fn try_id(&self, idx: EdgeIdx) -> Option<usize> {
+        self.edge_ids[*idx]
+    }
+
+    pub fn id(&self, idx: EdgeIdx) -> usize {
+        self.edge_ids[*idx].expect(&format!("Edge-id expected at edge-idx {}.", *idx))
+    }
+
+    pub fn try_idx_from(&self, id: usize) -> err::Result<EdgeIdx> {
+        // edge-ids are sorted in this "map" (vector)
+        // -> mapped from id to edge-idx
+        match self
+            .edge_ids_to_idx_map
+            .binary_search_by_key(&id, |(edge_id, _edge_idx)| *edge_id)
+        {
+            Ok(idx) => {
+                let (_edge_id, edge_idx) = self.edge_ids_to_idx_map[idx];
+                Ok(edge_idx)
+            }
+            Err(_idx) => Err(err::Msg::from(format!(
+                "{} {}",
+                format!(
+                    "The provided edge-id {} is expected to be in the graph, but is not.",
+                    id
+                ),
+                "The reason can lay in "
+            ))),
+        }
+    }
+
+    pub fn idx_from(&self, id: usize) -> EdgeIdx {
+        match self.try_idx_from(id) {
+            Ok(edge_idx) => edge_idx,
+            Err(msg) => panic!("{}", msg),
         }
     }
 

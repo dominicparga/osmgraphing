@@ -5,7 +5,9 @@ use osmgraphing::configs;
 #[test]
 fn pbf_yaml() {
     let _parsing_cfg = configs::parsing::Config::from_yaml(resources::OSM_PBF_YAML);
-    assert!(configs::writing::network::Config::try_from_yaml(resources::OSM_PBF_YAML).is_err());
+    assert!(
+        configs::writing::network::graph::Config::try_from_yaml(resources::OSM_PBF_YAML).is_err()
+    );
     assert!(configs::writing::routing::Config::try_from_yaml(resources::OSM_PBF_YAML).is_err());
     // Fails, but should work after building will have been generated the distance.
     // configs::routing::Config::from_yaml(resources::OSM_PBF_YAML, &parsing_cfg);
@@ -14,7 +16,7 @@ fn pbf_yaml() {
 #[test]
 fn fmi_yaml() {
     let parsing_cfg = configs::parsing::Config::from_yaml(resources::FMI_YAML);
-    assert!(configs::writing::network::Config::try_from_yaml(resources::FMI_YAML).is_err());
+    assert!(configs::writing::network::graph::Config::try_from_yaml(resources::FMI_YAML).is_err());
     assert!(configs::writing::routing::Config::try_from_yaml(resources::FMI_YAML).is_err());
     configs::routing::Config::from_yaml(resources::FMI_YAML, &parsing_cfg);
 }
@@ -22,7 +24,9 @@ fn fmi_yaml() {
 #[test]
 fn ch_fmi_yaml() {
     let parsing_cfg = configs::parsing::Config::from_yaml(resources::CH_FMI_YAML);
-    assert!(configs::writing::network::Config::try_from_yaml(resources::CH_FMI_YAML).is_err());
+    assert!(
+        configs::writing::network::graph::Config::try_from_yaml(resources::CH_FMI_YAML).is_err()
+    );
     configs::writing::routing::Config::from_yaml(resources::CH_FMI_YAML);
     configs::routing::Config::from_yaml(resources::CH_FMI_YAML, &parsing_cfg);
 }

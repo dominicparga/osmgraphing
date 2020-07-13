@@ -44,13 +44,23 @@ pub mod parsing {
                     Category, UnitInfo,
                 };
             }
+
+            pub mod merge {
+                pub use crate::configs::implementation::parsing::generating::edges::merge::Category;
+            }
         }
     }
 }
 
 pub mod writing {
     pub mod network {
-        pub use crate::configs::implementation::writing::network::Config;
+        pub mod edges {
+            pub use crate::configs::implementation::writing::network::edges::Config;
+        }
+
+        pub mod graph {
+            pub use crate::configs::implementation::writing::network::graph::Config;
+        }
     }
 
     pub mod routing {

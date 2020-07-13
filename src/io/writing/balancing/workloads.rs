@@ -45,7 +45,7 @@ impl Writer {
 
         // write header
 
-        writeln!(writer, "num_routes")?;
+        writeln!(writer, "edge-id num_routes")?;
 
         // write data
 
@@ -54,7 +54,9 @@ impl Writer {
             .iter()
             .filter(|&edge_idx| !fwd_edges.is_shortcut(edge_idx))
         {
-            writeln!(writer, "{}", workloads[*edge_idx])?;
+            let edge_id = fwd_edges.id(edge_idx);
+
+            writeln!(writer, "{} {}", edge_id, workloads[*edge_idx])?;
         }
 
         Ok(())

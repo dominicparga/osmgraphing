@@ -1,5 +1,5 @@
 use crate::helpers::defaults;
-use osmgraphing::{configs, io::network::Parser};
+use osmgraphing::{configs, io::network::graph::Parser};
 use std::path::PathBuf;
 
 #[test]

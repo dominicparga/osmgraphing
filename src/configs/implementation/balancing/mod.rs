@@ -1,17 +1,16 @@
 use crate::{configs::SimpleId, defaults, io::SupportingFileExts};
 use std::{
+    convert::TryFrom,
     fs::OpenOptions,
     path::{Path, PathBuf},
 };
 pub mod metrics;
-pub mod proto;
-pub mod raw;
+use serde::Deserialize;
 
 #[derive(Clone, Debug)]
 pub struct Config {
     pub results_dir: PathBuf,
     pub multi_ch_constructor: MultiChConstructor,
-    pub new_graph_dim: usize,
     pub num_iter: usize,
     pub iter_0_cfg: PathBuf,
     pub iter_i_cfg: PathBuf,
@@ -45,14 +44,10 @@ impl Config {
         }
     }
 
-    fn try_from_proto(proto_cfg: proto::Config) -> Result<Config, String> {
+    fn try_from_proto(proto_cfg: ProtoConfig) -> Result<Config, String> {
         Ok(Config {
             results_dir: proto_cfg.results_dir,
-            multi_ch_constructor: MultiChConstructor {
-                dir: PathBuf::from(defaults::balancing::paths::multi_ch_constructor::DIR),
-                contraction_ratio: String::from(defaults::balancing::CONTRACTION_RATIO),
-            },
-            new_graph_dim: proto_cfg.new_graph_dim,
+            multi_ch_constructor: MultiChConstructor::from(proto_cfg.multi_ch_constructor),
             num_iter: proto_cfg.num_iter,
             iter_0_cfg: proto_cfg.iter_0_cfg,
             iter_i_cfg: proto_cfg.iter_i_cfg,
@@ -63,7 +58,7 @@ impl Config {
         })
     }
 
-    fn _from_proto(proto_cfg: proto::Config) -> Config {
+    fn _from_proto(proto_cfg: ProtoConfig) -> Config {
         match Config::try_from_proto(proto_cfg) {
             Ok(cfg) => cfg,
             Err(msg) => panic!("{}", msg),
@@ -99,6 +94,21 @@ impl Config {
 pub struct MultiChConstructor {
     pub dir: PathBuf,
     pub contraction_ratio: String,
+    pub dim: usize,
+}
+
+impl From<ProtoMultiChConstructor> for MultiChConstructor {
+    fn from(proto_mchc: ProtoMultiChConstructor) -> MultiChConstructor {
+        MultiChConstructor {
+            dir: proto_mchc.dir.unwrap_or(PathBuf::from(
+                defaults::balancing::paths::multi_ch_constructor::DIR,
+            )),
+            contraction_ratio: proto_mchc
+                .contraction_ratio
+                .unwrap_or(String::from(defaults::balancing::CONTRACTION_RATIO)),
+            dim: proto_mchc.dim,
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -106,12 +116,125 @@ pub enum Optimization {
     ExplicitEuler { correction: f64 },
 }
 
-impl From<proto::Optimization> for Optimization {
-    fn from(proto_optimization: proto::Optimization) -> Optimization {
+impl From<ProtoOptimization> for Optimization {
+    fn from(proto_optimization: ProtoOptimization) -> Optimization {
         match proto_optimization {
-            proto::Optimization::ExplicitEuler { correction } => Optimization::ExplicitEuler {
+            ProtoOptimization::ExplicitEuler { correction } => Optimization::ExplicitEuler {
                 correction: correction,
             },
         }
     }
+}
+
+/// Don't deny unknown fields to allow multiple configs in one yaml-file.
+#[derive(Debug, Deserialize)]
+#[serde(try_from = "RawConfig")]
+pub struct ProtoConfig {
+    pub results_dir: PathBuf,
+    pub multi_ch_constructor: ProtoMultiChConstructor,
+    pub num_iter: usize,
+    pub iter_0_cfg: PathBuf,
+    pub iter_i_cfg: PathBuf,
+    pub workload_id: SimpleId,
+    pub lane_count_id: SimpleId,
+    pub distance_id: SimpleId,
+    pub optimization: ProtoOptimization,
+}
+
+impl TryFrom<RawConfig> for ProtoConfig {
+    type Error = String;
+
+    fn try_from(raw_cfg: RawConfig) -> Result<ProtoConfig, String> {
+        Ok(ProtoConfig {
+            results_dir: raw_cfg.balancing.results_dir,
+            multi_ch_constructor: ProtoMultiChConstructor::from(
+                raw_cfg.balancing.multi_ch_constructor,
+            ),
+            num_iter: raw_cfg.balancing.number_of_iterations,
+            iter_0_cfg: raw_cfg.balancing.iter_0_cfg,
+            iter_i_cfg: raw_cfg.balancing.iter_i_cfg,
+            workload_id: raw_cfg.balancing.metric_ids.workload,
+            lane_count_id: raw_cfg.balancing.metric_ids.lane_count,
+            distance_id: raw_cfg.balancing.metric_ids.distance,
+            optimization: ProtoOptimization::from(raw_cfg.balancing.optimization),
+        })
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct ProtoMultiChConstructor {
+    pub dir: Option<PathBuf>,
+    pub contraction_ratio: Option<String>,
+    pub dim: usize,
+}
+
+impl From<RawMultiChConstructor> for ProtoMultiChConstructor {
+    fn from(raw_mchc: RawMultiChConstructor) -> ProtoMultiChConstructor {
+        ProtoMultiChConstructor {
+            dir: raw_mchc.dir,
+            contraction_ratio: raw_mchc.contraction_ratio,
+            dim: raw_mchc.dim,
+        }
+    }
+}
+
+#[derive(Debug)]
+pub enum ProtoOptimization {
+    ExplicitEuler { correction: f64 },
+}
+
+impl From<RawOptimization> for ProtoOptimization {
+    fn from(raw_optimization: RawOptimization) -> ProtoOptimization {
+        match raw_optimization {
+            RawOptimization::ExplicitEuler { correction } => ProtoOptimization::ExplicitEuler {
+                correction: correction,
+            },
+        }
+    }
+}
+
+/// Don't deny unknown fields to allow multiple configs in one yaml-file.
+#[derive(Debug, Deserialize)]
+pub struct RawConfig {
+    pub balancing: RawContent,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct RawContent {
+    #[serde(rename = "results-dir")]
+    pub results_dir: PathBuf,
+    #[serde(rename = "iter-0-cfg")]
+    pub iter_0_cfg: PathBuf,
+    #[serde(rename = "iter-i-cfg")]
+    pub iter_i_cfg: PathBuf,
+    #[serde(rename = "multi-ch-constructor")]
+    pub multi_ch_constructor: RawMultiChConstructor,
+    pub number_of_iterations: usize,
+    #[serde(rename = "metric-ids")]
+    pub metric_ids: metrics::RawConfig,
+    #[serde(flatten)]
+    pub optimization: RawOptimization,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct RawMultiChConstructor {
+    pub dir: Option<PathBuf>,
+    #[serde(rename = "contraction-ratio")]
+    pub contraction_ratio: Option<String>,
+    #[serde(rename = "dimension")]
+    pub dim: usize,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub enum RawOptimization {
+    #[serde(rename = "explicit_euler")]
+    ExplicitEuler {
+        #[serde(rename = "correction")]
+        correction: f64,
+    },
+    // some kind of correction-function:
+    // interpolating linear between point-pairs given in a file?
 }

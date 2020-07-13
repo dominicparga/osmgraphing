@@ -25,7 +25,7 @@ fn main() {
 
 fn run(args: CmdlineArgs) -> err::Feedback {
     // check writing-cfg
-    let _ = configs::writing::network::Config::try_from_yaml(&args.cfg)?;
+    let _ = configs::writing::network::graph::Config::try_from_yaml(&args.cfg)?;
     let mut balancing_cfg = configs::balancing::Config::try_from_yaml(&args.cfg)?;
 
     info!("EXECUTE balancer");
@@ -67,7 +67,7 @@ fn run(args: CmdlineArgs) -> err::Feedback {
 
     // store balanced graph
 
-    let mut writing_cfg = configs::writing::network::Config::try_from_yaml(&args.cfg)?;
+    let mut writing_cfg = configs::writing::network::graph::Config::try_from_yaml(&args.cfg)?;
     writing_cfg.map_file = balancing_cfg
         .results_dir
         .join(writing_cfg.map_file.file_name().ok_or(err::Msg::from(
@@ -138,6 +138,7 @@ mod simulation_pipeline {
         fs::create_dir_all(&iter_dir.join(defaults::balancing::stats::DIR))?;
 
         // copy all necessary configs in there
+
         fs::copy(
             if iter == 0 {
                 &balancing_cfg.iter_0_cfg
@@ -156,13 +157,26 @@ mod simulation_pipeline {
         iter: usize,
     ) -> err::Feedback {
         let iter_dir = balancing_cfg.results_dir.join(format!("{}", iter));
-        let mut writing_cfg = configs::writing::network::Config::try_from_yaml(
+
+        // writing graph
+
+        let mut writing_cfg = configs::writing::network::graph::Config::try_from_yaml(
             &iter_dir.join(defaults::balancing::files::ITERATION_CFG),
         )?;
         // path is relative to results-dir
         writing_cfg.map_file = iter_dir.join(writing_cfg.map_file);
 
-        super::write_graph(&graph, &writing_cfg)
+        super::write_graph(&graph, &writing_cfg)?;
+
+        // writing edges
+
+        let mut writing_cfg = configs::writing::network::edges::Config::try_from_yaml(
+            &iter_dir.join(defaults::balancing::files::ITERATION_CFG),
+        )?;
+        // path is relative to results-dir
+        writing_cfg.file = iter_dir.join(writing_cfg.file);
+
+        super::write_edges(&graph, &writing_cfg)
     }
 
     pub fn construct_ch_graph(
@@ -174,9 +188,9 @@ mod simulation_pipeline {
         let graph_dim = {
             let is_using_new_metric = iter > 0;
             if is_using_new_metric {
-                balancing_cfg.new_graph_dim
+                balancing_cfg.multi_ch_constructor.dim
             } else {
-                balancing_cfg.new_graph_dim - 1 // without new metric
+                balancing_cfg.multi_ch_constructor.dim - 1 // without new metric
             }
         };
 
@@ -202,6 +216,7 @@ mod simulation_pipeline {
 
         let cmd_args = &[
             "--using-osm-ids",
+            "--external-edge-ids",
             "--text",
             &format!("{}", iter_dir.join("graph.fmi").to_string_lossy()),
             "--percent",
@@ -236,7 +251,44 @@ mod simulation_pipeline {
         let mut parsing_cfg = configs::parsing::Config::try_from_yaml(
             &iter_dir.join(defaults::balancing::files::ITERATION_CFG),
         )?;
+
+        // map-file is stored relative to results-dir
         parsing_cfg.map_file = iter_dir.join(parsing_cfg.map_file);
+
+        // same holds for edges-info.csv
+        // -> update all paths to important map- or data-files
+
+        let gen_cfg = parsing_cfg
+            .generating
+            .as_mut()
+            .expect("Generating-section in parsing-cfg is expected.");
+        for i in 0..gen_cfg.edges.categories.len() {
+            let category = &mut gen_cfg.edges.categories[i];
+            match category {
+                configs::parsing::generating::edges::Category::Merge {
+                    from,
+                    edge_id: _,
+                    edges_info: _,
+                } => *from = iter_dir.join(&from),
+                configs::parsing::generating::edges::Category::Meta { info: _, id: _ }
+                | configs::parsing::generating::edges::Category::Custom {
+                    unit: _,
+                    id: _,
+                    default: _,
+                }
+                | configs::parsing::generating::edges::Category::Haversine { unit: _, id: _ }
+                | configs::parsing::generating::edges::Category::Copy { from: _, to: _ }
+                | configs::parsing::generating::edges::Category::Convert { from: _, to: _ }
+                | configs::parsing::generating::edges::Category::Calc {
+                    result: _,
+                    a: _,
+                    b: _,
+                } => {
+                    // no file to update
+                }
+            }
+        }
+
         super::parse_graph(parsing_cfg)
     }
 
@@ -411,7 +463,7 @@ fn _extract_map_name<P: AsRef<Path>>(map_file: P) -> err::Result<String> {
 fn parse_graph(parsing_cfg: configs::parsing::Config) -> err::Result<Graph> {
     let now = Instant::now();
 
-    let graph = io::network::Parser::parse_and_finalize(parsing_cfg)?;
+    let graph = io::network::graph::Parser::parse_and_finalize(parsing_cfg)?;
 
     info!(
         "FINISHED Parsed graph in {} seconds ({} µs).",
@@ -425,7 +477,10 @@ fn parse_graph(parsing_cfg: configs::parsing::Config) -> err::Result<Graph> {
     Ok(graph)
 }
 
-fn write_graph(graph: &Graph, writing_cfg: &configs::writing::network::Config) -> err::Feedback {
+fn write_graph(
+    graph: &Graph,
+    writing_cfg: &configs::writing::network::graph::Config,
+) -> err::Feedback {
     // check if new file does already exist
 
     if writing_cfg.map_file.exists() {
@@ -439,7 +494,35 @@ fn write_graph(graph: &Graph, writing_cfg: &configs::writing::network::Config) -
 
     let now = Instant::now();
 
-    io::network::Writer::write(&graph, &writing_cfg)?;
+    io::network::graph::Writer::write(&graph, &writing_cfg)?;
+    info!(
+        "Finished writing in {} seconds ({} µs).",
+        now.elapsed().as_secs(),
+        now.elapsed().as_micros(),
+    );
+    info!("");
+
+    Ok(())
+}
+
+fn write_edges(
+    graph: &Graph,
+    writing_cfg: &configs::writing::network::edges::Config,
+) -> err::Feedback {
+    // check if new file does already exist
+
+    if writing_cfg.file.exists() {
+        return Err(err::Msg::from(format!(
+            "New map-file {} does already exist. Please remove it.",
+            writing_cfg.file.display()
+        )));
+    }
+
+    // writing to file
+
+    let now = Instant::now();
+
+    io::network::edges::Writer::write(&graph, &writing_cfg)?;
     info!(
         "Finished writing in {} seconds ({} µs).",
         now.elapsed().as_secs(),
@@ -453,7 +536,7 @@ fn write_graph(graph: &Graph, writing_cfg: &configs::writing::network::Config) -
 fn parse_cmdline<'a>() -> CmdlineArgs {
     // arg: quiet
     let tmp = &[
-        "Sets the logging-level by setting environment-variable 'RUST_LOG'.",
+        "Sets the logging-level according to the env-variable 'RUST_LOG'.",
         "The env-variable 'RUST_LOG' has precedence.",
         "It takes values of modules, e.g.",
         "export RUST_LOG='warn,osmgraphing=info'",

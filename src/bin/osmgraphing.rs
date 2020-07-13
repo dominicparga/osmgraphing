@@ -52,10 +52,7 @@ fn run(args: CmdlineArgs) -> err::Feedback {
 
         let parsing_cfg = {
             let raw_parsing_cfg = PathBuf::from(args.cfg.clone());
-            match configs::parsing::Config::try_from_yaml(&raw_parsing_cfg) {
-                Ok(cfg) => cfg,
-                Err(msg) => return Err(err::Msg::from(format!("{}", msg))),
-            }
+            configs::parsing::Config::try_from_yaml(&raw_parsing_cfg)?
         };
 
         // parse and create graph
@@ -63,10 +60,7 @@ fn run(args: CmdlineArgs) -> err::Feedback {
         // measure parsing-time
         let now = Instant::now();
 
-        let graph = match io::network::Parser::parse_and_finalize(parsing_cfg) {
-            Ok(graph) => graph,
-            Err(msg) => return Err(err::Msg::from(format!("{}", msg))),
-        };
+        let graph = io::network::graph::Parser::parse_and_finalize(parsing_cfg)?;
         info!(
             "Finished parsing in {} seconds ({} µs).",
             now.elapsed().as_secs(),
@@ -84,7 +78,7 @@ fn run(args: CmdlineArgs) -> err::Feedback {
     if args.is_writing_graph {
         // get config by provided user-input
 
-        let writing_cfg = configs::writing::network::Config::try_from_yaml(&args.cfg)?;
+        let writing_cfg = configs::writing::network::graph::Config::try_from_yaml(&args.cfg)?;
 
         // check if new file does already exist
 
@@ -100,10 +94,37 @@ fn run(args: CmdlineArgs) -> err::Feedback {
         // measure writing-time
         let now = Instant::now();
 
-        match io::network::Writer::write(&graph, &writing_cfg) {
-            Ok(()) => (),
-            Err(msg) => return Err(err::Msg::from(format!("{}", msg))),
-        };
+        io::network::graph::Writer::write(&graph, &writing_cfg)?;
+        info!(
+            "Finished writing in {} seconds ({} µs).",
+            now.elapsed().as_secs(),
+            now.elapsed().as_micros(),
+        );
+        info!("");
+    }
+
+    // writing edges to file
+
+    if args.is_writing_edges {
+        // get config by provided user-input
+
+        let writing_cfg = configs::writing::network::edges::Config::try_from_yaml(&args.cfg)?;
+
+        // check if new file does already exist
+
+        if writing_cfg.file.exists() {
+            return Err(err::Msg::from(format!(
+                "New file {} does already exist. Please remove it.",
+                writing_cfg.file.display()
+            )));
+        }
+
+        // writing to file
+
+        // measure writing-time
+        let now = Instant::now();
+
+        io::network::edges::Writer::write(&graph, &writing_cfg)?;
         info!(
             "Finished writing in {} seconds ({} µs).",
             now.elapsed().as_secs(),
@@ -184,7 +205,7 @@ fn run(args: CmdlineArgs) -> err::Feedback {
 
 fn parse_cmdline<'a>() -> CmdlineArgs {
     let tmp = &[
-        "Sets the logging-level by setting environment-variable 'RUST_LOG'.",
+        "Sets the logging-level according to the env-variable 'RUST_LOG'.",
         "The env-variable 'RUST_LOG' has precedence.",
         "It takes values of modules, e.g.",
         "export RUST_LOG='warn,osmgraphing=info'",
@@ -226,6 +247,15 @@ fn parse_cmdline<'a>() -> CmdlineArgs {
         .takes_value(false)
         .requires(constants::ids::CFG);
 
+    let arg_is_writing_edges = clap::Arg::with_name(constants::ids::IS_WRITING_EDGES)
+        .long("writing-edges")
+        .help(
+            "The generated graph's edges will be exported \
+               as described in the provided config.",
+        )
+        .takes_value(false)
+        .requires(constants::ids::CFG);
+
     let arg_is_writing_routes = clap::Arg::with_name(constants::ids::IS_WRITING_ROUTES)
         .long("writing-routes")
         .help(
@@ -255,6 +285,7 @@ fn parse_cmdline<'a>() -> CmdlineArgs {
         .arg(arg_parser_cfg)
         .arg(arg_is_routing)
         .arg(arg_is_writing_graph)
+        .arg(arg_is_writing_edges)
         .arg(arg_is_writing_routes)
         .get_matches()
         .into()
@@ -265,6 +296,7 @@ mod constants {
         pub const MAX_LOG_LEVEL: &str = "max-log-level";
         pub const CFG: &str = "cfg";
         pub const IS_WRITING_GRAPH: &str = "is_writing_graph";
+        pub const IS_WRITING_EDGES: &str = "is_writing_edges";
         pub const IS_WRITING_ROUTES: &str = "is_writing_routes";
         pub const IS_ROUTING: &str = "is_routing";
     }
@@ -274,6 +306,7 @@ struct CmdlineArgs {
     max_log_level: String,
     cfg: String,
     is_writing_graph: bool,
+    is_writing_edges: bool,
     is_writing_routes: bool,
     is_routing: bool,
 }
@@ -287,6 +320,7 @@ impl<'a> From<clap::ArgMatches<'a>> for CmdlineArgs {
             .value_of(constants::ids::CFG)
             .expect(&format!("cmdline-arg: {}", constants::ids::CFG));
         let is_writing_graph = matches.is_present(constants::ids::IS_WRITING_GRAPH);
+        let is_writing_edges = matches.is_present(constants::ids::IS_WRITING_EDGES);
         let is_writing_routes = matches.is_present(constants::ids::IS_WRITING_ROUTES);
         let is_routing = matches.is_present(constants::ids::IS_ROUTING);
 
@@ -294,6 +328,7 @@ impl<'a> From<clap::ArgMatches<'a>> for CmdlineArgs {
             max_log_level: String::from(max_log_level),
             cfg: String::from(cfg),
             is_writing_graph,
+            is_writing_edges,
             is_writing_routes,
             is_routing,
         }

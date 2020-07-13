@@ -6,12 +6,18 @@ use crate::{
         capacity::{self, DimVec},
         routing::IS_USING_CH_LEVEL_SPEEDUP,
     },
-    helpers::{approx::ApproxEq, err, MemSize},
+    helpers::{self, approx::ApproxEq, err, MemSize},
 };
 use kissunits::geo::Coordinate;
 use log::{debug, info};
 use progressing::{Bar, MappingBar};
-use std::{cmp::Reverse, mem, ops::RangeFrom};
+use std::{
+    cmp::Reverse,
+    fs::OpenOptions,
+    io::{BufRead, BufReader},
+    mem,
+    ops::RangeFrom,
+};
 
 /// private stuff for graph-building
 impl Graph {
@@ -32,6 +38,9 @@ impl Graph {
             bwd_to_fwd_map: Vec::new(),
             // edge-metrics
             metrics: Vec::new(),
+            // edge-ids
+            edge_ids: Vec::new(),
+            edge_ids_to_idx_map: Vec::new(),
             // shortcuts (contraction-hierarchies)
             sc_offsets: Vec::new(),
             sc_edges: Vec::new(),
@@ -49,6 +58,8 @@ impl Graph {
         self.bwd_offsets.shrink_to_fit();
         self.bwd_to_fwd_map.shrink_to_fit();
         self.metrics.shrink_to_fit();
+        self.edge_ids.shrink_to_fit();
+        self.edge_ids_to_idx_map.shrink_to_fit();
         self.sc_offsets.shrink_to_fit();
         self.sc_edges.shrink_to_fit();
     }
@@ -57,15 +68,15 @@ impl Graph {
     fn add_metrics(&mut self, proto_edge: &mut ProtoEdgeB) -> err::Feedback {
         let cfg = &self.cfg;
 
-        for (metric_idx, raw_value) in proto_edge.metrics.iter_mut().enumerate() {
-            if raw_value.approx_eq(&0.0) {
+        for metric_idx in 0..proto_edge.metrics.len() {
+            if proto_edge.metrics[metric_idx].approx_eq(&0.0) {
                 debug!(
                     "Proto-edge (id:{}->id:{}) has {}=0, hence is corrected to epsilon.",
                     self.nodes().id(proto_edge.src_idx),
                     self.nodes().id(proto_edge.dst_idx),
                     cfg.edges.metrics.ids[metric_idx]
                 );
-                *raw_value = std::f64::EPSILON;
+                proto_edge.metrics[metric_idx] = std::f64::EPSILON;
             }
         }
 
@@ -101,6 +112,7 @@ impl ProtoShortcut {
 
 #[derive(Debug)]
 pub struct ProtoEdge {
+    pub id: Option<usize>,
     pub src_id: i64,
     pub dst_id: i64,
     pub metrics: DimVec<f64>,
@@ -121,16 +133,19 @@ impl MemSize for ProtoEdge {
     /// To keep additional memory-needs below 1 MB, the the maximum amount of four f64-values per
     /// worked-off chunk has to be limited to 250_000.
     fn mem_size_b() -> usize {
+        // id: usize
+        mem::size_of::<Option<usize>>()
         // src_id: i64
         // dst_id: i64
-        2 * mem::size_of::<i64>()
-        // metrics: DimVec<Option<f64>>
+        + 2 * mem::size_of::<i64>()
+        // metrics: DimVec<f64>
         + capacity::SMALL_VEC_INLINE_SIZE * mem::size_of::<f64>()
     }
 }
 
 struct ProtoEdgeA {
     pub idx: usize,
+    pub id: Option<usize>,
     pub src_id: i64,
     pub dst_id: i64,
     pub metrics: DimVec<f64>,
@@ -139,6 +154,7 @@ struct ProtoEdgeA {
 
 struct ProtoEdgeB {
     pub idx: usize,
+    pub id: Option<usize>,
     pub src_idx: NodeIdx,
     pub dst_idx: NodeIdx,
     pub metrics: DimVec<f64>,
@@ -149,6 +165,8 @@ impl MemSize for ProtoEdgeB {
     fn mem_size_b() -> usize {
         // idx
         mem::size_of::<usize>()
+        // id: usize
+        +mem::size_of::<Option<usize>>()
         // src_idx
         // dst_idx
         + 2 * mem::size_of::<usize>()
@@ -164,7 +182,8 @@ impl MemSize for ProtoEdgeB {
 struct ProtoEdgeC {
     src_idx: NodeIdx,
     dst_idx: NodeIdx,
-    edge_idx: usize,
+    idx: usize,
+    id: Option<usize>,
 }
 
 pub struct EdgeBuilder {
@@ -179,7 +198,7 @@ impl EdgeBuilder {
         &self.cfg
     }
 
-    pub fn insert<E>(&mut self, proto_edge: E)
+    pub fn insert<E>(&mut self, proto_edge: E) -> err::Feedback
     where
         E: Into<ProtoShortcut>,
     {
@@ -224,6 +243,7 @@ impl EdgeBuilder {
             // save index to shortcut in proto-edge
             self.proto_edges.push(ProtoEdgeA {
                 idx,
+                id: proto_edge.id,
                 src_id: proto_edge.src_id,
                 dst_id: proto_edge.dst_id,
                 metrics: proto_edge.metrics,
@@ -233,12 +253,15 @@ impl EdgeBuilder {
         } else {
             self.proto_edges.push(ProtoEdgeA {
                 idx,
+                id: proto_edge.id,
                 src_id: proto_edge.src_id,
                 dst_id: proto_edge.dst_id,
                 metrics: proto_edge.metrics,
                 sc_edges: None,
             });
         }
+
+        Ok(())
     }
 
     pub fn next(mut self) -> NodeBuilder {
@@ -403,6 +426,7 @@ impl GraphBuilder {
                 for edge in chunk.into_iter() {
                     new_proto_edges.push(ProtoEdgeB {
                         idx: edge.idx,
+                        id: edge.id,
                         src_idx: nodes.idx_from(edge.src_id).expect(&format!(
                             "The given src-id `{:?}` doesn't exist as node",
                             edge.src_id
@@ -494,7 +518,7 @@ impl GraphBuilder {
                     // compare src-id and dst-id, then metrics approximately
                     if (e0.src_idx, e0.dst_idx) == (e1.src_idx, e1.dst_idx) {
                         for (e0_metric, e1_metric) in e0.metrics.iter().zip(e1.metrics.iter()) {
-                            if e0_metric.approx_eq(&e1_metric) {
+                            if e0_metric.approx_eq(e1_metric) {
                                 continue;
                             }
                             // values are different
@@ -547,7 +571,7 @@ impl GraphBuilder {
 
         //----------------------------------------------------------------------------------------//
         // build metrics
-        // If metrics are built before indices and offsets are built, the need of memory while
+        // If metrics are built before indices and offsets are built, the total need of memory while
         // building is reduced.
 
         info!("START Store metrics.");
@@ -587,12 +611,13 @@ impl GraphBuilder {
 
                 for mut edge in chunk.into_iter() {
                     // add to graph and remember ids
-                    // -> nodes are needed to map NodeId -> NodeIdx
+                    // -> nodes are needed to be finished here to map NodeId -> NodeIdx
                     graph.add_metrics(&mut edge)?;
                     new_proto_edges.push(ProtoEdgeC {
                         src_idx: edge.src_idx,
                         dst_idx: edge.dst_idx,
-                        edge_idx: 0, // used later for offset-arrays
+                        idx: 0, // used later for offset-arrays
+                        id: edge.id,
                     });
 
                     // remember sc-edges for setting offsets later
@@ -622,7 +647,17 @@ impl GraphBuilder {
 
         //----------------------------------------------------------------------------------------//
         // set ch-shortcut-offsets
-        // do it here to reduce memory-needs by processing metrics first
+        // do it here to reduce total memory-needs by processing metrics first
+        //
+        // Why offsets for m edges? Assume one memory-unit to equal one usize.
+        //
+        // Storing all shortcuts (or None) in a vector of Option<[usize; usize]> results in
+        // a memory-consumption of `2*m`, even if the graph has no shortcuts at all.
+        //
+        // Storing all k shortcuts in a separate vector results in
+        // a memory-consumption `2*k + m`. This saves `m - 2*k` memory, which is especially low when
+        // the graph has no shortcuts at all (k=0). Besides that, the sc-edge-indices doesn't need
+        // being wrapped by Option.
 
         info!("DO Create ch-shortcut-offsets-array");
         {
@@ -662,12 +697,13 @@ impl GraphBuilder {
             let mut offset = 0;
             graph.fwd_offsets.push(offset);
             // high-level-idea
-            // count offset for each proto_edge (sorted) and apply offset as far as src doesn't change
+            // count offset for each proto_edge (sorted)
+            // and apply offset as far as src doesn't change
             let mut edge_idx = 0;
             for proto_edge in proto_edges.iter_mut() {
                 // Add edge-idx here to remember it for indirect mapping bwd->fwd.
                 // Update it at the end of the loop.
-                proto_edge.edge_idx = edge_idx;
+                proto_edge.idx = edge_idx;
 
                 // do not swap src and dst since this is a forward-edge
                 let edge_src_idx = proto_edge.src_idx;
@@ -686,6 +722,11 @@ impl GraphBuilder {
                 graph.fwd_dsts.push(edge_dst_idx);
                 // mapping fwd to fwd is just the identity
                 graph.fwd_to_fwd_map.push(EdgeIdx(edge_idx));
+                // edge-ids
+                graph.edge_ids.push(proto_edge.id);
+                if let Some(id) = proto_edge.id {
+                    graph.edge_ids_to_idx_map.push((id, EdgeIdx(edge_idx)));
+                }
 
                 // print progress
                 progress_bar.set(edge_idx);
@@ -702,6 +743,23 @@ impl GraphBuilder {
             info!("{}", progress_bar);
             // reduce and optimize memory-usage
             // already dropped via iterator: drop(self.proto_edges);
+            graph.shrink_to_fit();
+        }
+
+        // cleanup and sort by edge-ids for finding the edge-idx with a given id
+
+        if graph.edge_ids_to_idx_map.len() > 0 {
+            let old_len = graph.edge_ids_to_idx_map.len();
+            info!("DO Sort mapping from edge-ids to indices.");
+            graph
+                .edge_ids_to_idx_map
+                .sort_unstable_by_key(|&(id, _idx)| id);
+            graph.edge_ids_to_idx_map.dedup_by_key(|&mut (id, _idx)| id);
+            if graph.edge_ids_to_idx_map.len() != old_len {
+                return Err(err::Msg::from(
+                    "The graph contains multiple edges of same id.",
+                ));
+            }
             graph.shrink_to_fit();
         }
 
@@ -755,7 +813,7 @@ impl GraphBuilder {
                 // but applied to forward-sorted-edges.
                 // Now, that's used to generate the mapping from backward to forward,
                 // which is needed for the offset-arrays.
-                graph.bwd_to_fwd_map.push(EdgeIdx(proto_edge.edge_idx));
+                graph.bwd_to_fwd_map.push(EdgeIdx(proto_edge.idx));
 
                 // print progress
                 progress_bar.set(edge_idx);
@@ -875,14 +933,18 @@ impl GraphBuilder {
                                 parsing::edges::Category::Ignored => false,
                             })
                         {
-                            return Err(format!(
+                            return Err(err::Msg::from(format!(
                                 "Id {} should be generated, but does already exist.",
                                 new_id
-                            )
-                            .into());
+                            )));
                         }
                     }
-                    generating::edges::Category::Convert { from: _, to: _ } => {
+                    generating::edges::Category::Merge {
+                        from: _,
+                        edge_id: _,
+                        edges_info: _,
+                    }
+                    | generating::edges::Category::Convert { from: _, to: _ } => {
                         // do not check because it's in-place, so duplicates would be removed.
                     }
                 }
@@ -894,30 +956,68 @@ impl GraphBuilder {
                 match category {
                     generating::edges::Category::Meta { info, id: new_id } => {
                         match info {
-                            generating::edges::MetaInfo::SrcIdx
-                            | generating::edges::MetaInfo::DstIdx => {
+                            generating::edges::MetaInfo::EdgeId => {
+                                // add edge-idx as id to graph
+                                graph.edge_ids = (0..graph.fwd_edges().count()).map(Some).collect();
+                                graph.edge_ids_to_idx_map = (0..graph.fwd_edges().count())
+                                    .enumerate()
+                                    .map(|(idx, id)| (id, EdgeIdx(idx)))
+                                    .collect();
+                                // already sorted by id
+                                //graph.edge_ids_to_idx_map.sort_unstable_by_key(|&(id, _idx)| id);
+
+                                // update config
+                                graph
+                                    .cfg
+                                    .edges
+                                    .categories
+                                    .push(parsing::edges::Category::Meta {
+                                        info: parsing::edges::MetaInfo::EdgeId,
+                                        id: new_id.clone(),
+                                    });
+                            }
+                            generating::edges::MetaInfo::SrcIdx => {
                                 // update graph
                                 //
                                 // -> already done
 
                                 // update config
+                                graph
+                                    .cfg
+                                    .edges
+                                    .categories
+                                    .push(parsing::edges::Category::Meta {
+                                        info: parsing::edges::MetaInfo::SrcIdx,
+                                        id: new_id.clone(),
+                                    });
+                            }
+                            generating::edges::MetaInfo::DstIdx => {
+                                // update graph
+                                //
+                                // -> already done
 
-                                graph.cfg.edges.categories.push(category.clone().into());
+                                // update config
+                                graph
+                                    .cfg
+                                    .edges
+                                    .categories
+                                    .push(parsing::edges::Category::Meta {
+                                        info: parsing::edges::MetaInfo::DstIdx,
+                                        id: new_id.clone(),
+                                    });
                             }
                             generating::edges::MetaInfo::ShortcutIdx0
                             | generating::edges::MetaInfo::ShortcutIdx1 => {
-                                return Err(format!(
+                                return Err(err::Msg::from(format!(
                                     "Edge-meta-info {:?} (id: {}) cannot be created \
                                      and has to be provided.",
                                     info, new_id
-                                )
-                                .into())
+                                )))
                             }
                         }
                     }
                     generating::edges::Category::Custom { unit, id, default } => {
                         // update graph
-
                         graph
                             .metrics
                             .iter_mut()
@@ -925,7 +1025,14 @@ impl GraphBuilder {
 
                         // update config
 
-                        graph.cfg.edges.categories.push(category.clone().into());
+                        graph
+                            .cfg
+                            .edges
+                            .categories
+                            .push(parsing::edges::Category::Metric {
+                                unit: parsing::edges::metrics::UnitInfo::from(*unit),
+                                id: id.clone(),
+                            });
                         graph.cfg.edges.metrics.units.push((*unit).into());
                         graph.cfg.edges.metrics.ids.push(id.clone());
                     }
@@ -977,7 +1084,14 @@ impl GraphBuilder {
 
                         // update config
 
-                        graph.cfg.edges.categories.push(category.clone().into());
+                        graph
+                            .cfg
+                            .edges
+                            .categories
+                            .push(parsing::edges::Category::Metric {
+                                unit: parsing::edges::metrics::UnitInfo::from(*unit),
+                                id: id.clone(),
+                            });
                         graph.cfg.edges.metrics.units.push((*unit).into());
                         graph.cfg.edges.metrics.ids.push(id.clone());
                     }
@@ -985,23 +1099,13 @@ impl GraphBuilder {
                         // loop over all edges
                         // and add to their metrics
 
-                        let metric_idx = graph
-                            .cfg
-                            .edges
-                            .metrics
-                            .ids
-                            .iter()
-                            .position(|id| id == &from.id)
-                            .expect(&format!(
-                                "Id {} is expected in graph, but doesn't exist.",
-                                from.id
-                            ));
+                        let metric_idx = graph.cfg.edges.metrics.idx_of(&from.id);
                         for edge_idx in 0..graph.metrics.len() {
                             // get old value
                             // and generate new value
 
                             let new_raw_value = {
-                                let old_raw_value = graph.metrics[edge_idx][metric_idx];
+                                let old_raw_value = graph.metrics[edge_idx][*metric_idx];
                                 from.unit.try_convert(&to.unit, old_raw_value)?
                             };
 
@@ -1012,7 +1116,14 @@ impl GraphBuilder {
 
                         // update config
 
-                        graph.cfg.edges.categories.push(category.clone().into());
+                        graph
+                            .cfg
+                            .edges
+                            .categories
+                            .push(parsing::edges::Category::Metric {
+                                unit: parsing::edges::metrics::UnitInfo::from(to.unit),
+                                id: to.id.clone(),
+                            });
                         graph.cfg.edges.metrics.units.push(to.unit.into());
                         graph.cfg.edges.metrics.ids.push(to.id.clone());
                     }
@@ -1020,29 +1131,19 @@ impl GraphBuilder {
                         // loop over all edges
                         // and replace their existing metrics
 
-                        let metric_idx = graph
-                            .cfg
-                            .edges
-                            .metrics
-                            .ids
-                            .iter()
-                            .position(|id| id == &from.id)
-                            .expect(&format!(
-                                "Id {} is expected in graph, but doesn't exist.",
-                                from.id
-                            ));
+                        let metric_idx = graph.cfg.edges.metrics.idx_of(&from.id);
                         for edge_idx in 0..graph.metrics.len() {
                             // get old value
                             // and generate new value
 
                             let new_raw_value = {
-                                let old_raw_value = graph.metrics[edge_idx][metric_idx];
+                                let old_raw_value = graph.metrics[edge_idx][*metric_idx];
                                 from.unit.try_convert(&to.unit, old_raw_value)?
                             };
 
                             // update graph
 
-                            graph.metrics[edge_idx][metric_idx] = new_raw_value;
+                            graph.metrics[edge_idx][*metric_idx] = new_raw_value;
                         }
 
                         // update config
@@ -1065,42 +1166,22 @@ impl GraphBuilder {
                                 parsing::edges::Category::Meta { info: _, id: _ }
                                 | parsing::edges::Category::Ignored => (),
                             });
-                        graph.cfg.edges.metrics.units[metric_idx] = to.unit.into();
-                        graph.cfg.edges.metrics.ids[metric_idx] = to.id.clone();
+                        graph.cfg.edges.metrics.units[*metric_idx] = to.unit.into();
+                        graph.cfg.edges.metrics.ids[*metric_idx] = to.id.clone();
                     }
                     generating::edges::Category::Calc { result, a, b } => {
                         // loop over all edges
                         // and replace their existing metrics
 
-                        let idx_a = graph
-                            .cfg
-                            .edges
-                            .metrics
-                            .ids
-                            .iter()
-                            .position(|id| id == &a.id)
-                            .expect(&format!(
-                                "Id {} is expected in graph, but doesn't exist.",
-                                a.id
-                            ));
-                        let idx_b = graph
-                            .cfg
-                            .edges
-                            .metrics
-                            .ids
-                            .iter()
-                            .position(|id| id == &b.id)
-                            .expect(&format!(
-                                "Id {} is expected in graph, but doesn't exist.",
-                                b.id
-                            ));
+                        let metric_idx_a = graph.cfg.edges.metrics.idx_of(&a.id);
+                        let metric_idx_b = graph.cfg.edges.metrics.idx_of(&b.id);
                         for edge_idx in 0..graph.metrics.len() {
                             // get old value
                             // and generate new value
 
                             let new_raw_value = {
-                                let old_raw_a = graph.metrics[edge_idx][idx_a];
-                                let old_raw_b = graph.metrics[edge_idx][idx_b];
+                                let old_raw_a = graph.metrics[edge_idx][*metric_idx_a];
+                                let old_raw_b = graph.metrics[edge_idx][*metric_idx_b];
                                 result
                                     .unit
                                     .try_calc(&a.unit, old_raw_a, &b.unit, old_raw_b)?
@@ -1113,9 +1194,91 @@ impl GraphBuilder {
 
                         // update config
 
-                        graph.cfg.edges.categories.push(category.clone().into());
+                        graph
+                            .cfg
+                            .edges
+                            .categories
+                            .push(parsing::edges::Category::Metric {
+                                unit: parsing::edges::metrics::UnitInfo::from(result.unit),
+                                id: result.id.clone(),
+                            });
                         graph.cfg.edges.metrics.units.push(result.unit.into());
                         graph.cfg.edges.metrics.ids.push(result.id.clone());
+                    }
+                    generating::edges::Category::Merge {
+                        from,
+                        edge_id,
+                        edges_info,
+                    } => {
+                        // open file
+
+                        let file = OpenOptions::new()
+                            .read(true)
+                            .open(&from)
+                            .expect(&format!("Couldn't open {}", from.display()));
+                        let reader = BufReader::new(file)
+                            .lines()
+                            .map(Result::unwrap)
+                            .filter(helpers::is_line_functional);
+
+                        // parse edge-id and metric
+
+                        for line in reader {
+                            let params: Vec<&str> = line.split_whitespace().collect();
+
+                            // get edge-idx
+
+                            let mut edge_idx = None;
+                            for (col_idx, category) in edges_info.iter().enumerate() {
+                                match category {
+                                    generating::edges::merge::Category::Id(id) => {
+                                        let param = params[col_idx];
+
+                                        if id == edge_id {
+                                            let edge_id = param.parse::<usize>().ok().ok_or(
+                                                format!("Parsing edge-id '{}' didn't work.", param),
+                                            )?;
+                                            edge_idx =
+                                                Some(graph.fwd_edges().try_idx_from(edge_id)?);
+                                            break;
+                                        }
+                                    }
+                                    generating::edges::merge::Category::Ignored => continue,
+                                }
+                            }
+                            let edge_idx = edge_idx.ok_or(err::Msg::from(format!(
+                                "The expected edge-id {} is not in the edges-info-file.",
+                                edge_id,
+                            )))?;
+
+                            // update graph with data
+
+                            for (col_idx, category) in edges_info.iter().enumerate() {
+                                match category {
+                                    generating::edges::merge::Category::Id(id) => {
+                                        if id == edge_id {
+                                            continue;
+                                        }
+
+                                        let metric_idx = graph.cfg.edges.metrics.idx_of(id);
+
+                                        let param = params[col_idx];
+                                        if let Ok(raw_value) = param.parse::<f64>() {
+                                            graph.metrics[*edge_idx][*metric_idx] = raw_value;
+                                        } else {
+                                            return Err(err::Msg::from(format!(
+                                                "Parsing '{}' didn't work.",
+                                                param
+                                            )));
+                                        };
+                                    }
+                                    generating::edges::merge::Category::Ignored => continue,
+                                }
+                            }
+                        }
+
+                        // update config
+                        // -> already up-to-date since just floats has been replaced
                     }
                 }
             }

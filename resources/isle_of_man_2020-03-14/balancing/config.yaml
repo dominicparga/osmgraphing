@@ -19,6 +19,7 @@ parsing:
     edges:
     - meta: { info: 'SrcIdx', id: 'src-idx' }
     - meta: { info: 'DstIdx', id: 'dst-idx' }
+    - meta: { info: 'EdgeId', id: 'edge-id' }
     - haversine: { unit: 'Kilometers', id: 'kilometers' }
     - copy:
         from: { unit: 'Kilometers', id: 'kilometers' }
@@ -37,7 +38,8 @@ balancing:
   number_of_iterations: 10
   iter-0-cfg: 'resources/isle_of_man_2020-03-14/balancing/init.yaml'
   iter-i-cfg: 'resources/isle_of_man_2020-03-14/balancing/iteration.yaml'
-  new_graph-dim: 5
+  multi-ch-constructor:
+    dimension: 3
   metric-ids:
     distance: 'kilometers'
     lane-count: 'lane-count'
@@ -58,17 +60,18 @@ routing:
 writing:
   graph:
     map-file: 'balanced_graph.fmi'
-    with_shortcuts: false
     nodes:
     - id: 'node-idx'
     - id: 'node-id'
     - id: 'latitude'
     - id: 'longitude'
     edges:
-    - id: 'src-id'
-    - id: 'dst-id'
-    - id: 'kilometers'
-    - id: 'hours'
-    - id: 'lane-count'
-    - id: 'workload'
-    - id: 'dummy'
+      with_shortcuts: false
+      ids:
+      - id: 'src-id'
+      - id: 'dst-id'
+      - id: 'kilometers'
+      - id: 'hours'
+      - id: 'lane-count'
+      - id: 'workload'
+      - id: 'dummy'
