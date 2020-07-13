@@ -118,7 +118,7 @@ class Data():
         # continue TODO
 
         if self.iteration == 0:
-            self.check_for_equal_edge_files(sim=sim)
+            # self.check_for_equal_edge_files(sim=sim)
             self.read_in_edge_info(sim=sim)
 
         self.read_in_workloads(sim=sim)
@@ -236,7 +236,12 @@ class Data():
         )
         with open(coords_csv_path, mode='r') as csv_file:
             csv_reader = csv.DictReader(csv_file, delimiter=' ')
+
+            # read unsorted data
+
+            edges_info = []
             for row in csv_reader:
+                edge_id = int(row['edge-id'])
                 src_lat = float(row['src_lat'])
                 src_lon = float(row['src_lon'])
                 dst_lat = float(row['dst_lat'])
@@ -244,8 +249,23 @@ class Data():
                 kilometers = float(row['kilometers'])
                 lane_count = float(row['lane_count'])
 
-                self.lats.raw.append((src_lat + dst_lat) / 2.0)
-                self.lons.raw.append((src_lon + dst_lon) / 2.0)
+                edges_info.append((
+                    edge_id,
+                    (src_lat + dst_lat) / 2.0,
+                    (src_lon + dst_lon) / 2.0,
+                    kilometers,
+                    lane_count
+                ))
+
+            # sort by edge-id and add data
+            edges_info.sort(key=lambda edge_info: edge_info[0])
+
+            # add sorted data
+            for (
+                _edge_id, mid_lat, mid_lon, kilometers, lane_count
+            ) in edges_info:
+                self.lats.raw.append(mid_lat)
+                self.lons.raw.append(mid_lon)
                 self.kilometers.raw.append(kilometers)
                 self.lane_counts.raw.append(lane_count)
 
@@ -254,19 +274,45 @@ class Data():
             f'{sim.results_dir}',
             self.path_to_abs_workloads()
         )
+
+        # read unsorted data
+
+        unsorted_values = []
         with open(workloads_csv_path, mode='r') as csv_file:
             csv_reader = csv.DictReader(csv_file, delimiter=' ')
-            for edge_idx, row in enumerate(csv_reader):
-                value = float(row['num_routes']) / self.volume(edge_idx)
-                self.workloads.raw.append(value)
+            for row in csv_reader:
+                unsorted_values.append((
+                    int(row['edge-id']),
+                    float(row['num_routes'])
+                ))
+
+            # sort by edge-id and add data
+            unsorted_values.sort(key=lambda val: val[0])
+
+            # add sorted data
+            for (edge_idx, (_edge_id, value)) in enumerate(unsorted_values):
+                self.workloads.raw.append(value / self.volume(edge_idx))
 
     def _read_in_new_metrics(self, sim: Simulation):
         workloads_csv_path = os.path.join(
             sim.results_dir,
             self.path_to_new_metrics()
         )
+
+        # read unsorted data
+
+        unsorted_values = []
         with open(workloads_csv_path, mode='r') as csv_file:
             csv_reader = csv.DictReader(csv_file, delimiter=' ')
             for row in csv_reader:
-                value = float(row['new_metrics'])
+                unsorted_values.append((
+                    int(row['edge-id']),
+                    float(row['new_metrics'])
+                ))
+
+            # sort by edge-id and add data
+            unsorted_values.sort(key=lambda val: val[0])
+
+            # add sorted data
+            for (_edge_id, value) in unsorted_values:
                 self.workloads.raw.append(value)
