@@ -107,11 +107,13 @@ impl From<WrappedRawConfig> for WrappedProtoConfig {
     }
 }
 
+/// Don't deny unknown fields to allow multiple configs in one yaml-file.
 #[derive(Debug, Deserialize)]
 pub struct WrappedRawConfig {
     pub writing: RawConfig,
 }
 
+/// Don't deny unknown fields to allow multiple configs in one yaml-file.
 #[derive(Debug, Deserialize)]
 pub struct RawConfig {
     #[serde(rename = "edges-info")]
@@ -119,6 +121,7 @@ pub struct RawConfig {
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct RawContent {
     #[serde(rename = "file")]
     pub file: PathBuf,
@@ -128,7 +131,7 @@ pub struct RawContent {
 }
 
 #[derive(Debug, Deserialize)]
-#[serde(rename_all = "lowercase")]
+#[serde(deny_unknown_fields, rename_all = "lowercase")]
 pub enum RawCategory {
     Id(SimpleId),
     Ignored,

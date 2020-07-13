@@ -187,12 +187,19 @@ impl ProtoShortcut {
             match category {
                 edges::Category::Meta { info, id: _ } => match info {
                     edges::MetaInfo::EdgeId => {
-                        edge_id = Some({
-                            param.parse::<usize>().ok().ok_or(format!(
+                        edge_id = param.parse::<usize>().ok();
+
+                        // multi-ch-constructor uses ids like "ch123" for shortcuts
+                        if edge_id.is_none() && &param[0..2] == "ch" {
+                            edge_id = param[2..].parse::<usize>().ok();
+                        }
+
+                        if edge_id.is_none() {
+                            return Err(format!(
                                 "Parsing {:?} '{}' of edge-param #{} didn't work.",
                                 category, param, param_idx
-                            ))?
-                        });
+                            ));
+                        }
                     }
                     edges::MetaInfo::SrcId => {
                         if src_id.is_none() {

@@ -90,8 +90,8 @@ pub struct WrappedRawConfig {
     pub writing: RawConfig,
 }
 
+/// Don't deny unknown fields to allow multiple configs in one yaml-file.
 #[derive(Debug, Deserialize)]
-#[serde(deny_unknown_fields)]
 pub struct RawConfig {
     graph: RawContent,
 }

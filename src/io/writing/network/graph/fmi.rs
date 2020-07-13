@@ -93,13 +93,10 @@ impl Writer {
                 .count()
         )?;
 
-        // write graph-data to file
-
-        let mut progress_bar =
-            progressing::BernoulliBar::from_goal(nodes.count() + fwd_edges.count());
-        info!("{}", progress_bar);
-
         // write nodes
+
+        let mut progress_bar = progressing::BernoulliBar::from_goal(nodes.count());
+        info!("{}", progress_bar);
 
         // for every node
         for node_idx in &nodes {

@@ -756,7 +756,9 @@ impl GraphBuilder {
                 .sort_unstable_by_key(|&(id, _idx)| id);
             graph.edge_ids_to_idx_map.dedup_by_key(|&mut (id, _idx)| id);
             if graph.edge_ids_to_idx_map.len() != old_len {
-                return Err("The graph contains multiple edges of same id.".into());
+                return Err(err::Msg::from(
+                    "The graph contains multiple edges of same id.",
+                ));
             }
             graph.shrink_to_fit();
         }

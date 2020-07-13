@@ -52,10 +52,19 @@ fn write_edges_to_file<W: Write>(
     info!("{}", progress_bar);
 
     // for every edge
-    for edge_idx in fwd_edges
-        .iter()
-        .filter(|&edge_idx| !fwd_edges.is_shortcut(edge_idx) || writing_cfg.is_writing_shortcuts)
-    {
+    for edge_idx in fwd_edges.iter() {
+        // if shortcut, check if shortcuts are expected to be written
+        if fwd_edges.is_shortcut(edge_idx) && !writing_cfg.is_writing_shortcuts {
+            // print progress
+            progress_bar.add(true);
+            if progress_bar.progress().successes % (1 + (progress_bar.end() / 10)) == 0 {
+                info!("{}", progress_bar);
+            }
+
+            // print shortcuts only if expected to, which is not the case here
+            continue;
+        }
+
         // loop over graphs config
         // and print respective data
         // if id fits

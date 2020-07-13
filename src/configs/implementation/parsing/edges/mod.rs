@@ -146,6 +146,7 @@ pub enum MetaInfo {
 impl From<ProtoMetaInfo> for MetaInfo {
     fn from(proto_info: ProtoMetaInfo) -> MetaInfo {
         match proto_info {
+            ProtoMetaInfo::EdgeId => MetaInfo::EdgeId,
             ProtoMetaInfo::SrcId => MetaInfo::SrcId,
             ProtoMetaInfo::DstId => MetaInfo::DstId,
             ProtoMetaInfo::ShortcutIdx0 => MetaInfo::ShortcutIdx0,
@@ -212,6 +213,7 @@ impl From<RawCategory> for ProtoCategory {
 
 #[derive(Copy, Clone, Debug, Deserialize, Eq, PartialEq)]
 pub enum ProtoMetaInfo {
+    EdgeId,
     SrcId,
     DstId,
     ShortcutIdx0,
@@ -221,6 +223,7 @@ pub enum ProtoMetaInfo {
 impl From<RawMetaInfo> for ProtoMetaInfo {
     fn from(raw_info: RawMetaInfo) -> ProtoMetaInfo {
         match raw_info {
+            RawMetaInfo::EdgeId => ProtoMetaInfo::EdgeId,
             RawMetaInfo::SrcId => ProtoMetaInfo::SrcId,
             RawMetaInfo::DstId => ProtoMetaInfo::DstId,
             RawMetaInfo::ShortcutIdx0 => ProtoMetaInfo::ShortcutIdx0,
@@ -249,6 +252,7 @@ pub enum RawCategory {
 
 #[derive(Copy, Clone, Debug, Deserialize, Eq, PartialEq)]
 pub enum RawMetaInfo {
+    EdgeId,
     SrcId,
     DstId,
     ShortcutIdx0,

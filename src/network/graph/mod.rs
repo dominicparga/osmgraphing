@@ -555,11 +555,23 @@ impl<'a> EdgeAccessor<'a> {
     }
 
     pub fn try_idx_from(&self, id: usize) -> err::Result<EdgeIdx> {
-        match self.edge_ids.binary_search(&Some(id)) {
-            Ok(idx) => Ok(EdgeIdx(idx)),
+        // edge-ids are sorted in this "map" (vector)
+        // -> mapped from id to edge-idx
+        match self
+            .edge_ids_to_idx_map
+            .binary_search_by_key(&id, |(edge_id, _edge_idx)| *edge_id)
+        {
+            Ok(idx) => {
+                let (_edge_id, edge_idx) = self.edge_ids_to_idx_map[idx];
+                Ok(edge_idx)
+            }
             Err(_idx) => Err(err::Msg::from(format!(
-                "The provided edge-id {} is expected to be in the graph, but is not.",
-                id
+                "{} {}",
+                format!(
+                    "The provided edge-id {} is expected to be in the graph, but is not.",
+                    id
+                ),
+                "The reason can lay in "
             ))),
         }
     }
