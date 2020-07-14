@@ -516,7 +516,9 @@ impl GraphBuilder {
                     let mut is_eq = true;
 
                     // compare src-id and dst-id, then metrics approximately
-                    if (e0.src_idx, e0.dst_idx) == (e1.src_idx, e1.dst_idx) {
+                    is_eq &= e0.id == e1.id;
+                    is_eq &= (e0.src_idx, e0.dst_idx) == (e1.src_idx, e1.dst_idx);
+                    if is_eq {
                         for (e0_metric, e1_metric) in e0.metrics.iter().zip(e1.metrics.iter()) {
                             if e0_metric.approx_eq(e1_metric) {
                                 continue;
@@ -525,8 +527,6 @@ impl GraphBuilder {
                             is_eq = false;
                             break;
                         }
-                    } else {
-                        is_eq = false;
                     }
 
                     is_eq
@@ -761,6 +761,26 @@ impl GraphBuilder {
                 ));
             }
             graph.shrink_to_fit();
+
+            // check if ids are sorted
+
+            for i in 0..(graph.edge_ids_to_idx_map.len() - 1) {
+                let (prev_edge_id, _prev_edge_idx) = graph.edge_ids_to_idx_map[i];
+                let (next_edge_id, _next_edge_idx) = graph.edge_ids_to_idx_map[i + 1];
+
+                if prev_edge_id == next_edge_id {
+                    return Err(err::Msg::from(format!(
+                        "The edge-id {} is duplicated.",
+                        prev_edge_id,
+                    )));
+                }
+                if next_edge_id < prev_edge_id {
+                    return Err(err::Msg::from(format!(
+                        "The previous edge-id {} should be smaller than next edge-id {}.",
+                        prev_edge_id, next_edge_id,
+                    )));
+                }
+            }
         }
 
         //----------------------------------------------------------------------------------------//
@@ -1235,11 +1255,11 @@ impl GraphBuilder {
                                         let param = params[col_idx];
 
                                         if id == edge_id {
-                                            let edge_id = param.parse::<usize>().ok().ok_or(
+                                            let raw_edge_id = param.parse::<usize>().ok().ok_or(
                                                 format!("Parsing edge-id '{}' didn't work.", param),
                                             )?;
                                             edge_idx =
-                                                Some(graph.fwd_edges().try_idx_from(edge_id)?);
+                                                Some(graph.fwd_edges().try_idx_from(raw_edge_id)?);
                                             break;
                                         }
                                     }

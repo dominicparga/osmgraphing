@@ -359,7 +359,7 @@ mod simulation_pipeline {
         let mut progress_bar = MappingBar::new(0..=route_pairs.len());
         info!("{}", progress_bar);
         let mut last_printed_progress = 0;
-        let blub = std::cmp::max(1, progress_bar.end() / 10);
+        let blub = std::cmp::max(1, progress_bar.end() / 100);
 
         // find all routes and count density on graph
 
@@ -379,6 +379,7 @@ mod simulation_pipeline {
                 if progress_bar.progress() / blub > last_printed_progress / blub {
                     last_printed_progress = progress_bar.progress();
                     info!("{}", progress_bar);
+                    info!("Current work-size: {}", master.work_size());
                 }
 
                 // send new work
