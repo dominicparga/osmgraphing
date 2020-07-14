@@ -1,6 +1,6 @@
 use log::{debug, warn};
 use osmgraphing::{
-    configs,
+    configs, defaults,
     helpers::err,
     network::{EdgeIdx, Graph, RoutePair},
     routing::{self, ConvexHullExplorator, Dijkstra},
@@ -21,6 +21,8 @@ pub struct Master {
     // route-pairs and random numbers
     worker_sockets: Vec<Option<WorkerSocket>>,
     work_size: usize,
+    work_size_plus: usize,
+    work_size_minus: usize,
     last_worker_idx: Option<WorkerIdx>,
 }
 
@@ -69,7 +71,9 @@ impl Master {
         Ok(Master {
             outcome_rx,
             worker_sockets,
-            work_size: 1,
+            work_size: defaults::balancing::INIT_WORK_SIZE,
+            work_size_plus: defaults::balancing::INIT_WORK_SIZE_PLUS,
+            work_size_minus: defaults::balancing::INIT_WORK_SIZE_MINUS,
             last_worker_idx: None,
         })
     }
@@ -88,12 +92,27 @@ impl Master {
     }
 
     pub fn recv(&mut self) -> err::Result<Outcome> {
-        self.work_size += 1;
+        let (worker_idx, outcome) = {
+            if let Ok((worker_idx, outcome)) = self.outcome_rx.try_recv() {
+                // the worker finished (much?) earlier and waited
+                // -> give workers more work
+                self.work_size = std::cmp::min(
+                    std::usize::MAX - self.work_size_plus,
+                    self.work_size + self.work_size_plus,
+                );
 
-        let (worker_idx, outcome) = self
-            .outcome_rx
-            .recv()
-            .map_err(|e| err::Msg::from(format!("Receiving outcome stucks due to {}", e)))?;
+                (worker_idx, outcome)
+            } else {
+                // the worker didn't finish yet and master waits
+                // -> give workers less work
+                self.work_size = std::cmp::max(1, self.work_size - self.work_size_minus);
+
+                self.outcome_rx
+                    .recv()
+                    .map_err(|e| err::Msg::from(format!("Receiving outcome stucks due to {}", e)))?
+            }
+        };
+
         self.last_worker_idx = Some(worker_idx);
         Ok(outcome)
     }

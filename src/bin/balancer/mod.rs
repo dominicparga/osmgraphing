@@ -45,6 +45,25 @@ fn run(args: CmdlineArgs) -> err::Feedback {
 
     let mut graph = custom_graph;
     for iter in 0..balancing_cfg.num_iter {
+        // Iterate +1 to get analysis of new graph as well.
+        // -> store graph before creating a new one
+
+        if iter == balancing_cfg.num_iter - 1 {
+            // store balanced graph
+
+            let mut writing_cfg =
+                configs::writing::network::graph::Config::try_from_yaml(&args.cfg)?;
+            writing_cfg.map_file =
+                balancing_cfg
+                    .results_dir
+                    .join(writing_cfg.map_file.file_name().ok_or(err::Msg::from(
+                        "The provided route-pairs-file in the (routing-)config is not a file.",
+                    ))?);
+            write_graph(&graph, &writing_cfg)?;
+        }
+
+        // simulate and create new balanced graph
+
         simulation_pipeline::prepare_iteration(iter, &balancing_cfg)?;
         simulation_pipeline::write_multi_ch_graph(&balancing_cfg, graph, iter)?;
         simulation_pipeline::construct_ch_graph(&balancing_cfg, iter)?;
@@ -64,16 +83,6 @@ fn run(args: CmdlineArgs) -> err::Feedback {
         graph = Arc::try_unwrap(arc_ch_graph)
             .map_err(|_e| "The ch-graph should be owned by only one Arc.")?;
     }
-
-    // store balanced graph
-
-    let mut writing_cfg = configs::writing::network::graph::Config::try_from_yaml(&args.cfg)?;
-    writing_cfg.map_file = balancing_cfg
-        .results_dir
-        .join(writing_cfg.map_file.file_name().ok_or(err::Msg::from(
-            "The provided route-pairs-file in the (routing-)config is not a file.",
-        ))?);
-    write_graph(&graph, &writing_cfg)?;
 
     info!(
         "Execute py ./scripts/balancing/visualizer --results-dir {} to visualize.",

@@ -36,7 +36,7 @@ parsing:
 balancing:
   number_of_threads: 16
   results-dir: 'custom/results/isle_of_man_2020-03-14'
-  number_of_iterations: 10
+  number_of_metric-updates: 10
   iter-0-cfg: 'resources/isle_of_man_2020-03-14/balancing/init.yaml'
   iter-i-cfg: 'resources/isle_of_man_2020-03-14/balancing/iteration.yaml'
   multi-ch-constructor:
