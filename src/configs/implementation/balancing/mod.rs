@@ -18,6 +18,7 @@ pub struct Config {
     pub lane_count_id: SimpleId,
     pub distance_id: SimpleId,
     pub optimization: Optimization,
+    pub num_threads: usize,
 }
 
 impl SupportingFileExts for Config {
@@ -55,6 +56,9 @@ impl Config {
             lane_count_id: proto_cfg.lane_count_id,
             distance_id: proto_cfg.distance_id,
             optimization: Optimization::from(proto_cfg.optimization),
+            num_threads: proto_cfg
+                .num_threads
+                .unwrap_or(defaults::balancing::NUM_THREADS),
         })
     }
 
@@ -139,6 +143,7 @@ pub struct ProtoConfig {
     pub lane_count_id: SimpleId,
     pub distance_id: SimpleId,
     pub optimization: ProtoOptimization,
+    pub num_threads: Option<usize>,
 }
 
 impl TryFrom<RawConfig> for ProtoConfig {
@@ -157,6 +162,7 @@ impl TryFrom<RawConfig> for ProtoConfig {
             lane_count_id: raw_cfg.balancing.metric_ids.lane_count,
             distance_id: raw_cfg.balancing.metric_ids.distance,
             optimization: ProtoOptimization::from(raw_cfg.balancing.optimization),
+            num_threads: raw_cfg.balancing.num_threads,
         })
     }
 }
@@ -215,6 +221,8 @@ pub struct RawContent {
     pub metric_ids: metrics::RawConfig,
     #[serde(flatten)]
     pub optimization: RawOptimization,
+    #[serde(rename = "number_of_threads")]
+    pub num_threads: Option<usize>,
 }
 
 #[derive(Debug, Clone, Deserialize)]

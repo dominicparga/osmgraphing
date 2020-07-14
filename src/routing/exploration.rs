@@ -4,11 +4,9 @@
 // https://crates.io/crates/nalgebra
 
 use crate::{
-    configs,
     defaults::{self, capacity::DimVec},
     helpers::{self, algebra},
-    network::{Graph, NodeIdx},
-    routing::{paths::Path, Dijkstra},
+    routing::{paths::Path, Dijkstra, Query},
 };
 use log::{debug, trace};
 use smallvec::smallvec;
@@ -25,18 +23,16 @@ impl ConvexHullExplorator {
     // New paths of a facet are linear-combinations of its defining paths
     // -> could not be better than the best of already defined paths
 
-    pub fn fully_explorate(
-        &mut self,
-        src_idx: NodeIdx,
-        dst_idx: NodeIdx,
-        dijkstra: &mut Dijkstra,
-        graph: &Graph,
-        routing_cfg: &configs::routing::Config,
-    ) -> Vec<Path> {
+    pub fn fully_explorate(&mut self, query: Query, dijkstra: &mut Dijkstra) -> Vec<Path> {
         // init query
 
+        let src_idx = query.src_idx;
+        let dst_idx = query.dst_idx;
+        let graph = query.graph;
+        let mut routing_cfg = query.routing_cfg.clone();
+        drop(query);
+
         // config and stuff
-        let mut routing_cfg = routing_cfg.clone();
         let dim = graph.metrics().dim();
         // Every cost-value has to be below this value.
         let mut tolerated: DimVec<_> = smallvec![defaults::routing::TOLERATED_SCALE_INF; dim];
@@ -75,9 +71,12 @@ impl ConvexHullExplorator {
             // and if path exists
             // -> remember it as convex-hull-member
 
-            if let Some(mut best_path) =
-                dijkstra.compute_best_path(src_idx, dst_idx, graph, &routing_cfg)
-            {
+            if let Some(mut best_path) = dijkstra.compute_best_path(Query {
+                src_idx,
+                dst_idx,
+                graph,
+                routing_cfg: &routing_cfg,
+            }) {
                 best_path.calc_costs(graph);
                 // Remember tolerated costs for filtering in the end.
                 // The costs have to be checked in the end, since this iterative algorithm could
@@ -171,9 +170,12 @@ impl ConvexHullExplorator {
 
             // find new path with new alpha
 
-            if let Some(mut best_path) =
-                dijkstra.compute_best_path(src_idx, dst_idx, graph, &routing_cfg)
-            {
+            if let Some(mut best_path) = dijkstra.compute_best_path(Query {
+                src_idx,
+                dst_idx,
+                graph,
+                routing_cfg: &routing_cfg,
+            }) {
                 best_path.calc_costs(graph);
                 let new_p = best_path;
                 trace!(

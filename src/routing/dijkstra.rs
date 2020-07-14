@@ -7,6 +7,14 @@ use crate::{
 };
 use std::{cmp::Reverse, collections::BinaryHeap};
 
+#[derive(Copy, Clone)]
+pub struct Query<'a> {
+    pub src_idx: NodeIdx,
+    pub dst_idx: NodeIdx,
+    pub graph: &'a Graph,
+    pub routing_cfg: &'a Config,
+}
+
 /// A bidirectional implementation of Dijkstra's algorithm.
 /// This implementation reuses the underlying datastructures to speedup multiple computations.
 ///
@@ -124,19 +132,13 @@ impl Dijkstra {
     ///
     /// ATTENTION!
     /// If any alpha-value in the routing-config is negative, or any metric in the graph is negative, this method won't terminate.
-    pub fn compute_best_path(
-        &mut self,
-        src_idx: NodeIdx,
-        dst_idx: NodeIdx,
-        graph: &Graph,
-        routing_cfg: &Config,
-    ) -> Option<Path> {
+    pub fn compute_best_path(&mut self, query: Query) -> Option<Path> {
         debug_assert!(
-            routing_cfg.alphas.len() > 0,
+            query.routing_cfg.alphas.len() > 0,
             "Best path should be computed, but no alphas are specified."
         );
 
-        for alpha in routing_cfg.alphas.iter() {
+        for alpha in query.routing_cfg.alphas.iter() {
             // Dijkstra would not terminate with negative weights
             // -> no path found
             if alpha < &0.0 {
@@ -144,12 +146,12 @@ impl Dijkstra {
             }
         }
 
-        self.is_ch_dijkstra = routing_cfg.is_ch_dijkstra;
+        self.is_ch_dijkstra = query.routing_cfg.is_ch_dijkstra;
 
         //----------------------------------------------------------------------------------------//
         // initialization-stuff
 
-        let nodes = graph.nodes();
+        let nodes = query.graph.nodes();
         let xwd_edges = {
             debug_assert_eq!(
                 0,
@@ -161,7 +163,7 @@ impl Dijkstra {
                 self.dir_idx(Direction::BWD),
                 "Direction-Idx of BWD is expected to be 1."
             );
-            [graph.fwd_edges(), graph.bwd_edges()]
+            [query.graph.fwd_edges(), query.graph.bwd_edges()]
         };
         self.init_query(nodes.count());
         let mut best_meeting: Option<(NodeIdx, f64)> = None;
@@ -171,20 +173,20 @@ impl Dijkstra {
 
         // push src-node
         self.queue.push(Reverse(CostNode {
-            idx: src_idx,
+            idx: query.src_idx,
             cost: 0.0,
             direction: Direction::FWD,
         }));
         // push dst-node
         self.queue.push(Reverse(CostNode {
-            idx: dst_idx,
+            idx: query.dst_idx,
             cost: 0.0,
             direction: Direction::BWD,
         }));
         // update fwd-stats
-        self.costs[self.fwd_idx()][*src_idx] = 0.0;
+        self.costs[self.fwd_idx()][*query.src_idx] = 0.0;
         // update bwd-stats
-        self.costs[self.bwd_idx()][*dst_idx] = 0.0;
+        self.costs[self.bwd_idx()][*query.dst_idx] = 0.0;
 
         //----------------------------------------------------------------------------------------//
         // search for shortest path
@@ -252,7 +254,7 @@ impl Dijkstra {
                 }
 
                 let new_cost = current.cost
-                    + helpers::dot_product(&routing_cfg.alphas, &leaving_edge.metrics());
+                    + helpers::dot_product(&query.routing_cfg.alphas, &leaving_edge.metrics());
                 if new_cost < self.costs[dir][*leaving_edge.dst_idx()] {
                     self.predecessors[dir][*leaving_edge.dst_idx()] = Some(leaving_edge.idx());
                     self.costs[dir][*leaving_edge.dst_idx()] = new_cost;
@@ -307,10 +309,10 @@ impl Dijkstra {
             }
 
             Some(Path::new(
-                src_idx,
-                nodes.id(src_idx),
-                dst_idx,
-                nodes.id(dst_idx),
+                query.src_idx,
+                nodes.id(query.src_idx),
+                query.dst_idx,
+                nodes.id(query.dst_idx),
                 proto_path,
             ))
         } else {

@@ -100,7 +100,12 @@ impl Writer {
                 let is_already_processed = !processed_indices.insert((src_idx, dst_idx));
                 if !is_already_processed
                     && dijkstra
-                        .compute_best_path(src_idx, dst_idx, &graph, &routing_cfg)
+                        .compute_best_path(routing::Query {
+                            src_idx,
+                            dst_idx,
+                            graph: &graph,
+                            routing_cfg: &routing_cfg,
+                        })
                         .is_some()
                 {
                     found_route_pairs

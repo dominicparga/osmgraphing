@@ -65,6 +65,7 @@ pub mod routing {
 }
 
 pub mod balancing {
+    pub const NUM_THREADS: usize = 4;
     pub const CONTRACTION_RATIO: &str = "99.85";
 
     pub mod stats {

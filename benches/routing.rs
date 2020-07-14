@@ -114,7 +114,12 @@ fn bidir_shortest_dijkstra(
     let mut dijkstra = routing::Dijkstra::new();
 
     for &(src_idx, dst_idx) in routes.iter() {
-        let _option_path = dijkstra.compute_best_path(src_idx, dst_idx, graph, cfg);
+        let _option_path = dijkstra.compute_best_path(routing::Query {
+            src_idx,
+            dst_idx,
+            graph,
+            routing_cfg: cfg,
+        });
     }
 }
 
@@ -126,6 +131,11 @@ fn bidir_fastest_dijkstra(
     let mut dijkstra = routing::Dijkstra::new();
 
     for &(src_idx, dst_idx) in routes.iter() {
-        let _option_path = dijkstra.compute_best_path(src_idx, dst_idx, graph, cfg);
+        let _option_path = dijkstra.compute_best_path(routing::Query {
+            src_idx,
+            dst_idx,
+            graph,
+            routing_cfg: cfg,
+        });
     }
 }
