@@ -344,9 +344,9 @@ mod simulation_pipeline {
         rng: &mut rand_pcg::Lcg64Xsh32,
     ) -> err::Feedback {
         info!(
-            "Balance via explorating several routes for metrics {:?} of dimension {}",
+            "Balance via explorating several routes for metrics {:?}x{:?}",
             ch_graph.cfg().edges.metrics.units,
-            ch_graph.metrics().dim()
+            routing_cfg.alphas,
         );
         info!("Using {} threads", balancing_cfg.num_threads);
 
