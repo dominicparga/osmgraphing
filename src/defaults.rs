@@ -69,7 +69,7 @@ pub mod balancing {
     pub const INIT_WORK_SIZE_PLUS: usize = 10;
     pub const INIT_WORK_SIZE_MINUS: usize = 1;
     pub const NUM_THREADS: usize = 4;
-    pub const CONTRACTION_RATIO: &str = "99.85";
+    pub const CONTRACTION_RATIO: &str = "99.5";
 
     pub mod stats {
         pub const DIR: &str = "stats";
