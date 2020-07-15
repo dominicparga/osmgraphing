@@ -66,8 +66,8 @@ pub mod routing {
 
 pub mod balancing {
     pub const INIT_WORK_SIZE: usize = 1;
-    pub const INIT_WORK_SIZE_PLUS: usize = 10;
-    pub const INIT_WORK_SIZE_MINUS: usize = 1;
+    pub const WORK_SIZE_PLUS: usize = 10;
+    pub const WORK_SIZE_MINUS: usize = 1;
     pub const NUM_THREADS: usize = 4;
     pub const CONTRACTION_RATIO: &str = "99.5";
 

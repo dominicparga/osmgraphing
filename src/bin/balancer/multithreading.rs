@@ -68,12 +68,43 @@ impl Master {
             worker_sockets.push(Some(WorkerSocket { work_tx, handle }))
         }
 
+        // ensure no overflows
+        let init_work_size = {
+            if defaults::balancing::INIT_WORK_SIZE < defaults::balancing::WORK_SIZE_MINUS {
+                warn!(
+                    "{}{}{}{}{}",
+                    "INIT_WORK_SIZE=",
+                    defaults::balancing::INIT_WORK_SIZE,
+                    " but should be at least WORK_SIZE_MINUS=",
+                    defaults::balancing::WORK_SIZE_MINUS,
+                    " to prevent underflows."
+                );
+                defaults::balancing::WORK_SIZE_MINUS
+            } else {
+                defaults::balancing::INIT_WORK_SIZE
+            }
+        };
+        let init_work_size = {
+            if std::usize::MAX - defaults::balancing::WORK_SIZE_PLUS < init_work_size {
+                warn!(
+                    "{}{}{}{}{}",
+                    "INIT_WORK_SIZE=",
+                    defaults::balancing::INIT_WORK_SIZE,
+                    " but should be lower than (std::usize::MAX - WORK_SIZE_PLUS)=",
+                    std::usize::MAX - defaults::balancing::WORK_SIZE_PLUS,
+                    " to prevent overflows."
+                );
+                std::usize::MAX - defaults::balancing::WORK_SIZE_PLUS
+            } else {
+                init_work_size
+            }
+        };
         Ok(Master {
             outcome_rx,
             worker_sockets,
-            work_size: defaults::balancing::INIT_WORK_SIZE,
-            work_size_plus: defaults::balancing::INIT_WORK_SIZE_PLUS,
-            work_size_minus: defaults::balancing::INIT_WORK_SIZE_MINUS,
+            work_size: init_work_size,
+            work_size_plus: defaults::balancing::WORK_SIZE_PLUS,
+            work_size_minus: defaults::balancing::WORK_SIZE_MINUS,
             last_worker_idx: None,
         })
     }
@@ -94,22 +125,29 @@ impl Master {
     pub fn recv(&mut self) -> err::Result<Outcome> {
         let (worker_idx, outcome) = {
             if let Ok((worker_idx, outcome)) = self.outcome_rx.try_recv() {
-                // the worker finished (much?) earlier and waited
-                // -> give workers more work
-                self.work_size = std::cmp::min(
-                    std::usize::MAX - self.work_size_plus,
-                    self.work_size + self.work_size_plus,
-                );
+                if *worker_idx == 0 {
+                    // the worker finished (much?) earlier and waited
+                    // -> give workers more work
+                    self.work_size = std::cmp::min(
+                        std::usize::MAX - self.work_size_plus,
+                        self.work_size + self.work_size_plus,
+                    );
+                }
 
                 (worker_idx, outcome)
             } else {
-                // the worker didn't finish yet and master waits
-                // -> give workers less work
-                self.work_size = std::cmp::max(1, self.work_size - self.work_size_minus);
+                let (worker_idx, outcome) = self.outcome_rx.recv().map_err(|e| {
+                    err::Msg::from(format!("Receiving outcome stucks due to {}", e))
+                })?;
 
-                self.outcome_rx
-                    .recv()
-                    .map_err(|e| err::Msg::from(format!("Receiving outcome stucks due to {}", e)))?
+                if *worker_idx == 0 {
+                    // the worker didn't finish yet and master waits
+                    // -> give workers less work
+                    self.work_size =
+                        std::cmp::max(self.work_size_minus, self.work_size - self.work_size_minus);
+                }
+
+                (worker_idx, outcome)
             }
         };
 
