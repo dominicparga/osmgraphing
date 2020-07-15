@@ -71,13 +71,15 @@ impl Writer {
             }
 
             let mut progress_bar = progressing::BernoulliBar::from_goal(max_count);
+            info!("{}", progress_bar);
 
             // Stop when enough existing routes have been found
             // or when all possible routes are processed.
             while progress_bar.progress().successes < max_count
                 && progress_bar.progress().attempts < num_possible_routes
             {
-                if progress_bar.progress().successes % (1 + (progress_bar.end() / 10)) == 0 {
+                if progress_bar.has_progressed_much() {
+                    progress_bar.remember_progress();
                     info!("{}", progress_bar);
                 }
 
@@ -117,7 +119,6 @@ impl Writer {
             }
 
             found_route_pairs.sort();
-            info!("{}", progress_bar);
 
             found_route_pairs
         };

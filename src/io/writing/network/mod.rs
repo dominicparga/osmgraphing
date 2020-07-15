@@ -57,7 +57,8 @@ fn write_edges_to_file<W: Write>(
         if fwd_edges.is_shortcut(edge_idx) && !writing_cfg.is_writing_shortcuts {
             // print progress
             progress_bar.add(true);
-            if progress_bar.progress().successes % (1 + (progress_bar.end() / 10)) == 0 {
+            if progress_bar.has_progressed_much() {
+                progress_bar.remember_progress();
                 info!("{}", progress_bar);
             }
 
@@ -194,11 +195,11 @@ fn write_edges_to_file<W: Write>(
 
         // print progress
         progress_bar.add(true);
-        if progress_bar.progress().successes % (1 + (progress_bar.end() / 10)) == 0 {
+        if progress_bar.has_progressed_much() {
+            progress_bar.remember_progress();
             info!("{}", progress_bar);
         }
     }
-    info!("{}", progress_bar);
 
     Ok(())
 }
