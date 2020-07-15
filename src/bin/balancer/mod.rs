@@ -219,6 +219,8 @@ mod simulation_pipeline {
         }
 
         let cmd_args = &[
+            "--threads",
+            &format!("{}", balancing_cfg.num_threads),
             "--using-osm-ids",
             "--external-edge-ids",
             "--text",
