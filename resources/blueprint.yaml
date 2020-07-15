@@ -117,6 +117,8 @@ balancing:
     # This depends on how many metrics are outsourced to edges-info.csv
     # and includes the new metric as well.
     dimension: 3
+    # optional; default is 99.85
+    contraction-ratio: "99.5"
   # these metrics are needed for balancing (calculating edge-capacity)
   metric-ids:
     distance: 'kilometers'

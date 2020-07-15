@@ -41,6 +41,7 @@ balancing:
   iter-i-cfg: 'resources/isle_of_man_2020-03-14/balancing/iteration.yaml'
   multi-ch-constructor:
     dimension: 3
+    contraction-ratio: "99.5"
   metric-ids:
     distance: 'kilometers'
     lane-count: 'lane-count'
