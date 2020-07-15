@@ -72,12 +72,11 @@ fn run(args: CmdlineArgs) -> err::Feedback {
             simulation_pipeline::read_in_routing_cfg(&balancing_cfg, iter, &args.cfg, &ch_graph)?;
 
         let mut arc_ch_graph = Arc::new(ch_graph);
-        let arc_routing_cfg = Arc::new(routing_cfg);
         simulation_pipeline::balance(
             iter,
             &balancing_cfg,
             &mut arc_ch_graph,
-            &arc_routing_cfg,
+            &Arc::new(routing_cfg),
             &mut rng,
         )?;
         graph = Arc::try_unwrap(arc_ch_graph)
