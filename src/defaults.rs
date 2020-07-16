@@ -67,8 +67,12 @@ pub mod routing {
 pub mod balancing {
     use log::warn;
 
-    pub const INIT_WORK_SIZE: usize = 200;
-    pub const WORK_SIZE_PLUS: usize = 100;
+    // A high work-size could be less productive since less dynamic:
+    // Work-size is adjusted for thread of index 0, implying that a high work-size leads to less parallelization in the end.
+    // With k threads, k times work-size will be worked off before an adjustment follows.
+    // If k times work-size is a huge part of the total work, the remaining work is done with less threads.
+    pub const INIT_WORK_SIZE: usize = 50;
+    pub const WORK_SIZE_PLUS: usize = 30;
     pub const WORK_SIZE_MINUS: usize = 10;
     pub const NUM_THREADS: usize = 4;
     pub const CONTRACTION_RATIO: &str = "99.8";
