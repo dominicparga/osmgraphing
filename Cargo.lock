@@ -984,8 +984,7 @@ dependencies = [
 [[package]]
 name = "kissunits"
 version = "1.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d5d8000435c4de3bcca57a1d9388bae28823e172696c3fef05e2117afdbb8905"
+source = "git+https://github.com/dominicparga/kissunits?branch=nightly#82b072fed0b6abee7dbc22566e07816b6686f516"
 
 [[package]]
 name = "language-tags"
@@ -1028,9 +1027,9 @@ dependencies = [
 
 [[package]]
 name = "log"
-version = "0.4.8"
+version = "0.4.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "14b6052be84e6b71ab17edffc2eeabf5c2c3ae1fdb464aae35ac50c67a44e1f7"
+checksum = "4fabed175da42fed1fa0746b0ea71f412aa9d35e76e95e59b192c64b9dc2bf8b"
 dependencies = [
  "cfg-if",
 ]
@@ -1401,7 +1400,7 @@ dependencies = [
 [[package]]
 name = "progressing"
 version = "2.2.3"
-source = "git+https://github.com/dominicparga/progressing?branch=nightly#d70119eab3bc7c78d303921e87e2306032ed4859"
+source = "git+https://github.com/dominicparga/progressing?branch=nightly#2d3c74d1e9b001b38d16efa19b3e8c81ddd03a32"
 dependencies = [
  "log",
 ]

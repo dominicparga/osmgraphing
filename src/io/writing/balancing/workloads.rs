@@ -16,7 +16,7 @@ impl Writer {
     pub fn write(
         &mut self,
         iter: usize,
-        workloads: &Vec<usize>,
+        abs_workloads: &Vec<usize>,
         graph: &Graph,
         balancing_cfg: &configs::balancing::Config,
     ) -> err::Feedback {
@@ -56,7 +56,7 @@ impl Writer {
         {
             let edge_id = fwd_edges.id(edge_idx);
 
-            writeln!(writer, "{} {}", edge_id, workloads[*edge_idx])?;
+            writeln!(writer, "{} {}", edge_id, abs_workloads[*edge_idx])?;
         }
 
         Ok(())

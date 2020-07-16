@@ -10,7 +10,7 @@ use crate::{
 };
 use kissunits::geo::Coordinate;
 use log::{debug, info};
-use progressing::{Bar, MappingBar};
+use progressing::{mapping::Bar as MappingBar, Baring};
 use std::{
     cmp::Reverse,
     fs::OpenOptions,
@@ -398,7 +398,7 @@ impl GraphBuilder {
 
             let mut new_proto_edges = vec![];
 
-            let mut progress_bar = MappingBar::new(0, self.proto_edges.len());
+            let mut progress_bar = MappingBar::with_range(0, self.proto_edges.len()).timed();
             info!("{}", progress_bar);
 
             // Work off proto-edges in chunks to keep memory-usage lower.
@@ -442,15 +442,15 @@ impl GraphBuilder {
 
                     // print progress
                     progress_bar.add(1usize);
-                    if progress_bar.has_progressed_much() {
-                        progress_bar.remember_progress();
+                    if progress_bar.has_progressed_significantly() {
+                        progress_bar.remember_significant_progress();
                         info!("{}", progress_bar);
                     }
                 }
             }
             progress_bar.set(new_proto_edges.len());
-            if progress_bar.has_progressed_much() {
-                progress_bar.remember_progress();
+            if progress_bar.has_progressed_significantly() {
+                progress_bar.remember_significant_progress();
                 info!("{}", progress_bar);
             }
             // reduce and optimize memory-usage
@@ -584,7 +584,7 @@ impl GraphBuilder {
         let mut proto_edges = {
             let mut new_proto_edges = vec![];
 
-            let mut progress_bar = MappingBar::new(0, proto_edges.len());
+            let mut progress_bar = MappingBar::with_range(0, proto_edges.len()).timed();
             let mut edge_idx: usize = 0;
 
             // Work off proto-edges in chunks to keep memory-usage lower.
@@ -632,8 +632,8 @@ impl GraphBuilder {
 
                     // print progress
                     progress_bar.set(edge_idx);
-                    if progress_bar.has_progressed_much() {
-                        progress_bar.remember_progress();
+                    if progress_bar.has_progressed_significantly() {
+                        progress_bar.remember_significant_progress();
                         info!("{}", progress_bar);
                     }
 
@@ -642,8 +642,8 @@ impl GraphBuilder {
                 }
             }
             progress_bar.set(edge_idx);
-            if progress_bar.has_progressed_much() {
-                progress_bar.remember_progress();
+            if progress_bar.has_progressed_significantly() {
+                progress_bar.remember_significant_progress();
                 info!("{}", progress_bar);
             }
             // reduce and optimize memory-usage
@@ -700,7 +700,7 @@ impl GraphBuilder {
         // logging
         info!("START Create the forward-offset-array and the forward-mapping.");
         {
-            let mut progress_bar = MappingBar::new(0, proto_edges.len());
+            let mut progress_bar = MappingBar::with_range(0, proto_edges.len()).timed();
             // start looping
             let mut src_idx = NodeIdx(0);
             let mut offset = 0;
@@ -739,8 +739,8 @@ impl GraphBuilder {
 
                 // print progress
                 progress_bar.set(edge_idx);
-                if progress_bar.has_progressed_much() {
-                    progress_bar.remember_progress();
+                if progress_bar.has_progressed_significantly() {
+                    progress_bar.remember_significant_progress();
                     info!("{}", progress_bar);
                 }
 
@@ -750,8 +750,8 @@ impl GraphBuilder {
             // last node needs an upper bound as well for `leaving_edges(...)`
             graph.fwd_offsets.push(offset);
             progress_bar.set(offset);
-            if progress_bar.has_progressed_much() {
-                progress_bar.remember_progress();
+            if progress_bar.has_progressed_significantly() {
+                progress_bar.remember_significant_progress();
                 info!("{}", progress_bar);
             }
             // reduce and optimize memory-usage
@@ -820,7 +820,7 @@ impl GraphBuilder {
 
         info!("START Create the backward-offset-array.");
         {
-            let mut progress_bar = MappingBar::new(0, proto_edges.len());
+            let mut progress_bar = MappingBar::with_range(0, proto_edges.len()).timed();
             // start looping
             let mut src_idx = NodeIdx(0);
             let mut offset = 0;
@@ -850,8 +850,8 @@ impl GraphBuilder {
 
                 // print progress
                 progress_bar.set(edge_idx);
-                if progress_bar.has_progressed_much() {
-                    progress_bar.remember_progress();
+                if progress_bar.has_progressed_significantly() {
+                    progress_bar.remember_significant_progress();
                     info!("{}", progress_bar);
                 }
             }
@@ -863,8 +863,8 @@ impl GraphBuilder {
             );
             graph.bwd_offsets.push(offset);
             progress_bar.set(graph.fwd_dsts.len());
-            if progress_bar.has_progressed_much() {
-                progress_bar.remember_progress();
+            if progress_bar.has_progressed_significantly() {
+                progress_bar.remember_significant_progress();
                 info!("{}", progress_bar);
             }
             // reduce and optimize memory-usage

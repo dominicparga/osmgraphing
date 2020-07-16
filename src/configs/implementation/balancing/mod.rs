@@ -19,6 +19,7 @@ pub struct Config {
     pub distance_id: SimpleId,
     pub optimization: Optimization,
     pub num_threads: usize,
+    pub seed: u64,
 }
 
 impl SupportingFileExts for Config {
@@ -60,6 +61,7 @@ impl Config {
             num_threads: proto_cfg
                 .num_threads
                 .unwrap_or(defaults::balancing::NUM_THREADS),
+            seed: proto_cfg.seed.unwrap_or(defaults::SEED),
         })
     }
 
@@ -145,6 +147,7 @@ pub struct ProtoConfig {
     pub distance_id: SimpleId,
     pub optimization: ProtoOptimization,
     pub num_threads: Option<usize>,
+    pub seed: Option<u64>,
 }
 
 impl TryFrom<RawConfig> for ProtoConfig {
@@ -164,6 +167,7 @@ impl TryFrom<RawConfig> for ProtoConfig {
             distance_id: raw_cfg.balancing.metric_ids.distance,
             optimization: ProtoOptimization::from(raw_cfg.balancing.optimization),
             num_threads: raw_cfg.balancing.num_threads,
+            seed: raw_cfg.balancing.seed,
         })
     }
 }
@@ -225,6 +229,7 @@ pub struct RawContent {
     pub optimization: RawOptimization,
     #[serde(rename = "number_of_threads")]
     pub num_threads: Option<usize>,
+    pub seed: Option<u64>,
 }
 
 #[derive(Debug, Clone, Deserialize)]

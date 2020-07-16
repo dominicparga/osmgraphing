@@ -8,7 +8,7 @@ use crate::{
     network::Graph,
 };
 use log::info;
-use progressing::Bar;
+use progressing::{bernoulli::Bar as BernoulliBar, Baring};
 use std::io::Write;
 
 fn write_edges_to_file<W: Write>(
@@ -48,7 +48,7 @@ fn write_edges_to_file<W: Write>(
 
     // write edges to file
 
-    let mut progress_bar = progressing::BernoulliBar::from_goal(fwd_edges.count());
+    let mut progress_bar = BernoulliBar::with_goal(fwd_edges.count()).timed();
     info!("{}", progress_bar);
 
     // for every edge
@@ -57,8 +57,8 @@ fn write_edges_to_file<W: Write>(
         if fwd_edges.is_shortcut(edge_idx) && !writing_cfg.is_writing_shortcuts {
             // print progress
             progress_bar.add(true);
-            if progress_bar.has_progressed_much() {
-                progress_bar.remember_progress();
+            if progress_bar.has_progressed_significantly() {
+                progress_bar.remember_significant_progress();
                 info!("{}", progress_bar);
             }
 
@@ -195,8 +195,8 @@ fn write_edges_to_file<W: Write>(
 
         // print progress
         progress_bar.add(true);
-        if progress_bar.has_progressed_much() {
-            progress_bar.remember_progress();
+        if progress_bar.has_progressed_significantly() {
+            progress_bar.remember_significant_progress();
             info!("{}", progress_bar);
         }
     }

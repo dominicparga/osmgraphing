@@ -30,7 +30,7 @@ fn run(args: CmdlineArgs) -> err::Feedback {
 
     info!("EXECUTE balancer");
 
-    let mut rng = rand_pcg::Pcg32::seed_from_u64(defaults::SEED);
+    let mut rng = rand_pcg::Pcg32::seed_from_u64(balancing_cfg.seed);
 
     // prepare simulation
     // e.g. creating the results-folder and converting the graph into the right format
@@ -96,7 +96,7 @@ mod simulation_pipeline {
     use chrono;
     use log::info;
     use osmgraphing::{configs, defaults, helpers::err, io, network::Graph};
-    use progressing::{Bar, MappingBar};
+    use progressing::{mapping::Bar as MappingBar, Baring};
     use rand::Rng;
     use std::{fs, path::Path, sync::Arc, time::Instant};
 
@@ -357,15 +357,11 @@ mod simulation_pipeline {
         // simple init-logging
 
         info!("START Executing routes and analyzing workload",);
-        let mut progress_bar = MappingBar::new(0, route_pairs.len());
-        info!("{}", progress_bar);
-        let mut last_printed_progress = None;
-        let interesting_progress_step = std::cmp::max(1, progress_bar.end() / 10);
-        let now = Instant::now();
+        let mut progress_bar = MappingBar::with_range(0, route_pairs.len()).timed();
 
         // find all routes and count density on graph
 
-        let mut workloads: Vec<usize> = vec![0; ch_graph.fwd_edges().count()];
+        let mut abs_workloads: Vec<usize> = vec![0; ch_graph.fwd_edges().count()];
         let mut master =
             multithreading::Master::spawn_some(balancing_cfg.num_threads, &ch_graph, &routing_cfg)?;
 
@@ -374,51 +370,15 @@ mod simulation_pipeline {
                 // update counts from outcome
 
                 for edge_idx in outcome.path_edges {
-                    workloads[*edge_idx] += 1;
+                    abs_workloads[*edge_idx] += 1;
                 }
 
+                progress_bar.add(outcome.num_routes);
                 // print and update progress
-                {
-                    progress_bar.add(outcome.num_routes);
-                    let elapsed_ms = now.elapsed().as_millis() as usize;
-
-                    // print if the progress has made a step
-                    if progress_bar.progress() / interesting_progress_step
-                        > last_printed_progress.unwrap_or(0) / interesting_progress_step
-                        // or one minute has reached
-                        || (last_printed_progress.is_none() && elapsed_ms > 60_000)
-                    {
-                        last_printed_progress = Some(progress_bar.progress());
-
-                        // print approximation for remaining time
-
-                        let approx_time = {
-                            if progress_bar.progress() > 0 {
-                                let scale = (progress_bar.end() as f64
-                                    / progress_bar.progress() as f64)
-                                    - 1.0;
-
-                                let mut elapsed = (elapsed_ms as f64 / 1_000.0 * scale) as usize;
-                                let mut unit = "s";
-
-                                // update unit
-                                if elapsed > 3_600 {
-                                    elapsed /= 3_600;
-                                    unit = "h";
-                                } else if elapsed > 60 {
-                                    elapsed /= 60;
-                                    unit = "min";
-                                }
-
-                                format!("{} {}", elapsed, unit)
-                            } else {
-                                String::from("inf s")
-                            }
-                        };
-
-                        info!("{} ~ {}", progress_bar, approx_time);
-                        info!("Current work-size: {}", master.work_size());
-                    }
+                if progress_bar.has_progressed_significantly() {
+                    progress_bar.remember_significant_progress();
+                    info!("{}", progress_bar);
+                    info!("Current work-size: {}", master.work_size());
                 }
 
                 // send new work
@@ -444,7 +404,7 @@ mod simulation_pipeline {
 
         // update graph with new values
         defaults::balancing::update_new_metric(
-            &workloads,
+            &abs_workloads,
             Arc::get_mut(ch_graph).expect(
                 "Mutable access to graph should be possible, since Arc should be the only owner.",
             ),
@@ -456,7 +416,7 @@ mod simulation_pipeline {
         // measure writing-time
         let now = Instant::now();
 
-        io::balancing::Writer::write(iter, &workloads, &ch_graph, &balancing_cfg)?;
+        io::balancing::Writer::write(iter, &abs_workloads, &ch_graph, &balancing_cfg)?;
         info!(
             "FINISHED Written in {} seconds ({} µs).",
             now.elapsed().as_secs(),

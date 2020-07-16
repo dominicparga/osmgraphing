@@ -104,6 +104,8 @@ parsing:
 # optional
 # This config is used for the balancer-binary.
 balancing:
+  # optional; default is 42
+  seed: 42
   # optional; default is 4
   number_of_threads: 4
   # every (map-)file is relative to this directory, after this directory was extended by a date
@@ -126,6 +128,9 @@ balancing:
     workload: 'workload'
   explicit_euler:
     # old + (new - old) * correction
+    # almost 1.0 to keep non-zero workloads (if generated non-zero):
+    # - zero-edges creates more uninteresting shortcuts -> less performance
+    # - zero-edges makes Dijkstra running longer/inefficiently
     correction: 0.3
 # optional
 # The metrics, which should be considered in routing, are listed here.
