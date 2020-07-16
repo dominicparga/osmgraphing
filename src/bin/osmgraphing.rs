@@ -187,7 +187,12 @@ fn run(args: CmdlineArgs) -> err::Feedback {
             info!("");
 
             let now = Instant::now();
-            let best_path = dijkstra.compute_best_path(src.idx(), dst.idx(), &graph, &routing_cfg);
+            let best_path = dijkstra.compute_best_path(routing::Query {
+                src_idx: src.idx(),
+                dst_idx: dst.idx(),
+                graph: &graph,
+                routing_cfg: &routing_cfg,
+            });
             info!(
                 "Ran Dijkstra-query in {} ms",
                 now.elapsed().as_micros() as f64 / 1_000.0,

@@ -566,12 +566,8 @@ impl<'a> EdgeAccessor<'a> {
                 Ok(edge_idx)
             }
             Err(_idx) => Err(err::Msg::from(format!(
-                "{} {}",
-                format!(
-                    "The provided edge-id {} is expected to be in the graph, but is not.",
-                    id
-                ),
-                "The reason can lay in "
+                "The provided edge-id {} is expected to be in the graph, but is not.",
+                id
             ))),
         }
     }

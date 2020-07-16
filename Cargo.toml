@@ -34,9 +34,11 @@ custom_only = ['custom']
 
 [[bin]]
 name = 'osmgraphing' # bin/osmgraphing.rs
+path = 'src/bin/osmgraphing.rs'
 
 [[bin]]
-name = 'balancer' # bin/balancer.rs
+name = 'balancer'
+path = 'src/bin/balancer/mod.rs'
 required-features = ['gpl-3.0']
 
 

@@ -104,15 +104,21 @@ parsing:
 # optional
 # This config is used for the balancer-binary.
 balancing:
+  # optional; default is 4
+  number_of_threads: 4
   # every (map-)file is relative to this directory, after this directory was extended by a date
   results-dir: 'custom/results/isle_of_man_2020-03-14'
-  number_of_iterations: 3
+  # For analysing the new graph, one iteration will be added.
+  # -> number_of_metric-updates == 1 implies that 2 iterations will be done.
+  number_of_metric-updates: 3
   iter-0-cfg: 'resources/isle_of_man_2020-03-14/balancing/init.yaml'
   iter-i-cfg: 'resources/isle_of_man_2020-03-14/balancing/iteration.yaml'
   multi-ch-constructor:
     # This depends on how many metrics are outsourced to edges-info.csv
     # and includes the new metric as well.
     dimension: 3
+    # optional; default is 99.85
+    contraction-ratio: "99.5"
   # these metrics are needed for balancing (calculating edge-capacity)
   metric-ids:
     distance: 'kilometers'

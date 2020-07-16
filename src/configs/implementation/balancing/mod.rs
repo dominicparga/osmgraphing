@@ -18,6 +18,7 @@ pub struct Config {
     pub lane_count_id: SimpleId,
     pub distance_id: SimpleId,
     pub optimization: Optimization,
+    pub num_threads: usize,
 }
 
 impl SupportingFileExts for Config {
@@ -48,13 +49,17 @@ impl Config {
         Ok(Config {
             results_dir: proto_cfg.results_dir,
             multi_ch_constructor: MultiChConstructor::from(proto_cfg.multi_ch_constructor),
-            num_iter: proto_cfg.num_iter,
+            // +1 because analysing last graph needs one iteration as well
+            num_iter: proto_cfg.num_metric_updates + 1,
             iter_0_cfg: proto_cfg.iter_0_cfg,
             iter_i_cfg: proto_cfg.iter_i_cfg,
             workload_id: proto_cfg.workload_id,
             lane_count_id: proto_cfg.lane_count_id,
             distance_id: proto_cfg.distance_id,
             optimization: Optimization::from(proto_cfg.optimization),
+            num_threads: proto_cfg
+                .num_threads
+                .unwrap_or(defaults::balancing::NUM_THREADS),
         })
     }
 
@@ -132,13 +137,14 @@ impl From<ProtoOptimization> for Optimization {
 pub struct ProtoConfig {
     pub results_dir: PathBuf,
     pub multi_ch_constructor: ProtoMultiChConstructor,
-    pub num_iter: usize,
+    pub num_metric_updates: usize,
     pub iter_0_cfg: PathBuf,
     pub iter_i_cfg: PathBuf,
     pub workload_id: SimpleId,
     pub lane_count_id: SimpleId,
     pub distance_id: SimpleId,
     pub optimization: ProtoOptimization,
+    pub num_threads: Option<usize>,
 }
 
 impl TryFrom<RawConfig> for ProtoConfig {
@@ -150,13 +156,14 @@ impl TryFrom<RawConfig> for ProtoConfig {
             multi_ch_constructor: ProtoMultiChConstructor::from(
                 raw_cfg.balancing.multi_ch_constructor,
             ),
-            num_iter: raw_cfg.balancing.number_of_iterations,
+            num_metric_updates: raw_cfg.balancing.number_of_metric_updates,
             iter_0_cfg: raw_cfg.balancing.iter_0_cfg,
             iter_i_cfg: raw_cfg.balancing.iter_i_cfg,
             workload_id: raw_cfg.balancing.metric_ids.workload,
             lane_count_id: raw_cfg.balancing.metric_ids.lane_count,
             distance_id: raw_cfg.balancing.metric_ids.distance,
             optimization: ProtoOptimization::from(raw_cfg.balancing.optimization),
+            num_threads: raw_cfg.balancing.num_threads,
         })
     }
 }
@@ -210,11 +217,14 @@ pub struct RawContent {
     pub iter_i_cfg: PathBuf,
     #[serde(rename = "multi-ch-constructor")]
     pub multi_ch_constructor: RawMultiChConstructor,
-    pub number_of_iterations: usize,
+    #[serde(rename = "number_of_metric-updates")]
+    pub number_of_metric_updates: usize,
     #[serde(rename = "metric-ids")]
     pub metric_ids: metrics::RawConfig,
     #[serde(flatten)]
     pub optimization: RawOptimization,
+    #[serde(rename = "number_of_threads")]
+    pub num_threads: Option<usize>,
 }
 
 #[derive(Debug, Clone, Deserialize)]

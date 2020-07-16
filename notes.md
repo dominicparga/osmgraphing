@@ -62,6 +62,7 @@ Maybe, it is concept for later documentation, or just keep-up-the-good-work (`ku
 - Write parser __parsing all configs__ at once.
 - Cleanup `kebab-cases` and `snake_cases` etc.
 - Check if writing-cfg contains shortcut-indices when `is_ch-graph == false`.
+- Some configs are damaged!
 
 
 ### Extend parsing

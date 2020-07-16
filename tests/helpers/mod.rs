@@ -109,7 +109,12 @@ pub fn test_dijkstra(
     // test
 
     for (src, dst, metric_indices, option_specs) in expected_paths {
-        let option_path = dijkstra.compute_best_path(src.idx, dst.idx, &graph, &routing_cfg);
+        let option_path = dijkstra.compute_best_path(routing::Query {
+            src_idx: src.idx,
+            dst_idx: dst.idx,
+            graph: &graph,
+            routing_cfg: &routing_cfg,
+        });
         assert_eq!(
             option_path.is_some(),
             option_specs.is_some(),
@@ -168,9 +173,18 @@ pub fn compare_dijkstras(ch_fmi_config_file: &str, metric_id: &str) {
         .iter()
         .map(|(route_pair, _)| route_pair.into_node(&graph))
     {
-        let option_ch_path =
-            dijkstra.compute_best_path(src.idx(), dst.idx(), &graph, &ch_routing_cfg);
-        let option_path = dijkstra.compute_best_path(src.idx(), dst.idx(), &graph, &routing_cfg);
+        let option_ch_path = dijkstra.compute_best_path(routing::Query {
+            src_idx: src.idx(),
+            dst_idx: dst.idx(),
+            graph: &graph,
+            routing_cfg: &ch_routing_cfg,
+        });
+        let option_path = dijkstra.compute_best_path(routing::Query {
+            src_idx: src.idx(),
+            dst_idx: dst.idx(),
+            graph: &graph,
+            routing_cfg: &routing_cfg,
+        });
 
         // check if both are none/not-none
         if option_ch_path.is_none() != option_path.is_none() {

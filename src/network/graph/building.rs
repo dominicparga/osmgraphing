@@ -398,7 +398,8 @@ impl GraphBuilder {
 
             let mut new_proto_edges = vec![];
 
-            let mut progress_bar = MappingBar::new(0..=self.proto_edges.len());
+            let mut progress_bar = MappingBar::new(0, self.proto_edges.len());
+            info!("{}", progress_bar);
 
             // Work off proto-edges in chunks to keep memory-usage lower.
             let max_chunk_size = capacity::MAX_BYTE_PER_CHUNK / ProtoEdgeB::mem_size_b();
@@ -441,13 +442,17 @@ impl GraphBuilder {
 
                     // print progress
                     progress_bar.add(1usize);
-                    if progress_bar.progress() % (1 + (progress_bar.end() / 10)) == 0 {
+                    if progress_bar.has_progressed_much() {
+                        progress_bar.remember_progress();
                         info!("{}", progress_bar);
                     }
                 }
             }
             progress_bar.set(new_proto_edges.len());
-            info!("{}", progress_bar);
+            if progress_bar.has_progressed_much() {
+                progress_bar.remember_progress();
+                info!("{}", progress_bar);
+            }
             // reduce and optimize memory-usage
             new_proto_edges.shrink_to_fit();
 
@@ -516,7 +521,9 @@ impl GraphBuilder {
                     let mut is_eq = true;
 
                     // compare src-id and dst-id, then metrics approximately
-                    if (e0.src_idx, e0.dst_idx) == (e1.src_idx, e1.dst_idx) {
+                    is_eq &= e0.id == e1.id;
+                    is_eq &= (e0.src_idx, e0.dst_idx) == (e1.src_idx, e1.dst_idx);
+                    if is_eq {
                         for (e0_metric, e1_metric) in e0.metrics.iter().zip(e1.metrics.iter()) {
                             if e0_metric.approx_eq(e1_metric) {
                                 continue;
@@ -525,8 +532,6 @@ impl GraphBuilder {
                             is_eq = false;
                             break;
                         }
-                    } else {
-                        is_eq = false;
                     }
 
                     is_eq
@@ -579,7 +584,7 @@ impl GraphBuilder {
         let mut proto_edges = {
             let mut new_proto_edges = vec![];
 
-            let mut progress_bar = MappingBar::new(0..=proto_edges.len());
+            let mut progress_bar = MappingBar::new(0, proto_edges.len());
             let mut edge_idx: usize = 0;
 
             // Work off proto-edges in chunks to keep memory-usage lower.
@@ -627,7 +632,8 @@ impl GraphBuilder {
 
                     // print progress
                     progress_bar.set(edge_idx);
-                    if progress_bar.progress() % (1 + (progress_bar.end() / 10)) == 0 {
+                    if progress_bar.has_progressed_much() {
+                        progress_bar.remember_progress();
                         info!("{}", progress_bar);
                     }
 
@@ -636,7 +642,10 @@ impl GraphBuilder {
                 }
             }
             progress_bar.set(edge_idx);
-            info!("{}", progress_bar);
+            if progress_bar.has_progressed_much() {
+                progress_bar.remember_progress();
+                info!("{}", progress_bar);
+            }
             // reduce and optimize memory-usage
             graph.shrink_to_fit();
             new_proto_edges.shrink_to_fit();
@@ -691,7 +700,7 @@ impl GraphBuilder {
         // logging
         info!("START Create the forward-offset-array and the forward-mapping.");
         {
-            let mut progress_bar = MappingBar::new(0..=proto_edges.len());
+            let mut progress_bar = MappingBar::new(0, proto_edges.len());
             // start looping
             let mut src_idx = NodeIdx(0);
             let mut offset = 0;
@@ -730,7 +739,8 @@ impl GraphBuilder {
 
                 // print progress
                 progress_bar.set(edge_idx);
-                if progress_bar.progress() % (1 + (progress_bar.end() / 10)) == 0 {
+                if progress_bar.has_progressed_much() {
+                    progress_bar.remember_progress();
                     info!("{}", progress_bar);
                 }
 
@@ -740,7 +750,10 @@ impl GraphBuilder {
             // last node needs an upper bound as well for `leaving_edges(...)`
             graph.fwd_offsets.push(offset);
             progress_bar.set(offset);
-            info!("{}", progress_bar);
+            if progress_bar.has_progressed_much() {
+                progress_bar.remember_progress();
+                info!("{}", progress_bar);
+            }
             // reduce and optimize memory-usage
             // already dropped via iterator: drop(self.proto_edges);
             graph.shrink_to_fit();
@@ -761,6 +774,26 @@ impl GraphBuilder {
                 ));
             }
             graph.shrink_to_fit();
+
+            // check if ids are sorted
+
+            for i in 0..(graph.edge_ids_to_idx_map.len() - 1) {
+                let (prev_edge_id, _prev_edge_idx) = graph.edge_ids_to_idx_map[i];
+                let (next_edge_id, _next_edge_idx) = graph.edge_ids_to_idx_map[i + 1];
+
+                if prev_edge_id == next_edge_id {
+                    return Err(err::Msg::from(format!(
+                        "The edge-id {} is duplicated.",
+                        prev_edge_id,
+                    )));
+                }
+                if next_edge_id < prev_edge_id {
+                    return Err(err::Msg::from(format!(
+                        "The previous edge-id {} should be smaller than next edge-id {}.",
+                        prev_edge_id, next_edge_id,
+                    )));
+                }
+            }
         }
 
         //----------------------------------------------------------------------------------------//
@@ -787,7 +820,7 @@ impl GraphBuilder {
 
         info!("START Create the backward-offset-array.");
         {
-            let mut progress_bar = MappingBar::new(0..=proto_edges.len());
+            let mut progress_bar = MappingBar::new(0, proto_edges.len());
             // start looping
             let mut src_idx = NodeIdx(0);
             let mut offset = 0;
@@ -817,7 +850,8 @@ impl GraphBuilder {
 
                 // print progress
                 progress_bar.set(edge_idx);
-                if progress_bar.progress() % (1 + (progress_bar.end() / 10)) == 0 {
+                if progress_bar.has_progressed_much() {
+                    progress_bar.remember_progress();
                     info!("{}", progress_bar);
                 }
             }
@@ -829,7 +863,10 @@ impl GraphBuilder {
             );
             graph.bwd_offsets.push(offset);
             progress_bar.set(graph.fwd_dsts.len());
-            info!("{}", progress_bar);
+            if progress_bar.has_progressed_much() {
+                progress_bar.remember_progress();
+                info!("{}", progress_bar);
+            }
             // reduce and optimize memory-usage
             graph.shrink_to_fit();
         }
@@ -1235,11 +1272,11 @@ impl GraphBuilder {
                                         let param = params[col_idx];
 
                                         if id == edge_id {
-                                            let edge_id = param.parse::<usize>().ok().ok_or(
+                                            let raw_edge_id = param.parse::<usize>().ok().ok_or(
                                                 format!("Parsing edge-id '{}' didn't work.", param),
                                             )?;
                                             edge_idx =
-                                                Some(graph.fwd_edges().try_idx_from(edge_id)?);
+                                                Some(graph.fwd_edges().try_idx_from(raw_edge_id)?);
                                             break;
                                         }
                                     }

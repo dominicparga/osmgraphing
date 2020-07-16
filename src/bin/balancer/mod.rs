@@ -4,10 +4,10 @@ use osmgraphing::{
     helpers::{err, init_logging},
     io,
     network::Graph,
-    routing,
 };
 use rand::SeedableRng;
-use std::{path::Path, time::Instant};
+use std::{path::Path, sync::Arc, time::Instant};
+mod multithreading;
 
 fn main() {
     let args = parse_cmdline();
@@ -30,8 +30,6 @@ fn run(args: CmdlineArgs) -> err::Feedback {
 
     info!("EXECUTE balancer");
 
-    let mut dijkstra = routing::Dijkstra::new();
-    let mut explorator = routing::ConvexHullExplorator::new();
     let mut rng = rand_pcg::Pcg32::seed_from_u64(defaults::SEED);
 
     // prepare simulation
@@ -47,33 +45,43 @@ fn run(args: CmdlineArgs) -> err::Feedback {
 
     let mut graph = custom_graph;
     for iter in 0..balancing_cfg.num_iter {
+        // Iterate +1 to get analysis of new graph as well.
+        // -> store graph before creating a new one
+
+        if iter == balancing_cfg.num_iter - 1 {
+            // store balanced graph
+
+            let mut writing_cfg =
+                configs::writing::network::graph::Config::try_from_yaml(&args.cfg)?;
+            writing_cfg.map_file =
+                balancing_cfg
+                    .results_dir
+                    .join(writing_cfg.map_file.file_name().ok_or(err::Msg::from(
+                        "The provided route-pairs-file in the (routing-)config is not a file.",
+                    ))?);
+            write_graph(&graph, &writing_cfg)?;
+        }
+
+        // simulate and create new balanced graph
+
         simulation_pipeline::prepare_iteration(iter, &balancing_cfg)?;
         simulation_pipeline::write_multi_ch_graph(&balancing_cfg, graph, iter)?;
         simulation_pipeline::construct_ch_graph(&balancing_cfg, iter)?;
-        let mut ch_graph = simulation_pipeline::read_in_ch_graph(&balancing_cfg, iter)?;
+        let ch_graph = simulation_pipeline::read_in_ch_graph(&balancing_cfg, iter)?;
         let routing_cfg =
             simulation_pipeline::read_in_routing_cfg(&balancing_cfg, iter, &args.cfg, &ch_graph)?;
+
+        let mut arc_ch_graph = Arc::new(ch_graph);
         simulation_pipeline::balance(
             iter,
             &balancing_cfg,
-            &mut ch_graph,
-            &routing_cfg,
-            &mut dijkstra,
-            &mut explorator,
+            &mut arc_ch_graph,
+            &Arc::new(routing_cfg),
             &mut rng,
         )?;
-        graph = ch_graph;
+        graph = Arc::try_unwrap(arc_ch_graph)
+            .map_err(|_e| "The ch-graph should be owned by only one Arc.")?;
     }
-
-    // store balanced graph
-
-    let mut writing_cfg = configs::writing::network::graph::Config::try_from_yaml(&args.cfg)?;
-    writing_cfg.map_file = balancing_cfg
-        .results_dir
-        .join(writing_cfg.map_file.file_name().ok_or(err::Msg::from(
-            "The provided route-pairs-file in the (routing-)config is not a file.",
-        ))?);
-    write_graph(&graph, &writing_cfg)?;
 
     info!(
         "Execute py ./scripts/balancing/visualizer --results-dir {} to visualize.",
@@ -84,18 +92,13 @@ fn run(args: CmdlineArgs) -> err::Feedback {
 }
 
 mod simulation_pipeline {
+    use super::multithreading;
     use chrono;
-    use log::{debug, info};
-    use osmgraphing::{
-        configs, defaults,
-        helpers::err,
-        io,
-        network::{Graph, RoutePair},
-        routing,
-    };
+    use log::info;
+    use osmgraphing::{configs, defaults, helpers::err, io, network::Graph};
     use progressing::{Bar, MappingBar};
-    use rand::distributions::{Distribution, Uniform};
-    use std::{fs, path::Path, time::Instant};
+    use rand::Rng;
+    use std::{fs, path::Path, sync::Arc, time::Instant};
 
     pub fn read_in_custom_graph(raw_parsing_cfg: &str) -> err::Result<Graph> {
         let parsing_cfg = configs::parsing::Config::try_from_yaml(&raw_parsing_cfg)?;
@@ -215,6 +218,8 @@ mod simulation_pipeline {
         }
 
         let cmd_args = &[
+            "--threads",
+            &format!("{}", balancing_cfg.num_threads),
             "--using-osm-ids",
             "--external-edge-ids",
             "--text",
@@ -334,71 +339,117 @@ mod simulation_pipeline {
     pub fn balance(
         iter: usize,
         balancing_cfg: &configs::balancing::Config,
-        ch_graph: &mut Graph,
-        routing_cfg: &configs::routing::Config,
-        dijkstra: &mut routing::Dijkstra,
-        explorator: &mut routing::ConvexHullExplorator,
+        ch_graph: &mut Arc<Graph>,
+        routing_cfg: &Arc<configs::routing::Config>,
         rng: &mut rand_pcg::Lcg64Xsh32,
     ) -> err::Feedback {
         info!(
-            "Explorate several routes for metrics {:?} of dimension {}",
+            "Balance via explorating several routes for metrics {:?}x{:?}",
             ch_graph.cfg().edges.metrics.units,
-            ch_graph.metrics().dim()
+            routing_cfg.alphas,
         );
+        info!("Using {} threads", balancing_cfg.num_threads);
 
-        let route_pairs = io::routing::Parser::parse(&routing_cfg)?;
+        // reverse this vector to make splice efficient
+        let mut route_pairs = io::routing::Parser::parse(&routing_cfg)?;
+        route_pairs.reverse();
 
         // simple init-logging
 
         info!("START Executing routes and analyzing workload",);
-        let mut progress_bar = MappingBar::new(0..=route_pairs.len());
+        let mut progress_bar = MappingBar::new(0, route_pairs.len());
         info!("{}", progress_bar);
+        let mut last_printed_progress = None;
+        let interesting_progress_step = std::cmp::max(1, progress_bar.end() / 10);
+        let now = Instant::now();
 
         // find all routes and count density on graph
 
         let mut workloads: Vec<usize> = vec![0; ch_graph.fwd_edges().count()];
+        let mut master =
+            multithreading::Master::spawn_some(balancing_cfg.num_threads, &ch_graph, &routing_cfg)?;
 
-        for &(route_pair, num_routes) in &route_pairs {
-            let RoutePair { src, dst } = route_pair.into_node(&ch_graph);
+        loop {
+            if let Ok(outcome) = master.recv() {
+                // update counts from outcome
 
-            // find explorated routes
+                for edge_idx in outcome.path_edges {
+                    workloads[*edge_idx] += 1;
+                }
 
-            let now = Instant::now();
-            let found_paths =
-                explorator.fully_explorate(src.idx(), dst.idx(), dijkstra, &ch_graph, &routing_cfg);
-            debug!(
-                "Ran Explorator-query from src-id {} to dst-id {} in {} ms. Found {} path(s).",
-                src.id(),
-                dst.id(),
-                now.elapsed().as_micros() as f64 / 1_000.0,
-                found_paths.len()
-            );
+                // print and update progress
+                {
+                    progress_bar.add(outcome.num_routes);
+                    let elapsed_ms = now.elapsed().as_millis() as usize;
 
-            // Update next workload by looping over all found routes
-            // -> Routes have to be flattened,
-            // -> or shortcuts will lead to wrong best-paths, because counts won't be cumulated.
+                    // print if the progress has made a step
+                    if progress_bar.progress() / interesting_progress_step
+                        > last_printed_progress.unwrap_or(0) / interesting_progress_step
+                        // or one minute has reached
+                        || (last_printed_progress.is_none() && elapsed_ms > 60_000)
+                    {
+                        last_printed_progress = Some(progress_bar.progress());
 
-            if found_paths.len() > 0 {
-                let die = Uniform::from(0..found_paths.len());
-                for _ in 0..num_routes {
-                    let p = found_paths[die.sample(rng)].clone().flatten(&ch_graph);
+                        // print approximation for remaining time
 
-                    debug!("    {}", p);
+                        let approx_time = {
+                            if progress_bar.progress() > 0 {
+                                let scale = (progress_bar.end() as f64
+                                    / progress_bar.progress() as f64)
+                                    - 1.0;
 
-                    for edge_idx in p {
-                        workloads[*edge_idx] += 1;
+                                let mut elapsed = (elapsed_ms as f64 / 1_000.0 * scale) as usize;
+                                let mut unit = "s";
+
+                                // update unit
+                                if elapsed > 3_600 {
+                                    elapsed /= 3_600;
+                                    unit = "h";
+                                } else if elapsed > 60 {
+                                    elapsed /= 60;
+                                    unit = "min";
+                                }
+
+                                format!("{} {}", elapsed, unit)
+                            } else {
+                                String::from("inf s")
+                            }
+                        };
+
+                        info!("{} ~ {}", progress_bar, approx_time);
+                        info!("Current work-size: {}", master.work_size());
                     }
                 }
-            }
 
-            progress_bar.add(true);
-            if progress_bar.progress() % (1 + (progress_bar.end() / 10)) == 0 {
-                info!("{}", progress_bar);
+                // send new work
+
+                if route_pairs.len() > 0 {
+                    let chunk_len = std::cmp::min(route_pairs.len(), master.work_size());
+                    let chunk: Vec<_> = route_pairs
+                        .splice((route_pairs.len() - chunk_len).., vec![])
+                        .rev()
+                        .collect();
+                    master.send(multithreading::Work {
+                        route_pairs: chunk,
+                        seed: rng.gen(),
+                    })?;
+                } else {
+                    master.drop_and_join_worker()?;
+                }
+            } else {
+                // disconnected when all workers are dropped
+                break;
             }
         }
 
         // update graph with new values
-        defaults::balancing::update_new_metric(&workloads, ch_graph, &balancing_cfg);
+        defaults::balancing::update_new_metric(
+            &workloads,
+            Arc::get_mut(ch_graph).expect(
+                "Mutable access to graph should be possible, since Arc should be the only owner.",
+            ),
+            &balancing_cfg,
+        );
 
         // export density and iteration-results
 

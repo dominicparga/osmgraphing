@@ -4,7 +4,7 @@ use osmgraphing::{
     helpers::{err, init_logging},
     io::network::graph::Parser,
     network::NodeIdx,
-    routing::{self},
+    routing,
 };
 use std::{path::PathBuf, time::Instant};
 
@@ -61,7 +61,12 @@ fn run() -> err::Feedback {
     let dst = nodes.create(NodeIdx(5));
 
     let now = Instant::now();
-    let option_path = dijkstra.compute_best_path(src.idx(), dst.idx(), &graph, &routing_cfg);
+    let option_path = dijkstra.compute_best_path(routing::Query {
+        src_idx: src.idx(),
+        dst_idx: dst.idx(),
+        graph: &graph,
+        routing_cfg: &routing_cfg,
+    });
 
     info!("");
     info!(

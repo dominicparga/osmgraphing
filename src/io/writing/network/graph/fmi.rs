@@ -189,7 +189,8 @@ impl Writer {
 
             // print progress
             progress_bar.add(true);
-            if progress_bar.progress().successes % (1 + (progress_bar.end() / 10)) == 0 {
+            if progress_bar.has_progressed_much() {
+                progress_bar.remember_progress();
                 info!("{}", progress_bar);
             }
         }

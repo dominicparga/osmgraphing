@@ -31,15 +31,17 @@ parsing:
     - custom:
         id: 'workload'
         unit: 'F64'
-        default: 0.0
+        default: 0.1
 # define balancing-configs
 balancing:
+  number_of_threads: 4
   results-dir: 'custom/results/isle_of_man_2020-03-14'
-  number_of_iterations: 10
+  number_of_metric-updates: 10
   iter-0-cfg: 'resources/isle_of_man_2020-03-14/balancing/init.yaml'
   iter-i-cfg: 'resources/isle_of_man_2020-03-14/balancing/iteration.yaml'
   multi-ch-constructor:
     dimension: 3
+    contraction-ratio: "99.5"
   metric-ids:
     distance: 'kilometers'
     lane-count: 'lane-count'
