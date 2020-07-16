@@ -5,7 +5,7 @@ use crate::{
     routing,
 };
 use log::{info, warn};
-use progressing::{self, Bar};
+use progressing::{bernoulli::Bar as BernoulliBar, Baring};
 use rand::{
     distributions::{Distribution, Uniform},
     SeedableRng,
@@ -70,7 +70,7 @@ impl Writer {
                 );
             }
 
-            let mut progress_bar = progressing::BernoulliBar::from_goal(max_count);
+            let mut progress_bar = BernoulliBar::with_goal(max_count).timed();
             info!("{}", progress_bar);
 
             // Stop when enough existing routes have been found
@@ -78,8 +78,8 @@ impl Writer {
             while progress_bar.progress().successes < max_count
                 && progress_bar.progress().attempts < num_possible_routes
             {
-                if progress_bar.has_progressed_much() {
-                    progress_bar.remember_progress();
+                if progress_bar.has_progressed_significantly() {
+                    progress_bar.remember_significant_progress();
                     info!("{}", progress_bar);
                 }
 

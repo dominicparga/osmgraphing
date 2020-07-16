@@ -24,7 +24,7 @@ pub mod vehicles {
     ///
     /// Returns at least 1
     pub fn calc_num_vehicles(km: Kilometers) -> u64 {
-        max(1, (km / Kilometers::new(0.0075)) as u64)
+        max(1, (km / Kilometers(0.0075)) as u64)
     }
 }
 

@@ -6,7 +6,7 @@ use crate::{
     network::Graph,
 };
 use log::info;
-use progressing::{self, Bar};
+use progressing::{self, bernoulli::Bar as BernoulliBar, Baring};
 use std::{
     fs::OpenOptions,
     io::{BufWriter, Write},
@@ -95,7 +95,7 @@ impl Writer {
 
         // write nodes
 
-        let mut progress_bar = progressing::BernoulliBar::from_goal(nodes.count());
+        let mut progress_bar = BernoulliBar::with_goal(nodes.count()).timed();
         info!("{}", progress_bar);
 
         // for every node
@@ -189,8 +189,8 @@ impl Writer {
 
             // print progress
             progress_bar.add(true);
-            if progress_bar.has_progressed_much() {
-                progress_bar.remember_progress();
+            if progress_bar.has_progressed_significantly() {
+                progress_bar.remember_significant_progress();
                 info!("{}", progress_bar);
             }
         }
