@@ -29,6 +29,7 @@ fn run(args: CmdlineArgs) -> err::Feedback {
     let mut balancing_cfg = configs::balancing::Config::try_from_yaml(&args.cfg)?;
 
     info!("EXECUTE balancer");
+    info!("Using balancer-seed={}", balancing_cfg.seed);
 
     let mut rng = rand_pcg::Pcg32::seed_from_u64(balancing_cfg.seed);
 

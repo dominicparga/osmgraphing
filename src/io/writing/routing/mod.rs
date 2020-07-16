@@ -12,8 +12,9 @@ impl Writer {
         writing_cfg: &configs::writing::routing::Config,
     ) -> err::Feedback {
         info!(
-            "START Write routes {} from graph",
-            writing_cfg.file.display()
+            "START Write routes {} from graph with {:?}",
+            writing_cfg.file.display(),
+            writing_cfg.category
         );
         let result = match writing_cfg.category {
             configs::writing::routing::Category::RandomOrAll { seed, max_count } => {

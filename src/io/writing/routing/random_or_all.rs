@@ -120,6 +120,11 @@ impl Writer {
 
             found_route_pairs.sort();
 
+            if progress_bar.has_progressed_significantly() {
+                progress_bar.remember_significant_progress();
+                info!("{}", progress_bar);
+            }
+
             found_route_pairs
         };
 
