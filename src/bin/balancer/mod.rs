@@ -357,7 +357,7 @@ mod simulation_pipeline {
         // simple init-logging
 
         info!("START Executing routes and analyzing workload",);
-        let mut progress_bar = MappingBar::new(0,route_pairs.len());
+        let mut progress_bar = MappingBar::new(0, route_pairs.len());
         info!("{}", progress_bar);
         let mut last_printed_progress = None;
         let interesting_progress_step = std::cmp::max(1, progress_bar.end() / 10);
