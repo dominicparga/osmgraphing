@@ -15,7 +15,7 @@ jobs:
     - name: Install toolchain
       run: |
         rustup component add rustfmt
-        # sudo apt-get install libboost-all-dev
+        sudo apt-get install libboost-all-dev
     - name: Build
       run: |
         cargo build --verbose
@@ -27,7 +27,7 @@ jobs:
     - name: Run binaries
       run: |
         cargo run --release --bin osmgraphing -- --config resources/isle_of_man_2020-03-14/osm.pbf.yaml
-        # GRAPH_DIM=6 cargo run --release --features 'gpl-3.0' --bin balancer -- --config resources/isle_of_man_2020-03-14/balancing/config.yaml
+        GRAPH_DIM=6 cargo run --release --features 'gpl-3.0' --bin balancer -- --config resources/isle_of_man_2020-03-14/balancing/config.yaml
     - name: Build docs
       run: cargo doc
   beta:
