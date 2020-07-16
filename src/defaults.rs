@@ -115,6 +115,8 @@ pub mod balancing {
 
         let mut metrics = graph.metrics_mut();
 
+        let mut is_new_metric_zero = false;
+
         for edge_idx in egde_iter {
             // read metrics-data from graph
             let (raw_distance, lane_count) = {
@@ -147,7 +149,16 @@ pub mod balancing {
                 }
             };
 
+            is_new_metric_zero |= !(new_metric > 0.0);
             metrics[edge_idx][*workload_idx] = new_metric;
+        }
+
+        if is_new_metric_zero {
+            warn!(
+                "{}{}",
+                "The new metric contains zero-values,",
+                " which could lead to many shortcuts or an inefficient Dijkstra."
+            )
         }
     }
 }
