@@ -104,6 +104,8 @@ parsing:
 # optional
 # This config is used for the balancer-binary.
 balancing:
+  # optional; default is 42
+  seed: 42
   # optional; default is 4
   number_of_threads: 4
   # every (map-)file is relative to this directory, after this directory was extended by a date

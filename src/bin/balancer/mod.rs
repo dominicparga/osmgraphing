@@ -30,7 +30,7 @@ fn run(args: CmdlineArgs) -> err::Feedback {
 
     info!("EXECUTE balancer");
 
-    let mut rng = rand_pcg::Pcg32::seed_from_u64(defaults::SEED);
+    let mut rng = rand_pcg::Pcg32::seed_from_u64(balancing_cfg.seed);
 
     // prepare simulation
     // e.g. creating the results-folder and converting the graph into the right format
