@@ -68,7 +68,7 @@ impl Master {
             worker_sockets.push(Some(WorkerSocket { work_tx, handle }))
         }
 
-        // ensure no overflows
+        // ensure no underflow
         let init_work_size = {
             if defaults::balancing::INIT_WORK_SIZE < defaults::balancing::WORK_SIZE_MINUS {
                 warn!(
@@ -84,6 +84,7 @@ impl Master {
                 defaults::balancing::INIT_WORK_SIZE
             }
         };
+        // ensure no overflow
         let init_work_size = {
             if std::usize::MAX - defaults::balancing::WORK_SIZE_PLUS < init_work_size {
                 warn!(

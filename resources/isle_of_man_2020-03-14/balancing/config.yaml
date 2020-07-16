@@ -31,10 +31,10 @@ parsing:
     - custom:
         id: 'workload'
         unit: 'F64'
-        default: 0.0
+        default: 0.1
 # define balancing-configs
 balancing:
-  number_of_threads: 14
+  number_of_threads: 4
   results-dir: 'custom/results/isle_of_man_2020-03-14'
   number_of_metric-updates: 10
   iter-0-cfg: 'resources/isle_of_man_2020-03-14/balancing/init.yaml'
