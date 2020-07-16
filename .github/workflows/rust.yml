@@ -16,6 +16,7 @@ jobs:
       run: |
         rustup component add rustfmt
         sudo apt-get install libboost-all-dev
+        sudo apt-get install libglpk-dev
     - name: Build
       run: |
         cargo build --verbose
