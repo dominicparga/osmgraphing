@@ -14,23 +14,24 @@ jobs:
         submodules: 'recursive'
     - name: Install toolchain
       run: |
-        # rustup component add rustfmt
+        # install rust/cargo
+        rustup component add rustfmt
+
+        # install multi-ch-constructor
         sudo apt-get install libboost-all-dev
         sudo apt-get install libglpk-dev
     - name: Build
       run: |
         cargo build --verbose
-        # cargo build --release --verbose
+        cargo build --release --verbose
     - name: Run tests
       run: |
-        echo 'TODO'
-        # cargo test --verbose
-        # cargo fmt -- --check
+        cargo test --verbose
+        cargo fmt -- --check
     - name: Run binaries
       run: |
-        # cargo run --release --bin osmgraphing -- --config resources/isle_of_man_2020-03-14/osm.pbf.yaml
-        # GRAPH_DIM=6 cargo run --release --features 'gpl-3.0' --bin balancer -- --config resources/isle_of_man_2020-03-14/balancing/config.yaml
-        GRAPH_DIM=6 cargo run --features 'gpl-3.0' --bin balancer -- --config resources/isle_of_man_2020-03-14/balancing/config.yaml
+        cargo run --release --bin osmgraphing -- --config resources/isle_of_man_2020-03-14/osm.pbf.yaml
+        GRAPH_DIM=6 cargo run --release --features 'gpl-3.0' --bin balancer -- --config resources/isle_of_man_2020-03-14/balancing/config.yaml
     - name: Build docs
       run: cargo doc
   beta:
@@ -42,10 +43,13 @@ jobs:
         submodules: 'recursive'
     - name: Install toolchain
       run: |
+        # install rust/cargo
         rustup toolchain install beta
         rustup default beta
-        rustup component add rustfmt
-        # sudo apt-get install libboost-all-dev
+
+        # install multi-ch-constructor
+        sudo apt-get install libboost-all-dev
+        sudo apt-get install libglpk-dev
     - name: Build
       run: |
         cargo build --verbose
@@ -53,11 +57,10 @@ jobs:
     - name: Run tests
       run: |
         cargo test --verbose
-        cargo fmt -- --check
     - name: Run binaries
       run: |
         cargo run --release --bin osmgraphing -- --config resources/isle_of_man_2020-03-14/osm.pbf.yaml
-        # GRAPH_DIM=6 cargo run --release --features 'gpl-3.0' --bin balancer -- --config resources/isle_of_man_2020-03-14/balancing/config.yaml
+        GRAPH_DIM=6 cargo run --release --features 'gpl-3.0' --bin balancer -- --config resources/isle_of_man_2020-03-14/balancing/config.yaml
   nightly:
     runs-on: ubuntu-latest
     steps:
@@ -68,10 +71,13 @@ jobs:
       continue-on-error: true
     - name: Install
       run: |
+        # install rust/cargo
         rustup toolchain install nightly
         rustup default nightly
-        rustup component add rustfmt
-        # sudo apt-get install libboost-all-dev
+
+        # install multi-ch-constructor
+        sudo apt-get install libboost-all-dev
+        sudo apt-get install libglpk-dev
       continue-on-error: true
     - name: Build
       run: |
@@ -81,11 +87,10 @@ jobs:
     - name: Run tests
       run: |
         cargo test --verbose
-        cargo fmt -- --check
     - name: Run binaries
       run: |
         cargo run --release --bin osmgraphing -- --config resources/isle_of_man_2020-03-14/osm.pbf.yaml
-        # GRAPH_DIM=6 cargo run --release --features 'gpl-3.0' --bin balancer -- --config resources/isle_of_man_2020-03-14/balancing/config.yaml
+        GRAPH_DIM=6 cargo run --release --features 'gpl-3.0' --bin balancer -- --config resources/isle_of_man_2020-03-14/balancing/config.yaml
       continue-on-error: true
   benches:
     runs-on: ubuntu-latest
