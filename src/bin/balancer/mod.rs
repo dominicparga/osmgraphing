@@ -361,7 +361,7 @@ mod simulation_pipeline {
 
         // find all routes and count density on graph
 
-        let mut workloads: Vec<usize> = vec![0; ch_graph.fwd_edges().count()];
+        let mut abs_workloads: Vec<usize> = vec![0; ch_graph.fwd_edges().count()];
         let mut master =
             multithreading::Master::spawn_some(balancing_cfg.num_threads, &ch_graph, &routing_cfg)?;
 
@@ -370,7 +370,7 @@ mod simulation_pipeline {
                 // update counts from outcome
 
                 for edge_idx in outcome.path_edges {
-                    workloads[*edge_idx] += 1;
+                    abs_workloads[*edge_idx] += 1;
                 }
 
                 progress_bar.add(outcome.num_routes);
@@ -404,7 +404,7 @@ mod simulation_pipeline {
 
         // update graph with new values
         defaults::balancing::update_new_metric(
-            &workloads,
+            &abs_workloads,
             Arc::get_mut(ch_graph).expect(
                 "Mutable access to graph should be possible, since Arc should be the only owner.",
             ),
@@ -416,7 +416,7 @@ mod simulation_pipeline {
         // measure writing-time
         let now = Instant::now();
 
-        io::balancing::Writer::write(iter, &workloads, &ch_graph, &balancing_cfg)?;
+        io::balancing::Writer::write(iter, &abs_workloads, &ch_graph, &balancing_cfg)?;
         info!(
             "FINISHED Written in {} seconds ({} µs).",
             now.elapsed().as_secs(),

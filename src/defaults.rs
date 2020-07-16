@@ -65,6 +65,8 @@ pub mod routing {
 }
 
 pub mod balancing {
+    use log::warn;
+
     pub const INIT_WORK_SIZE: usize = 200;
     pub const WORK_SIZE_PLUS: usize = 100;
     pub const WORK_SIZE_MINUS: usize = 10;
@@ -98,7 +100,7 @@ pub mod balancing {
     use kissunits::distance::Kilometers;
 
     pub fn update_new_metric(
-        workloads: &Vec<usize>,
+        abs_workloads: &Vec<usize>,
         graph: &mut Graph,
         balancing_cfg: &configs::balancing::Config,
     ) {
@@ -123,7 +125,7 @@ pub mod balancing {
                 let tmp = &metrics[edge_idx];
                 (tmp[*distance_idx], tmp[*lane_count_idx] as u64)
             };
-            let workload = workloads[*edge_idx];
+            let abs_workload = abs_workloads[*edge_idx];
 
             // use correct unit for distance
             let distance = {
@@ -139,7 +141,7 @@ pub mod balancing {
             let capacity = lane_count * num_vehicles;
 
             let new_metric = {
-                let new_workload = workload as f64 / (capacity as f64);
+                let new_workload = abs_workload as f64 / (capacity as f64);
                 let old_workload = metrics[edge_idx][*workload_idx];
 
                 match balancing_cfg.optimization {

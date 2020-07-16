@@ -128,6 +128,9 @@ balancing:
     workload: 'workload'
   explicit_euler:
     # old + (new - old) * correction
+    # almost 1.0 to keep non-zero workloads (if generated non-zero):
+    # - zero-edges creates more uninteresting shortcuts -> less performance
+    # - zero-edges makes Dijkstra running longer/inefficiently
     correction: 0.3
 # optional
 # The metrics, which should be considered in routing, are listed here.
