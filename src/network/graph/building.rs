@@ -75,7 +75,7 @@ impl Graph {
                     self.nodes().id(proto_edge.dst_idx),
                     cfg.edges.metrics.ids[metric_idx]
                 );
-                proto_edge.metrics[metric_idx] = defaults::accuracy::F64_ABS;
+                proto_edge.metrics[metric_idx] = std::f64::EPSILON;
             }
         }
 
