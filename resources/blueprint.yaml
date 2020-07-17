@@ -116,11 +116,20 @@ balancing:
   iter-0-cfg: 'resources/isle_of_man_2020-03-14/balancing/init.yaml'
   iter-i-cfg: 'resources/isle_of_man_2020-03-14/balancing/iteration.yaml'
   multi-ch-constructor:
+    fmi-graph: 'graph.fmi'
+    contracted-graph: 'graph.ch.fmi'
     # This depends on how many metrics are outsourced to edges-info.csv
     # and includes the new metric as well.
     dimension: 3
-    # optional; default is 99.85
-    contraction-ratio: "99.5"
+    # optional; default is "99.8"
+    # This is a string, not a float, because it is provided as cmdline-argument
+    contraction-ratio: "99.8"
+    # optional; default is 4
+    number_of_threads: 4
+    # If true, the edge's nodes' osm-ids instead of their indices are used.
+    is_printing_osm-ids: false
+    # If true, external edge-ids are piped through the multi-ch-constructor.
+    is_using_external_edge-ids: false
   # these metrics are needed for balancing (calculating edge-capacity)
   metric-ids:
     distance: 'kilometers'
@@ -135,6 +144,21 @@ balancing:
   min_new_metric: 0.1
   # optional; default is true
   throw_err_when_new_metric_is_zero: true
+# optional
+# This config can be used with the binary wrapping multi-ch-constructor
+multi-ch-constructor:
+  fmi-graph: 'path/to/fmi-graph_with_node-indices.fmi'
+  contracted-graph: 'path/to/contracted_graph.ch.fmi'
+  dimension: 3
+  # optional; default is "99.8"
+  # This is a string, not a float, because it is provided as cmdline-argument
+  contraction-ratio: "99.8"
+  # optional; default is 4
+  number_of_threads: 4
+  # If true, the edge's nodes' osm-ids instead of their indices are used.
+  is_printing_osm-ids: false
+  # If true, external edge-ids are piped through the multi-ch-constructor.
+  is_using_external_edge-ids: false
 # optional
 # The metrics, which should be considered in routing, are listed here.
 # The given alphas are used as scale.

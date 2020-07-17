@@ -1,6 +1,5 @@
-use crate::{configs::SimpleId, defaults, io::SupportingFileExts};
+use crate::{configs::SimpleId, defaults, io::SupportingFileExts, multi_ch_constructor};
 use std::{
-    convert::TryFrom,
     fs::OpenOptions,
     path::{Path, PathBuf},
 };
@@ -10,7 +9,7 @@ use serde::Deserialize;
 #[derive(Clone, Debug)]
 pub struct Config {
     pub results_dir: PathBuf,
-    pub multi_ch_constructor: MultiChConstructor,
+    pub multi_ch_constructor: multi_ch_constructor::Config,
     pub num_iter: usize,
     pub iter_0_cfg: PathBuf,
     pub iter_i_cfg: PathBuf,
@@ -32,13 +31,13 @@ impl SupportingFileExts for Config {
 
 impl Config {
     pub fn try_from_str(yaml_str: &str) -> Result<Config, String> {
-        let proto_cfg = {
+        let proto_cfg: ProtoConfig = {
             match serde_yaml::from_str(yaml_str) {
                 Ok(proto_cfg) => proto_cfg,
                 Err(e) => return Err(format!("{}", e)),
             }
         };
-        Config::try_from_proto(proto_cfg)
+        Ok(Config::from(proto_cfg))
     }
 
     pub fn from_str(yaml_str: &str) -> Config {
@@ -48,10 +47,36 @@ impl Config {
         }
     }
 
-    fn try_from_proto(proto_cfg: ProtoConfig) -> Result<Config, String> {
-        Ok(Config {
+    pub fn try_from_yaml<P: AsRef<Path> + ?Sized>(path: &P) -> Result<Config, String> {
+        let path = path.as_ref();
+        let file = {
+            Config::find_supported_ext(path)?;
+            OpenOptions::new()
+                .read(true)
+                .open(path)
+                .expect(&format!("Couldn't open {}", path.display()))
+        };
+
+        let proto_cfg: ProtoConfig = match serde_yaml::from_reader(file) {
+            Ok(proto_cfg) => proto_cfg,
+            Err(e) => return Err(format!("{}", e)),
+        };
+        Ok(Config::from(proto_cfg))
+    }
+
+    pub fn from_yaml<P: AsRef<Path> + ?Sized>(path: &P) -> Config {
+        match Config::try_from_yaml(path) {
+            Ok(cfg) => cfg,
+            Err(msg) => panic!("{}", msg),
+        }
+    }
+}
+
+impl From<ProtoConfig> for Config {
+    fn from(proto_cfg: ProtoConfig) -> Config {
+        Config {
             results_dir: proto_cfg.results_dir,
-            multi_ch_constructor: MultiChConstructor::from(proto_cfg.multi_ch_constructor),
+            multi_ch_constructor: proto_cfg.multi_ch_constructor,
             // +1 because analysing last graph needs one iteration as well
             num_iter: proto_cfg.num_metric_updates + 1,
             iter_0_cfg: proto_cfg.iter_0_cfg,
@@ -68,58 +93,6 @@ impl Config {
             is_err_when_metric_is_zero: proto_cfg
                 .is_err_when_metric_is_zero
                 .unwrap_or(defaults::balancing::IS_ERR_WHEN_METRIC_IS_ZERO),
-        })
-    }
-
-    fn _from_proto(proto_cfg: ProtoConfig) -> Config {
-        match Config::try_from_proto(proto_cfg) {
-            Ok(cfg) => cfg,
-            Err(msg) => panic!("{}", msg),
-        }
-    }
-
-    pub fn try_from_yaml<P: AsRef<Path> + ?Sized>(path: &P) -> Result<Config, String> {
-        let path = path.as_ref();
-        let file = {
-            Config::find_supported_ext(path)?;
-            OpenOptions::new()
-                .read(true)
-                .open(path)
-                .expect(&format!("Couldn't open {}", path.display()))
-        };
-
-        let proto_cfg = match serde_yaml::from_reader(file) {
-            Ok(proto_cfg) => proto_cfg,
-            Err(e) => return Err(format!("{}", e)),
-        };
-        Config::try_from_proto(proto_cfg)
-    }
-
-    pub fn from_yaml<P: AsRef<Path> + ?Sized>(path: &P) -> Config {
-        match Config::try_from_yaml(path) {
-            Ok(cfg) => cfg,
-            Err(msg) => panic!("{}", msg),
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct MultiChConstructor {
-    pub dir: PathBuf,
-    pub contraction_ratio: String,
-    pub dim: usize,
-}
-
-impl From<ProtoMultiChConstructor> for MultiChConstructor {
-    fn from(proto_mchc: ProtoMultiChConstructor) -> MultiChConstructor {
-        MultiChConstructor {
-            dir: proto_mchc.dir.unwrap_or(PathBuf::from(
-                defaults::balancing::paths::multi_ch_constructor::DIR,
-            )),
-            contraction_ratio: proto_mchc
-                .contraction_ratio
-                .unwrap_or(String::from(defaults::balancing::CONTRACTION_RATIO)),
-            dim: proto_mchc.dim,
         }
     }
 }
@@ -144,7 +117,7 @@ impl From<ProtoOptimization> for Optimization {
 #[serde(try_from = "RawConfig")]
 pub struct ProtoConfig {
     pub results_dir: PathBuf,
-    pub multi_ch_constructor: ProtoMultiChConstructor,
+    pub multi_ch_constructor: multi_ch_constructor::Config,
     pub num_metric_updates: usize,
     pub iter_0_cfg: PathBuf,
     pub iter_i_cfg: PathBuf,
@@ -158,43 +131,24 @@ pub struct ProtoConfig {
     pub is_err_when_metric_is_zero: Option<bool>,
 }
 
-impl TryFrom<RawConfig> for ProtoConfig {
-    type Error = String;
+impl From<RawConfig> for ProtoConfig {
+    fn from(raw_cfg: RawConfig) -> ProtoConfig {
+        let raw_cfg = raw_cfg.balancing;
 
-    fn try_from(raw_cfg: RawConfig) -> Result<ProtoConfig, String> {
-        Ok(ProtoConfig {
-            results_dir: raw_cfg.balancing.results_dir,
-            multi_ch_constructor: ProtoMultiChConstructor::from(
-                raw_cfg.balancing.multi_ch_constructor,
-            ),
-            num_metric_updates: raw_cfg.balancing.number_of_metric_updates,
-            iter_0_cfg: raw_cfg.balancing.iter_0_cfg,
-            iter_i_cfg: raw_cfg.balancing.iter_i_cfg,
-            workload_id: raw_cfg.balancing.metric_ids.workload,
-            lane_count_id: raw_cfg.balancing.metric_ids.lane_count,
-            distance_id: raw_cfg.balancing.metric_ids.distance,
-            optimization: ProtoOptimization::from(raw_cfg.balancing.optimization),
-            num_threads: raw_cfg.balancing.num_threads,
-            seed: raw_cfg.balancing.seed,
-            min_new_metric: raw_cfg.balancing.min_new_metric,
-            is_err_when_metric_is_zero: raw_cfg.balancing.is_err_when_metric_is_zero,
-        })
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct ProtoMultiChConstructor {
-    pub dir: Option<PathBuf>,
-    pub contraction_ratio: Option<String>,
-    pub dim: usize,
-}
-
-impl From<RawMultiChConstructor> for ProtoMultiChConstructor {
-    fn from(raw_mchc: RawMultiChConstructor) -> ProtoMultiChConstructor {
-        ProtoMultiChConstructor {
-            dir: raw_mchc.dir,
-            contraction_ratio: raw_mchc.contraction_ratio,
-            dim: raw_mchc.dim,
+        ProtoConfig {
+            results_dir: raw_cfg.results_dir,
+            multi_ch_constructor: raw_cfg.multi_ch_constructor,
+            num_metric_updates: raw_cfg.number_of_metric_updates,
+            iter_0_cfg: raw_cfg.iter_0_cfg,
+            iter_i_cfg: raw_cfg.iter_i_cfg,
+            workload_id: raw_cfg.metric_ids.workload,
+            lane_count_id: raw_cfg.metric_ids.lane_count,
+            distance_id: raw_cfg.metric_ids.distance,
+            optimization: ProtoOptimization::from(raw_cfg.optimization),
+            num_threads: raw_cfg.num_threads,
+            seed: raw_cfg.seed,
+            min_new_metric: raw_cfg.min_new_metric,
+            is_err_when_metric_is_zero: raw_cfg.is_err_when_metric_is_zero,
         }
     }
 }
@@ -229,8 +183,8 @@ pub struct RawContent {
     pub iter_0_cfg: PathBuf,
     #[serde(rename = "iter-i-cfg")]
     pub iter_i_cfg: PathBuf,
-    #[serde(rename = "multi-ch-constructor")]
-    pub multi_ch_constructor: RawMultiChConstructor,
+    #[serde(flatten)]
+    pub multi_ch_constructor: multi_ch_constructor::Config,
     #[serde(rename = "number_of_metric-updates")]
     pub number_of_metric_updates: usize,
     #[serde(rename = "metric-ids")]
@@ -243,16 +197,6 @@ pub struct RawContent {
     pub min_new_metric: Option<f64>,
     #[serde(rename = "throw_err_when_new_metric_is_zero")]
     pub is_err_when_metric_is_zero: Option<bool>,
-}
-
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct RawMultiChConstructor {
-    pub dir: Option<PathBuf>,
-    #[serde(rename = "contraction-ratio")]
-    pub contraction_ratio: Option<String>,
-    #[serde(rename = "dimension")]
-    pub dim: usize,
 }
 
 #[derive(Clone, Debug, Deserialize)]

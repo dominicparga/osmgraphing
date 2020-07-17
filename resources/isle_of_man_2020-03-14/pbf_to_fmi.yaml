@@ -34,10 +34,12 @@ writing:
     - ignored # height
     - ignored # ch-level
     edges:
-    - id: 'src-id' # idx needed for multi-ch-constructor
-    - id: 'dst-id' # idx needed for multi-ch-constructor
-    - id: 'kilometers'
-    - id: 'hours'
-    - id: 'lane-count'
-    - ignored # sc-idx-0
-    - ignored # sc-idx-1
+      with_shortcuts: false
+      ids:
+      - id: 'src-id' # idx needed for multi-ch-constructor
+      - id: 'dst-id' # idx needed for multi-ch-constructor
+      - id: 'kilometers'
+      - id: 'hours'
+      - id: 'lane-count'
+      - ignored # sc-idx-0
+      - ignored # sc-idx-1

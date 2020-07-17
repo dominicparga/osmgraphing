@@ -41,8 +41,15 @@ balancing:
   iter-0-cfg: 'resources/isle_of_man_2020-03-14/balancing/init.yaml'
   iter-i-cfg: 'resources/isle_of_man_2020-03-14/balancing/iteration.yaml'
   multi-ch-constructor:
+    fmi-graph: 'graph.fmi'
+    contracted-graph: 'graph.ch.fmi'
+    # This depends on how many metrics are outsourced to edges-info.csv
+    # and includes the new metric as well.
     dimension: 3
     contraction-ratio: "99.8"
+    number_of_threads: 4
+    is_printing_osm-ids: true
+    is_using_external_edge-ids: true
   metric-ids:
     distance: 'kilometers'
     lane-count: 'lane-count'

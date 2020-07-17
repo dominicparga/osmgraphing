@@ -32,12 +32,12 @@ fn main() {
     let args = parse_cmdline();
     let result = init_logging(&args.max_log_level, &[]);
     if let Err(msg) = result {
-        error!("{}", msg);
+        error!("{}{}", msg, "\n");
         panic!("{}", msg);
     }
     let result = run(args);
     if let Err(msg) = result {
-        error!("{}", msg);
+        error!("{}{}", msg, "\n");
         panic!("{}", msg);
     }
 }

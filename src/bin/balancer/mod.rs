@@ -13,12 +13,12 @@ fn main() {
     let args = parse_cmdline();
     let result = init_logging(&args.max_log_level, &["balancer"]);
     if let Err(msg) = result {
-        error!("{}", msg);
+        error!("{}{}", msg, "\n");
         panic!("{}", msg);
     }
     let result = run(args);
     if let Err(msg) = result {
-        error!("{}", msg);
+        error!("{}{}", msg, "\n");
         panic!("{}", msg);
     }
 }
@@ -96,7 +96,7 @@ mod simulation_pipeline {
     use super::multithreading;
     use chrono;
     use log::info;
-    use osmgraphing::{configs, defaults, helpers::err, io, network::Graph};
+    use osmgraphing::{configs, defaults, helpers::err, io, multi_ch_constructor, network::Graph};
     use progressing::{mapping::Bar as MappingBar, Baring};
     use rand::Rng;
     use std::{fs, path::Path, sync::Arc, time::Instant};
@@ -187,66 +187,19 @@ mod simulation_pipeline {
         balancing_cfg: &configs::balancing::Config,
         iter: usize,
     ) -> err::Feedback {
+        let mut mchc_cfg = balancing_cfg.multi_ch_constructor.clone();
+
+        let is_using_new_metric = iter > 0;
+        if !is_using_new_metric {
+            mchc_cfg.dim -= 1;
+        }
+
         let iter_dir = balancing_cfg.results_dir.join(format!("{}", iter));
+        mchc_cfg.fmi_graph = iter_dir.join(mchc_cfg.fmi_graph);
+        mchc_cfg.ch_fmi_graph = iter_dir.join(mchc_cfg.ch_fmi_graph);
 
-        let graph_dim = {
-            let is_using_new_metric = iter > 0;
-            if is_using_new_metric {
-                balancing_cfg.multi_ch_constructor.dim
-            } else {
-                balancing_cfg.multi_ch_constructor.dim - 1 // without new metric
-            }
-        };
-
-        let cmd_args = &["-Bbuild", "-D", &format!("GRAPH_DIM={}", graph_dim)];
-        let is_successful = std::process::Command::new("cmake")
-            .current_dir(fs::canonicalize(&balancing_cfg.multi_ch_constructor.dir)?)
-            .args(cmd_args)
-            .status()?
-            .success();
-        if !is_successful {
-            return Err(format!("Failed: cmake {}", cmd_args.join(" ")).into());
-        }
-
-        let cmd_args = &["--build", "build"];
-        let is_successful = std::process::Command::new("cmake")
-            .current_dir(fs::canonicalize(&balancing_cfg.multi_ch_constructor.dir)?)
-            .args(cmd_args)
-            .status()?
-            .success();
-        if !is_successful {
-            return Err(format!("Failed: cmake {}", cmd_args.join(" ")).into());
-        }
-
-        let cmd_args = &[
-            "--threads",
-            &format!("{}", balancing_cfg.num_threads),
-            "--using-osm-ids",
-            "--external-edge-ids",
-            "--text",
-            &format!("{}", iter_dir.join("graph.fmi").to_string_lossy()),
-            "--percent",
-            &format!("{}", &balancing_cfg.multi_ch_constructor.contraction_ratio),
-            "--write",
-            &format!("{}", iter_dir.join("graph.ch.fmi").to_string_lossy()),
-        ];
-        let is_successful = std::process::Command::new(
-            Path::new(&balancing_cfg.multi_ch_constructor.dir)
-                .join("build")
-                .join("multi-ch"),
-        )
-        .args(cmd_args)
-        .status()?
-        .success();
-        if !is_successful {
-            return Err(format!(
-                "Failed: ./externals/multi-ch-constructor/build/multi-ch {}",
-                cmd_args.join(" ")
-            )
-            .into());
-        }
-
-        Ok(())
+        multi_ch_constructor::build(&mchc_cfg)?;
+        multi_ch_constructor::construct_ch_graph(&mchc_cfg)
     }
 
     pub fn read_in_ch_graph(

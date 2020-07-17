@@ -70,7 +70,6 @@ pub mod balancing {
     pub const WORK_SIZE_PLUS: usize = 30;
     pub const WORK_SIZE_MINUS: usize = 10;
     pub const NUM_THREADS: usize = 4;
-    pub const CONTRACTION_RATIO: &str = "99.8";
     pub const IS_ERR_WHEN_METRIC_IS_ZERO: bool = true;
 
     pub mod stats {
@@ -85,12 +84,6 @@ pub mod balancing {
 
     pub mod files {
         pub const ITERATION_CFG: &str = "iteration.yaml";
-    }
-
-    pub mod paths {
-        pub mod multi_ch_constructor {
-            pub const DIR: &str = "externals/multi-ch-constructor";
-        }
     }
 
     /// Nagel-Schreckenberg-Model -> `7.5 m` space for every vehicle

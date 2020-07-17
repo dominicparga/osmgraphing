@@ -2,6 +2,7 @@ pub mod configs;
 pub mod defaults;
 pub mod helpers;
 pub mod io;
+pub mod multi_ch_constructor;
 pub mod network;
 pub mod routing;
 
