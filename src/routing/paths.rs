@@ -22,14 +22,13 @@ pub struct Path {
 
 impl Display for Path {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let prettier_edges: Vec<_> = self.edges.iter().map(|edge_idx| **edge_idx).collect();
         write!(
             f,
             "{{ src-id: {}, dst-id: {}, costs: {:?}, hop-distance: {:?} }}",
             self.src_id,
             self.dst_id,
             self.costs,
-            prettier_edges.len()
+            self.hops()
         )
     }
 }
@@ -63,7 +62,7 @@ impl Path {
         self.dst_idx
     }
 
-    pub fn edge_count(&self) -> usize {
+    pub fn hops(&self) -> usize {
         self.edges.len()
     }
 
@@ -151,7 +150,7 @@ impl Eq for Path {}
 impl PartialEq for Path {
     fn eq(&self, other: &Path) -> bool {
         // length before edges and edges last because of performance
-        self.edges.len() == other.edges.len()
+        self.hops() == other.hops()
             && self.src_id == other.src_id
             && self.dst_id == other.dst_id
             && self.edges == other.edges
