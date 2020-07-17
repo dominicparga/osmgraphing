@@ -1,6 +1,6 @@
 use log::{error, info};
 use osmgraphing::{
-    configs, defaults,
+    configs,
     helpers::{err, init_logging},
     io,
     network::Graph,
@@ -410,7 +410,7 @@ mod simulation_pipeline {
                 "Mutable access to graph should be possible, since Arc should be the only owner.",
             ),
             &balancing_cfg,
-        );
+        )?;
 
         // export density and iteration-results
 

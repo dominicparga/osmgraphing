@@ -12,11 +12,10 @@ use kissunits::geo::Coordinate;
 use log::{debug, info};
 use progressing::{mapping::Bar as MappingBar, Baring};
 use std::{
-    cmp::Reverse,
+    cmp::{min, Reverse},
     fs::OpenOptions,
     io::{BufRead, BufReader},
     mem,
-    ops::RangeFrom,
 };
 
 /// private stuff for graph-building
@@ -76,7 +75,7 @@ impl Graph {
                     self.nodes().id(proto_edge.dst_idx),
                     cfg.edges.metrics.ids[metric_idx]
                 );
-                proto_edge.metrics[metric_idx] = std::f64::EPSILON;
+                proto_edge.metrics[metric_idx] = defaults::accuracy::F64_ABS;
             }
         }
 
@@ -346,16 +345,6 @@ impl GraphBuilder {
         }
     }
 
-    fn chunk_range(total_len: usize, max_chunk_size: usize) -> RangeFrom<usize> {
-        if total_len > max_chunk_size {
-            // ATTENTION! Splicing means that the given range is replaced,
-            // hence max_chunk_size has to be, kind of, inverted.
-            (total_len - max_chunk_size)..
-        } else {
-            0..
-        }
-    }
-
     pub fn finalize(mut self) -> err::Result<Graph> {
         //----------------------------------------------------------------------------------------//
         // init graph
@@ -413,7 +402,7 @@ impl GraphBuilder {
                 let chunk: Vec<_> = self
                     .proto_edges
                     .splice(
-                        Self::chunk_range(self.proto_edges.len(), max_chunk_size),
+                        (self.proto_edges.len() - min(self.proto_edges.len(), max_chunk_size))..,
                         vec![],
                     )
                     .rev()
@@ -603,7 +592,10 @@ impl GraphBuilder {
                 // Get chunk from proto-edges.
                 // Reverse chunk because proto-egdes is sorted reversed to make splice efficient.
                 let chunk: Vec<_> = proto_edges
-                    .splice(Self::chunk_range(proto_edges.len(), max_chunk_size), vec![])
+                    .splice(
+                        (proto_edges.len() - min(proto_edges.len(), max_chunk_size))..,
+                        vec![],
+                    )
                     .rev()
                     .collect();
 

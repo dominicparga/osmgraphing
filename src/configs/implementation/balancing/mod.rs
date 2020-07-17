@@ -20,6 +20,8 @@ pub struct Config {
     pub optimization: Optimization,
     pub num_threads: usize,
     pub seed: u64,
+    pub min_new_metric: Option<f64>,
+    pub is_err_when_metric_is_zero: bool,
 }
 
 impl SupportingFileExts for Config {
@@ -62,6 +64,10 @@ impl Config {
                 .num_threads
                 .unwrap_or(defaults::balancing::NUM_THREADS),
             seed: proto_cfg.seed.unwrap_or(defaults::SEED),
+            min_new_metric: proto_cfg.min_new_metric,
+            is_err_when_metric_is_zero: proto_cfg
+                .is_err_when_metric_is_zero
+                .unwrap_or(defaults::balancing::IS_ERR_WHEN_METRIC_IS_ZERO),
         })
     }
 
@@ -148,6 +154,8 @@ pub struct ProtoConfig {
     pub optimization: ProtoOptimization,
     pub num_threads: Option<usize>,
     pub seed: Option<u64>,
+    pub min_new_metric: Option<f64>,
+    pub is_err_when_metric_is_zero: Option<bool>,
 }
 
 impl TryFrom<RawConfig> for ProtoConfig {
@@ -168,6 +176,8 @@ impl TryFrom<RawConfig> for ProtoConfig {
             optimization: ProtoOptimization::from(raw_cfg.balancing.optimization),
             num_threads: raw_cfg.balancing.num_threads,
             seed: raw_cfg.balancing.seed,
+            min_new_metric: raw_cfg.balancing.min_new_metric,
+            is_err_when_metric_is_zero: raw_cfg.balancing.is_err_when_metric_is_zero,
         })
     }
 }
@@ -230,6 +240,9 @@ pub struct RawContent {
     #[serde(rename = "number_of_threads")]
     pub num_threads: Option<usize>,
     pub seed: Option<u64>,
+    pub min_new_metric: Option<f64>,
+    #[serde(rename = "throw_err_when_new_metric_is_zero")]
+    pub is_err_when_metric_is_zero: Option<bool>,
 }
 
 #[derive(Debug, Clone, Deserialize)]

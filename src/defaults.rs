@@ -16,18 +16,6 @@ pub mod accuracy {
     pub const F64_FMT_DIGITS: usize = 6;
 }
 
-pub mod vehicles {
-    use kissunits::distance::Kilometers;
-    use std::cmp::max;
-
-    /// Nagel-Schreckenberg-Model -> `7.5 m` space for every vehicle
-    ///
-    /// Returns at least 1
-    pub fn calc_num_vehicles(km: Kilometers) -> u64 {
-        max(1, (km / Kilometers(0.0075)) as u64)
-    }
-}
-
 pub mod speed {
     const _MAX_KMH: u16 = 130;
     pub const MIN_KMH: u8 = 5;
@@ -65,7 +53,14 @@ pub mod routing {
 }
 
 pub mod balancing {
+    use crate::{
+        configs,
+        helpers::err,
+        network::{EdgeIdx, Graph},
+    };
+    use kissunits::distance::Kilometers;
     use log::warn;
+    use std::cmp::max;
 
     // A high work-size could be less productive since less dynamic:
     // Work-size is adjusted for thread of index 0, implying that a high work-size leads to less parallelization in the end.
@@ -76,6 +71,7 @@ pub mod balancing {
     pub const WORK_SIZE_MINUS: usize = 10;
     pub const NUM_THREADS: usize = 4;
     pub const CONTRACTION_RATIO: &str = "99.8";
+    pub const IS_ERR_WHEN_METRIC_IS_ZERO: bool = true;
 
     pub mod stats {
         pub const DIR: &str = "stats";
@@ -97,17 +93,18 @@ pub mod balancing {
         }
     }
 
-    use crate::{
-        configs,
-        network::{EdgeIdx, Graph},
-    };
-    use kissunits::distance::Kilometers;
+    /// Nagel-Schreckenberg-Model -> `7.5 m` space for every vehicle
+    ///
+    /// Returns at least 1
+    pub fn calc_num_vehicles(km: Kilometers) -> u64 {
+        max(1, (km / Kilometers(0.0075)) as u64)
+    }
 
     pub fn update_new_metric(
         abs_workloads: &Vec<usize>,
         graph: &mut Graph,
         balancing_cfg: &configs::balancing::Config,
-    ) {
+    ) -> err::Feedback {
         let distance_idx = graph.cfg().edges.metrics.idx_of(&balancing_cfg.distance_id);
         let lane_count_idx = graph
             .cfg()
@@ -121,7 +118,7 @@ pub mod balancing {
 
         let mut metrics = graph.metrics_mut();
 
-        let mut is_new_metric_zero = false;
+        let mut zero_metric_msg = None;
 
         for edge_idx in egde_iter {
             // read metrics-data from graph
@@ -141,10 +138,10 @@ pub mod balancing {
                 Kilometers(raw_value)
             };
 
-            let num_vehicles = super::vehicles::calc_num_vehicles(distance);
+            let num_vehicles = calc_num_vehicles(distance);
             let capacity = lane_count * num_vehicles;
 
-            let new_metric = {
+            let mut new_metric = {
                 let new_workload = abs_workload as f64 / (capacity as f64);
                 let old_workload = metrics[edge_idx][*workload_idx];
 
@@ -155,20 +152,46 @@ pub mod balancing {
                 }
             };
 
-            is_new_metric_zero |= !(new_metric > 0.0);
+            // set new_metric to minimum (if specified)
+
+            if let Some(min_new_metric) = balancing_cfg.min_new_metric {
+                if new_metric < min_new_metric {
+                    new_metric = min_new_metric;
+                }
+            }
+
+            // if new metric is 0 (or lower)
+            if !(new_metric > 0.0) {
+                // if no error is thrown
+                // -> show one warning after loop
+                // -> remember message
+                zero_metric_msg = Some(format!(
+                    "{}{}",
+                    "The new metric contains zero-values,",
+                    " which could lead to many shortcuts or an inefficient Dijkstra.",
+                ));
+
+                // if this should be treated as an error -> immediately stop
+                if balancing_cfg.is_err_when_metric_is_zero {
+                    return Err(err::Msg::from(
+                        zero_metric_msg.expect("The variable 'zero_metric_msg' should be some."),
+                    ));
+                }
+            }
+
             metrics[edge_idx][*workload_idx] = new_metric;
         }
 
-        if is_new_metric_zero {
-            warn!(
-                "{}{}",
-                "The new metric contains zero-values,",
-                " which could lead to many shortcuts or an inefficient Dijkstra."
-            )
+        // warn if zero-metric occurred
+        if let Some(msg) = zero_metric_msg {
+            warn!("{}", msg);
         }
+
+        Ok(())
     }
 }
 
+#[cfg(feature = "gpl-3.0")]
 pub mod explorating {
     pub mod files {
 

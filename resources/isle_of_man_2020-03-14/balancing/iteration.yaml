@@ -56,11 +56,11 @@ parsing:
     - custom:
         id: 'lane-count'
         unit: 'LaneCount'
-        default: 0.0
+        default: 1.0
     - custom:
         id: 'dummy'
         unit: 'F64'
-        default: 0.0
+        default: 0.1
     - merge:
         from: 'edges-info.csv'
         edge-id: 'edge-id'

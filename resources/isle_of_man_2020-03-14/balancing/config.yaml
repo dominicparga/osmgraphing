@@ -31,7 +31,7 @@ parsing:
     - custom:
         id: 'workload'
         unit: 'F64'
-        default: 0.1
+        default: 0.0
 # define balancing-configs
 balancing:
   seed: 42
@@ -42,7 +42,7 @@ balancing:
   iter-i-cfg: 'resources/isle_of_man_2020-03-14/balancing/iteration.yaml'
   multi-ch-constructor:
     dimension: 3
-    contraction-ratio: "99.5"
+    contraction-ratio: "99.8"
   metric-ids:
     distance: 'kilometers'
     lane-count: 'lane-count'
@@ -50,6 +50,10 @@ balancing:
   explicit_euler:
     # old + (new - old) * correction
     correction: 0.3
+  # important to keep non-zero workloads (if generated non-zero):
+  # - zero-edges creates more uninteresting shortcuts -> less performance
+  # - zero-edges makes Dijkstra running longer/inefficiently
+  min_new_metric: 0.1
 # define routing
 routing:
   route-pairs-file: 'resources/isle_of_man_2020-03-14/10_000.route-pairs'
