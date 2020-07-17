@@ -68,14 +68,14 @@ impl Graph {
         let cfg = &self.cfg;
 
         for metric_idx in 0..proto_edge.metrics.len() {
-            if proto_edge.metrics[metric_idx].approx_eq(&0.0) {
+            if proto_edge.metrics[metric_idx] < defaults::accuracy::F64_ABS {
                 debug!(
                     "Proto-edge (id:{}->id:{}) has {}=0, hence is corrected to epsilon.",
                     self.nodes().id(proto_edge.src_idx),
                     self.nodes().id(proto_edge.dst_idx),
                     cfg.edges.metrics.ids[metric_idx]
                 );
-                proto_edge.metrics[metric_idx] = std::f64::EPSILON;
+                proto_edge.metrics[metric_idx] = defaults::accuracy::F64_ABS;
             }
         }
 
