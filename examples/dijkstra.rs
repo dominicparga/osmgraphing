@@ -4,7 +4,7 @@ use osmgraphing::{
     helpers::{err, init_logging},
     io::network::graph::Parser,
     network::NodeIdx,
-    routing,
+    routing::dijkstra::{self, Dijkstra},
 };
 use std::{path::PathBuf, time::Instant};
 
@@ -52,7 +52,7 @@ fn run() -> err::Feedback {
         Ok(routing_cfg) => routing_cfg,
         Err(msg) => return Err(format!("{}", msg).into()),
     };
-    let mut dijkstra = routing::Dijkstra::new();
+    let mut dijkstra = Dijkstra::new();
 
     // generate route-pairs
 
@@ -61,7 +61,7 @@ fn run() -> err::Feedback {
     let dst = nodes.create(NodeIdx(5));
 
     let now = Instant::now();
-    let option_path = dijkstra.compute_best_path(routing::Query {
+    let option_path = dijkstra.compute_best_path(dijkstra::Query {
         src_idx: src.idx(),
         dst_idx: dst.idx(),
         graph: &graph,

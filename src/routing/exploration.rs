@@ -4,18 +4,310 @@
 // https://crates.io/crates/nalgebra
 
 use crate::{
+    configs,
     defaults::{self, capacity::DimVec},
     helpers::{self, algebra},
-    routing::{paths::Path, Dijkstra, Query},
+    network::{Graph, NodeIdx},
+    routing::{
+        dijkstra::{self, Dijkstra},
+        paths::Path,
+    },
 };
 use log::{debug, trace};
 use smallvec::smallvec;
+use std::ops::Deref;
 
-pub struct ConvexHullExplorator {}
+// needed because convex-hull has dim+1 points per cell
+pub type CHDimVec<T> = smallvec::SmallVec<[T; defaults::capacity::SMALL_VEC_INLINE_SIZE + 1]>;
+
+struct Query<'a> {
+    src_idx: NodeIdx,
+    dst_idx: NodeIdx,
+    graph: &'a Graph,
+    routing_cfg: configs::routing::Config,
+    graph_dim: usize,
+    tolerances: DimVec<f64>,
+    is_metric_considered: DimVec<bool>,
+}
+
+impl<'a> Query<'a> {
+    fn with(query: dijkstra::Query<'a>) -> Query<'a> {
+        // init query
+
+        let src_idx = query.src_idx;
+        let dst_idx = query.dst_idx;
+        let graph = query.graph;
+        let routing_cfg = query.routing_cfg.clone();
+
+        // config and stuff
+        let dim = graph.metrics().dim();
+        // Every cost-value has to be below this value.
+        let tolerances: DimVec<_> = smallvec![defaults::routing::TOLERATED_SCALE_INF; dim];
+        // don't consider ignored metrics
+        let is_metric_considered: DimVec<_> = routing_cfg
+            .alphas
+            .iter()
+            .map(|alpha| alpha > &0.0)
+            .collect();
+        debug!("is_metric_considered: {:?}", is_metric_considered);
+
+        Query {
+            src_idx,
+            dst_idx,
+            graph,
+            routing_cfg,
+            graph_dim: dim,
+            tolerances,
+            is_metric_considered,
+        }
+    }
+}
+
+#[derive(Copy, Clone)]
+struct CandidateId(usize);
+
+impl Deref for CandidateId {
+    type Target = usize;
+
+    fn deref(&self) -> &usize {
+        &self.0
+    }
+}
+
+#[derive(Clone)]
+struct Candidate {
+    ids: CHDimVec<CandidateId>,
+}
+
+impl Candidate {
+    fn len(&self) -> usize {
+        self.ids.len()
+    }
+}
+
+struct Config {
+    dim: usize,
+}
+
+struct ConvexHull {
+    candidates: Vec<Candidate>,
+    // return these paths in the end
+    found_paths: Vec<Path>,
+    dim: usize,
+}
+
+impl ConvexHull {
+    fn with(cfg: Config) -> ConvexHull {
+        ConvexHull {
+            candidates: Vec::new(),
+            found_paths: Vec::new(),
+            dim: cfg.dim,
+        }
+    }
+
+    fn dim(&self) -> usize {
+        self.dim
+    }
+
+    fn path_from(&self, id: CandidateId) -> &Path {
+        &self.found_paths[*id]
+    }
+
+    fn init_query(&mut self, cfg: Config) {
+        self.candidates.clear();
+        self.found_paths.clear();
+        self.dim = cfg.dim;
+    }
+
+    fn has_volume(&self) -> bool {
+        // +1 because a convex-hull (volume) needs dim+1 points
+        // For imagination:
+        // - line vs triangle in 2D
+        // - triangle vs tetrahedron in 3D
+        self.dim > 1 && self.found_paths.len() >= self.dim // TODO cyclops: (self.dim + 1)
+    }
+
+    fn pop_candidate(&mut self) -> Option<Candidate> {
+        debug!("Pop from {} possible candidate(s)", self.candidates.len());
+        self.candidates.pop()
+    }
+
+    fn contains(&self, path: &Path) -> bool {
+        self.found_paths.contains(path)
+    }
+
+    fn push_path(&mut self, best_path: Path) {
+        // if metric should be considered and path has not been added
+        // -> remember path
+
+        if self.found_paths.contains(&best_path) {
+            trace!("already found path {}", best_path);
+        } else {
+            debug!("pushed {}", best_path);
+            debug!("number of found paths: {}", self.found_paths.len());
+        }
+
+        self.found_paths.push(best_path);
+    }
+
+    fn update(&mut self, new_p: Path, candidate: Candidate) {
+        // remember path
+        if !self.contains(&new_p) {
+            self.found_paths.push(new_p);
+
+            // Add new facets by replacing every cost with the new path's cost.
+            for i in 0..candidate.len() {
+                let mut new_candidate = candidate.clone();
+                new_candidate.ids[i] = CandidateId(self.found_paths.len() - 1);
+                self.candidates.push(new_candidate);
+            }
+        }
+    }
+}
+
+pub struct ConvexHullExplorator {
+    convex_hull: ConvexHull,
+}
 
 impl ConvexHullExplorator {
     pub fn new() -> ConvexHullExplorator {
-        ConvexHullExplorator {}
+        ConvexHullExplorator {
+            convex_hull: ConvexHull::with(Config { dim: 0 }),
+        }
+    }
+
+    fn init_query(&mut self, query: &Query) {
+        self.convex_hull.init_query(Config {
+            dim: query
+                .is_metric_considered
+                .iter()
+                .filter(|&&is_considered| is_considered)
+                .count(),
+        })
+    }
+
+    fn explore_initial_paths(&mut self, query: &mut Query, dijkstra: &mut Dijkstra) {
+        // find initial convex-hull
+        // adding d initial points
+
+        let mut init_alphas: Vec<_> = Vec::new();
+        // and adding an average point as point number dim+1
+        // -> remember for later
+        let mut avg_alphas: DimVec<f64> = smallvec![0.0; query.graph_dim];
+
+        // add peak-alphas ([0, ..., 0, 1, 0, ..., 0]) for considered metrics
+
+        for metric_idx in
+            (0..query.graph_dim).filter(|&metric_idx| query.is_metric_considered[metric_idx])
+        {
+            let mut alphas = smallvec![0.0; query.graph_dim];
+            alphas[metric_idx] = 1.0;
+            init_alphas.push((Some(metric_idx), alphas));
+
+            avg_alphas[metric_idx] = 1.0;
+        }
+
+        // plus add avg-alpha, because convex-hull needs at least dim+1 points
+        // init_alphas.push((None, avg_alphas)); // TODO uncomment for cyclops
+
+        for (metric_idx, alphas) in init_alphas {
+            debug!("use init-alpha {:?}", alphas);
+
+            query.routing_cfg.alphas = alphas;
+            if let Some(mut best_path) = dijkstra.compute_best_path(dijkstra::Query {
+                src_idx: query.src_idx,
+                dst_idx: query.dst_idx,
+                graph: query.graph,
+                routing_cfg: &query.routing_cfg,
+            }) {
+                best_path.calc_costs(query.graph);
+
+                // Remember tolerated costs for filtering in the end.
+                // The costs have to be checked in the end, since this iterative algorithm could
+                // find a tolerated path by using an unacceptable path.
+
+                if let Some(metric_idx) = metric_idx {
+                    if query.routing_cfg.tolerated_scales[metric_idx] == std::f64::INFINITY {
+                        query.tolerances[metric_idx] = std::f64::INFINITY;
+                    } else {
+                        // NaN when 0.0 * inf
+                        query.tolerances[metric_idx] = best_path.costs()[metric_idx]
+                            * query.routing_cfg.tolerated_scales[metric_idx];
+                    }
+                }
+
+                if !self.convex_hull.contains(&best_path) {
+                    self.convex_hull.push_path(best_path);
+                }
+            }
+        }
+
+        if self.convex_hull.has_volume() {
+            // If not enough different paths have been found
+            // -> return already found paths by keeping candidates empty
+
+            let candidate = Candidate {
+                ids: (0..self.convex_hull.found_paths.len())
+                    .map(CandidateId)
+                    .collect(),
+            };
+            self.convex_hull.candidates.push(candidate);
+        }
+    }
+
+    fn create_linear_system(
+        &self,
+        candidate: &Candidate,
+        query: &Query,
+    ) -> (DimVec<DimVec<f64>>, DimVec<f64>) {
+        // Solve LGS to get alpha, where all cell-vertex-costs (personalized with alpha)
+        // are equal.
+        // -> Determine rows of matrix
+
+        let mut rows = DimVec::new();
+        let mut b = DimVec::new();
+
+        // all lines describe the equality of each dot-product between cost-vector and alpha
+        for i in 1..(candidate.len()) {
+            rows.push(helpers::sub(
+                self.convex_hull.path_from(candidate.ids[0]).costs(),
+                self.convex_hull.path_from(candidate.ids[i]).costs(),
+            ));
+            b.push(0.0);
+        }
+
+        // but ignored metrics should lead to zero alpha
+        for i in 0..query.is_metric_considered.len() {
+            if !query.is_metric_considered[i] {
+                // set [0, ..., 0, 1, 0, ..., 0] to 0.0
+                let mut row = smallvec![0.0; query.graph_dim];
+                row[i] = 1.0;
+                rows.push(row);
+                b.push(0.0);
+            }
+        }
+
+        // if one condition is missing (depending on convex-hull-implementation),
+        if rows.len() < query.graph_dim {
+            // you could normalize alpha
+            // -> one row in matrix is 1.0
+
+            rows.push(smallvec![1.0; query.graph_dim]);
+            b.push(1.0);
+        }
+
+        trace!("rows = {:?}", rows);
+        trace!("b = {:?}", b);
+
+        if rows.len() < self.convex_hull.dim() {
+            panic!(
+                "{}{}",
+                "The linear system has less rows than the convex-hull has dimensions.",
+                "This doesn't lead to a unique solution."
+            )
+        }
+
+        (rows, b)
     }
 
     // TODO cap exploration with epsilon for routing-costs (1 + eps) * costs[i]
@@ -23,246 +315,65 @@ impl ConvexHullExplorator {
     // New paths of a facet are linear-combinations of its defining paths
     // -> could not be better than the best of already defined paths
 
-    pub fn fully_explorate(&mut self, query: Query, dijkstra: &mut Dijkstra) -> Vec<Path> {
-        // init query
-
-        let src_idx = query.src_idx;
-        let dst_idx = query.dst_idx;
-        let graph = query.graph;
-        let mut routing_cfg = query.routing_cfg.clone();
-        drop(query);
-
-        // config and stuff
-        let dim = graph.metrics().dim();
-        // Every cost-value has to be below this value.
-        let mut tolerated: DimVec<_> = smallvec![defaults::routing::TOLERATED_SCALE_INF; dim];
-        // don't consider ignored metrics
-        let is_metric_considered: DimVec<_> = routing_cfg
-            .alphas
-            .iter()
-            .map(|alpha| alpha > &0.0)
-            .collect();
-        let considered_dim = is_metric_considered
-            .iter()
-            .filter(|&&is_considered| is_considered)
-            .count();
-        debug!("is_metric_considered: {:?}", is_metric_considered);
-
-        // return these paths in the end
-        let mut found_paths = Vec::new();
-        let mut candidates: Vec<DimVec<_>> = Vec::new();
-
-        // find initial convex-hull
-        // adding d dirac-points
-        // and adding an average point as point number d+1
-
-        for i in 0..dim {
-            if !is_metric_considered[i] {
-                continue;
-            }
-
-            // prepare dirac-paths
-            // alphas = [0, ..., 0, 1, 0, ..., 0] (f64)
-            routing_cfg.alphas = smallvec![0.0; dim];
-            routing_cfg.alphas[i] = 1.0;
-
-            debug!("use dirac-alpha {:?}", routing_cfg.alphas);
-
-            // and if path exists
-            // -> remember it as convex-hull-member
-
-            if let Some(mut best_path) = dijkstra.compute_best_path(Query {
-                src_idx,
-                dst_idx,
-                graph,
-                routing_cfg: &routing_cfg,
-            }) {
-                best_path.calc_costs(graph);
-                // Remember tolerated costs for filtering in the end.
-                // The costs have to be checked in the end, since this iterative algorithm could
-                // find a tolerated path by using an unacceptable path.
-                if routing_cfg.tolerated_scales[i] == std::f64::INFINITY {
-                    tolerated[i] = routing_cfg.tolerated_scales[i];
-                } else {
-                    // NaN when 0.0 * inf
-                    tolerated[i] = best_path.costs()[i] * routing_cfg.tolerated_scales[i];
-                }
-
-                // if metric should be considered and path has not been added
-                // -> remember path
-                if !found_paths.contains(&best_path) {
-                    found_paths.push(best_path);
-                    debug!("pushed {}", found_paths.last().expect("found_paths.last()"));
-                }
-            }
-        }
-
-        // If not enough different paths have been found
-        // -> return already found paths by keeping candidates empty
-
-        if considered_dim > 1 && found_paths.len() == considered_dim {
-            candidates.push((0..found_paths.len()).collect());
-        }
+    pub fn fully_explorate(
+        &mut self,
+        query: dijkstra::Query,
+        dijkstra: &mut Dijkstra,
+    ) -> Vec<Path> {
+        let mut query = Query::with(query);
+        self.init_query(&query);
+        self.explore_initial_paths(&mut query, dijkstra);
 
         // find new routes
 
-        while let Some(candidate) = candidates.pop() {
-            debug!("LOOP with {} possible candidate(s)", candidates.len() + 1);
-
+        while let Some(candidate) = self.convex_hull.pop_candidate() {
             // check candidate, if it's shape already sharp enough
 
-            // Solve LGS to get alpha, where all cell-vertex-costs (personalized with alpha)
-            // are equal.
-            // -> Determine rows of matrix
-
-            let mut rows = DimVec::new();
-            let mut b = DimVec::new();
-
-            // one condition is missing, namely normalizing alpha
-            // -> first row in matrix is 1.0
-            rows.push(smallvec![1.0; dim]);
-            b.push(1.0);
-
-            // all lines describe the equality of each dot-product between cost-vector and alpha
-            for i in 1..candidate.len() {
-                rows.push(helpers::sub(
-                    found_paths[candidate[0]].costs(),
-                    found_paths[candidate[i]].costs(),
-                ));
-                b.push(0.0);
-            }
-
-            // but ignored metrics should lead to zero alpha
-            for i in 0..is_metric_considered.len() {
-                if !is_metric_considered[i] {
-                    // set [0, ..., 0, 1, 0, ..., 0] to 0.0
-                    let mut row = smallvec![0.0; dim];
-                    row[i] = 1.0;
-                    rows.push(row);
-                    b.push(0.0);
-                }
-            }
-
-            trace!("rows = {:?}", rows);
-            trace!("b = {:?}", b);
+            let (rows, b) = self.create_linear_system(&candidate, &query);
 
             // calculate alphas
-            // TODO check if points lay on a line
-            // <-> matrix has rows of 0 and hence infinite solutions
-            routing_cfg.alphas = if let Some(x) = algebra::Matrix::from_rows(rows).lu().solve(&b) {
-                // x.iter_mut().for_each(|alpha| {
-                //     if *alpha < 0.0 {
-                //         *alpha = 0.0;
-                //     }
-                // });
-                x
-            } else {
-                continue;
-            };
-            trace!("alphas = {:?}", routing_cfg.alphas);
+            query.routing_cfg.alphas =
+                if let Some(x) = algebra::Matrix::from_rows(rows).lu().solve(&b) {
+                    x
+                } else {
+                    continue;
+                };
+            trace!("alphas = {:?}", query.routing_cfg.alphas);
             for i in 0..candidate.len() {
                 trace!(
                     "alphas * costs[c{}] = {:?}",
                     i,
-                    helpers::dot_product(&routing_cfg.alphas, found_paths[candidate[i]].costs())
+                    helpers::dot_product(
+                        &query.routing_cfg.alphas,
+                        self.convex_hull.path_from(candidate.ids[i]).costs(),
+                    )
                 );
             }
 
             // find new path with new alpha
 
-            if let Some(mut best_path) = dijkstra.compute_best_path(Query {
-                src_idx,
-                dst_idx,
-                graph,
-                routing_cfg: &routing_cfg,
+            if let Some(mut best_path) = dijkstra.compute_best_path(dijkstra::Query {
+                src_idx: query.src_idx,
+                dst_idx: query.dst_idx,
+                graph: query.graph,
+                routing_cfg: &query.routing_cfg,
             }) {
-                best_path.calc_costs(graph);
+                best_path.calc_costs(query.graph);
                 let new_p = best_path;
                 trace!(
                     "alphas * new_costs = {:?}",
-                    helpers::dot_product(&routing_cfg.alphas, new_p.costs())
+                    helpers::dot_product(&query.routing_cfg.alphas, new_p.costs())
                 );
 
-                // Check if path has already been found.
-                // If so
-                // -> Candidate's shape, meaning the respective partial convex-hull, is complete
-                {
-                    let mut is_already_found = false;
-
-                    for found_path in &found_paths {
-                        if found_path == &new_p {
-                            is_already_found = true;
-                            break;
-                        }
-                    }
-
-                    if is_already_found {
-                        trace!("already found path {}", new_p);
-                        continue;
-                    }
-                }
-
-                // Otherwise, add the new path and resulting new candidates.
-                // Given is the cost-space and the goal is finding the extreme-points of the convex-hull of all paths in cost-space, which can be "seen" from the origin (since Dijkstra wants the shortest paths).
-                // Given that the facet-paths (the initial dirac-paths from the beginning) are part of the convex-hull, a new path has to be part of the convex-hull as well, or Dijkstra would have found one of the already found paths in the first place.
-                //
-                //
-                // ## Proof of correctness
-                //
-                // Note that imaginating a 2D-cost-space could help.
-                //
-                // Given a `d`-dimensional facet, whose `d` corners are part of the convex-hull, this facet is a hyperplane and thus has a normal-vector `n`.
-                // By subtracting the `d-1` neighbors of an arbitrary chosen corner, an underdetermined linear-equation-system can be built and solved, resulting in a line orthogonal to the hyperplane of direction `n`.
-                // Further, the dot-product is the orthogonal projection of a vector `v` onto another vector `w`, times the length of w.
-                // When comparing two dot-products, where `w` is equal, it is just a comparison of the projections themselves.
-                // This statement implies an equal dot-product for each corner of the `d`-dimensional facet with the normal-vector `n`.
-                // Since the dot-product uses its vectors as position-vectors, starting from the origin, a shorter dot-product could only be found with a new position-vector, which is outside the facet towards the origin.
-                // Interpreting `n` as alpha-vector, this new position-vector would be a cost-vector of a path found by Dijkstra, since Dijkstra optimizes the dot-product between these two vectors, and alpha is fixed.
-                // This new position-vector points to a point in cost-space, which is the point of maximum distance to the current facet (towards origin).
-                // Every new point in cost-space lays on the side of every previously found facet-hyperplane, which is not orientated towards the origin, or the point would have been found earlier.
-                // Therefore, this procedure results in a set of cost-vectors, which are extreme-points of the convex-hull of all cost-vectors for this particular src-dst-pair.
-                //
-                //
-                // ## Proof of completeness
-                //
-                // Remaining question is whether the procedure finds all cost-vectors.
-                // Let there exist a point `q` in `d`-dimensional cost-space, a cost-vector, inside the `d` border-hyperplanes of an initial convex-hull (dirac-paths).
-                // If the point `q` was outside the bounds, it would be part of the initial convex-hull as cost-vector of a dirac-path.
-                // Further, let this point `q` be an extreme-point of the convex-hull.
-                //
-                // Every new alpha leads to a point of maximum distance to the current facet, towards origin due to the definition of the dot-product.
-                // Hence, the point `q` has a smaller distance to the current facet and lays inside the yet found facet-hyperplanes, or it would have already been found.
-                // This argument holds for every further step.
-                // Every step is either the last step of this local convex-hull, if no new point of higher distance exists, or it shrinks the search-space due to new facet-hyperplanes.
-                //
-                // Thus, `q` will eventually be found.
-                // The only exception is the case, where more than `d` paths lay on a facet.
-                // Here, it is implementation- and graph-instance-dependent, which of multiple paths of same cost a typical Dijkstra would find.
-                // Further, the linear-equation-system has to be aware of the case, where all `d` facet-paths lay on a hyperplane of lower dimension (e.g. on a line in three dimensions).
-                //
-                //
-                // remember path
-                found_paths.push(new_p);
-                debug!(
-                    "found path: {}",
-                    found_paths
-                        .last()
-                        .expect("Expects at least one found path.")
-                );
-                debug!("found paths: {}", found_paths.len());
-
-                // Add new facets by replacing every cost with the new path's cost.
-                for i in 0..candidate.len() {
-                    let mut new_candidate = candidate.clone();
-                    new_candidate[i] = found_paths.len() - 1;
-                    candidates.push(new_candidate);
-                }
+                self.convex_hull.update(new_p, candidate);
             }
         }
 
-        found_paths
+        self.convex_hull
+            .found_paths
+            .clone()
             .into_iter()
-            .filter(|p| helpers::le(p.costs(), &tolerated))
+            .filter(|p| helpers::le(p.costs(), &query.tolerances))
             .collect()
     }
 }

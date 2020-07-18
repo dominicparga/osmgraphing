@@ -3,7 +3,10 @@ use osmgraphing::{
     configs, defaults,
     helpers::err,
     network::{EdgeIdx, Graph, RoutePair},
-    routing::{self, ConvexHullExplorator, Dijkstra},
+    routing::{
+        dijkstra::{self, Dijkstra},
+        exploration::ConvexHullExplorator,
+    },
 };
 use rand::{
     distributions::{Distribution, Uniform},
@@ -291,7 +294,7 @@ impl Worker {
 
             let now = Instant::now();
             let found_paths = self.explorator.fully_explorate(
-                routing::Query {
+                dijkstra::Query {
                     src_idx: src.idx(),
                     dst_idx: dst.idx(),
                     graph: &self.graph,

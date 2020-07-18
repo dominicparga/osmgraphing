@@ -4,7 +4,7 @@ use osmgraphing::{
     configs, helpers,
     io::network::graph::Parser,
     network::{Graph, NodeIdx},
-    routing,
+    routing::dijkstra::{self, Dijkstra},
 };
 use std::time::Duration;
 
@@ -111,10 +111,10 @@ fn bidir_shortest_dijkstra(
     routes: &Vec<(NodeIdx, NodeIdx)>,
     cfg: &configs::routing::Config,
 ) {
-    let mut dijkstra = routing::Dijkstra::new();
+    let mut dijkstra = Dijkstra::new();
 
     for &(src_idx, dst_idx) in routes.iter() {
-        let _option_path = dijkstra.compute_best_path(routing::Query {
+        let _option_path = dijkstra.compute_best_path(dijkstra::Query {
             src_idx,
             dst_idx,
             graph,
@@ -128,10 +128,10 @@ fn bidir_fastest_dijkstra(
     routes: &Vec<(NodeIdx, NodeIdx)>,
     cfg: &configs::routing::Config,
 ) {
-    let mut dijkstra = routing::Dijkstra::new();
+    let mut dijkstra = Dijkstra::new();
 
     for &(src_idx, dst_idx) in routes.iter() {
-        let _option_path = dijkstra.compute_best_path(routing::Query {
+        let _option_path = dijkstra.compute_best_path(dijkstra::Query {
             src_idx,
             dst_idx,
             graph,
