@@ -16,6 +16,8 @@ use crate::{
 use log::{debug, trace};
 use smallvec::smallvec;
 use std::ops::Deref;
+mod wrong_alternative;
+use wrong_alternative::{Config, ConvexHull};
 
 // needed because convex-hull has dim+1 points per cell
 pub type CHDimVec<T> = smallvec::SmallVec<[T; defaults::capacity::SMALL_VEC_INLINE_SIZE + 1]>;
@@ -85,86 +87,6 @@ impl Candidate {
     }
 }
 
-struct Config {
-    dim: usize,
-}
-
-struct ConvexHull {
-    candidates: Vec<Candidate>,
-    // return these paths in the end
-    found_paths: Vec<Path>,
-    dim: usize,
-}
-
-impl ConvexHull {
-    fn with(cfg: Config) -> ConvexHull {
-        ConvexHull {
-            candidates: Vec::new(),
-            found_paths: Vec::new(),
-            dim: cfg.dim,
-        }
-    }
-
-    fn dim(&self) -> usize {
-        self.dim
-    }
-
-    fn path_from(&self, id: CandidateId) -> &Path {
-        &self.found_paths[*id]
-    }
-
-    fn init_query(&mut self, cfg: Config) {
-        self.candidates.clear();
-        self.found_paths.clear();
-        self.dim = cfg.dim;
-    }
-
-    fn has_volume(&self) -> bool {
-        // +1 because a convex-hull (volume) needs dim+1 points
-        // For imagination:
-        // - line vs triangle in 2D
-        // - triangle vs tetrahedron in 3D
-        self.dim > 1 && self.found_paths.len() >= self.dim // TODO cyclops: (self.dim + 1)
-    }
-
-    fn pop_candidate(&mut self) -> Option<Candidate> {
-        debug!("Pop from {} possible candidate(s)", self.candidates.len());
-        self.candidates.pop()
-    }
-
-    fn contains(&self, path: &Path) -> bool {
-        self.found_paths.contains(path)
-    }
-
-    fn push_path(&mut self, best_path: Path) {
-        // if metric should be considered and path has not been added
-        // -> remember path
-
-        if self.found_paths.contains(&best_path) {
-            trace!("already found path {}", best_path);
-        } else {
-            debug!("pushed {}", best_path);
-            debug!("number of found paths: {}", self.found_paths.len());
-        }
-
-        self.found_paths.push(best_path);
-    }
-
-    fn update(&mut self, new_p: Path, candidate: Candidate) {
-        // remember path
-        if !self.contains(&new_p) {
-            self.found_paths.push(new_p);
-
-            // Add new facets by replacing every cost with the new path's cost.
-            for i in 0..candidate.len() {
-                let mut new_candidate = candidate.clone();
-                new_candidate.ids[i] = CandidateId(self.found_paths.len() - 1);
-                self.candidates.push(new_candidate);
-            }
-        }
-    }
-}
-
 pub struct ConvexHullExplorator {
     convex_hull: ConvexHull,
 }
@@ -190,7 +112,7 @@ impl ConvexHullExplorator {
         // find initial convex-hull
         // adding d initial points
 
-        let mut init_alphas: Vec<_> = Vec::new();
+        let mut init_alphas: CHDimVec<_> = CHDimVec::new();
         // and adding an average point as point number dim+1
         // -> remember for later
         let mut avg_alphas: DimVec<f64> = smallvec![0.0; query.graph_dim];
@@ -243,15 +165,7 @@ impl ConvexHullExplorator {
         }
 
         if self.convex_hull.has_volume() {
-            // If not enough different paths have been found
-            // -> return already found paths by keeping candidates empty
-
-            let candidate = Candidate {
-                ids: (0..self.convex_hull.found_paths.len())
-                    .map(CandidateId)
-                    .collect(),
-            };
-            self.convex_hull.candidates.push(candidate);
+            self.convex_hull.init_candidates();
         }
     }
 
@@ -370,10 +284,15 @@ impl ConvexHullExplorator {
         }
 
         self.convex_hull
-            .found_paths
-            .clone()
-            .into_iter()
-            .filter(|p| helpers::le(p.costs(), &query.tolerances))
+            .found_paths()
+            .iter()
+            .filter_map(|p| {
+                if helpers::le(p.costs(), &query.tolerances) {
+                    Some(p.clone())
+                } else {
+                    None
+                }
+            })
             .collect()
     }
 }
