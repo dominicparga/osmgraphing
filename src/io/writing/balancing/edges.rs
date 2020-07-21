@@ -75,13 +75,13 @@ impl Writer {
 
             let (src_lat, src_lon) = {
                 let idx = bwd_edges.dst_idx(edge_idx);
-                let coord = nodes.coord(idx);
-                (coord.lat.approx(), coord.lon.approx())
+                let coord = Approx(nodes.coord(idx)).approx();
+                (coord.lat, coord.lon)
             };
             let (dst_lat, dst_lon) = {
                 let idx = fwd_edges.dst_idx(edge_idx);
-                let coord = nodes.coord(idx);
-                (coord.lat.approx(), coord.lon.approx())
+                let coord = Approx(nodes.coord(idx)).approx();
+                (coord.lat, coord.lon)
             };
 
             let (raw_distance, lane_count) = {
