@@ -19,7 +19,7 @@ fn fmi_yaml() {
     let parsing_cfg = configs::parsing::Config::from_yaml(resources::FMI_YAML);
     assert!(configs::writing::network::graph::Config::try_from_yaml(resources::FMI_YAML).is_err());
     configs::writing::routing::Config::from_yaml(resources::FMI_YAML);
-    assert!(configs::routing::Config::try_from_yaml(resources::FMI_YAML, &parsing_cfg).is_err());
+    configs::routing::Config::try_from_yaml(resources::FMI_YAML, &parsing_cfg);
 }
 
 #[test]

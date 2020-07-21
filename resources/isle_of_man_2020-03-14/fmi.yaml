@@ -13,7 +13,7 @@ parsing:
   - meta: { info: 'DstId', id: 'dst-id' } # dst-idx
   - metric: { unit: 'Kilometers', id: 'kilometers' }
   - metric: { unit: 'Hours', id: 'hours' }
-  - ignored # lane-count
+  - metric: { unit: 'LaneCount', id: 'lane-count' }
   generating:
     nodes: []
     edges:
@@ -22,3 +22,8 @@ writing:
   route-pairs:
     file: 'resources/isle_of_man_2020-03-14/100.fmi.route-pairs'
     random_or_all: { max_count: 100 }
+# needed for examples/exploration.rs
+routing:
+  metrics:
+  - id: 'kilometers'
+  - id: 'hours'
