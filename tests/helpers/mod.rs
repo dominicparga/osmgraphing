@@ -2,10 +2,10 @@
 // March 6th, 2020
 
 use osmgraphing::{
+    approximating::Approx,
     configs,
     defaults::capacity::DimVec,
-    helpers::{self, approx::Approx},
-    io,
+    helpers, io,
     network::{Graph, MetricIdx, RoutePair},
     routing::dijkstra::{self, Dijkstra},
 };

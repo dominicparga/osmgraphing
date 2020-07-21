@@ -1,8 +1,4 @@
-use crate::{
-    configs, defaults,
-    helpers::{approx::Approx, err},
-    network::Graph,
-};
+use crate::{approximating::Approx, configs, defaults, helpers::err, network::Graph};
 use kissunits::distance::Kilometers;
 use std::{
     fs::OpenOptions,

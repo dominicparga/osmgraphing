@@ -1,12 +1,13 @@
 use super::{EdgeIdx, Graph, NodeIdx};
 use crate::{
+    approximating::Approx,
     configs::parsing::{self, generating},
     defaults::{
         self,
         capacity::{self, DimVec},
         routing::IS_USING_CH_LEVEL_SPEEDUP,
     },
-    helpers::{self, approx::Approx, err, MemSize},
+    helpers::{self, err, MemSize},
 };
 use kissunits::geo::Coordinate;
 use log::{debug, info};

@@ -1,3 +1,4 @@
+pub mod approximating;
 pub mod configs;
 pub mod defaults;
 pub mod helpers;

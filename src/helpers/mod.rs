@@ -2,7 +2,6 @@ use crate::defaults::capacity::DimVec;
 use std::str::FromStr;
 
 pub mod algebra;
-pub mod approx;
 pub mod err;
 
 pub fn is_line_functional(line: &String) -> bool {

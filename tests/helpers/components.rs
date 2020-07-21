@@ -1,7 +1,7 @@
 use kissunits::{distance::Kilometers, geo::Coordinate, speed::KilometersPerHour, time::Hours};
 use osmgraphing::{
+    approximating::Approx,
     defaults::capacity::DimVec,
-    helpers::approx::Approx,
     network::{EdgeIdx, Graph, MetricIdx, Node, NodeIdx},
     routing::{self},
 };

@@ -1,7 +1,8 @@
 use crate::{
+    approximating::Approx,
     configs::{parsing::nodes, writing},
     defaults::{self, accuracy},
-    helpers::{approx::Approx, err},
+    helpers::err,
     io::writing::network::write_edges_to_file,
     network::Graph,
 };

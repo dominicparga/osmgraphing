@@ -4,9 +4,10 @@
 // https://crates.io/crates/nalgebra
 
 use crate::{
+    approximating::Approx,
     configs,
     defaults::{self, capacity::DimVec},
-    helpers::{self, algebra, approx::Approx},
+    helpers::{self, algebra},
     network::{Graph, NodeIdx},
     routing::{
         dijkstra::{self, Dijkstra},
