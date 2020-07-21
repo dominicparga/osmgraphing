@@ -7,7 +7,7 @@ use osmgraphing::{
     helpers::{self, approx::ApproxEq},
     io,
     network::{Graph, MetricIdx, RoutePair},
-    routing,
+    routing::dijkstra::{self, Dijkstra},
 };
 
 #[allow(dead_code)]
@@ -90,7 +90,7 @@ pub fn test_dijkstra(
 
     // set up routing
 
-    let mut dijkstra = routing::Dijkstra::new();
+    let mut dijkstra = Dijkstra::new();
     let expected_paths = expected_paths(graph.cfg());
 
     let raw_cfg = format!(
@@ -109,7 +109,7 @@ pub fn test_dijkstra(
     // test
 
     for (src, dst, metric_indices, option_specs) in expected_paths {
-        let option_path = dijkstra.compute_best_path(routing::Query {
+        let option_path = dijkstra.compute_best_path(dijkstra::Query {
             src_idx: src.idx,
             dst_idx: dst.idx,
             graph: &graph,
@@ -150,7 +150,7 @@ pub fn compare_dijkstras(ch_fmi_config_file: &str, metric_id: &str) {
 
     // init dijkstra for routing
 
-    let mut dijkstra = routing::Dijkstra::new();
+    let mut dijkstra = Dijkstra::new();
 
     let raw_cfg = format!(
         "{}\n{}\n{}\n{}",
@@ -173,13 +173,13 @@ pub fn compare_dijkstras(ch_fmi_config_file: &str, metric_id: &str) {
         .iter()
         .map(|(route_pair, _)| route_pair.into_node(&graph))
     {
-        let option_ch_path = dijkstra.compute_best_path(routing::Query {
+        let option_ch_path = dijkstra.compute_best_path(dijkstra::Query {
             src_idx: src.idx(),
             dst_idx: dst.idx(),
             graph: &graph,
             routing_cfg: &ch_routing_cfg,
         });
-        let option_path = dijkstra.compute_best_path(routing::Query {
+        let option_path = dijkstra.compute_best_path(dijkstra::Query {
             src_idx: src.idx(),
             dst_idx: dst.idx(),
             graph: &graph,

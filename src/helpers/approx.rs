@@ -17,6 +17,14 @@ pub trait ApproxEq<O> {
 pub trait ApproxCmp<O> {
     fn approx_partial_cmp(&self, other: &O) -> Option<Ordering>;
     fn approx_cmp(&self, other: &O) -> Ordering;
+    fn approx_le(&self, other: &O) -> bool {
+        let cmp = self.approx_cmp(other);
+        cmp == Ordering::Less || cmp == Ordering::Equal
+    }
+    fn approx_ge(&self, other: &O) -> bool {
+        let cmp = self.approx_cmp(other);
+        cmp == Ordering::Greater || cmp == Ordering::Equal
+    }
 }
 
 impl<T> ApproxCmp<T> for T

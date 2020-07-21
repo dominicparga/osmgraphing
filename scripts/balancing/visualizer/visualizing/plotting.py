@@ -352,7 +352,11 @@ class Machine():
         plt.style.use(self.plt_theme)
         fig, ax = plt.subplots()
         ax.set_title(
-            f'workloads$_{data.iteration}$ in [{data.workloads.min}, {data.workloads.max}]')
+            'workloads$_{'
+            + f'{data.iteration}'
+            + '}$'
+            + f' in [{data.workloads.min}, {data.workloads.max}]'
+        )
 
         # set norm and cmap
 
@@ -438,7 +442,11 @@ class Machine():
         plt.style.use(self.plt_theme)
         fig, ax = plt.subplots()
         ax.set_title(
-            f'workloads$_{data.iteration}$ in [{data.workloads.min}, {data.workloads.max}]')
+            'workloads$_{'
+            + f'{data.iteration}'
+            + '}$'
+            + f' in [{data.workloads.min}, {data.workloads.max}]'
+        )
 
         # set norm and cmap
 
@@ -480,7 +488,10 @@ class Machine():
         ax.set_ylabel('latitude')
         ax.set_aspect(1.0 / np.cos(np.deg2rad(data.lats.center)))
         fig.colorbar(
-            label=f'upper {100 * (1.0 - q_high):3.1f} % of workloads$_{data.iteration}$',
+            label=f'upper {100 * (1.0 - q_high):3.1f} % of workloads'
+            + '$_{'
+            + f'{data.iteration}'
+            + '}$',
             mappable=plot_collection,
             shrink=self.fig.colorbar.shrink,
             extend=self.fig.colorbar.extend
@@ -519,8 +530,9 @@ class Machine():
         fig, ax = plt.subplots()
         ax.set_title(
             'delta-workloads$_{' +
-            f'{data.iteration-1}, {data.iteration}' + '}$' +
-            f' in [{data.delta_workloads.min}, {data.delta_workloads.max}]'
+            f'{data.iteration-1}, {data.iteration}'
+            + '}$'
+            + f' in [{data.delta_workloads.min}, {data.delta_workloads.max}]'
         )
 
         # set norm and cmap
@@ -598,9 +610,10 @@ class Machine():
         plt.style.use(self.plt_theme)
         fig, ax = plt.subplots()
         ax.set_title(
-            'delta-workloads$_{' +
-            f'{data.iteration-1}, {data.iteration}' + '}$' +
-            f' in [{data.delta_workloads.min}, {data.delta_workloads.max}]'
+            'delta-workloads$_{'
+            + f'{data.iteration-1}, {data.iteration}'
+            + '}$'
+            + f' in [{data.delta_workloads.min}, {data.delta_workloads.max}]'
         )
 
         # set norm and cmap
@@ -643,9 +656,11 @@ class Machine():
         ax.set_ylabel('latitude')
         ax.set_aspect(1 / np.cos(np.deg2rad(data.lats.center)))
         fig.colorbar(
-            label=f'lower {100 * (q_low):3.1f} % and upper {100 * (1.0 - q_high):3.1f} % \n' +
-            'of delta-workloads_${' +
-            f'{data.iteration - 1}, {data.iteration}'+'}$',
+            label=f'lower {100 * (q_low):3.1f} %'
+            + f' and upper {100 * (1.0 - q_high):3.1f} % \n'
+            + 'of delta-workloads$_{'
+            + f'{data.iteration - 1}, {data.iteration}'
+            + '}$',
             mappable=plot_collection,
             shrink=self.fig.colorbar.shrink,
             extend=self.fig.colorbar.extend
@@ -672,7 +687,12 @@ class Machine():
 
         plt.style.use(self.plt_theme)
         _fig, ax = plt.subplots()
-        ax.set_title(f'density-function of workloads$_{data.iteration}$ > 0')
+        ax.set_title(
+            f'density-function of workloads'
+            + '$_{'
+            + f'{data.iteration}'
+            + '}$ > 0'
+        )
 
         #  set cmap
 

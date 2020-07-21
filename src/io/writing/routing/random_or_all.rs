@@ -2,7 +2,7 @@ use crate::{
     configs,
     helpers::err,
     network::{Graph, NodeIdx},
-    routing,
+    routing::{dijkstra, dijkstra::Dijkstra},
 };
 use log::{info, warn};
 use progressing::{bernoulli::Bar as BernoulliBar, Baring};
@@ -58,7 +58,7 @@ impl Writer {
             let mut rng = rand_pcg::Pcg32::seed_from_u64(self.seed);
             let die = Uniform::from(0..nodes.count());
 
-            let mut dijkstra = routing::Dijkstra::new();
+            let mut dijkstra = Dijkstra::new();
 
             if num_possible_routes <= self.max_count {
                 warn!(
@@ -102,7 +102,7 @@ impl Writer {
                 let is_already_processed = !processed_indices.insert((src_idx, dst_idx));
                 if !is_already_processed
                     && dijkstra
-                        .compute_best_path(routing::Query {
+                        .compute_best_path(dijkstra::Query {
                             src_idx,
                             dst_idx,
                             graph: &graph,

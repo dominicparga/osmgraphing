@@ -4,7 +4,7 @@ use osmgraphing::{
     helpers::{err, init_logging},
     io,
     network::RoutePair,
-    routing,
+    routing::dijkstra::{self, Dijkstra},
 };
 use std::{path::PathBuf, time::Instant};
 
@@ -176,7 +176,7 @@ fn run(args: CmdlineArgs) -> err::Feedback {
 
         info!("EXECUTE Do routing with alphas: {:?}", routing_cfg.alphas);
 
-        let mut dijkstra = routing::Dijkstra::new();
+        let mut dijkstra = Dijkstra::new();
 
         // calculate best paths
 
@@ -187,7 +187,7 @@ fn run(args: CmdlineArgs) -> err::Feedback {
             info!("");
 
             let now = Instant::now();
-            let best_path = dijkstra.compute_best_path(routing::Query {
+            let best_path = dijkstra.compute_best_path(dijkstra::Query {
                 src_idx: src.idx(),
                 dst_idx: dst.idx(),
                 graph: &graph,

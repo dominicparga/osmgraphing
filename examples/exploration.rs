@@ -3,13 +3,15 @@ use osmgraphing::{
     configs,
     helpers::{err, init_logging},
     io::network::graph::Parser,
-    network::NodeIdx,
-    routing::dijkstra::{self, Dijkstra},
+    routing::{
+        dijkstra::{self, Dijkstra},
+        exploration::ConvexHullExplorator,
+    },
 };
 use std::{path::PathBuf, time::Instant};
 
 fn main() {
-    init_logging("INFO", &["dijkstra"]).expect("LogLevel 'INFO' does exist.");
+    init_logging("INFO", &["exploration"]).expect("LogLevel 'INFO' does exist.");
     let result = run();
     if let Err(msg) = result {
         error!("{}", msg);
@@ -18,9 +20,9 @@ fn main() {
 }
 
 fn run() -> err::Feedback {
-    info!("Executing example: Dijkstra");
+    info!("Executing example: Exploration");
 
-    let raw_cfg = PathBuf::from("resources/simple_stuttgart/fmi.yaml");
+    let raw_cfg = PathBuf::from("resources/isle_of_man_2020-03-14/fmi.yaml");
 
     // parsing
 
@@ -53,35 +55,40 @@ fn run() -> err::Feedback {
         Err(msg) => return Err(format!("{}", msg).into()),
     };
     let mut dijkstra = Dijkstra::new();
+    let mut explorator = ConvexHullExplorator::new();
 
     // generate route-pairs
 
     let nodes = graph.nodes();
-    let src = nodes.create(NodeIdx(1));
-    let dst = nodes.create(NodeIdx(5));
+
+    let src = nodes
+        .create_from(283477868)
+        .expect("Src-node should exist.");
+    let dst = nodes
+        .create_from(283477875)
+        .expect("Dst-node should exist.");
 
     let now = Instant::now();
-    let option_path = dijkstra.compute_best_path(dijkstra::Query {
-        src_idx: src.idx(),
-        dst_idx: dst.idx(),
-        graph: &graph,
-        routing_cfg: &routing_cfg,
-    });
+    let found_paths = explorator.fully_explorate(
+        dijkstra::Query {
+            src_idx: src.idx(),
+            dst_idx: dst.idx(),
+            graph: &graph,
+            routing_cfg: &routing_cfg,
+        },
+        &mut dijkstra,
+    );
 
     info!("");
     info!(
-        "Ran Dijkstra-query in {} ms",
+        "Ran Exploration-query in {} ms",
         now.elapsed().as_micros() as f64 / 1_000.0,
     );
-    if let Some(path) = option_path {
-        info!(
-            "Path costs {:?} from ({}) to ({}).",
-            path.flatten(&graph).costs(),
-            src,
-            dst
-        );
+    if found_paths.is_empty() {
+        info!("No path found from ({}) to ({}).", src, dst);
     } else {
-        info!("No path from ({}) to ({}).", src, dst);
+        info!("Found {} path(s):", found_paths.len());
+        found_paths.iter().for_each(|path| info!("  {}", path))
     }
 
     Ok(())
