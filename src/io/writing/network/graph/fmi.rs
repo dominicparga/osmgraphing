@@ -139,13 +139,13 @@ impl Writer {
                                     nodes::metrics::UnitInfo::Latitude => write!(
                                         writer,
                                         "{:.digits$}",
-                                        node.coord().lat.approx(),
+                                        Approx(node.coord().lat).approx(),
                                         digits = accuracy::F64_FMT_DIGITS,
                                     )?,
                                     nodes::metrics::UnitInfo::Longitude => write!(
                                         writer,
                                         "{:.digits$}",
-                                        node.coord().lon.approx(),
+                                        Approx(node.coord().lon).approx(),
                                         digits = accuracy::F64_FMT_DIGITS,
                                     )?,
                                     nodes::metrics::UnitInfo::Height => {

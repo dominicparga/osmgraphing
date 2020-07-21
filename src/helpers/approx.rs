@@ -2,150 +2,191 @@ use crate::defaults::accuracy;
 use kissunits::geo::Coordinate;
 use smallvec::{Array, SmallVec};
 use std::{
-    cmp::Ordering::{self, Equal, Greater, Less},
+    cmp::{Eq, Ord, Ordering, PartialEq, PartialOrd},
     fmt::Debug,
 };
 
-pub trait Approx<O> {
-    fn approx(self) -> O;
-}
+#[derive(Clone, Copy, Debug)]
+pub struct Approx<T>(pub T);
 
-pub trait ApproxEq<O> {
-    fn approx_eq(&self, other: &O) -> bool;
-}
-
-pub trait ApproxCmp<O> {
-    fn approx_partial_cmp(&self, other: &O) -> Option<Ordering>;
-    fn approx_cmp(&self, other: &O) -> Ordering;
-    fn approx_le(&self, other: &O) -> bool {
-        let cmp = self.approx_cmp(other);
-        cmp == Ordering::Less || cmp == Ordering::Equal
-    }
-    fn approx_ge(&self, other: &O) -> bool {
-        let cmp = self.approx_cmp(other);
-        cmp == Ordering::Greater || cmp == Ordering::Equal
-    }
-}
-
-impl<T> ApproxCmp<T> for T
+impl<T> PartialOrd for Approx<&T>
 where
-    T: ApproxEq<T> + PartialOrd + Debug,
+    T: PartialOrd + Copy,
+    Approx<T>: PartialOrd,
 {
-    fn approx_partial_cmp(&self, other: &T) -> Option<Ordering> {
-        match (self < other, self > other, self.approx_eq(other)) {
-            (false, false, false) => None,
-            (false, true, false) => Some(Greater),
-            (true, false, false) => Some(Less),
-            (true, true, false) | (_, _, true) => Some(Equal),
+    fn partial_cmp(&self, other: &Approx<&T>) -> Option<Ordering> {
+        Approx(*self.0).partial_cmp(&Approx(*other.0))
+    }
+}
+
+impl<T> Ord for Approx<&T>
+where
+    T: Copy + Ord,
+    Approx<T>: Ord,
+{
+    fn cmp(&self, other: &Self) -> Ordering {
+        Approx(*self.0).cmp(&Approx(*other.0))
+    }
+}
+
+impl<T> PartialEq for Approx<&T>
+where
+    T: Copy + PartialEq,
+    Approx<T>: PartialEq,
+{
+    fn eq(&self, other: &Approx<&T>) -> bool {
+        Approx(*self.0) == Approx(*other.0)
+    }
+}
+
+impl<T> Eq for Approx<&T>
+where
+    T: Copy + Eq,
+    Approx<T>: Eq,
+{
+}
+
+impl<T> PartialOrd for Approx<Option<T>>
+where
+    T: Copy + PartialOrd,
+    Approx<T>: PartialOrd,
+{
+    fn partial_cmp(&self, other: &Approx<Option<T>>) -> Option<Ordering> {
+        match (self.0, other.0) {
+            (None, None) => Some(Ordering::Equal),
+            (None, Some(_)) => Some(Ordering::Less),
+            (Some(_), None) => Some(Ordering::Greater),
+            (Some(a), Some(b)) => Approx(a).partial_cmp(&Approx(b)),
         }
     }
+}
 
-    fn approx_cmp(&self, other: &T) -> Ordering {
-        self.approx_partial_cmp(other).expect(&format!(
+impl<T> Ord for Approx<Option<T>>
+where
+    T: Copy + Ord,
+    Approx<T>: Ord,
+{
+    fn cmp(&self, other: &Self) -> Ordering {
+        match (self.0, other.0) {
+            (None, None) => Ordering::Equal,
+            (None, Some(_)) => Ordering::Less,
+            (Some(_), None) => Ordering::Greater,
+            (Some(a), Some(b)) => Approx(a).cmp(&Approx(b)),
+        }
+    }
+}
+
+impl<T> PartialEq for Approx<Option<T>>
+where
+    T: Copy + PartialEq,
+    Approx<T>: PartialEq,
+{
+    fn eq(&self, other: &Approx<Option<T>>) -> bool {
+        match (self.0, other.0) {
+            (None, None) => true,
+            (None, Some(_)) | (Some(_), None) => false,
+            (Some(a), Some(b)) => Approx(a) == Approx(b),
+        }
+    }
+}
+
+impl<T> Eq for Approx<Option<T>>
+where
+    T: Copy + Eq,
+    Approx<T>: Eq,
+{
+}
+
+impl<T> PartialEq for Approx<&[T]>
+where
+    T: PartialEq + Copy,
+    Approx<T>: PartialEq,
+{
+    fn eq(&self, other: &Approx<&[T]>) -> bool {
+        self.0
+            .iter()
+            .zip(other.0)
+            .fold(true, |acc, (&aa, &bb)| acc && Approx(aa) == Approx(bb))
+    }
+}
+
+impl<T> Eq for Approx<&[T]>
+where
+    T: Eq + Copy,
+    Approx<T>: Eq,
+{
+}
+
+impl Approx<f64> {
+    pub fn approx(&self) -> f64 {
+        (self.0 / accuracy::F64_ABS).round() * accuracy::F64_ABS
+    }
+}
+
+impl PartialOrd for Approx<f64> {
+    fn partial_cmp(&self, other: &Approx<f64>) -> Option<Ordering> {
+        if self == other {
+            Some(Ordering::Equal)
+        } else {
+            self.0.partial_cmp(&other.0)
+        }
+    }
+}
+
+impl Ord for Approx<f64> {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.partial_cmp(other).expect(&format!(
             "No comparison for {:?} and {:?} possible.",
             self, other
         ))
     }
 }
 
-impl<T> Approx<Option<T>> for Option<T>
-where
-    T: Approx<T>,
-{
-    fn approx(self) -> Option<T> {
-        Some(self?.approx())
+impl PartialEq for Approx<f64> {
+    fn eq(&self, other: &Approx<f64>) -> bool {
+        Approx(self.0 - other.0).approx().abs() <= accuracy::F64_ABS
     }
 }
 
-impl<T> ApproxEq<Option<T>> for Option<T>
-where
-    T: ApproxEq<T>,
-{
-    fn approx_eq(&self, other: &Option<T>) -> bool {
-        match (self, other) {
-            (None, None) => true,
-            (None, Some(_)) | (Some(_), None) => false,
-            (Some(left), Some(right)) => left.approx_eq(right),
+impl Eq for Approx<f64> {}
+
+impl Approx<Coordinate> {
+    pub fn approx(&self) -> Coordinate {
+        Coordinate {
+            lat: Approx(self.0.lat).approx(),
+            lon: Approx(self.0.lon).approx(),
         }
     }
 }
 
-impl ApproxEq<Option<f64>> for f64 {
-    fn approx_eq(&self, other: &Option<f64>) -> bool {
-        if let Some(other) = other {
-            self.approx_eq(other)
-        } else {
-            false
-        }
+impl PartialEq for Approx<Coordinate> {
+    fn eq(&self, other: &Approx<Coordinate>) -> bool {
+        Approx(self.0.lat) == Approx(other.0.lat) && Approx(self.0.lon) == Approx(other.0.lon)
     }
 }
 
-impl ApproxEq<f64> for Option<f64> {
-    fn approx_eq(&self, other: &f64) -> bool {
-        if let Some(this) = self {
-            this.approx_eq(other)
-        } else {
-            false
-        }
-    }
-}
+impl Eq for Approx<Coordinate> {}
 
-impl Approx<f64> for f64 {
-    fn approx(self) -> f64 {
-        (self / accuracy::F64_ABS).round() * accuracy::F64_ABS
-    }
-}
+// TODO unfinished
 
-impl ApproxEq<f64> for f64 {
-    fn approx_eq(&self, other: &f64) -> bool {
-        (self - other).approx().abs() <= accuracy::F64_ABS
-    }
-}
-
-impl ApproxEq<Coordinate> for Coordinate {
-    fn approx_eq(&self, other: &Coordinate) -> bool {
-        self.lat.approx_eq(&other.lat) && self.lon.approx_eq(&other.lon)
-    }
-}
-
-impl<T> Approx<Vec<T>> for Vec<T>
+impl<T, A> PartialEq for Approx<&SmallVec<A>>
 where
-    T: Approx<T>,
-{
-    fn approx(self) -> Vec<T> {
-        self.into_iter().map(|value| value.approx()).collect()
-    }
-}
-
-impl<T, A> Approx<SmallVec<A>> for SmallVec<A>
-where
-    T: Approx<T>,
+    T: PartialEq + Copy,
+    Approx<T>: PartialEq,
     A: Array<Item = T>,
 {
-    fn approx(self) -> SmallVec<A> {
-        self.into_iter().map(|value| value.approx()).collect()
+    fn eq(&self, other: &Approx<&SmallVec<A>>) -> bool {
+        self.0
+            .iter()
+            .zip(other.0)
+            .fold(true, |acc, (aa, bb)| acc && Approx(aa) == Approx(&bb))
     }
 }
 
-impl<T> ApproxEq<Vec<T>> for Vec<T>
+impl<T, A> Eq for Approx<&SmallVec<A>>
 where
-    T: ApproxEq<T>,
-{
-    fn approx_eq(&self, other: &Vec<T>) -> bool {
-        self.iter()
-            .zip(other)
-            .fold(true, |acc, (aa, bb)| acc && aa.approx_eq(bb))
-    }
-}
-
-impl<T, A> ApproxEq<SmallVec<A>> for SmallVec<A>
-where
-    T: ApproxEq<T>,
+    T: PartialEq + Copy,
+    Approx<T>: PartialEq,
     A: Array<Item = T>,
 {
-    fn approx_eq(&self, other: &SmallVec<A>) -> bool {
-        self.iter()
-            .zip(other)
-            .fold(true, |acc, (aa, bb)| acc && aa.approx_eq(bb))
-    }
 }

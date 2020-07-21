@@ -4,7 +4,7 @@
 use osmgraphing::{
     configs,
     defaults::capacity::DimVec,
-    helpers::{self, approx::ApproxEq},
+    helpers::{self, approx::Approx},
     io,
     network::{Graph, MetricIdx, RoutePair},
     routing::dijkstra::{self, Dijkstra},
@@ -216,7 +216,7 @@ pub fn compare_dijkstras(ch_fmi_config_file: &str, metric_id: &str) {
             assert!(
                 flattened_ch_path.src_idx() == flattened_path.src_idx()
                     && flattened_ch_path.dst_idx() == flattened_path.dst_idx()
-                    && ch_cost[*metric_idx].approx_eq(&cost[*metric_idx]),
+                    && Approx(ch_cost[*metric_idx]) == Approx(cost[*metric_idx]),
                 "CH-Dijkstra's path's cost ({:?}) is different ({:?}) \
                  from Dijkstra's path's cost ({:?}). \
                  Metric-units are {:?} with alphas {:?}. \

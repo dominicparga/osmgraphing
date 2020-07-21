@@ -6,7 +6,7 @@ use crate::{
         capacity::{self, DimVec},
         routing::IS_USING_CH_LEVEL_SPEEDUP,
     },
-    helpers::{self, approx::ApproxEq, err, MemSize},
+    helpers::{self, approx::Approx, err, MemSize},
 };
 use kissunits::geo::Coordinate;
 use log::{debug, info};
@@ -68,7 +68,7 @@ impl Graph {
         let cfg = &self.cfg;
 
         for metric_idx in 0..proto_edge.metrics.len() {
-            if proto_edge.metrics[metric_idx] < defaults::accuracy::F64_ABS {
+            if Approx(proto_edge.metrics[metric_idx]) == Approx(0.0) {
                 debug!(
                     "Proto-edge (id:{}->id:{}) has {}=0, hence is corrected to epsilon.",
                     self.nodes().id(proto_edge.src_idx),
@@ -514,7 +514,7 @@ impl GraphBuilder {
                     is_eq &= (e0.src_idx, e0.dst_idx) == (e1.src_idx, e1.dst_idx);
                     if is_eq {
                         for (e0_metric, e1_metric) in e0.metrics.iter().zip(e1.metrics.iter()) {
-                            if e0_metric.approx_eq(e1_metric) {
+                            if Approx(e0_metric) == Approx(e1_metric) {
                                 continue;
                             }
                             // values are different

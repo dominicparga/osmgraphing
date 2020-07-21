@@ -6,10 +6,7 @@
 use crate::{
     configs,
     defaults::{self, capacity::DimVec},
-    helpers::{
-        self, algebra,
-        approx::{Approx, ApproxEq},
-    },
+    helpers::{self, algebra, approx::Approx},
     network::{Graph, NodeIdx},
     routing::{
         dijkstra::{self, Dijkstra},
@@ -240,8 +237,7 @@ impl ConvexHullExplorator {
                         // Add new path if it's cost-vector's projection onto the alpha-vector
                         // is smaller.
 
-                        // TODO improve <
-                        let is_path_new = new_alpha_cost.approx() < any_alpha_cost.approx()
+                        let is_path_new = Approx(new_alpha_cost) < Approx(any_alpha_cost)
                             && !new_found_paths.contains(&new_path);
                         if is_path_new {
                             debug!("Push {}", new_path);
@@ -333,7 +329,7 @@ impl ConvexHullExplorator {
                 if !found_paths
                     .iter()
                     .map(|path: &Path| path.costs())
-                    .any(|costs| costs.approx_eq(best_path.costs()))
+                    .any(|costs| Approx(costs) == Approx(best_path.costs()))
                 {
                     debug!("Found and pushing init-path {}", best_path);
                     found_paths.push(best_path);

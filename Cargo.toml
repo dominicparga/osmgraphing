@@ -28,7 +28,6 @@ default = []
 # TODO different test-lengths
 # https://testing.googleblog.com/2010/12/test-sizes.html
 custom = []
-custom_only = ['custom']
 'gpl-3.0' = []
 
 

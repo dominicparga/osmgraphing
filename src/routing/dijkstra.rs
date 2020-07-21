@@ -336,7 +336,7 @@ struct CostNode {
 
 mod costnode {
     use super::{CostNode, Direction};
-    use crate::helpers::approx::{ApproxCmp, ApproxEq};
+    use crate::helpers::approx::Approx;
     use std::{
         cmp::Ordering,
         fmt::{self, Display},
@@ -354,8 +354,8 @@ mod costnode {
 
     impl Ord for CostNode {
         fn cmp(&self, other: &CostNode) -> Ordering {
-            self.cost
-                .approx_cmp(&other.cost)
+            Approx(self.cost)
+                .cmp(&Approx(other.cost))
                 .then_with(|| self.idx.cmp(&other.idx))
                 .then_with(|| self.direction.cmp(&other.direction))
         }
@@ -364,8 +364,8 @@ mod costnode {
     impl PartialOrd for CostNode {
         fn partial_cmp(&self, other: &CostNode) -> Option<Ordering> {
             Some(
-                self.cost
-                    .approx_partial_cmp(&other.cost)?
+                Approx(self.cost)
+                    .partial_cmp(&Approx(other.cost))?
                     .then_with(|| self.idx.cmp(&other.idx))
                     .then_with(|| self.direction.cmp(&other.direction)),
             )
@@ -378,7 +378,7 @@ mod costnode {
         fn eq(&self, other: &CostNode) -> bool {
             self.idx == other.idx
                 && self.direction == other.direction
-                && self.cost.approx_eq(&other.cost)
+                && Approx(self.cost) == Approx(other.cost)
         }
     }
 
