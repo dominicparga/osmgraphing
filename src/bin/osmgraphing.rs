@@ -1,4 +1,6 @@
 use log::{error, info};
+#[cfg(feature = "gpl-3.0")]
+use osmgraphing::routing::exploration::ConvexHullExplorator;
 use osmgraphing::{
     configs,
     helpers::{err, init_logging},
@@ -205,10 +207,71 @@ fn run(args: CmdlineArgs) -> err::Feedback {
             }
         }
     }
+
+    // explorating-example
+
+    #[cfg(feature = "gpl-3.0")]
+    if args.is_explorating {
+        // get config by provided user-input
+
+        let routing_cfg = configs::routing::Config::try_from_yaml(&args.cfg, graph.cfg())?;
+
+        info!("EXECUTE Do routing with alphas: {:?}", routing_cfg.alphas);
+
+        let mut dijkstra = Dijkstra::new();
+        let mut explorator = ConvexHullExplorator::new();
+
+        // calculate best paths
+
+        for RoutePair { src, dst } in io::routing::Parser::parse(&routing_cfg)?
+            .iter()
+            .map(|(route_pair, _)| route_pair.into_node(&graph))
+        {
+            info!("");
+
+            let now = Instant::now();
+            let found_paths = explorator.fully_explorate(
+                dijkstra::Query {
+                    src_idx: src.idx(),
+                    dst_idx: dst.idx(),
+                    graph: &graph,
+                    routing_cfg: &routing_cfg,
+                },
+                &mut dijkstra,
+            );
+
+            info!("");
+            info!(
+                "Ran Exploration-query in {} ms",
+                now.elapsed().as_micros() as f64 / 1_000.0,
+            );
+            if found_paths.is_empty() {
+                info!("No path found from ({}) to ({}).", src, dst);
+            } else {
+                info!("Found {} path(s):", found_paths.len());
+                found_paths.iter().for_each(|path| info!("  {}", path))
+            }
+        }
+    }
+
     Ok(())
 }
 
 fn parse_cmdline<'a>() -> CmdlineArgs {
+    let description = &[
+        "",
+        "This tool takes a config-file, parses the chosen graph with specified",
+        "settings, and can execute specified tasks.",
+        "Such tasks may be exporting the graph as fmi-map-file or doing some ",
+        "routing-queries (if provided in config-file).",
+    ]
+    .join("\n");
+    let args = clap::App::new(env!("CARGO_PKG_NAME"))
+        .version(env!("CARGO_PKG_VERSION"))
+        .author(env!("CARGO_PKG_AUTHORS"))
+        .about(env!("CARGO_PKG_DESCRIPTION"))
+        .long_about(description.as_ref());
+
     let tmp = &[
         "Sets the logging-level according to the env-variable 'RUST_LOG'.",
         "The env-variable 'RUST_LOG' has precedence.",
@@ -227,6 +290,7 @@ fn parse_cmdline<'a>() -> CmdlineArgs {
         .case_insensitive(true)
         .default_value("INFO")
         .possible_values(&vec!["TRACE", "DEBUG", "INFO", "WARN", "ERROR"]);
+    let args = args.arg(arg_log_level);
 
     let arg_parser_cfg = clap::Arg::with_name(constants::ids::CFG)
         .long("config")
@@ -236,12 +300,24 @@ fn parse_cmdline<'a>() -> CmdlineArgs {
         .help("Sets the parser and other configurations according to this config.")
         .takes_value(true)
         .required(true);
+    let args = args.arg(arg_parser_cfg);
 
     let arg_is_routing = clap::Arg::with_name(constants::ids::IS_ROUTING)
         .long("routing")
         .help("Does routing as specified in the provided config.")
         .takes_value(false)
         .requires(constants::ids::CFG);
+    let args = args.arg(arg_is_routing);
+
+    #[cfg(feature = "gpl-3.0")]
+    let args = {
+        let arg_is_explorating = clap::Arg::with_name(constants::ids::IS_EXPLORATING)
+            .long("explorating")
+            .help("Does exploration with the routing-config as specified in the provided config.")
+            .takes_value(false)
+            .requires(constants::ids::CFG);
+        args.arg(arg_is_explorating)
+    };
 
     let arg_is_writing_graph = clap::Arg::with_name(constants::ids::IS_WRITING_GRAPH)
         .long("writing-graph")
@@ -251,6 +327,7 @@ fn parse_cmdline<'a>() -> CmdlineArgs {
         )
         .takes_value(false)
         .requires(constants::ids::CFG);
+    let args = args.arg(arg_is_writing_graph);
 
     let arg_is_writing_edges = clap::Arg::with_name(constants::ids::IS_WRITING_EDGES)
         .long("writing-edges")
@@ -260,6 +337,7 @@ fn parse_cmdline<'a>() -> CmdlineArgs {
         )
         .takes_value(false)
         .requires(constants::ids::CFG);
+    let args = args.arg(arg_is_writing_edges);
 
     let arg_is_writing_routes = clap::Arg::with_name(constants::ids::IS_WRITING_ROUTES)
         .long("writing-routes")
@@ -270,30 +348,9 @@ fn parse_cmdline<'a>() -> CmdlineArgs {
         )
         .takes_value(false)
         .requires(constants::ids::CFG);
+    let args = args.arg(arg_is_writing_routes);
 
-    clap::App::new(env!("CARGO_PKG_NAME"))
-        .version(env!("CARGO_PKG_VERSION"))
-        .author(env!("CARGO_PKG_AUTHORS"))
-        .about(env!("CARGO_PKG_DESCRIPTION"))
-        .long_about(
-            (&[
-                "",
-                "This tool takes a config-file, parses the chosen graph with specified",
-                "settings, and can execute specified tasks.",
-                "Such tasks may be exporting the graph as fmi-map-file or doing some ",
-                "routing-queries (if provided in config-file).",
-            ]
-            .join("\n"))
-                .as_ref(),
-        )
-        .arg(arg_log_level)
-        .arg(arg_parser_cfg)
-        .arg(arg_is_routing)
-        .arg(arg_is_writing_graph)
-        .arg(arg_is_writing_edges)
-        .arg(arg_is_writing_routes)
-        .get_matches()
-        .into()
+    args.get_matches().into()
 }
 
 mod constants {
@@ -304,6 +361,8 @@ mod constants {
         pub const IS_WRITING_EDGES: &str = "is_writing_edges";
         pub const IS_WRITING_ROUTES: &str = "is_writing_routes";
         pub const IS_ROUTING: &str = "is_routing";
+        #[cfg(feature = "gpl-3.0")]
+        pub const IS_EXPLORATING: &str = "is_explorating";
     }
 }
 
@@ -314,6 +373,8 @@ struct CmdlineArgs {
     is_writing_edges: bool,
     is_writing_routes: bool,
     is_routing: bool,
+    #[cfg(feature = "gpl-3.0")]
+    is_explorating: bool,
 }
 
 impl<'a> From<clap::ArgMatches<'a>> for CmdlineArgs {
@@ -328,6 +389,8 @@ impl<'a> From<clap::ArgMatches<'a>> for CmdlineArgs {
         let is_writing_edges = matches.is_present(constants::ids::IS_WRITING_EDGES);
         let is_writing_routes = matches.is_present(constants::ids::IS_WRITING_ROUTES);
         let is_routing = matches.is_present(constants::ids::IS_ROUTING);
+        #[cfg(feature = "gpl-3.0")]
+        let is_explorating = matches.is_present(constants::ids::IS_EXPLORATING);
 
         CmdlineArgs {
             max_log_level: String::from(max_log_level),
@@ -336,6 +399,8 @@ impl<'a> From<clap::ArgMatches<'a>> for CmdlineArgs {
             is_writing_edges,
             is_writing_routes,
             is_routing,
+            #[cfg(feature = "gpl-3.0")]
+            is_explorating,
         }
     }
 }
