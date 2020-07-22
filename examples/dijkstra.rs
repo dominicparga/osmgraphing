@@ -24,20 +24,9 @@ fn run() -> err::Feedback {
 
     // parsing
 
-    let parsing_cfg = match configs::parsing::Config::try_from_yaml(&raw_cfg) {
-        Ok(parsing_cfg) => parsing_cfg,
-        Err(msg) => return Err(err::Msg::from(format!("{}", msg))),
-    };
-
-    // measure parsing-time
+    let parsing_cfg = configs::parsing::Config::try_from_yaml(&raw_cfg)?;
     let now = Instant::now();
-
-    // parse and create graph
-
-    let graph = match Parser::parse_and_finalize(parsing_cfg) {
-        Ok(graph) => graph,
-        Err(msg) => return Err(format!("{}", msg).into()),
-    };
+    let graph = Parser::parse_and_finalize(parsing_cfg)?;
     info!(
         "Finished parsing in {} seconds ({} µs).",
         now.elapsed().as_secs(),
@@ -48,10 +37,7 @@ fn run() -> err::Feedback {
 
     // routing
 
-    let routing_cfg = match configs::routing::Config::try_from_yaml(&raw_cfg, graph.cfg()) {
-        Ok(routing_cfg) => routing_cfg,
-        Err(msg) => return Err(format!("{}", msg).into()),
-    };
+    let routing_cfg = configs::routing::Config::try_from_yaml(&raw_cfg, graph.cfg())?;
     let mut dijkstra = Dijkstra::new();
 
     // generate route-pairs
