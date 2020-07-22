@@ -516,13 +516,7 @@ class Machine():
     def plot_delta_workloads(self, data: Data, sim: Simulation):
         # setup data
 
-        sorted_lon_lat_deltas = data.sorted_lon_lat_deltas()
-        n = len(sorted_lon_lat_deltas)
-        (q_low, q_high) = (int(0.25 * n), int(0.95 * n))
-        (q_low, q_high) = (
-            sorted_lon_lat_deltas[q_low][2],
-            sorted_lon_lat_deltas[q_high][2]
-        )
+        sorted_lon_lat_deltas = data.abs_sorted_lon_lat_deltas()
 
         # setup figure
 
@@ -553,9 +547,9 @@ class Machine():
         # plot data
 
         plot_collection = ax.scatter(
-            x=data.lons.raw,
-            y=data.lats.raw,
-            c=data.delta_workloads.raw,
+            x=sorted_lon_lat_deltas[:, 0],
+            y=sorted_lon_lat_deltas[:, 1],
+            c=sorted_lon_lat_deltas[:, 2],
             s=2,  # 0.3
             alpha=1.0,
             edgecolors='none',
@@ -604,6 +598,7 @@ class Machine():
             sorted_lon_lat_deltas[q_low_idx, 2],
             sorted_lon_lat_deltas[q_high_idx, 2]
         )
+        sorted_lon_lat_deltas = data.abs_sorted_lon_lat_deltas()
 
         # setup figure
 
@@ -640,9 +635,9 @@ class Machine():
         # plot data
 
         plot_collection = ax.scatter(
-            x=data.lons.raw,
-            y=data.lats.raw,
-            c=data.delta_workloads.raw,
+            x=sorted_lon_lat_deltas[:, 0],
+            y=sorted_lon_lat_deltas[:, 1],
+            c=sorted_lon_lat_deltas[:, 2],
             s=2,  # 0.3
             alpha=1.0,
             edgecolors='none',
