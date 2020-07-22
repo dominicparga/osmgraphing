@@ -17,6 +17,11 @@ jobs:
         # install rust/cargo
         rustup component add rustfmt
 
+        # install nd-triangulator
+        sudo apt-get install g++
+        sudo apt-get install libcgal-dev
+        sudo apt-get install eigen3
+
         # install multi-ch-constructor
         sudo apt-get install libboost-all-dev
         sudo apt-get install libglpk-dev
