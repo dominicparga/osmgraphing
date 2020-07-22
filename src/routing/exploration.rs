@@ -14,7 +14,7 @@ use crate::{
         paths::Path,
     },
 };
-use log::{debug, trace};
+use log::{debug, trace, warn};
 use nd_triangulation::Triangulation;
 use smallvec::smallvec;
 use std::{
@@ -300,6 +300,18 @@ impl ConvexHullExplorator {
                     &mut triangulation,
                 );
             }
+        }
+
+        // if paths were found but no one is tolerated
+        if self.found_paths.len() > 0 && self.tolerated_found_paths.len() == 0 {
+            warn!(
+                "{}{}{}{}{}",
+                "Exploration found paths from src-id ",
+                query.graph.nodes().id(query.src_idx),
+                " to dst-id ",
+                query.graph.nodes().id(query.dst_idx),
+                ", but should not tolerate any path. Maybe your tolerances are too tight?"
+            );
         }
 
         let mut result = Vec::with_capacity(self.tolerated_found_paths.len());

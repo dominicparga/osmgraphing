@@ -326,9 +326,6 @@ mod simulation_pipeline {
             if let Ok(outcome) = master.recv() {
                 // update counts from outcome
 
-                if outcome.path_edges.is_empty() {
-                    warn!("Exploration didn't find any path. Maybe your tolerances are too tight?");
-                }
                 for edge_idx in outcome.path_edges {
                     abs_workloads[*edge_idx] += 1;
                 }
