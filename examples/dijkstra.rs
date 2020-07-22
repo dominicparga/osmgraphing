@@ -4,7 +4,7 @@ use osmgraphing::{
     helpers::{err, init_logging},
     io::network::graph::Parser,
     network::NodeIdx,
-    routing,
+    routing::dijkstra::{self, Dijkstra},
 };
 use std::{path::PathBuf, time::Instant};
 
@@ -18,26 +18,15 @@ fn main() {
 }
 
 fn run() -> err::Feedback {
-    info!("Executing example: A*");
+    info!("Executing example: Dijkstra");
 
     let raw_cfg = PathBuf::from("resources/simple_stuttgart/fmi.yaml");
 
     // parsing
 
-    let parsing_cfg = match configs::parsing::Config::try_from_yaml(&raw_cfg) {
-        Ok(parsing_cfg) => parsing_cfg,
-        Err(msg) => return Err(err::Msg::from(format!("{}", msg))),
-    };
-
-    // measure parsing-time
+    let parsing_cfg = configs::parsing::Config::try_from_yaml(&raw_cfg)?;
     let now = Instant::now();
-
-    // parse and create graph
-
-    let graph = match Parser::parse_and_finalize(parsing_cfg) {
-        Ok(graph) => graph,
-        Err(msg) => return Err(format!("{}", msg).into()),
-    };
+    let graph = Parser::parse_and_finalize(parsing_cfg)?;
     info!(
         "Finished parsing in {} seconds ({} µs).",
         now.elapsed().as_secs(),
@@ -48,11 +37,8 @@ fn run() -> err::Feedback {
 
     // routing
 
-    let routing_cfg = match configs::routing::Config::try_from_yaml(&raw_cfg, graph.cfg()) {
-        Ok(routing_cfg) => routing_cfg,
-        Err(msg) => return Err(format!("{}", msg).into()),
-    };
-    let mut dijkstra = routing::Dijkstra::new();
+    let routing_cfg = configs::routing::Config::try_from_yaml(&raw_cfg, graph.cfg())?;
+    let mut dijkstra = Dijkstra::new();
 
     // generate route-pairs
 
@@ -61,7 +47,7 @@ fn run() -> err::Feedback {
     let dst = nodes.create(NodeIdx(5));
 
     let now = Instant::now();
-    let option_path = dijkstra.compute_best_path(routing::Query {
+    let option_path = dijkstra.compute_best_path(dijkstra::Query {
         src_idx: src.idx(),
         dst_idx: dst.idx(),
         graph: &graph,

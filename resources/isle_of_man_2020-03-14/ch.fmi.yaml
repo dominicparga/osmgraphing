@@ -15,7 +15,6 @@ parsing:
   - meta: { info: 'DstId', id: 'dst-id' }
   - metric: { unit: 'Kilometers', id: 'kilometers' }
   - metric: { unit: 'Hours', id: 'hours' }
-  - ignored # lane-count
   - meta: { info: 'ShortcutIdx0', id: 'sc-idx-0' }
   - meta: { info: 'ShortcutIdx1', id: 'sc-idx-1' }
 writing:

@@ -121,6 +121,10 @@ balancing:
     # This depends on how many metrics are outsourced to edges-info.csv
     # and includes the new metric as well.
     dimension: 3
+    # ignored because replaced by balancer
+    minimum-cost: 0.000001
+    # ignored because replaced by balancer
+    cost-accuracy: 0.000001
     # optional; default is "99.8"
     # This is a string, not a float, because it is provided as cmdline-argument
     contraction-ratio: "99.8"
@@ -150,6 +154,10 @@ multi-ch-constructor:
   fmi-graph: 'path/to/fmi-graph_with_node-indices.fmi'
   contracted-graph: 'path/to/contracted_graph.ch.fmi'
   dimension: 3
+  # optional
+  minimum-cost: 0.0
+  # optional
+  cost-accuracy: 0.0001
   # optional; default is "99.8"
   # This is a string, not a float, because it is provided as cmdline-argument
   contraction-ratio: "99.8"
@@ -207,7 +215,8 @@ writing:
     file: 'relative-path-to-map-file'
     with_shortcuts: false
     ids:
-    - id: 'src-id'
+    - id: 'edge-id'
+    - id: 'src-idx'
     - id: 'dst-idx'
     - ignored
     - id: 'meters'

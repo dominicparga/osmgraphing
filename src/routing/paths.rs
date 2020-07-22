@@ -28,7 +28,7 @@ impl Display for Path {
             self.src_id,
             self.dst_id,
             self.costs,
-            self.hops()
+            self.edges.len()
         )
     }
 }
@@ -60,10 +60,6 @@ impl Path {
 
     pub fn dst_idx(&self) -> NodeIdx {
         self.dst_idx
-    }
-
-    pub fn hops(&self) -> usize {
-        self.edges.len()
     }
 
     /// ATTENTION! This method panics if the costs hasn't been calculated (e.g. `calc_cost(...)` or `flatten(...)`).
@@ -150,9 +146,11 @@ impl Eq for Path {}
 impl PartialEq for Path {
     fn eq(&self, other: &Path) -> bool {
         // length before edges and edges last because of performance
-        self.hops() == other.hops()
-            && self.src_id == other.src_id
+        self.src_id == other.src_id
             && self.dst_id == other.dst_id
+            // length is compared by comparing Vecs
+            // -> see libcore in rust-lang/rust
+            // && self.edges.len() == other.edges.len()
             && self.edges == other.edges
     }
 }

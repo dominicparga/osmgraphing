@@ -46,9 +46,12 @@ balancing:
     # This depends on how many metrics are outsourced to edges-info.csv
     # and includes the new metric as well.
     dimension: 3
+    # This is a string, not a float, because it is provided as cmdline-argument
     contraction-ratio: "99.8"
     number_of_threads: 4
+    # If true, the edge's nodes' osm-ids instead of their indices are used.
     is_printing_osm-ids: true
+    # If true, external edge-ids are piped through the multi-ch-constructor.
     is_using_external_edge-ids: true
   metric-ids:
     distance: 'kilometers'

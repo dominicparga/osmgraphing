@@ -28,7 +28,6 @@ default = []
 # TODO different test-lengths
 # https://testing.googleblog.com/2010/12/test-sizes.html
 custom = []
-custom_only = ['custom']
 'gpl-3.0' = []
 
 
@@ -56,12 +55,14 @@ name = 'dijkstra'
 path = 'examples/dijkstra.rs'
 
 [[example]]
-name = 'playground_actix'
-path = 'examples/playground/actix.rs'
+name = 'exploration'
+path = 'examples/exploration.rs'
+required-features = ['gpl-3.0']
+
 
 [[example]]
-name = 'playground_random'
-path = 'examples/playground/random.rs'
+name = 'playground_actix'
+path = 'examples/playground/actix.rs'
 
 [[example]]
 name = 'playground_edge-containers'
@@ -76,8 +77,16 @@ name = 'playground_multithreading'
 path = 'examples/playground/multithreading.rs'
 
 [[example]]
+name = 'playground_nd-triangulation'
+path = 'examples/playground/nd_triangulation.rs'
+
+[[example]]
 name = 'playground_pipes_and_filters'
 path = 'examples/playground/pipes_and_filters.rs'
+
+[[example]]
+name = 'playground_random'
+path = 'examples/playground/random.rs'
 
 [[example]]
 name = 'playground_xml_reader'
@@ -96,6 +105,7 @@ env_logger = '0.6' # logging for external use, e.g. main.rs and examples
 kissunits = { git = 'https://github.com/dominicparga/kissunits', branch = 'nightly' } # units like Meters or Coordinate
 log = '0.4' # logging for internal use, e.g. lib.rs
 nalgebra = '0.21' # vectors and matrics
+nd-triangulation = '0.3' # CGAL for convex-hulls
 osmpbfreader = '0.13' # read osm.pbf-files
 # progressing = '2' # progress-bar
 progressing = { git = 'https://github.com/dominicparga/progressing', branch = 'nightly' } # progress-bar

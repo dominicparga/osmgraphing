@@ -9,10 +9,30 @@ use std::{fs, path::Path};
 const REPO_DIR: &str = "externals/multi-ch-constructor";
 
 pub fn build(mchc_cfg: &configs::Config) -> err::Feedback {
-    let cmd_args = &["-Bbuild", "-D", &format!("GRAPH_DIM={}", mchc_cfg.dim)];
+    let mut cmd_args = Vec::new();
+    cmd_args.push("-Bbuild");
+
+    // graph-dim
+
+    cmd_args.push("-D");
+    let cmd_arg = &format!("GRAPH_DIM={}", mchc_cfg.dim);
+    cmd_args.push(cmd_arg);
+
+    // minimum-cost
+
+    cmd_args.push("-D");
+    let cmd_arg = &format!("MIN_COST={}", mchc_cfg.min_cost);
+    cmd_args.push(cmd_arg);
+
+    // cost-accuracy
+
+    cmd_args.push("-D");
+    let cmd_arg = &format!("COST_ACCURACY={}", mchc_cfg.cost_accuracy);
+    cmd_args.push(cmd_arg);
+
     let is_successful = std::process::Command::new("cmake")
         .current_dir(fs::canonicalize(&REPO_DIR)?)
-        .args(cmd_args)
+        .args(&cmd_args)
         .status()?
         .success();
     if !is_successful {

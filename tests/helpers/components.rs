@@ -1,7 +1,7 @@
 use kissunits::{distance::Kilometers, geo::Coordinate, speed::KilometersPerHour, time::Hours};
 use osmgraphing::{
+    approximating::Approx,
     defaults::capacity::DimVec,
-    helpers::approx::ApproxEq,
     network::{EdgeIdx, Graph, MetricIdx, Node, NodeIdx},
     routing::{self},
 };
@@ -39,7 +39,7 @@ impl PartialEq for TestNode {
     fn eq(&self, other: &Self) -> bool {
         self.id == other.id
             && self.idx == other.idx
-            && self.coord.approx_eq(&other.coord)
+            && Approx(self.coord) == Approx(other.coord)
             && self.ch_level == other.ch_level
     }
 }
@@ -159,9 +159,9 @@ impl TestEdge {
             self.name
         );
 
-        let expected = SmallVec::from_slice(&self.metrics);
+        let expected: DimVec<_> = SmallVec::from_slice(&self.metrics);
         assert!(
-            edge.metrics().approx_eq(&expected),
+            Approx(edge.metrics()) == Approx(&expected),
             "Wrong metrics {:?} for {}edge {}. Expected: {:?}",
             edge.metrics(),
             prefix,
@@ -264,7 +264,7 @@ impl TestPath {
                     .map(|&metric_idx| flattened_actual_path.costs()[*metric_idx])
                     .collect(),
             );
-            if !expected_cost.approx_eq(&actual_cost) {
+            if Approx(expected_cost) != Approx(&actual_cost) {
                 wrong_cost_result = Some((expected_cost, actual_cost));
                 continue;
             } else {

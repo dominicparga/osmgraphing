@@ -1,12 +1,13 @@
 use super::{EdgeIdx, Graph, NodeIdx};
 use crate::{
+    approximating::Approx,
     configs::parsing::{self, generating},
     defaults::{
         self,
         capacity::{self, DimVec},
         routing::IS_USING_CH_LEVEL_SPEEDUP,
     },
-    helpers::{self, approx::ApproxEq, err, MemSize},
+    helpers::{self, err, MemSize},
 };
 use kissunits::geo::Coordinate;
 use log::{debug, info};
@@ -68,14 +69,15 @@ impl Graph {
         let cfg = &self.cfg;
 
         for metric_idx in 0..proto_edge.metrics.len() {
-            if proto_edge.metrics[metric_idx].approx_eq(&0.0) {
+            if Approx(proto_edge.metrics[metric_idx]) == Approx(0.0) {
                 debug!(
-                    "Proto-edge (id:{}->id:{}) has {}=0, hence is corrected to epsilon.",
+                    "Proto-edge (id:{}->id:{}) has {} around 0.0, hence is corrected to {}.",
                     self.nodes().id(proto_edge.src_idx),
                     self.nodes().id(proto_edge.dst_idx),
-                    cfg.edges.metrics.ids[metric_idx]
+                    cfg.edges.metrics.ids[metric_idx],
+                    defaults::accuracy::F64_ABS
                 );
-                proto_edge.metrics[metric_idx] = std::f64::EPSILON;
+                proto_edge.metrics[metric_idx] = defaults::accuracy::F64_ABS;
             }
         }
 
@@ -514,7 +516,7 @@ impl GraphBuilder {
                     is_eq &= (e0.src_idx, e0.dst_idx) == (e1.src_idx, e1.dst_idx);
                     if is_eq {
                         for (e0_metric, e1_metric) in e0.metrics.iter().zip(e1.metrics.iter()) {
-                            if e0_metric.approx_eq(e1_metric) {
+                            if Approx(e0_metric) == Approx(e1_metric) {
                                 continue;
                             }
                             // values are different
@@ -645,6 +647,16 @@ impl GraphBuilder {
 
             new_proto_edges
         };
+
+        for metrics in &graph.metrics {
+            for metric in metrics {
+                if metric < &defaults::accuracy::F64_ABS {
+                    return Err(err::Msg::from(
+                        "A metric is smaller than accuracy allows it.",
+                    ));
+                }
+            }
+        }
 
         //----------------------------------------------------------------------------------------//
         // set ch-shortcut-offsets

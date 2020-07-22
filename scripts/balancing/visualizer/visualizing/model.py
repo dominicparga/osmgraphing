@@ -199,6 +199,16 @@ class Data():
             key=lambda x: x[2]
         ))
 
+    def abs_sorted_lon_lat_deltas(self):
+        return np.array(sorted(
+            list(map(list, zip(
+                self.lons.raw,
+                self.lats.raw,
+                self.delta_workloads.raw
+            ))),
+            key=lambda x: abs(x[2])
+        ))
+
     @property
     def delta_workloads(self):
         if self._delta_workloads is None:

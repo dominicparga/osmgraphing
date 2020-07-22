@@ -1,12 +1,7 @@
 pub mod edges;
 pub mod graph;
 
-use crate::{
-    configs,
-    defaults::{self, accuracy},
-    helpers::err,
-    network::Graph,
-};
+use crate::{configs, defaults, helpers::err, network::Graph};
 use log::info;
 use progressing::{bernoulli::Bar as BernoulliBar, Baring};
 use std::io::Write;
@@ -152,12 +147,7 @@ fn write_edges_to_file<W: Write>(
                                     metric_id
                                 ));
 
-                            write!(
-                                writer,
-                                "{:.digits$}",
-                                graph.metrics()[edge_idx][metric_idx],
-                                digits = accuracy::F64_FMT_DIGITS
-                            )?;
+                            write!(writer, "{}", graph.metrics()[edge_idx][metric_idx])?;
                         }
                         configs::parsing::edges::Category::Ignored => continue, // covered in else-case
                     }

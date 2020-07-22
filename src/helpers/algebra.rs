@@ -64,6 +64,9 @@ pub struct LU {
 impl LU {
     pub fn solve(&self, b: &DimVec<f64>) -> Option<DimVec<f64>> {
         let b = nalgebra::DVector::from_row_slice(&b);
+        // if points lay on a line
+        // <-> matrix has rows of 0 and hence infinite solutions
+        // -> None is returned
         let x = self.data.solve(&b)?;
         Some(DimVec::from_slice(x.data.as_vec()))
     }

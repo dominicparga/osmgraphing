@@ -16,8 +16,6 @@ parsing:
     nodes:
     - meta: { info: 'NodeIdx', id: 'node-idx' }
     edges:
-    - meta: { info: 'SrcIdx', id: 'src-idx' }
-    - meta: { info: 'DstIdx', id: 'dst-idx' }
     - haversine: { unit: 'Kilometers', id: 'kilometers' }
     - calc:
         result: { unit: 'Hours', id: 'hours' }
@@ -31,15 +29,11 @@ writing:
     - id: 'node-id'
     - id: 'latitude'
     - id: 'longitude'
-    - ignored # height
-    - ignored # ch-level
     edges:
       with_shortcuts: false
       ids:
-      - id: 'src-id' # idx needed for multi-ch-constructor
-      - id: 'dst-id' # idx needed for multi-ch-constructor
+      - id: 'src-id'
+      - id: 'dst-id'
       - id: 'kilometers'
       - id: 'hours'
       - id: 'lane-count'
-      - ignored # sc-idx-0
-      - ignored # sc-idx-1
