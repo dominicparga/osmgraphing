@@ -71,10 +71,11 @@ impl Graph {
         for metric_idx in 0..proto_edge.metrics.len() {
             if Approx(proto_edge.metrics[metric_idx]) == Approx(0.0) {
                 debug!(
-                    "Proto-edge (id:{}->id:{}) has {}=0, hence is corrected to epsilon.",
+                    "Proto-edge (id:{}->id:{}) has {} around 0.0, hence is corrected to {}.",
                     self.nodes().id(proto_edge.src_idx),
                     self.nodes().id(proto_edge.dst_idx),
-                    cfg.edges.metrics.ids[metric_idx]
+                    cfg.edges.metrics.ids[metric_idx],
+                    defaults::accuracy::F64_ABS
                 );
                 proto_edge.metrics[metric_idx] = defaults::accuracy::F64_ABS;
             }
