@@ -95,7 +95,7 @@ fn run(args: CmdlineArgs) -> err::Feedback {
 mod simulation_pipeline {
     use super::multithreading;
     use chrono;
-    use log::info;
+    use log::{info, warn};
     use osmgraphing::{configs, defaults, helpers::err, io, multi_ch_constructor, network::Graph};
     use progressing::{mapping::Bar as MappingBar, Baring};
     use rand::Rng;
@@ -197,6 +197,9 @@ mod simulation_pipeline {
         let iter_dir = balancing_cfg.results_dir.join(format!("{}", iter));
         mchc_cfg.fmi_graph = iter_dir.join(mchc_cfg.fmi_graph);
         mchc_cfg.ch_fmi_graph = iter_dir.join(mchc_cfg.ch_fmi_graph);
+
+        mchc_cfg.min_cost = defaults::accuracy::F64_ABS;
+        mchc_cfg.cost_accuracy = defaults::accuracy::F64_ABS;
 
         multi_ch_constructor::build(&mchc_cfg)?;
         multi_ch_constructor::construct_ch_graph(&mchc_cfg)
@@ -323,6 +326,9 @@ mod simulation_pipeline {
             if let Ok(outcome) = master.recv() {
                 // update counts from outcome
 
+                if outcome.path_edges.is_empty() {
+                    warn!("Exploration didn't find any path. Maybe your tolerances are too tight?");
+                }
                 for edge_idx in outcome.path_edges {
                     abs_workloads[*edge_idx] += 1;
                 }
@@ -332,7 +338,6 @@ mod simulation_pipeline {
                 if progress_bar.has_progressed_significantly() {
                     progress_bar.remember_significant_progress();
                     info!("{}", progress_bar);
-                    info!("Current work-size: {}", master.work_size());
                 }
 
                 // send new work

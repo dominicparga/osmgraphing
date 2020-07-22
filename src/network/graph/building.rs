@@ -648,6 +648,16 @@ impl GraphBuilder {
             new_proto_edges
         };
 
+        for metrics in &graph.metrics {
+            for metric in metrics {
+                if metric < &defaults::accuracy::F64_ABS {
+                    return Err(err::Msg::from(
+                        "A metric is smaller than accuracy allows it.",
+                    ));
+                }
+            }
+        }
+
         //----------------------------------------------------------------------------------------//
         // set ch-shortcut-offsets
         // do it here to reduce total memory-needs by processing metrics first

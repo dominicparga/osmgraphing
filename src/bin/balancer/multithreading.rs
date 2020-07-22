@@ -31,7 +31,19 @@ pub struct Master {
 
 impl Master {
     pub fn work_size(&self) -> usize {
-        self.work_size
+        // give one worker just 1 work-package, e.g. for monitoring
+
+        // If only one worker exists
+        // -> worker-idx is always 0 < 1
+        // -> This condition guarantees, that
+        //    (1) only one worker gets work of size 1
+        //    (2) and only if this worker is not the only worker.
+        //    (3) and it is not worker 0, which is used to calculate next work-size
+        if self.last_worker_idx == Some(WorkerIdx(1)) {
+            1
+        } else {
+            self.work_size
+        }
     }
 
     fn last_worker_idx(&self) -> WorkerIdx {
@@ -171,7 +183,7 @@ impl Master {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 struct WorkerIdx(usize);
 
 impl Deref for WorkerIdx {

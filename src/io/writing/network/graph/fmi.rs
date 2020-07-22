@@ -1,7 +1,6 @@
 use crate::{
-    approximating::Approx,
     configs::{parsing::nodes, writing},
-    defaults::{self, accuracy},
+    defaults,
     helpers::err,
     io::writing::network::write_edges_to_file,
     network::Graph,
@@ -137,18 +136,12 @@ impl Writer {
 
                                 let node = graph.nodes().create(node_idx);
                                 match unit {
-                                    nodes::metrics::UnitInfo::Latitude => write!(
-                                        writer,
-                                        "{:.digits$}",
-                                        Approx(node.coord().lat).approx(),
-                                        digits = accuracy::F64_FMT_DIGITS,
-                                    )?,
-                                    nodes::metrics::UnitInfo::Longitude => write!(
-                                        writer,
-                                        "{:.digits$}",
-                                        Approx(node.coord().lon).approx(),
-                                        digits = accuracy::F64_FMT_DIGITS,
-                                    )?,
+                                    nodes::metrics::UnitInfo::Latitude => {
+                                        write!(writer, "{}", node.coord().lat)?
+                                    }
+                                    nodes::metrics::UnitInfo::Longitude => {
+                                        write!(writer, "{}", node.coord().lon)?
+                                    }
                                     nodes::metrics::UnitInfo::Height => {
                                         unimplemented!("Nodes' height is not supported yet.")
                                     }

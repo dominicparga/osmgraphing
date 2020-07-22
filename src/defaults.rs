@@ -12,8 +12,12 @@ pub mod accuracy {
     ///   - lon: distance depends on latitude
     ///     -> 1e-6 degrees equals <= 0.11 m (equator)
     ///   -> 1e-5 degrees points to a person in a room, see https://xkcd.com/2170/
-    pub const F64_ABS: f64 = 0.000_001; // = 10^(-F64__FMT_DIGITS)
-    pub const F64_FMT_DIGITS: usize = 6;
+    pub const F64_ABS: f64 = 0.000_001;
+    // F64_ABS = 10^(-F64__FMT_DIGITS)
+    // but +1 because of float-representation
+    // e.g. 0.000_001 is 0.000_000_9.....
+    // and results in 0.000_000 with only 6 digits
+    pub const _F64_FMT_DIGITS: usize = 7; // TODO remove
 }
 
 pub mod speed {

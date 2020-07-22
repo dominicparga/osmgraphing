@@ -97,6 +97,26 @@ where
 {
 }
 
+impl<T> PartialOrd for Approx<&[T]>
+where
+    T: PartialOrd + Copy,
+    Approx<T>: PartialOrd,
+{
+    fn partial_cmp(&self, other: &Approx<&[T]>) -> Option<Ordering> {
+        let mut iterator = self
+            .0
+            .iter()
+            .zip(other.0)
+            .map(|(a, b)| Approx(a).partial_cmp(&Approx(b)));
+        let cmp_0 = iterator.next()?;
+        if iterator.any(|cmp_i| cmp_0 != cmp_i) {
+            None
+        } else {
+            cmp_0
+        }
+    }
+}
+
 impl<T> PartialEq for Approx<&[T]>
 where
     T: PartialEq + Copy,
@@ -106,7 +126,7 @@ where
         self.0
             .iter()
             .zip(other.0)
-            .fold(true, |acc, (&aa, &bb)| acc && Approx(aa) == Approx(bb))
+            .fold(true, |acc, (&a, &b)| acc && Approx(a) == Approx(b))
     }
 }
 
@@ -128,6 +148,8 @@ impl PartialOrd for Approx<f64> {
         if self == other {
             Some(Ordering::Equal)
         } else {
+            // now: they are at least different by tolerance
+            // -> compare normally
             self.0.partial_cmp(&other.0)
         }
     }
@@ -167,7 +189,16 @@ impl PartialEq for Approx<Coordinate> {
 
 impl Eq for Approx<Coordinate> {}
 
-// TODO unfinished
+impl<T, A> PartialOrd for Approx<&SmallVec<A>>
+where
+    T: PartialOrd + Copy,
+    Approx<T>: PartialOrd,
+    A: Array<Item = T>,
+{
+    fn partial_cmp(&self, other: &Approx<&SmallVec<A>>) -> Option<Ordering> {
+        Approx(&self.0[..]).partial_cmp(&Approx(&other.0[..]))
+    }
+}
 
 impl<T, A> PartialEq for Approx<&SmallVec<A>>
 where
@@ -176,10 +207,7 @@ where
     A: Array<Item = T>,
 {
     fn eq(&self, other: &Approx<&SmallVec<A>>) -> bool {
-        self.0
-            .iter()
-            .zip(other.0)
-            .fold(true, |acc, (aa, bb)| acc && Approx(aa) == Approx(&bb))
+        Approx(&self.0[..]) == Approx(&other.0[..])
     }
 }
 

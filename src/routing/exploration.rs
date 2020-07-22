@@ -119,6 +119,7 @@ impl<'a> Cell<'a> {
 
 pub struct ConvexHullExplorator {
     found_paths: HashMap<VertexId, Path>,
+    tolerated_found_paths: Vec<VertexId>,
     visited_cells: HashSet<CellId>,
 }
 
@@ -126,6 +127,7 @@ impl ConvexHullExplorator {
     pub fn new() -> ConvexHullExplorator {
         ConvexHullExplorator {
             found_paths: HashMap::new(),
+            tolerated_found_paths: Vec::new(),
             visited_cells: HashSet::new(),
         }
     }
@@ -148,13 +150,13 @@ impl ConvexHullExplorator {
         let mut is_triangulation_dirty = false;
 
         self.found_paths.clear();
+        self.tolerated_found_paths.clear();
         self.visited_cells.clear();
         let mut new_found_paths = Vec::new();
         ConvexHullExplorator::explore_initial_paths(&mut new_found_paths, &mut query, dijkstra);
-        ConvexHullExplorator::update(
+        self.update(
             &query,
             &mut is_triangulation_dirty,
-            &mut self.found_paths,
             &mut new_found_paths,
             &mut triangulation,
         );
@@ -174,6 +176,7 @@ impl ConvexHullExplorator {
                 "Start exploring new alternative routes, because triangulation of dim {} is ready.",
                 query.triangulation_dim
             );
+            trace!("Use tolerances {:?}", query.tolerances);
             while is_triangulation_dirty {
                 trace!("Found {} paths yet.", self.found_paths.len());
                 for raw_cell in triangulation.convex_hull_cells() {
@@ -185,10 +188,49 @@ impl ConvexHullExplorator {
                         );
                         continue;
                     }
-                    trace!("Explore cell of cell-id {}", raw_cell.id());
 
-                    let cell = ConvexHullExplorator::cell_from(&self.found_paths, raw_cell);
+                    let cell = ConvexHullExplorator::cell_from(raw_cell, &self.found_paths);
                     self.visited_cells.insert(*cell.id());
+
+                    // A correct convex-hull implies following statements.
+                    // (1) For every dimension, new paths can't be better
+                    //     than any cell's path with best cost in this dimension.
+                    // (2) On the other hand, no path can be best in all dimension
+                    //     (due to the convex-hull's pareto-front).
+                    // -> If any dimension has only costs worse than the dimension's tolerance,
+                    //    there is no way to get a better path from the exploration.
+                    // -> Don't look deeper in this cell.
+                    //
+                    if query
+                        // For every tolerance...
+                        .tolerances
+                        .iter()
+                        .enumerate()
+                        // ...check if it is considered at all,
+                        // which is unnecessary here, because unconsidered metrics
+                        // have a tolerance of infinity.
+                        // .filter(|(dim_i, _tolerance)| query.is_metric_considered[*dim_i])
+                        // If tolerance is considered, check if any tolerance can't be undercut
+                        // by any path's cost.
+                        .any(|(dim_i, tolerance)| {
+                            // So test here, if the given tolerance can be undercut by any cost.
+                            // If not, this cell should not be considered.
+                            !cell
+                                .vertices()
+                                .iter()
+                                .map(|vertex| vertex.path.costs()[dim_i])
+                                .any(|dim_cost| &dim_cost <= tolerance)
+                        })
+                    {
+                        trace!(
+                            "{}{}{}",
+                            "Jump over cell (id: ",
+                            **cell.id(),
+                            "), that can't undercut at least one tolerance."
+                        );
+                        continue;
+                    }
+                    trace!("Explore cell of cell-id {}", **cell.id());
 
                     // Check candidate, whether it's shape is already sharp enough.
                     // This is done by computing the normal-vector for facets of the convex hull,
@@ -246,29 +288,41 @@ impl ConvexHullExplorator {
                         } else {
                             trace!("Already found path {}", new_path);
                         }
+                    } else {
+                        trace!("No path found");
                     }
                 }
 
-                ConvexHullExplorator::update(
+                self.update(
                     &query,
                     &mut is_triangulation_dirty,
-                    &mut self.found_paths,
                     &mut new_found_paths,
                     &mut triangulation,
                 );
             }
         }
 
-        self.found_paths
-            .values()
-            .filter_map(|path| {
-                if helpers::le(path.costs(), &query.tolerances) {
-                    Some(path.clone())
-                } else {
-                    None
-                }
-            })
-            .collect()
+        let mut result = Vec::with_capacity(self.tolerated_found_paths.len());
+        for vertex_id in &self.tolerated_found_paths {
+            result.push(
+                self.found_paths
+                    .remove(vertex_id)
+                    .expect("A tolerated found path should have been found."),
+            )
+        }
+        result
+
+        // self.found_paths
+        //     .drain()
+        //     .map(|(_vertex_id, path)| path)
+        //     .filter_map(|path| {
+        //         if Approx(path.costs()) <= Approx(&query.tolerances) {
+        //             Some(path)
+        //         } else {
+        //             None
+        //         }
+        //     })
+        //     .collect()
     }
 
     fn explore_initial_paths(
@@ -344,8 +398,8 @@ impl ConvexHullExplorator {
     }
 
     fn cell_from<'a>(
-        found_paths: &'a HashMap<VertexId, Path>,
         cell: nd_triangulation::Cell,
+        found_paths: &'a HashMap<VertexId, Path>,
     ) -> Cell<'a> {
         Cell {
             id: CellId(cell.id()),
@@ -420,16 +474,20 @@ impl ConvexHullExplorator {
     }
 
     fn update(
+        &mut self,
         query: &Query,
         is_triangulation_dirty: &mut bool,
-        found_paths: &mut HashMap<VertexId, Path>,
         new_found_paths: &mut Vec<Path>,
         triangulation: &mut Triangulation,
     ) {
-        trace!("Updating triangulation");
+        debug!(
+            "Updating triangulation with {} new found paths.",
+            new_found_paths.len()
+        );
         *is_triangulation_dirty = new_found_paths.len() > 0;
 
         // add new paths to triangulation
+        // but only with considered metrics
 
         for path in new_found_paths.drain(..) {
             let new_raw_id = triangulation
@@ -447,9 +505,15 @@ impl ConvexHullExplorator {
                         })
                         .collect::<DimVec<_>>(),
                 )
-                .expect("Path's cost TODO filter by alpha...");
+                .expect("Path's cost should have right dimension.");
             let new_id = VertexId(new_raw_id);
-            found_paths.insert(new_id, path);
+
+            // Remember path if it can be returned in the end.
+            if Approx(path.costs()) <= Approx(&query.tolerances) {
+                self.tolerated_found_paths.push(new_id);
+            }
+
+            self.found_paths.insert(new_id, path);
         }
         debug_assert!(
             new_found_paths.is_empty(),

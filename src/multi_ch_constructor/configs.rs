@@ -12,6 +12,8 @@ pub struct Config {
     pub ch_fmi_graph: PathBuf,
     pub contraction_ratio: String,
     pub dim: usize,
+    pub min_cost: f64,
+    pub cost_accuracy: f64,
     pub num_threads: usize,
     pub is_printing_osm_ids: bool,
     pub is_using_external_edge_ids: bool,
@@ -75,6 +77,8 @@ impl From<ProtoConfig> for Config {
                 .contraction_ratio
                 .unwrap_or(String::from(defaults::CONTRACTION_RATIO)),
             dim: proto_cfg.dim,
+            min_cost: proto_cfg.min_cost.unwrap_or(defaults::MIN_COST),
+            cost_accuracy: proto_cfg.cost_accuracy.unwrap_or(defaults::COST_ACCURACY),
             num_threads: proto_cfg.num_threads.unwrap_or(defaults::NUM_THREADS),
             is_printing_osm_ids: proto_cfg.is_printing_osm_ids,
             is_using_external_edge_ids: proto_cfg.is_using_external_edge_ids,
@@ -90,6 +94,8 @@ pub struct ProtoConfig {
     pub ch_fmi_graph: PathBuf,
     pub contraction_ratio: Option<String>,
     pub dim: usize,
+    pub min_cost: Option<f64>,
+    pub cost_accuracy: Option<f64>,
     pub num_threads: Option<usize>,
     pub is_printing_osm_ids: bool,
     pub is_using_external_edge_ids: bool,
@@ -104,6 +110,8 @@ impl From<RawConfig> for ProtoConfig {
             ch_fmi_graph: raw_cfg.ch_fmi_graph,
             contraction_ratio: raw_cfg.contraction_ratio,
             dim: raw_cfg.dim,
+            min_cost: raw_cfg.min_cost,
+            cost_accuracy: raw_cfg.cost_accuracy,
             num_threads: raw_cfg.num_threads,
             is_printing_osm_ids: raw_cfg.is_printing_osm_ids,
             is_using_external_edge_ids: raw_cfg.is_using_external_edge_ids,
@@ -127,6 +135,10 @@ pub struct RawContent {
     pub ch_fmi_graph: PathBuf,
     #[serde(rename = "dimension")]
     pub dim: usize,
+    #[serde(rename = "minimum-cost")]
+    pub min_cost: Option<f64>,
+    #[serde(rename = "cost-accuracy")]
+    pub cost_accuracy: Option<f64>,
     #[serde(rename = "contraction-ratio")]
     pub contraction_ratio: Option<String>,
     #[serde(rename = "number_of_threads")]
