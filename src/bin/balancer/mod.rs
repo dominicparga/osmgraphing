@@ -95,7 +95,7 @@ fn run(args: CmdlineArgs) -> err::Feedback {
 mod simulation_pipeline {
     use super::multithreading;
     use chrono;
-    use log::{info, warn};
+    use log::info;
     use osmgraphing::{configs, defaults, helpers::err, io, multi_ch_constructor, network::Graph};
     use progressing::{mapping::Bar as MappingBar, Baring};
     use rand::Rng;
