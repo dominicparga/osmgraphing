@@ -28,7 +28,7 @@ default = []
 # TODO different test-lengths
 # https://testing.googleblog.com/2010/12/test-sizes.html
 custom = []
-'gpl-3.0' = []
+'gpl-3.0' = [ 'nd-triangulation' ]
 
 
 [[bin]]
@@ -79,6 +79,7 @@ path = 'examples/playground/multithreading.rs'
 [[example]]
 name = 'playground_nd-triangulation'
 path = 'examples/playground/nd_triangulation.rs'
+required-features = ['gpl-3.0']
 
 [[example]]
 name = 'playground_pipes_and_filters'
@@ -105,9 +106,8 @@ env_logger = '0.6' # logging for external use, e.g. main.rs and examples
 kissunits = { git = 'https://github.com/dominicparga/kissunits', branch = 'nightly' } # units like Meters or Coordinate
 log = '0.4' # logging for internal use, e.g. lib.rs
 nalgebra = '0.21' # vectors and matrics
-nd-triangulation = '0.3' # CGAL for convex-hulls
+nd-triangulation = { version = '0.3', optional = true } # CGAL for convex-hulls
 osmpbfreader = '0.13' # read osm.pbf-files
-# progressing = '2' # progress-bar
 progressing = { git = 'https://github.com/dominicparga/progressing', branch = 'nightly' } # progress-bar
 rand = '0.7' # generate random numbers
 rand_pcg = '0.2' # generate random numbers
