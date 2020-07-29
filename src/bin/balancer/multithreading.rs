@@ -329,13 +329,13 @@ impl Worker {
             if found_paths.len() > 0 {
                 let die = Uniform::from(0..found_paths.len());
                 for _ in 0..count {
-                    let p = found_paths[die.sample(&mut rng)]
+                    let path = found_paths[die.sample(&mut rng)]
                         .clone()
                         .flatten(&self.graph);
 
-                    debug!("    {}", p);
+                    debug!("    {}", path);
 
-                    for edge_idx in p {
+                    for edge_idx in path {
                         path_edges.push(edge_idx);
                     }
                 }

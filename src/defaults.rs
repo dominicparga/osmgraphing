@@ -102,44 +102,25 @@ pub mod balancing {
         graph: &mut Graph,
         balancing_cfg: &configs::balancing::Config,
     ) -> err::Feedback {
-        let distance_idx = graph.cfg().edges.metrics.idx_of(&balancing_cfg.distance_id);
-        let lane_count_idx = graph
-            .cfg()
-            .edges
-            .metrics
-            .idx_of(&balancing_cfg.lane_count_id);
+        // No capacity is calculated, because the new metric should smoothen against speed-limit.
+        // A higher speed-limit kind of implies more popularity.
+        // With normalization by capacity, this popularity would be weaken,
+        // so the influence of the speed-limit would be increased indirectly.
+        // But that's the point, the new metric should balance.
+
         let workload_idx = graph.cfg().edges.metrics.idx_of(&balancing_cfg.workload_id);
 
         let egde_iter = (0..graph.fwd_edges().count()).into_iter().map(EdgeIdx);
-        let distance_unit = graph.cfg().edges.metrics.units[*distance_idx];
 
         let mut metrics = graph.metrics_mut();
 
         let mut zero_metric_msg = None;
 
         for edge_idx in egde_iter {
-            // read metrics-data from graph
-            let (raw_distance, lane_count) = {
-                let tmp = &metrics[edge_idx];
-                (tmp[*distance_idx], tmp[*lane_count_idx] as u64)
-            };
             let abs_workload = abs_workloads[*edge_idx];
 
-            // use correct unit for distance
-            let distance = {
-                // convert value to meters
-                let raw_value = distance_unit.convert(
-                    &configs::parsing::edges::metrics::UnitInfo::Kilometers,
-                    raw_distance,
-                );
-                Kilometers(raw_value)
-            };
-
-            let num_vehicles = calc_num_vehicles(distance);
-            let capacity = lane_count * num_vehicles;
-
             let mut new_metric = {
-                let new_workload = abs_workload as f64 / (capacity as f64);
+                let new_workload = abs_workload as f64;
                 let old_workload = metrics[edge_idx][*workload_idx];
 
                 match balancing_cfg.optimization {
