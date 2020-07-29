@@ -134,7 +134,7 @@ class Machine():
 
         ax.set_xlabel('')
         ax.set_ylabel('workload')
-        plt.grid(True)
+        ax.grid(b=True)
         plt.tight_layout()
 
         # save plot
@@ -158,13 +158,13 @@ class Machine():
 
         data = Data(global_data=global_data)
 
-        q_low, q_high = 5, 95
+        q_low, q_high = 0, 99
 
         # setup figure
 
         plt.style.use(self.plt_theme)
         _fig, ax = plt.subplots()
-        ax.set_title(f'all workloads in [{q_low} %, {q_high} %]')
+        ax.set_title(f'all workloads > 0, then in [{q_low} %, {q_high} %]')
 
         #  set cmap
 
@@ -188,7 +188,7 @@ class Machine():
 
         ax.set_xlabel('iteration')
         ax.set_ylabel('workload')
-        plt.grid(False)
+        ax.grid(b=True, axis='y', which='both')
         plt.tight_layout()
 
         # save plot
@@ -268,7 +268,7 @@ class Machine():
 
         ax.set_xlabel('iteration')
         ax.set_ylabel('(delta-) workload')
-        plt.grid(True)
+        ax.grid(b=True)
         plt.legend()
         plt.tight_layout()
 
@@ -323,7 +323,7 @@ class Machine():
 
         ax.set_xlabel('iteration')
         ax.set_ylabel('amount of unique edges')
-        plt.grid(True)
+        ax.grid(b=True, axis='y', which='both')
         plt.tight_layout()
 
         # save plot
@@ -399,7 +399,7 @@ class Machine():
             shrink=self.fig.colorbar.shrink,
             extend=self.fig.colorbar.extend
         )
-        plt.grid(False)
+        ax.grid(b=False)
         plt.tight_layout()
 
         # save plot
@@ -496,7 +496,7 @@ class Machine():
             shrink=self.fig.colorbar.shrink,
             extend=self.fig.colorbar.extend
         )
-        plt.grid(False)
+        ax.grid(b=False)
         plt.tight_layout()
 
         # save plot
@@ -567,7 +567,7 @@ class Machine():
             shrink=self.fig.colorbar.shrink,
             extend=self.fig.colorbar.extend
         )
-        plt.grid(False)
+        ax.grid(b=False)
         plt.tight_layout()
 
         # save plot
@@ -660,7 +660,7 @@ class Machine():
             shrink=self.fig.colorbar.shrink,
             extend=self.fig.colorbar.extend
         )
-        plt.grid(False)
+        ax.grid(b=False)
         plt.tight_layout()
 
         # save plot
@@ -713,7 +713,7 @@ class Machine():
 
         ax.set_xlabel('workloads')
         ax.set_ylabel('amount of occurence')
-        plt.grid(False)
+        ax.grid(b=True, axis='y', which='both')
         plt.tight_layout()
 
         # save plot
