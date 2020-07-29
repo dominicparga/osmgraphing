@@ -171,6 +171,9 @@ class Data():
         num_vehicles = max(1.0, self._kilometers.raw[edge_idx] / 0.0075)
         return num_vehicles * self._lane_counts.raw[edge_idx]
 
+    def volumes(self) -> float:
+        return list(map(self.volume, range(len(self._kilometers.raw))))
+
     @property
     def old_workloads(self):
         return self._old_workloads
@@ -300,8 +303,9 @@ class Data():
             unsorted_values.sort(key=lambda val: val[0])
 
             # add sorted data
-            for (edge_idx, (_edge_id, value)) in enumerate(unsorted_values):
-                self.workloads.raw.append(value / self.volume(edge_idx))
+            for (_edge_idx, (_edge_id, value)) in enumerate(unsorted_values):
+                # self.workloads.raw.append(value / self.volume(edge_idx))
+                self.workloads.raw.append(value)
 
     def _read_in_new_metrics(self, sim: Simulation):
         workloads_csv_path = os.path.join(

@@ -730,6 +730,84 @@ class Machine():
         # plt.show()
         plt.close()
 
+    def plot_lanecount_to_workload(self, data: Data, sim: Simulation):
+        # setup simulatoin
+
+        q_low, q_high = 1, 99
+
+        # setup figure
+
+        plt.style.use(self.plt_theme)
+        _fig, ax = plt.subplots()
+        ax.set_title(
+            f'workloads'
+            + '$_{'
+            + f'{data.iteration}'
+            + '}$ > 0, then'
+            + f' in [{q_low} %, {q_high} %], per lane-count'
+        )
+
+        # plot data
+        # -> separate workloads by lane-count
+
+        zipped_data = sorted(
+            filter(
+                lambda x: x[1] > 0.0,
+                zip(data.lane_counts.raw, data.workloads.raw)
+            ),
+            key=lambda x: x[0]
+        )
+        split_indices = []
+        for i in range(1, len(zipped_data)):
+            prev_lane_count = zipped_data[i-1][0]
+            lane_count = zipped_data[i][0]
+            if prev_lane_count != lane_count:
+                split_indices.append(i)
+        zipped_data = list(
+            zipped_data[i:j]
+            for i, j in zip(
+                [0] + split_indices,
+                split_indices + [None]
+            )
+        )
+        # now: [
+        #     [(1.0, wl_1_0), (1.0, wl_1_1), ...],
+        #     [(2.0, wl_2_0), (2.0, wl_2_1), ...],
+        # ]
+
+        for vec in zipped_data:
+            workloads = list(map(lambda x: x[1], vec))
+            lane_count = int(vec[0][0])
+            ax.boxplot(
+                workloads,
+                positions=[lane_count],
+                showfliers=False,
+                notch=True,
+                whis=[q_low, q_high],
+            )
+
+        # finalize plot
+
+        ax.set_xlabel('lane-count')
+        ax.set_ylabel('workload')
+        ax.minorticks_on()
+        ax.grid(b=True, axis='y', which='both')
+        plt.tight_layout()
+
+        # save plot
+
+        plt.savefig(
+            os.path.join(
+                sim.results_dir,
+                f'{data.iteration}',
+                'stats',
+                'lane-count_to_workload.png'
+            ),
+            dpi=self.dpi
+        )
+        # plt.show()
+        plt.close()
+
 
 def light():
     return Machine(is_light=True)

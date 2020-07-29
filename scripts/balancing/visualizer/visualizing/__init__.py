@@ -52,6 +52,8 @@ def run(sim: Simulation, vis: plotting.Machine):
             vis.plot_delta_workload_quantiles(sim=sim, data=data)
         print('plot workloads as histogram')
         vis.plot_workload_histogram(sim=sim, data=data)
+        print('plot lane-counts with workloads')
+        vis.plot_lanecount_to_workload(sim=sim, data=data)
 
         # new line if next iteration
 
