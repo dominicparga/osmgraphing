@@ -41,6 +41,8 @@ pub mod defaults {
 
             pub mod simple_stuttgart {
                 pub const FMI_YAML: &str = "resources/simple_stuttgart/fmi.yaml";
+                pub const NORMALIZED_FMI_YAML: &str =
+                    "resources/simple_stuttgart/normalized_fmi.yaml";
             }
 
             pub mod small {
