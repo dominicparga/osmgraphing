@@ -32,28 +32,31 @@ parsing:
   - metric: { unit: 'Latitude', id: 'latitude' }
   - metric: { unit: 'Longitude', id: 'longitude' }
   - ignored
-  # With edges, the order matters, if the map-file has a metric-order, like `fmi`-files.
-  # Each metric below will be stored in the graph.
   edges:
-    # This category can be provided once.
-  - meta: { info: 'SrcId', id: 'src-id'}
-  - meta: { info: 'DstId', id: 'dst-id'}
-    # This category is used for ch-graph and can be provided once.
-  - meta: { info: 'ShortcutIdx0', id: 'sc-idx-0'}
-  - meta: { info: 'ShortcutIdx1', id: 'sc-idx-1'}
-    # This id can be used to import/export matching edge-data.
-    # This category can be provided once.
-  - meta: { info: 'EdgeId', id: 'edge-id' }
-    # metrics, which can be used multiple times (with unique id)
-  - metric: { unit: 'Meters', id: 'meters' }
-  - metric: { unit: 'Kilometers', id: 'kilometers' }
-  - metric: { unit: 'Seconds', id: 'seconds' }
-  - metric: { unit: 'Minutes', id: 'minutes' }
-  - metric: { unit: 'Hours', id: 'hours' }
-  - metric: { unit: 'KilometersPerHour', id: 'kmph' }
-  - metric: { unit: 'LaneCount', id: 'lanecount' }
-  - metric: { unit: 'F64', id: 'f64' }
-  - ignored
+    # optional; default is false, so the graph isn't changed at all
+    is_using_z-scores: false,
+    # With edges, the order matters, if the map-file has a metric-order, like `fmi`-files.
+    # Each metric below will be stored in the graph.
+    data:
+      # This category can be provided once.
+    - meta: { info: 'SrcId', id: 'src-id'}
+    - meta: { info: 'DstId', id: 'dst-id'}
+      # This category is used for ch-graph and can be provided once.
+    - meta: { info: 'ShortcutIdx0', id: 'sc-idx-0'}
+    - meta: { info: 'ShortcutIdx1', id: 'sc-idx-1'}
+      # This id can be used to import/export matching edge-data.
+      # This category can be provided once.
+    - meta: { info: 'EdgeId', id: 'edge-id' }
+      # metrics, which can be used multiple times (with unique id)
+    - metric: { unit: 'Meters', id: 'meters' }
+    - metric: { unit: 'Kilometers', id: 'kilometers' }
+    - metric: { unit: 'Seconds', id: 'seconds' }
+    - metric: { unit: 'Minutes', id: 'minutes' }
+    - metric: { unit: 'Hours', id: 'hours' }
+    - metric: { unit: 'KilometersPerHour', id: 'kmph' }
+    - metric: { unit: 'LaneCount', id: 'lanecount' }
+    - metric: { unit: 'F64', id: 'f64' }
+    - ignored
   # In case metrics can not be read from the graph directly, they may be generated or added here.
   generating:
     nodes:

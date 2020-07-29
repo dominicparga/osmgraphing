@@ -11,12 +11,13 @@ parsing:
   - ignored # height
   - meta: { info: 'CHLevel', id: 'ch-level' }
   edges:
-  - meta: { info: 'SrcId', id: 'src-id' }
-  - meta: { info: 'DstId', id: 'dst-id' }
-  - metric: { unit: 'Kilometers', id: 'kilometers' }
-  - metric: { unit: 'Hours', id: 'hours' }
-  - meta: { info: 'ShortcutIdx0', id: 'sc-idx-0' }
-  - meta: { info: 'ShortcutIdx1', id: 'sc-idx-1' }
+    data:
+    - meta: { info: 'SrcId', id: 'src-id' }
+    - meta: { info: 'DstId', id: 'dst-id' }
+    - metric: { unit: 'Kilometers', id: 'kilometers' }
+    - metric: { unit: 'Hours', id: 'hours' }
+    - meta: { info: 'ShortcutIdx0', id: 'sc-idx-0' }
+    - meta: { info: 'ShortcutIdx1', id: 'sc-idx-1' }
 writing:
   route-pairs:
     file: 'resources/isle_of_man_2020-03-14/100.ch.fmi.route-pairs'

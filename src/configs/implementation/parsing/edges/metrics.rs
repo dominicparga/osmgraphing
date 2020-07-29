@@ -12,6 +12,7 @@ use serde::Deserialize;
 
 #[derive(Debug)]
 pub struct Config {
+    pub is_using_z_score: bool,
     pub units: DimVec<UnitInfo>,
     pub ids: DimVec<SimpleId>,
 }

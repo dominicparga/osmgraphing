@@ -8,10 +8,11 @@ parsing:
   - metric: { unit: 'Latitude', id: 'latitude' }
   - metric: { unit: 'Longitude', id: 'longitude' }
   edges:
-  - meta: { info: 'SrcId', id: 'src-id' }
-  - meta: { info: 'DstId', id: 'dst-id' }
-  - metric: { unit: 'KilometersPerHour', id: 'kmph' }
-  - metric: { unit: 'LaneCount', id: 'lane-count' }
+    data:
+    - meta: { info: 'SrcId', id: 'src-id' }
+    - meta: { info: 'DstId', id: 'dst-id' }
+    - metric: { unit: 'KilometersPerHour', id: 'kmph' }
+    - metric: { unit: 'LaneCount', id: 'lane-count' }
   generating:
     nodes:
     - meta: { info: 'NodeIdx', id: 'node-idx' }

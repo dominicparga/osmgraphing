@@ -38,13 +38,14 @@ parsing:
   - ignored # height
   - meta: { info: 'CHLevel', id: 'ch-level' }
   edges:
-  - meta: { info: 'EdgeId', id: 'edge-id' }
-  - meta: { info: 'SrcId', id: 'src-id' }
-  - meta: { info: 'DstId', id: 'dst-id' }
-  - metric: { unit: 'Kilometers', id: 'kilometers' }
-  - metric: { unit: 'Hours', id: 'hours' }
-  - meta: { info: 'ShortcutIdx0', id: 'sc-idx-0'}
-  - meta: { info: 'ShortcutIdx1', id: 'sc-idx-1'}
+    data:
+    - meta: { info: 'EdgeId', id: 'edge-id' }
+    - meta: { info: 'SrcId', id: 'src-id' }
+    - meta: { info: 'DstId', id: 'dst-id' }
+    - metric: { unit: 'Kilometers', id: 'kilometers' }
+    - metric: { unit: 'Hours', id: 'hours' }
+    - meta: { info: 'ShortcutIdx0', id: 'sc-idx-0'}
+    - meta: { info: 'ShortcutIdx1', id: 'sc-idx-1'}
   generating:
     nodes:
     - meta: { info: 'NodeIdx', id: 'node-idx' }

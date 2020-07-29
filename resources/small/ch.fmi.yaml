@@ -11,12 +11,13 @@ parsing:
   - ignored # height
   - meta: { info: 'CHLevel', id: 'ch-level' }
   edges:
-  - meta: { info: 'SrcId', id: 'src-id' }
-  - meta: { info: 'DstId', id: 'dst-id' }
-  - metric: { unit: 'Meters', id: 'meters' }
-  - metric: { unit: 'Seconds', id: 'seconds' }
-  - meta: { info: 'ShortcutIdx0', id: 'sc-idx-0' }
-  - meta: { info: 'ShortcutIdx1', id: 'sc-idx-1' }
+    data:
+    - meta: { info: 'SrcId', id: 'src-id' }
+    - meta: { info: 'DstId', id: 'dst-id' }
+    - metric: { unit: 'Meters', id: 'meters' }
+    - metric: { unit: 'Seconds', id: 'seconds' }
+    - meta: { info: 'ShortcutIdx0', id: 'sc-idx-0' }
+    - meta: { info: 'ShortcutIdx1', id: 'sc-idx-1' }
   generating:
     nodes: []
     edges:
