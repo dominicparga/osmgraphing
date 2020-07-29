@@ -80,7 +80,7 @@ impl TryFrom<ProtoConfig> for Config {
         Ok(Config {
             categories,
             metrics: metrics::Config {
-                is_using_z_score: proto_cfg.is_using_z_score.unwrap_or(false),
+                are_normalized: proto_cfg.are_metrics_normalized.unwrap_or(false),
                 units: metric_units,
                 ids: metric_ids,
             },
@@ -171,14 +171,14 @@ impl From<generating::edges::MetaInfo> for MetaInfo {
 #[derive(Debug, Deserialize)]
 #[serde(from = "RawConfig", deny_unknown_fields)]
 pub struct ProtoConfig {
-    pub is_using_z_score: Option<bool>,
+    pub are_metrics_normalized: Option<bool>,
     pub categories: Vec<ProtoCategory>,
 }
 
 impl From<RawConfig> for ProtoConfig {
     fn from(raw_cfg: RawConfig) -> ProtoConfig {
         ProtoConfig {
-            is_using_z_score: raw_cfg.is_using_z_score,
+            are_metrics_normalized: raw_cfg.are_metrics_normalized,
             categories: raw_cfg.data.into_iter().map(ProtoCategory::from).collect(),
         }
     }
@@ -238,7 +238,8 @@ impl From<RawMetaInfo> for ProtoMetaInfo {
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct RawConfig {
-    is_using_z_score: Option<bool>,
+    #[serde(rename = "will_normalize_metrics_by_mean")]
+    are_metrics_normalized: Option<bool>,
     data: Vec<RawCategory>,
 }
 

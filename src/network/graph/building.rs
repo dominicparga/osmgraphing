@@ -12,6 +12,7 @@ use crate::{
 use kissunits::geo::Coordinate;
 use log::{debug, info};
 use progressing::{mapping::Bar as MappingBar, Baring};
+use smallvec::smallvec;
 use std::{
     cmp::{min, Reverse},
     fs::OpenOptions,
@@ -38,6 +39,7 @@ impl Graph {
             bwd_to_fwd_map: Vec::new(),
             // edge-metrics
             metrics: Vec::new(),
+            means: None,
             // edge-ids
             edge_ids: Vec::new(),
             edge_ids_to_idx_map: Vec::new(),
@@ -1323,6 +1325,33 @@ impl GraphBuilder {
                     }
                 }
             }
+        }
+
+        if graph.cfg().edges.metrics.are_normalized {
+            info!("DO Normalize metrics:");
+
+            let n = graph.fwd_edges().count() as f64;
+            let means: DimVec<_> = graph
+                .metrics
+                .iter()
+                .fold(smallvec![0.0; graph.metrics().dim()], |acc, b| {
+                    helpers::add(&acc, b)
+                })
+                .iter_mut()
+                .map(|sum| *sum / n)
+                .collect();
+            for edge_metrics in graph.metrics.iter_mut() {
+                edge_metrics
+                    .iter_mut()
+                    .enumerate()
+                    .for_each(|(idx, metric)| *metric /= means[idx]);
+            }
+
+            for (metric_id, mean) in graph.cfg().edges.metrics.ids.iter().zip(&means) {
+                info!("    {}: {}", metric_id, mean);
+            }
+
+            graph.means = Some(means);
         }
 
         info!("FINISHED Finalizing graph has finished.");

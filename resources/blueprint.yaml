@@ -33,8 +33,8 @@ parsing:
   - metric: { unit: 'Longitude', id: 'longitude' }
   - ignored
   edges:
-    # optional; default is false, so the graph isn't changed at all
-    is_using_z-scores: false,
+    # optional; default is false, so the graph's edge-metrics aren't being normalized
+    will_normalize_metrics_by_mean: false,
     # With edges, the order matters, if the map-file has a metric-order, like `fmi`-files.
     # Each metric below will be stored in the graph.
     data:

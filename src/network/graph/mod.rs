@@ -93,6 +93,7 @@ pub struct Graph {
     bwd_to_fwd_map: Vec<EdgeIdx>,
     // edge-metrics (sorted according to fwd_dsts)
     metrics: Vec<DimVec<f64>>,
+    means: Option<DimVec<f64>>,
     // mapping from id to EdgeIdx, sorted by id
     edge_ids: Vec<Option<usize>>,
     edge_ids_to_idx_map: Vec<(usize, EdgeIdx)>,
