@@ -32,7 +32,7 @@ parsing:
     - custom:
         id: 'workload'
         unit: 'F64'
-        default: 0.0
+        default: 1.0
 # define balancing-configs
 balancing:
   seed: 42

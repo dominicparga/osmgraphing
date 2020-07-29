@@ -1330,7 +1330,20 @@ impl GraphBuilder {
         if graph.cfg().edges.metrics.are_normalized {
             info!("DO Normalize metrics:");
 
+            // get divisor of mean
+
+            let n = graph.fwd_edges().count();
+            if n == 0 {
+                return Err(err::Msg::from(format!(
+                    "{}{}",
+                    "The metrics should be normalized,",
+                    " but the graph has no edges, hence no metrics, hence no mean.",
+                )));
+            }
             let n = graph.fwd_edges().count() as f64;
+
+            // compute mean
+
             let means: DimVec<_> = graph
                 .metrics
                 .iter()
@@ -1340,6 +1353,27 @@ impl GraphBuilder {
                 .iter_mut()
                 .map(|sum| *sum / n)
                 .collect();
+
+            // print mean
+
+            for (metric_id, mean) in graph.cfg().edges.metrics.ids.iter().zip(&means) {
+                info!("    {}: {}", metric_id, mean);
+            }
+
+            // if any mean is 0.0 -> error
+
+            if means
+                .iter()
+                .map(|mean| Approx(mean))
+                .any(|approx_mean| approx_mean == Approx(&0.0))
+            {
+                return Err(err::Msg::from(
+                    "A metric-mean is zero, hence no normalization can be done.",
+                ));
+            }
+
+            // normalize
+
             for edge_metrics in graph.metrics.iter_mut() {
                 edge_metrics
                     .iter_mut()
@@ -1347,9 +1381,7 @@ impl GraphBuilder {
                     .for_each(|(idx, metric)| *metric /= means[idx]);
             }
 
-            for (metric_id, mean) in graph.cfg().edges.metrics.ids.iter().zip(&means) {
-                info!("    {}: {}", metric_id, mean);
-            }
+            // and remember means
 
             graph.means = Some(means);
         }
