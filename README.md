@@ -27,7 +27,10 @@ However, the underlying parser and graph-structure are working very stable, effi
 
 ## Copyright and License <a name="copyright_and_license"></a>
 
-Please refer to `LICENSE.md`.
+Please refer to `LICENSE.md` for details.
+Copyright-owner is `Parga Cacheiro, Dominic`.
+In short, this repository is licensed under the `Apache-2.0`-license as long as you are not using the `cargo`-feature `gpl-3.0`.
+Using this feature adds some code and binaries around the balancer, which depends on code licensed under the `GPL-3.0`.
 
 
 ## Table of contents <a name="toc"></a>

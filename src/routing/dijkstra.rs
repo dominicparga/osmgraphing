@@ -120,6 +120,7 @@ impl Dijkstra {
     /// Returns true, if the provided costnode's cost are better than the registered cost for this
     /// node-idx (and for this query-direction).
     fn has_costnode_improved(&self, costnode: &CostNode) -> bool {
+        // <= instead of < needed for initial costs
         costnode.cost <= self.costs[self.dir_idx(costnode.direction)][*costnode.idx]
     }
 

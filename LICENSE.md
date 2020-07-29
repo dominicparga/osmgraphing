@@ -22,10 +22,11 @@ License GPL-3.0-only
 ```
 
 The following description gives an (incomplete) overview about this repository (and resulting binaries), for which the above copyright-notice holds.
+Note that the following overview describes content licensed under the `Apache License, Version 2.0` and content licensed under the `GPL-3.0`.
 
 This repository `osmgraphing` parses maps of own format or maps from openstreetmap.
 To do this, a binary `osmgraphing` is built and an own-defined config-file can be provided to specify parsing-, writing- and routing-settings.
-Further, this repository also explorates graphs and optimizes resulting routes with the module `exploration` and the binary `balancer`.
+Further, this repository also explorates graphs and optimizes resulting routes with the module `exploration` and the binary `balancer` using `multi-ch-constructor`, which can be called from a binary `multi-ch-constructor` as well.
 
 
 ## Apache-2.0
@@ -42,8 +43,8 @@ See the License for the specific language governing permissions and limitations 
 
 ## GPL-3.0
 
-This repository allows to build the binary `balancer`, which uses the git-submodule `multi-ch-constructor` licensed under `GPL-3.0`.
-Thus, this particular binary and respective code-parts are licensed under the `GPL-3.0`.
+This repository allows to build some content based on code licensed under the `GPL-3.0`.
+Thus, the respective binaries and code-parts are licensed under the `GPL-3.0` as well.
 You may obtain a copy of the License at
 
 `https://www.gnu.org/licenses/`
