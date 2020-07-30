@@ -71,7 +71,7 @@ impl Writer {
         writeln!(
             writer,
             "# Edges' metrics are {} by their mean.",
-            if writing_cfg.edges.is_denormalizing {
+            if !graph.cfg().edges.metrics.are_normalized || writing_cfg.edges.is_denormalizing {
                 "not normalized"
             } else {
                 "normalized"
