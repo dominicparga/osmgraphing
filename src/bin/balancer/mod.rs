@@ -286,7 +286,17 @@ mod simulation_pipeline {
             routing_cfg.alphas[*workload_idx] = 0.0;
 
             // -> and copy route-pairs-file into the results-directory
-            fs::copy(old_route_pairs_file, &new_route_pairs_file)?;
+            match fs::copy(&old_route_pairs_file, &new_route_pairs_file) {
+                Ok(_) => (),
+                Err(e) => {
+                    return Err(format!(
+                        "Couldn't copy {} due to error: {}",
+                        old_route_pairs_file.display(),
+                        e
+                    )
+                    .into())
+                }
+            };
         }
 
         routing_cfg.route_pairs_file = Some(new_route_pairs_file);
