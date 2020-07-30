@@ -1,6 +1,6 @@
 use crate::{
     configs::{parsing::generating, SimpleId},
-    defaults::capacity::DimVec,
+    defaults::{self, capacity::DimVec},
     helpers::err,
 };
 use serde::Deserialize;
@@ -80,7 +80,9 @@ impl TryFrom<ProtoConfig> for Config {
         Ok(Config {
             categories,
             metrics: metrics::Config {
-                are_normalized: proto_cfg.are_metrics_normalized.unwrap_or(false),
+                are_normalized: proto_cfg
+                    .are_metrics_normalized
+                    .unwrap_or(defaults::parsing::WILL_NORMALIZE_METRICS_BY_MEAN),
                 units: metric_units,
                 ids: metric_ids,
             },

@@ -34,7 +34,9 @@ impl From<WrappedProtoConfig> for Config {
                 .is_writing_shortcuts
                 .unwrap_or(defaults::parsing::IS_USING_SHORTCUTS),
             is_writing_header: true,
-            is_denormalizing: proto_cfg.is_denormalizing.unwrap_or(false),
+            is_denormalizing: proto_cfg
+                .is_denormalizing
+                .unwrap_or(defaults::writing::WILL_DENORMALIZE_METRICS_BY_MEAN),
             ids: proto_cfg.ids,
         }
     }

@@ -34,7 +34,7 @@ parsing:
   - ignored
   edges:
     # optional; default is false, so the graph's edge-metrics aren't being normalized
-    will_normalize_metrics_by_mean: false,
+    will_normalize_metrics_by_mean: false
     # With edges, the order matters, if the map-file has a metric-order, like `fmi`-files.
     # Each metric below will be stored in the graph.
     data:
@@ -106,6 +106,9 @@ parsing:
         - id: 'some-value'
 # optional
 # This config is used for the balancer-binary.
+# Pay with the normalization-option.
+# Normalizing metrics from a ch-graph makes the shortcuts incorrect,
+# because they are calculated with personalized-routing (using alpha-vectors).
 balancing:
   # optional; default is 42
   seed: 42
@@ -229,7 +232,7 @@ writing:
     # if the graph has normalized metrics,
     # it will be printed normalized.
     # If true, metrics will be denormalized before printing.
-    will_denormalize_metrics_by_mean: true,
+    will_denormalize_metrics_by_mean: false
     with_shortcuts: false
     ids:
     - id: 'edge-id'

@@ -39,11 +39,15 @@ pub mod parsing {
     // provided by multi-ch-constructor
     pub const NO_SHORTCUT_IDX: &str = "-1";
     pub const IS_USING_SHORTCUTS: bool = false;
+
+    pub const WILL_NORMALIZE_METRICS_BY_MEAN: bool = false;
 }
 
 pub mod writing {
     pub use super::parsing::NO_SHORTCUT_IDX;
     pub const IGNORE_STR: &str = "_";
+
+    pub const WILL_DENORMALIZE_METRICS_BY_MEAN: bool = false;
 }
 
 pub mod routing {

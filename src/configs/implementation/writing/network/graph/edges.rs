@@ -14,7 +14,9 @@ impl From<ProtoConfig> for Config {
             is_writing_shortcuts: proto_cfg
                 .is_writing_shortcuts
                 .unwrap_or(defaults::parsing::IS_USING_SHORTCUTS),
-            is_denormalizing: proto_cfg.is_denormalizing.unwrap_or(true),
+            is_denormalizing: proto_cfg
+                .is_denormalizing
+                .unwrap_or(defaults::writing::WILL_DENORMALIZE_METRICS_BY_MEAN),
             ids: proto_cfg.ids,
         }
     }

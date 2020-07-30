@@ -39,7 +39,7 @@ balancing:
   seed: 42
   number_of_threads: 4
   results-dir: 'custom/results/isle_of_man_2020-03-14'
-  number_of_metric-updates: 10
+  number_of_metric-updates: 5
   iter-0-cfg: 'resources/isle_of_man_2020-03-14/balancing/init.yaml'
   iter-i-cfg: 'resources/isle_of_man_2020-03-14/balancing/iteration.yaml'
   multi-ch-constructor:
@@ -59,10 +59,10 @@ balancing:
     distance: 'kilometers'
     lane-count: 'lane-count'
     workload: 'workload'
-    will_denormalize_metrics_by_mean: true
+    will_denormalize_metrics_by_mean: false
   explicit_euler:
     # old + (new - old) * correction
-    correction: 0.3
+    correction: 1.0
   # important to keep non-zero workloads (if generated non-zero):
   # - zero-edges creates more uninteresting shortcuts -> less performance
   # - zero-edges makes Dijkstra running longer/inefficiently
@@ -74,7 +74,7 @@ routing:
   metrics:
   - id: 'kilometers'
   - id: 'hours'
-    tolerated-scale: inf
+    tolerated-scale: 1.5
   - id: 'workload' # gets deactivated in first iteration
 # write balanced graph after final iteration
 writing:
@@ -87,7 +87,7 @@ writing:
     - id: 'longitude'
     edges:
       with_shortcuts: false
-      will_denormalize_metrics_by_mean: true
+      will_denormalize_metrics_by_mean: false
       ids:
       - id: 'src-id'
       - id: 'dst-id'
