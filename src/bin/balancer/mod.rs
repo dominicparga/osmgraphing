@@ -198,7 +198,6 @@ mod simulation_pipeline {
         mchc_cfg.fmi_graph = iter_dir.join(mchc_cfg.fmi_graph);
         mchc_cfg.ch_fmi_graph = iter_dir.join(mchc_cfg.ch_fmi_graph);
 
-        mchc_cfg.min_cost = defaults::accuracy::F64_ABS;
         mchc_cfg.cost_accuracy = defaults::accuracy::F64_ABS;
 
         multi_ch_constructor::build(&mchc_cfg)?;

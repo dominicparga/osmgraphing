@@ -12,7 +12,6 @@ pub struct Config {
     pub ch_fmi_graph: PathBuf,
     pub contraction_ratio: String,
     pub dim: usize,
-    pub min_cost: f64,
     pub cost_accuracy: f64,
     pub num_threads: usize,
     pub is_printing_osm_ids: bool,
@@ -77,7 +76,6 @@ impl From<ProtoConfig> for Config {
                 .contraction_ratio
                 .unwrap_or(String::from(defaults::CONTRACTION_RATIO)),
             dim: proto_cfg.dim,
-            min_cost: proto_cfg.min_cost.unwrap_or(defaults::MIN_COST),
             cost_accuracy: proto_cfg.cost_accuracy.unwrap_or(defaults::COST_ACCURACY),
             num_threads: proto_cfg.num_threads.unwrap_or(defaults::NUM_THREADS),
             is_printing_osm_ids: proto_cfg.is_printing_osm_ids,
