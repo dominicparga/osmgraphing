@@ -100,7 +100,9 @@ impl Config {
 
         let proto_cfg = match serde_yaml::from_reader(file) {
             Ok(proto_cfg) => proto_cfg,
-            Err(e) => return Err(format!("{}", e).into()),
+            Err(e) => {
+                return Err(format!("Couldn't open {} due to error: {}", path.display(), e).into())
+            }
         };
         Config::try_from_proto(proto_cfg, parsing_cfg)
     }
