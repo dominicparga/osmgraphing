@@ -10,6 +10,7 @@ writing:
     - ignored # ch-level
     edges:
       with_shortcuts: false
+      will_denormalize_metrics_by_mean: true
       ids:
       - id: 'edge-id'
       - id: 'src-idx' # idx needed for multi-ch-constructor
@@ -21,6 +22,7 @@ writing:
   edges-info:
     file: 'edges-info.csv'
     with_shortcuts: false
+    will_denormalize_metrics_by_mean: true
     ids:
     - id: 'edge-id'
     - id: 'lane-count'
@@ -38,6 +40,7 @@ parsing:
   - ignored # height
   - meta: { info: 'CHLevel', id: 'ch-level' }
   edges:
+    will_normalize_metrics_by_mean: true
     data:
     - meta: { info: 'EdgeId', id: 'edge-id' }
     - meta: { info: 'SrcId', id: 'src-id' }
@@ -55,7 +58,7 @@ parsing:
     - custom:
         id: 'workload'
         unit: 'F64'
-        default: 0.0
+        default: 1.0
     - custom:
         id: 'lane-count'
         unit: 'LaneCount'
@@ -64,6 +67,7 @@ parsing:
         id: 'dummy'
         unit: 'F64'
         default: 0.1
+      # overwrites above defaults
     - merge:
         from: 'edges-info.csv'
         edge-id: 'edge-id'

@@ -139,10 +139,15 @@ balancing:
     is_using_external_edge-ids: false
   # These metrics were used for calculating an edge's capacity.
   # Now, they are just kept for monitoring (e.g. for plotting later).
-  metric-ids:
+  monitoring:
     distance: 'kilometers'
     lane-count: 'lane-count'
     workload: 'workload'
+    # False means
+    # if the graph has normalized metrics,
+    # it will be printed normalized.
+    # If true, metrics will be denormalized before printing.
+    will_denormalize_metrics_by_mean: false
   explicit_euler:
     # old + (new - old) * correction
     correction: 0.3
@@ -207,6 +212,11 @@ writing:
     - id: 'level'
     - id: 'longitude'
     edges:
+      # optional; default is false, meaning
+      # if the graph has normalized metrics,
+      # it will be printed normalized.
+      # If true, metrics will be denormalized before printing.
+      will_denormalize_metrics_by_mean: false
       with_shortcuts: false
       ids:
       - id: 'src-id'
@@ -215,6 +225,11 @@ writing:
       - id: 'meters'
   edges-info:
     file: 'relative-path-to-map-file'
+    # optional; default is false, meaning
+    # if the graph has normalized metrics,
+    # it will be printed normalized.
+    # If true, metrics will be denormalized before printing.
+    will_denormalize_metrics_by_mean: true,
     with_shortcuts: false
     ids:
     - id: 'edge-id'

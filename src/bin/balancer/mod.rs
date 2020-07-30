@@ -282,7 +282,7 @@ mod simulation_pipeline {
                 .cfg()
                 .edges
                 .metrics
-                .try_idx_of(&balancing_cfg.workload_id)?;
+                .try_idx_of(&balancing_cfg.monitoring.workload_id)?;
             routing_cfg.alphas[*workload_idx] = 0.0;
 
             // -> and copy route-pairs-file into the results-directory
@@ -310,6 +310,8 @@ mod simulation_pipeline {
         // reverse this vector to make splice efficient
         let mut route_pairs = io::routing::Parser::parse(&routing_cfg)?;
         route_pairs.reverse();
+        let mut avg_num_of_found_paths = 0;
+        let num_of_route_pairs = route_pairs.len();
 
         // simple init-logging
 
@@ -329,6 +331,11 @@ mod simulation_pipeline {
                 for edge_idx in outcome.path_edges {
                     abs_workloads[*edge_idx] += 1;
                 }
+                // remember for avg later
+                outcome
+                    .num_of_found_paths
+                    .iter()
+                    .for_each(|k| avg_num_of_found_paths += k);
 
                 progress_bar.add(outcome.num_routes);
                 // print and update progress
@@ -357,6 +364,11 @@ mod simulation_pipeline {
                 break;
             }
         }
+
+        info!(
+            "Found {} paths per exploration on average.",
+            avg_num_of_found_paths / num_of_route_pairs
+        );
 
         // update graph with new values
         defaults::balancing::update_new_metric(

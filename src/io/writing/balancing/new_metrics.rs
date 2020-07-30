@@ -44,7 +44,7 @@ impl Writer {
 
         // write header
 
-        writeln!(writer, "edge-id new_metrics")?;
+        writeln!(writer, "edge-id new_metric")?;
 
         // write data
 
@@ -52,7 +52,7 @@ impl Writer {
             .cfg()
             .edges
             .metrics
-            .try_idx_of(&balancing_cfg.workload_id)?;
+            .try_idx_of(&balancing_cfg.monitoring.workload_id)?;
         let metrics = graph.metrics();
 
         for edge_idx in fwd_edges
@@ -61,7 +61,13 @@ impl Writer {
         {
             let edge_id = fwd_edges.id(edge_idx);
 
-            writeln!(writer, "{} {}", edge_id, metrics[edge_idx][*workload_idx])?;
+            let mut new_metric = metrics[edge_idx][*workload_idx];
+            if graph.cfg().edges.metrics.are_normalized {
+                if let Some(mean) = metrics.mean(workload_idx) {
+                    new_metric *= mean;
+                }
+            }
+            writeln!(writer, "{} {}", edge_id, new_metric)?;
         }
 
         Ok(())

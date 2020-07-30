@@ -68,6 +68,15 @@ impl Writer {
                 })
                 .collect::<Vec<_>>()
         )?;
+        writeln!(
+            writer,
+            "# Edges' metrics are {} by their mean.",
+            if writing_cfg.edges.is_denormalizing {
+                "not normalized"
+            } else {
+                "normalized"
+            }
+        )?;
 
         writeln!(writer, "")?;
 

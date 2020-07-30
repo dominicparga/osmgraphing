@@ -146,6 +146,7 @@ impl Graph {
         MetricAccessor {
             cfg: &self.cfg,
             metrics: &self.metrics,
+            means: self.means.as_ref(),
         }
     }
 
@@ -153,6 +154,7 @@ impl Graph {
         MetricAccessorMut {
             cfg: &self.cfg,
             metrics: &mut self.metrics,
+            means: self.means.as_mut(),
         }
     }
 }
@@ -636,11 +638,16 @@ impl<'a> EdgeAccessor<'a> {
 pub struct MetricAccessor<'a> {
     cfg: &'a Config,
     metrics: &'a Vec<DimVec<f64>>,
+    means: Option<&'a DimVec<f64>>,
 }
 
 impl<'a> MetricAccessor<'a> {
     pub fn dim(&self) -> usize {
         self.cfg.edges.metrics.units.len()
+    }
+
+    pub fn mean(&self, idx: MetricIdx) -> Option<f64> {
+        Some(self.means?[*idx])
     }
 }
 
@@ -682,11 +689,20 @@ impl<'a> Index<&EdgeIdx> for &MetricAccessor<'a> {
 pub struct MetricAccessorMut<'a> {
     cfg: &'a Config,
     metrics: &'a mut Vec<DimVec<f64>>,
+    means: Option<&'a mut DimVec<f64>>,
 }
 
 impl<'a> MetricAccessorMut<'a> {
     pub fn dim(&self) -> usize {
         self.cfg.edges.metrics.units.len()
+    }
+
+    pub fn mean(&self, idx: MetricIdx) -> Option<f64> {
+        Some(self.means.as_ref()?[*idx])
+    }
+
+    pub fn means(&mut self) -> Option<&mut DimVec<f64>> {
+        Some(self.means.as_mut()?)
     }
 }
 

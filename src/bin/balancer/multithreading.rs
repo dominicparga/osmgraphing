@@ -215,6 +215,7 @@ pub struct Work {
 
 pub struct Outcome {
     pub path_edges: Vec<EdgeIdx>,
+    pub num_of_found_paths: Vec<usize>,
     pub num_routes: usize,
 }
 
@@ -258,6 +259,7 @@ impl Worker {
                 self.idx,
                 Outcome {
                     path_edges: Vec::new(),
+                    num_of_found_paths: Vec::new(),
                     num_routes: 0,
                 },
             ))
@@ -276,7 +278,7 @@ impl Worker {
                 let num_routes = work.route_pairs.len();
 
                 // do work
-                let path_edges = self.work_off(work);
+                let (path_edges, num_of_found_paths) = self.work_off(work);
 
                 // return outcome
                 self.outcome_tx
@@ -284,6 +286,7 @@ impl Worker {
                         self.idx,
                         Outcome {
                             path_edges,
+                            num_of_found_paths,
                             num_routes,
                         },
                     ))
@@ -295,8 +298,9 @@ impl Worker {
         Ok(handle)
     }
 
-    fn work_off(&mut self, work: Work) -> Vec<EdgeIdx> {
+    fn work_off(&mut self, work: Work) -> (Vec<EdgeIdx>, Vec<usize>) {
         let mut path_edges = Vec::new();
+        let mut num_of_found_paths = Vec::new();
         let mut rng = rand_pcg::Pcg32::seed_from_u64(work.seed);
 
         for (route_pair, count) in work.route_pairs {
@@ -322,6 +326,8 @@ impl Worker {
                 found_paths.len()
             );
 
+            num_of_found_paths.push(found_paths.len());
+
             // Update next workload by looping over all found routes
             // -> Routes have to be flattened,
             // -> or shortcuts will lead to wrong best-paths, because counts won't be cumulated.
@@ -345,6 +351,7 @@ impl Worker {
         }
 
         path_edges.shrink_to_fit();
-        path_edges
+        num_of_found_paths.shrink_to_fit();
+        (path_edges, num_of_found_paths)
     }
 }

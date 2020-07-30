@@ -238,7 +238,28 @@ impl ConvexHullExplorator {
                     // If Dijkstra finds a better path for this alpha-vector,
                     // the path's cost is part of the convex-hull.
 
-                    let (rows, b) = ConvexHullExplorator::create_linear_system(&cell, &query);
+                    let (rows, b) = if let Some((rows, b)) =
+                        ConvexHullExplorator::create_linear_system(&cell, &query)
+                    {
+                        (rows, b)
+                    } else {
+                        warn!("graph-dim:  {}", query.graph_dim);
+                        warn!(
+                            "considered: {}",
+                            query
+                                .is_metric_considered
+                                .iter()
+                                .filter(|&ism| *ism)
+                                .count()
+                        );
+                        warn!("cell-verts: {}", cell.vertices().len());
+                        warn!(
+                            "{}{}",
+                            "The linear system has less rows than the convex-hull has dimensions.",
+                            "This doesn't lead to a unique solution.",
+                        );
+                        continue;
+                    };
 
                     // calculate alphas
                     query.routing_cfg.alphas =
@@ -429,7 +450,10 @@ impl ConvexHullExplorator {
         }
     }
 
-    fn create_linear_system(cell: &Cell, query: &Query) -> (DimVec<DimVec<f64>>, DimVec<f64>) {
+    fn create_linear_system(
+        cell: &Cell,
+        query: &Query,
+    ) -> Option<(DimVec<DimVec<f64>>, DimVec<f64>)> {
         trace!("Create linear system with paths:");
         for vertex in cell.vertices() {
             trace!("  {}", vertex.path);
@@ -473,16 +497,12 @@ impl ConvexHullExplorator {
                 rows.push(smallvec![1.0; query.graph_dim]);
                 b.push(1.0);
             }
-            _ => panic!(
-                "{}{}",
-                "The linear system has less rows than the convex-hull has dimensions.",
-                "This doesn't lead to a unique solution."
-            ),
+            _ => return None,
         }
 
         trace!("rows = {:?}", rows);
         trace!("b = {:?}", b);
-        (rows, b)
+        Some((rows, b))
     }
 
     fn update(

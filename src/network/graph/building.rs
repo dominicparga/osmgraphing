@@ -1362,11 +1362,7 @@ impl GraphBuilder {
 
             // if any mean is 0.0 -> error
 
-            if means
-                .iter()
-                .map(|mean| Approx(mean))
-                .any(|approx_mean| approx_mean == Approx(&0.0))
-            {
+            if means.iter().any(|mean| Approx(mean) == Approx(&0.0)) {
                 return Err(err::Msg::from(
                     "A metric-mean is zero, hence no normalization can be done.",
                 ));
@@ -1378,7 +1374,12 @@ impl GraphBuilder {
                 edge_metrics
                     .iter_mut()
                     .enumerate()
-                    .for_each(|(idx, metric)| *metric /= means[idx]);
+                    .for_each(|(metric_idx, metric)| {
+                        *metric /= means[metric_idx];
+                        if Approx(*metric) == Approx(0.0) {
+                            *metric = defaults::accuracy::F64_ABS
+                        }
+                    });
             }
 
             // and remember means

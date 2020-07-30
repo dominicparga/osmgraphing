@@ -58,12 +58,13 @@ pub mod routing {
 
 pub mod balancing {
     use crate::{
+        approximating::Approx,
         configs,
         helpers::err,
         network::{EdgeIdx, Graph},
     };
     use kissunits::distance::Kilometers;
-    use log::warn;
+    use log::{info, warn};
     use std::cmp::max;
 
     // A high work-size could be less productive since less dynamic:
@@ -97,6 +98,7 @@ pub mod balancing {
         max(1, (km / Kilometers(0.0075)) as u64)
     }
 
+    /// This is only called once per balancer-iteration or undefined behaviour occurs!
     pub fn update_new_metric(
         abs_workloads: &Vec<usize>,
         graph: &mut Graph,
@@ -108,20 +110,31 @@ pub mod balancing {
         // so the influence of the speed-limit would be increased indirectly.
         // But that's the point, the new metric should balance.
 
-        let workload_idx = graph.cfg().edges.metrics.idx_of(&balancing_cfg.workload_id);
+        let workload_idx = graph
+            .cfg()
+            .edges
+            .metrics
+            .idx_of(&balancing_cfg.monitoring.workload_id);
 
         let egde_iter = (0..graph.fwd_edges().count()).into_iter().map(EdgeIdx);
 
+        let metrics_are_normalized = graph.cfg().edges.metrics.are_normalized;
+        let mut new_metrics = Vec::with_capacity(graph.fwd_edges().count());
         let mut metrics = graph.metrics_mut();
 
         let mut zero_metric_msg = None;
 
-        for edge_idx in egde_iter {
+        for edge_idx in egde_iter.clone() {
             let abs_workload = abs_workloads[*edge_idx];
 
             let mut new_metric = {
                 let new_workload = abs_workload as f64;
-                let old_workload = metrics[edge_idx][*workload_idx];
+                let mut old_workload = metrics[edge_idx][*workload_idx];
+                if metrics_are_normalized {
+                    if let Some(mean) = metrics.mean(workload_idx) {
+                        old_workload *= mean;
+                    }
+                }
 
                 match balancing_cfg.optimization {
                     configs::balancing::Optimization::ExplicitEuler { correction } => {
@@ -139,7 +152,7 @@ pub mod balancing {
             }
 
             // if new metric is 0 (or lower)
-            if !(new_metric > 0.0) {
+            if Approx(new_metric) <= Approx(0.0) {
                 // if no error is thrown
                 // -> show one warning after loop
                 // -> remember message
@@ -157,12 +170,44 @@ pub mod balancing {
                 }
             }
 
-            metrics[edge_idx][*workload_idx] = new_metric;
+            // Attention! This new metric is not checked for normalization yet!
+            new_metrics.push(new_metric);
         }
 
         // warn if zero-metric occurred
         if let Some(msg) = zero_metric_msg {
             warn!("{}", msg);
+        }
+
+        // normalize new metrics
+
+        if metrics_are_normalized {
+            // compute new mean
+
+            let mean = new_metrics
+                .iter()
+                .fold(0.0, |acc, new_metric| acc + new_metric)
+                / (new_metrics.len() as f64);
+            if Approx(mean) == Approx(0.0) {
+                return Err(err::Msg::from(
+                    "The new workload-metric's mean is zero, hence no normalization can be done.",
+                ));
+            }
+
+            if let Some(means) = metrics.means() {
+                means[*workload_idx] = mean;
+                info!("New workload-metric has mean: {}", means[*workload_idx]);
+            }
+
+            // update graph's metric
+
+            for edge_idx in egde_iter {
+                metrics[edge_idx][*workload_idx] = new_metrics[*edge_idx] / mean;
+            }
+        } else {
+            for edge_idx in egde_iter {
+                metrics[edge_idx][*workload_idx] = new_metrics[*edge_idx];
+            }
         }
 
         Ok(())

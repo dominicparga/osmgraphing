@@ -260,7 +260,7 @@ class Data():
                 dst_lat = float(row['dst_lat'])
                 dst_lon = float(row['dst_lon'])
                 kilometers = float(row['kilometers'])
-                lane_count = float(row['lane_count'])
+                lane_count = float(row['lane-count'])
 
                 edges_info.append((
                     edge_id,
