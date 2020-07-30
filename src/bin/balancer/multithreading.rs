@@ -275,21 +275,13 @@ impl Worker {
                         break;
                     }
                 };
-                let num_routes = work.route_pairs.len();
 
                 // do work
-                let (path_edges, num_of_found_paths) = self.work_off(work);
+                let outcome = self.work_off(work);
 
                 // return outcome
                 self.outcome_tx
-                    .send((
-                        self.idx,
-                        Outcome {
-                            path_edges,
-                            num_of_found_paths,
-                            num_routes,
-                        },
-                    ))
+                    .send((self.idx, outcome))
                     .expect("Sending outcome should always work.")
             }
             Ok(())
@@ -298,9 +290,10 @@ impl Worker {
         Ok(handle)
     }
 
-    fn work_off(&mut self, work: Work) -> (Vec<EdgeIdx>, Vec<usize>) {
+    fn work_off(&mut self, work: Work) -> Outcome {
         let mut path_edges = Vec::new();
         let mut num_of_found_paths = Vec::new();
+        let num_routes = work.route_pairs.len();
         let mut rng = rand_pcg::Pcg32::seed_from_u64(work.seed);
 
         for (route_pair, count) in work.route_pairs {
@@ -352,6 +345,11 @@ impl Worker {
 
         path_edges.shrink_to_fit();
         num_of_found_paths.shrink_to_fit();
-        (path_edges, num_of_found_paths)
+
+        Outcome {
+            path_edges,
+            num_of_found_paths,
+            num_routes,
+        }
     }
 }
