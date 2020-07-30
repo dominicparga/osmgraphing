@@ -47,7 +47,6 @@ multi-ch-constructor:
   fmi-graph: 'resources/isle_of_man_2020-03-14/graph_for_ch.fmi'
   contracted-graph: 'resources/isle_of_man_2020-03-14/graph.ch.fmi'
   dimension: 2
-  minimum-cost: 0.000001
   cost-accuracy: 0.000001
   # This is a string, not a float, because it is provided as cmdline-argument
   contraction-ratio: "99.8"

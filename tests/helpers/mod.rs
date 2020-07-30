@@ -33,10 +33,18 @@ pub mod defaults {
             #[cfg(feature = "custom")]
             pub mod stuttgart_regbez {
                 pub const DIR: &str = "resources/stuttgart-regbez_2019-09-07";
-                pub const URL: &str = "https://firebasestorage.googleapis.com/v0/b/osmgraphing.appspot.com/o/stuttgart-regbez_2019-09-07.tar.xz?alt=media&token=ad181f8c-f23a-4bfa-9d2d-00e5acfbb182";
+                pub const URL: &str = "TODO: DEPRECATED URL https://firebasestorage.googleapis.com/v0/b/osmgraphing.appspot.com/o/stuttgart-regbez_2019-09-07.tar.xz?alt=media&token=ad181f8c-f23a-4bfa-9d2d-00e5acfbb182";
                 pub const FMI_YAML: &str = "resources/stuttgart-regbez_2019-09-07/fmi.yaml";
                 pub const CH_FMI_YAML: &str = "resources/stuttgart-regbez_2019-09-07/ch.fmi.yaml";
                 pub const OSM_PBF_YAML: &str = "resources/stuttgart-regbez_2019-09-07/osm.pbf.yaml";
+            }
+
+            #[cfg(feature = "custom")]
+            pub mod saarland {
+                pub const DIR: &str = "resources/saarland_2020-07-30";
+                pub const URL: &str = "<TODO: NO URL YET>";
+                pub const CH_FMI_YAML: &str = "resources/saarland_2020-07-30/ch.fmi.yaml";
+                pub const OSM_PBF_YAML: &str = "resources/saarland_2020-07-30/osm.pbf.yaml";
             }
 
             pub mod simple_stuttgart {
