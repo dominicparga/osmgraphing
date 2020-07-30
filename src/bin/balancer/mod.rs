@@ -376,8 +376,8 @@ mod simulation_pipeline {
         }
 
         info!(
-            "Found {} paths per exploration on average.",
-            avg_num_of_found_paths / num_of_route_pairs
+            "On average, {} path(s) per exploration were found.",
+            (1 + 2 * avg_num_of_found_paths / num_of_route_pairs) / 2
         );
 
         // update graph with new values
