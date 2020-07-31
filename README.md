@@ -11,7 +11,7 @@
 
 [![License][github/self/license/badge]][github/self/license]
 
-[<img title="Balancing Saarland" src="resources/saarland_2020-07-30/balancing/workloads_0_to_2.gif" alt="Balancing Saarland" />](resources/saarland_2020-07-30/balancing/workloads_0_to_2.gif)
+[<img title="Balancing Saarland" src="resources/saarland_2020-07-30/balancing/workloads.gif" alt="Balancing Saarland" />](resources/saarland_2020-07-30/balancing/workloads.gif)
 > This GIF shows, how the balancing improves the distribution of `10,000` paths over the network of the German state `Saarland`.
 > New paths from `s` to `t` are not worse than `25 %` than the optimal path from `s` to `t`, with respect to travel-duration (so `55 min` becomes less than `1 h 10 min` in worst-case).
 
