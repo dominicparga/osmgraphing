@@ -351,8 +351,10 @@ $RECYCLE.BIN/
 # Any map of stuttgart-regbez
 /resources/stuttgart-regbez_[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]/
 /resources/stuttgart-regbez_[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9].tar.xz
+
 # Any map of saarland
+# but not the GIF
 /resources/saarland_[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]/*
 !/resources/saarland_[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]/balancing
 /resources/saarland_[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]/balancing/*
-!resources/saarland_[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]/balancing/workloads_0_to_2.gif
+!resources/saarland_[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]/balancing/workloads.gif
