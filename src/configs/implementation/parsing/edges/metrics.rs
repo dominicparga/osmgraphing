@@ -12,6 +12,7 @@ use serde::Deserialize;
 
 #[derive(Debug)]
 pub struct Config {
+    pub are_normalized: bool,
     pub units: DimVec<UnitInfo>,
     pub ids: DimVec<SimpleId>,
 }

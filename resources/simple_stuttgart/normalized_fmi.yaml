@@ -1,5 +1,5 @@
 parsing:
-  map-file: 'resources/bidirectional_bait/graph.fmi'
+  map-file: 'resources/simple_stuttgart/graph.fmi'
   vehicles:
     category: 'Car'
     are_drivers_picky: false
@@ -8,6 +8,7 @@ parsing:
   - metric: { unit: 'Latitude', id: 'latitude' }
   - metric: { unit: 'Longitude', id: 'longitude' }
   edges:
+    will_normalize_metrics_by_mean: true
     data:
     - meta: { info: 'SrcId', id: 'src-id' }
     - meta: { info: 'DstId', id: 'dst-id' }
@@ -25,5 +26,9 @@ parsing:
         b: { unit: 'KilometersPerHour', id: 'kmph' }
 writing:
   route-pairs:
-    file: 'resources/bidirectional_bait/all_25.route-pairs'
+    file: 'resources/simple_stuttgart/all_31.route-pairs'
     random_or_all: { max_count: 100 }
+# needed for examples/dijkstra
+routing:
+  metrics:
+  - id: 'kilometers'

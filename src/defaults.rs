@@ -39,11 +39,15 @@ pub mod parsing {
     // provided by multi-ch-constructor
     pub const NO_SHORTCUT_IDX: &str = "-1";
     pub const IS_USING_SHORTCUTS: bool = false;
+
+    pub const WILL_NORMALIZE_METRICS_BY_MEAN: bool = false;
 }
 
 pub mod writing {
     pub use super::parsing::NO_SHORTCUT_IDX;
     pub const IGNORE_STR: &str = "_";
+
+    pub const WILL_DENORMALIZE_METRICS_BY_MEAN: bool = false;
 }
 
 pub mod routing {
@@ -58,12 +62,13 @@ pub mod routing {
 
 pub mod balancing {
     use crate::{
+        approximating::Approx,
         configs,
         helpers::err,
         network::{EdgeIdx, Graph},
     };
     use kissunits::distance::Kilometers;
-    use log::warn;
+    use log::{info, warn};
     use std::cmp::max;
 
     // A high work-size could be less productive since less dynamic:
@@ -93,95 +98,135 @@ pub mod balancing {
     /// Nagel-Schreckenberg-Model -> `7.5 m` space for every vehicle
     ///
     /// Returns at least 1
-    pub fn calc_num_vehicles(km: Kilometers) -> u64 {
+    pub fn _calc_num_vehicles(km: Kilometers) -> u64 {
         max(1, (km / Kilometers(0.0075)) as u64)
     }
 
+    /// This is only called once per balancer-iteration or undefined behaviour occurs!
     pub fn update_new_metric(
+        iteration: usize,
         abs_workloads: &Vec<usize>,
         graph: &mut Graph,
         balancing_cfg: &configs::balancing::Config,
     ) -> err::Feedback {
-        let distance_idx = graph.cfg().edges.metrics.idx_of(&balancing_cfg.distance_id);
-        let lane_count_idx = graph
+        // No capacity is calculated, because the new metric should smoothen against speed-limit.
+        // A higher speed-limit kind of implies more popularity.
+        // With normalization by capacity, this popularity would be weaken,
+        // so the influence of the speed-limit would be increased indirectly.
+        // But that's the point, the new metric should balance.
+
+        let workload_idx = graph
             .cfg()
             .edges
             .metrics
-            .idx_of(&balancing_cfg.lane_count_id);
-        let workload_idx = graph.cfg().edges.metrics.idx_of(&balancing_cfg.workload_id);
+            .idx_of(&balancing_cfg.monitoring.workload_id);
 
-        let egde_iter = (0..graph.fwd_edges().count()).into_iter().map(EdgeIdx);
-        let distance_unit = graph.cfg().edges.metrics.units[*distance_idx];
-
+        let mut new_metrics: Vec<_> = abs_workloads.iter().map(|&w| w as f64).collect();
         let mut metrics = graph.metrics_mut();
 
-        let mut zero_metric_msg = None;
+        // normalize new workloads
 
-        for edge_idx in egde_iter {
-            // read metrics-data from graph
-            let (raw_distance, lane_count) = {
-                let tmp = &metrics[edge_idx];
-                (tmp[*distance_idx], tmp[*lane_count_idx] as u64)
-            };
-            let abs_workload = abs_workloads[*edge_idx];
+        // compute new mean
 
-            // use correct unit for distance
-            let distance = {
-                // convert value to meters
-                let raw_value = distance_unit.convert(
-                    &configs::parsing::edges::metrics::UnitInfo::Kilometers,
-                    raw_distance,
-                );
-                Kilometers(raw_value)
-            };
+        let mean: f64 = new_metrics.iter().sum::<f64>() / (new_metrics.len() as f64);
+        if Approx(mean) == Approx(0.0) {
+            return Err(err::Msg::from(
+                "The new workload-metric's mean is zero, hence no normalization can be done.",
+            ));
+        }
 
-            let num_vehicles = calc_num_vehicles(distance);
-            let capacity = lane_count * num_vehicles;
+        // normalize abs-workloads with new computed mean
 
-            let mut new_metric = {
-                let new_workload = abs_workload as f64 / (capacity as f64);
-                let old_workload = metrics[edge_idx][*workload_idx];
+        for new_metric in &mut new_metrics {
+            *new_metric /= mean;
+        }
+
+        // now: new_metrics has all new metrics, normalized by its own workloads' mean
+
+        // update
+
+        for (edge_idx, new_metric) in new_metrics.iter_mut().enumerate() {
+            *new_metric = {
+                let old_metric = metrics[EdgeIdx(edge_idx)][*workload_idx];
 
                 match balancing_cfg.optimization {
                     configs::balancing::Optimization::ExplicitEuler { correction } => {
-                        old_workload + (new_workload - old_workload) * correction
+                        old_metric + (*new_metric - old_metric) * correction
+                    }
+                    configs::balancing::Optimization::Averaging => {
+                        (iteration as f64 * old_metric + *new_metric) / ((iteration + 1) as f64)
                     }
                 }
             };
-
-            // set new_metric to minimum (if specified)
-
-            if let Some(min_new_metric) = balancing_cfg.min_new_metric {
-                if new_metric < min_new_metric {
-                    new_metric = min_new_metric;
-                }
-            }
-
-            // if new metric is 0 (or lower)
-            if !(new_metric > 0.0) {
-                // if no error is thrown
-                // -> show one warning after loop
-                // -> remember message
-                zero_metric_msg = Some(format!(
-                    "{}{}",
-                    "The new metric contains zero-values,",
-                    " which could lead to many shortcuts or an inefficient Dijkstra.",
-                ));
-
-                // if this should be treated as an error -> immediately stop
-                if balancing_cfg.is_err_when_metric_is_zero {
-                    return Err(err::Msg::from(
-                        zero_metric_msg.expect("The variable 'zero_metric_msg' should be some."),
-                    ));
-                }
-            }
-
-            metrics[edge_idx][*workload_idx] = new_metric;
         }
 
-        // warn if zero-metric occurred
-        if let Some(msg) = zero_metric_msg {
-            warn!("{}", msg);
+        // set new_metric to minimum (if specified)
+
+        if let Some(min_new_metric) = balancing_cfg.min_new_metric {
+            for new_metric in &mut new_metrics {
+                if Approx(*new_metric) <= Approx(min_new_metric) {
+                    *new_metric = min_new_metric;
+                }
+            }
+        } else {
+            let mut zero_metric_msg = None;
+
+            for new_metric in &new_metrics {
+                // if new metric is 0 (or lower)
+                if Approx(new_metric) <= Approx(&0.0) {
+                    // if no error is thrown
+                    // -> show one warning after loop
+                    // -> remember message
+                    zero_metric_msg = Some(format!(
+                        "{}{}",
+                        "The new metric contains zero-values,",
+                        " which could lead to many shortcuts or an inefficient Dijkstra.",
+                    ));
+
+                    // if this should be treated as an error -> immediately stop
+                    if balancing_cfg.is_err_when_metric_is_zero {
+                        return Err(err::Msg::from(
+                            zero_metric_msg
+                                .expect("The variable 'zero_metric_msg' should be some."),
+                        ));
+                    }
+                }
+            }
+
+            // warn if zero-metric occurred
+            if let Some(msg) = zero_metric_msg {
+                warn!("{}", msg);
+            }
+        }
+
+        // normalize again
+
+        // compute new mean
+
+        let mean: f64 = new_metrics.iter().sum::<f64>() / (new_metrics.len() as f64);
+        if Approx(mean) <= Approx(0.0) {
+            return Err(err::Msg::from(
+                "The new workload-metric's mean is zero, hence no normalization can be done.",
+            ));
+        }
+
+        // normalize abs-workloads with new computed mean
+
+        for new_metric in &mut new_metrics {
+            *new_metric /= mean;
+        }
+
+        // update graph's metric's mean
+
+        if let Some(means) = metrics.means() {
+            means[*workload_idx] = mean;
+            info!("New workload-metric has mean: {}", means[*workload_idx]);
+        }
+
+        // update graph's metric
+
+        for (edge_idx, new_metric) in new_metrics.into_iter().enumerate() {
+            metrics[EdgeIdx(edge_idx)][*workload_idx] = new_metric;
         }
 
         Ok(())

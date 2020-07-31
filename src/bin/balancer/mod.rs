@@ -1,4 +1,4 @@
-use log::{error, info};
+use log::{debug, error, info};
 use osmgraphing::{
     configs,
     helpers::{err, init_logging},
@@ -95,7 +95,7 @@ fn run(args: CmdlineArgs) -> err::Feedback {
 mod simulation_pipeline {
     use super::multithreading;
     use chrono;
-    use log::info;
+    use log::{debug, info};
     use osmgraphing::{configs, defaults, helpers::err, io, multi_ch_constructor, network::Graph};
     use progressing::{mapping::Bar as MappingBar, Baring};
     use rand::Rng;
@@ -198,7 +198,6 @@ mod simulation_pipeline {
         mchc_cfg.fmi_graph = iter_dir.join(mchc_cfg.fmi_graph);
         mchc_cfg.ch_fmi_graph = iter_dir.join(mchc_cfg.ch_fmi_graph);
 
-        mchc_cfg.min_cost = defaults::accuracy::F64_ABS;
         mchc_cfg.cost_accuracy = defaults::accuracy::F64_ABS;
 
         multi_ch_constructor::build(&mchc_cfg)?;
@@ -282,11 +281,21 @@ mod simulation_pipeline {
                 .cfg()
                 .edges
                 .metrics
-                .try_idx_of(&balancing_cfg.workload_id)?;
+                .try_idx_of(&balancing_cfg.monitoring.workload_id)?;
             routing_cfg.alphas[*workload_idx] = 0.0;
 
             // -> and copy route-pairs-file into the results-directory
-            fs::copy(old_route_pairs_file, &new_route_pairs_file)?;
+            match fs::copy(&old_route_pairs_file, &new_route_pairs_file) {
+                Ok(_) => (),
+                Err(e) => {
+                    return Err(format!(
+                        "Couldn't copy {} due to error: {}",
+                        old_route_pairs_file.display(),
+                        e
+                    )
+                    .into())
+                }
+            };
         }
 
         routing_cfg.route_pairs_file = Some(new_route_pairs_file);
@@ -310,11 +319,14 @@ mod simulation_pipeline {
         // reverse this vector to make splice efficient
         let mut route_pairs = io::routing::Parser::parse(&routing_cfg)?;
         route_pairs.reverse();
+        let mut avg_num_of_found_paths = 0;
+        // not routes, because progress can be shown without it (though it is less accurate)
+        let num_of_route_pairs = route_pairs.len();
 
         // simple init-logging
 
         info!("START Executing routes and analyzing workload",);
-        let mut progress_bar = MappingBar::with_range(0, route_pairs.len()).timed();
+        let mut progress_bar = MappingBar::with_range(0, num_of_route_pairs).timed();
 
         // find all routes and count density on graph
 
@@ -329,12 +341,24 @@ mod simulation_pipeline {
                 for edge_idx in outcome.path_edges {
                     abs_workloads[*edge_idx] += 1;
                 }
+                // remember for avg later
+                outcome
+                    .num_of_found_paths
+                    .iter()
+                    .for_each(|k| avg_num_of_found_paths += k);
 
-                progress_bar.add(outcome.num_routes);
+                // num_of_routes is ignored here
+                progress_bar.add(outcome.num_of_route_pairs);
                 // print and update progress
                 if progress_bar.has_progressed_significantly() {
                     progress_bar.remember_significant_progress();
                     info!("{}", progress_bar);
+                    debug!(
+                        "{}{}{}",
+                        "On average over all route-pairs so far, ",
+                        (1 + 2 * avg_num_of_found_paths / progress_bar.progress()) / 2,
+                        " path(s) per exploration were found.",
+                    );
                 }
 
                 // send new work
@@ -358,8 +382,14 @@ mod simulation_pipeline {
             }
         }
 
+        info!(
+            "On average, {} path(s) per exploration were found.",
+            (1 + 2 * avg_num_of_found_paths / num_of_route_pairs) / 2
+        );
+
         // update graph with new values
         defaults::balancing::update_new_metric(
+            iter,
             &abs_workloads,
             Arc::get_mut(ch_graph).expect(
                 "Mutable access to graph should be possible, since Arc should be the only owner.",
@@ -438,8 +468,8 @@ fn parse_graph(parsing_cfg: configs::parsing::Config) -> err::Result<Graph> {
         now.elapsed().as_micros(),
     );
     info!("");
-    info!("{}", graph);
-    info!("");
+    debug!("{}", graph);
+    debug!("");
 
     Ok(graph)
 }

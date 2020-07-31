@@ -9,10 +9,12 @@ parsing:
   - metric: { unit: 'Latitude', id: 'latitude' }
   - metric: { unit: 'Longitude', id: 'longitude' }
   edges:
-  - meta: { info: 'SrcId', id: 'src-id' }
-  - meta: { info: 'DstId', id: 'dst-id' }
-  - metric: { unit: 'KilometersPerHour', id: 'kmph' }
-  - metric: { unit: 'LaneCount', id: 'lane-count' }
+    will_normalize_metrics_by_mean: true
+    data:
+    - meta: { info: 'SrcId', id: 'src-id' }
+    - meta: { info: 'DstId', id: 'dst-id' }
+    - metric: { unit: 'KilometersPerHour', id: 'kmph' }
+    - metric: { unit: 'LaneCount', id: 'lane-count' }
   generating:
     nodes:
     - meta: { info: 'NodeIdx', id: 'node-idx' }
@@ -31,13 +33,13 @@ parsing:
     - custom:
         id: 'workload'
         unit: 'F64'
-        default: 0.0
+        default: 1.0
 # define balancing-configs
 balancing:
   seed: 42
   number_of_threads: 4
   results-dir: 'custom/results/isle_of_man_2020-03-14'
-  number_of_metric-updates: 10
+  number_of_metric-updates: 5
   iter-0-cfg: 'resources/isle_of_man_2020-03-14/balancing/init.yaml'
   iter-i-cfg: 'resources/isle_of_man_2020-03-14/balancing/iteration.yaml'
   multi-ch-constructor:
@@ -53,17 +55,19 @@ balancing:
     is_printing_osm-ids: true
     # If true, external edge-ids are piped through the multi-ch-constructor.
     is_using_external_edge-ids: true
-  metric-ids:
+  monitoring:
     distance: 'kilometers'
     lane-count: 'lane-count'
     workload: 'workload'
-  explicit_euler:
-    # old + (new - old) * correction
-    correction: 0.3
+    will_denormalize_metrics_by_mean: false
   # important to keep non-zero workloads (if generated non-zero):
   # - zero-edges creates more uninteresting shortcuts -> less performance
   # - zero-edges makes Dijkstra running longer/inefficiently
   min_new_metric: 0.1
+  optimizing_with:
+    # (iter * old + new) / (iter + 1)
+    # Note, that iter is 0 in the first iteration.
+    averaging
 # define routing
 routing:
   route-pairs-file: 'resources/isle_of_man_2020-03-14/10_000.route-pairs'
@@ -71,7 +75,7 @@ routing:
   metrics:
   - id: 'kilometers'
   - id: 'hours'
-    tolerated-scale: inf
+    tolerated-scale: 1.5
   - id: 'workload' # gets deactivated in first iteration
 # write balanced graph after final iteration
 writing:
@@ -84,6 +88,7 @@ writing:
     - id: 'longitude'
     edges:
       with_shortcuts: false
+      will_denormalize_metrics_by_mean: false
       ids:
       - id: 'src-id'
       - id: 'dst-id'

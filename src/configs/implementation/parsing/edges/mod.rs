@@ -1,6 +1,6 @@
 use crate::{
     configs::{parsing::generating, SimpleId},
-    defaults::capacity::DimVec,
+    defaults::{self, capacity::DimVec},
     helpers::err,
 };
 use serde::Deserialize;
@@ -80,6 +80,9 @@ impl TryFrom<ProtoConfig> for Config {
         Ok(Config {
             categories,
             metrics: metrics::Config {
+                are_normalized: proto_cfg
+                    .are_metrics_normalized
+                    .unwrap_or(defaults::parsing::WILL_NORMALIZE_METRICS_BY_MEAN),
                 units: metric_units,
                 ids: metric_ids,
             },
@@ -170,13 +173,15 @@ impl From<generating::edges::MetaInfo> for MetaInfo {
 #[derive(Debug, Deserialize)]
 #[serde(from = "RawConfig", deny_unknown_fields)]
 pub struct ProtoConfig {
+    pub are_metrics_normalized: Option<bool>,
     pub categories: Vec<ProtoCategory>,
 }
 
 impl From<RawConfig> for ProtoConfig {
     fn from(raw_cfg: RawConfig) -> ProtoConfig {
         ProtoConfig {
-            categories: raw_cfg.0.into_iter().map(ProtoCategory::from).collect(),
+            are_metrics_normalized: raw_cfg.are_metrics_normalized,
+            categories: raw_cfg.data.into_iter().map(ProtoCategory::from).collect(),
         }
     }
 }
@@ -234,7 +239,11 @@ impl From<RawMetaInfo> for ProtoMetaInfo {
 
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
-pub struct RawConfig(pub Vec<RawCategory>);
+pub struct RawConfig {
+    #[serde(rename = "will_normalize_metrics_by_mean")]
+    are_metrics_normalized: Option<bool>,
+    data: Vec<RawCategory>,
+}
 
 #[derive(Clone, Debug, Deserialize)]
 #[serde(rename_all = "lowercase")]

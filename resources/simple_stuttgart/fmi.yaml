@@ -8,10 +8,11 @@ parsing:
   - metric: { unit: 'Latitude', id: 'latitude' }
   - metric: { unit: 'Longitude', id: 'longitude' }
   edges:
-  - meta: { info: 'SrcId', id: 'src-id' }
-  - meta: { info: 'DstId', id: 'dst-id' }
-  - metric: { unit: 'Meters', id: 'meters' }
-  - metric: { unit: 'KilometersPerHour', id: 'kmph' }
+    data:
+    - meta: { info: 'SrcId', id: 'src-id' }
+    - meta: { info: 'DstId', id: 'dst-id' }
+    - metric: { unit: 'Meters', id: 'meters' }
+    - metric: { unit: 'KilometersPerHour', id: 'kmph' }
   generating:
     nodes: []
     edges:

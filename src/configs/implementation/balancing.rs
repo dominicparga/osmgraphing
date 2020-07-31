@@ -1,10 +1,9 @@
 use crate::{configs::SimpleId, defaults, io::SupportingFileExts, multi_ch_constructor};
+use serde::Deserialize;
 use std::{
     fs::OpenOptions,
     path::{Path, PathBuf},
 };
-pub mod metrics;
-use serde::Deserialize;
 
 #[derive(Clone, Debug)]
 pub struct Config {
@@ -13,9 +12,7 @@ pub struct Config {
     pub num_iter: usize,
     pub iter_0_cfg: PathBuf,
     pub iter_i_cfg: PathBuf,
-    pub workload_id: SimpleId,
-    pub lane_count_id: SimpleId,
-    pub distance_id: SimpleId,
+    pub monitoring: MonitoringConfig,
     pub optimization: Optimization,
     pub num_threads: usize,
     pub seed: u64,
@@ -81,9 +78,7 @@ impl From<ProtoConfig> for Config {
             num_iter: proto_cfg.num_metric_updates + 1,
             iter_0_cfg: proto_cfg.iter_0_cfg,
             iter_i_cfg: proto_cfg.iter_i_cfg,
-            workload_id: proto_cfg.workload_id,
-            lane_count_id: proto_cfg.lane_count_id,
-            distance_id: proto_cfg.distance_id,
+            monitoring: MonitoringConfig::from(proto_cfg.monitoring),
             optimization: Optimization::from(proto_cfg.optimization),
             num_threads: proto_cfg
                 .num_threads
@@ -100,6 +95,7 @@ impl From<ProtoConfig> for Config {
 #[derive(Debug, Clone)]
 pub enum Optimization {
     ExplicitEuler { correction: f64 },
+    Averaging,
 }
 
 impl From<ProtoOptimization> for Optimization {
@@ -108,6 +104,26 @@ impl From<ProtoOptimization> for Optimization {
             ProtoOptimization::ExplicitEuler { correction } => Optimization::ExplicitEuler {
                 correction: correction,
             },
+            ProtoOptimization::Averaging => Optimization::Averaging,
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct MonitoringConfig {
+    pub is_denormalizing: bool,
+    pub workload_id: SimpleId,
+    pub lane_count_id: SimpleId,
+    pub distance_id: SimpleId,
+}
+
+impl From<ProtoMonitoringConfig> for MonitoringConfig {
+    fn from(proto_cfg: ProtoMonitoringConfig) -> MonitoringConfig {
+        MonitoringConfig {
+            is_denormalizing: proto_cfg.is_denormalizing,
+            workload_id: proto_cfg.workload_id,
+            lane_count_id: proto_cfg.lane_count_id,
+            distance_id: proto_cfg.distance_id,
         }
     }
 }
@@ -121,9 +137,7 @@ pub struct ProtoConfig {
     pub num_metric_updates: usize,
     pub iter_0_cfg: PathBuf,
     pub iter_i_cfg: PathBuf,
-    pub workload_id: SimpleId,
-    pub lane_count_id: SimpleId,
-    pub distance_id: SimpleId,
+    pub monitoring: ProtoMonitoringConfig,
     pub optimization: ProtoOptimization,
     pub num_threads: Option<usize>,
     pub seed: Option<u64>,
@@ -141,9 +155,7 @@ impl From<RawConfig> for ProtoConfig {
             num_metric_updates: raw_cfg.number_of_metric_updates,
             iter_0_cfg: raw_cfg.iter_0_cfg,
             iter_i_cfg: raw_cfg.iter_i_cfg,
-            workload_id: raw_cfg.metric_ids.workload,
-            lane_count_id: raw_cfg.metric_ids.lane_count,
-            distance_id: raw_cfg.metric_ids.distance,
+            monitoring: ProtoMonitoringConfig::from(raw_cfg.monitoring),
             optimization: ProtoOptimization::from(raw_cfg.optimization),
             num_threads: raw_cfg.num_threads,
             seed: raw_cfg.seed,
@@ -153,9 +165,29 @@ impl From<RawConfig> for ProtoConfig {
     }
 }
 
+#[derive(Clone, Debug)]
+pub struct ProtoMonitoringConfig {
+    pub is_denormalizing: bool,
+    pub workload_id: SimpleId,
+    pub lane_count_id: SimpleId,
+    pub distance_id: SimpleId,
+}
+
+impl From<RawMonitoringConfig> for ProtoMonitoringConfig {
+    fn from(raw_cfg: RawMonitoringConfig) -> ProtoMonitoringConfig {
+        ProtoMonitoringConfig {
+            is_denormalizing: raw_cfg.is_denormalizing,
+            workload_id: raw_cfg.workload,
+            lane_count_id: raw_cfg.lane_count,
+            distance_id: raw_cfg.distance,
+        }
+    }
+}
+
 #[derive(Debug)]
 pub enum ProtoOptimization {
     ExplicitEuler { correction: f64 },
+    Averaging,
 }
 
 impl From<RawOptimization> for ProtoOptimization {
@@ -164,6 +196,7 @@ impl From<RawOptimization> for ProtoOptimization {
             RawOptimization::ExplicitEuler { correction } => ProtoOptimization::ExplicitEuler {
                 correction: correction,
             },
+            RawOptimization::Averaging => ProtoOptimization::Averaging,
         }
     }
 }
@@ -187,9 +220,8 @@ pub struct RawContent {
     pub multi_ch_constructor: multi_ch_constructor::Config,
     #[serde(rename = "number_of_metric-updates")]
     pub number_of_metric_updates: usize,
-    #[serde(rename = "metric-ids")]
-    pub metric_ids: metrics::RawConfig,
-    #[serde(flatten)]
+    pub monitoring: RawMonitoringConfig,
+    #[serde(rename = "optimizing_with")]
     pub optimization: RawOptimization,
     #[serde(rename = "number_of_threads")]
     pub num_threads: Option<usize>,
@@ -201,12 +233,25 @@ pub struct RawContent {
 
 #[derive(Clone, Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
+pub struct RawMonitoringConfig {
+    #[serde(rename = "will_denormalize_metrics_by_mean")]
+    pub is_denormalizing: bool,
+    pub workload: SimpleId,
+    #[serde(rename = "lane-count")]
+    pub lane_count: SimpleId,
+    pub distance: SimpleId,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub enum RawOptimization {
     #[serde(rename = "explicit_euler")]
     ExplicitEuler {
         #[serde(rename = "correction")]
         correction: f64,
     },
+    #[serde(rename = "averaging")]
+    Averaging,
     // some kind of correction-function:
     // interpolating linear between point-pairs given in a file?
 }

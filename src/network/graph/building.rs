@@ -10,8 +10,9 @@ use crate::{
     helpers::{self, err, MemSize},
 };
 use kissunits::geo::Coordinate;
-use log::{debug, info};
+use log::{debug, info, trace};
 use progressing::{mapping::Bar as MappingBar, Baring};
+use smallvec::smallvec;
 use std::{
     cmp::{min, Reverse},
     fs::OpenOptions,
@@ -38,6 +39,7 @@ impl Graph {
             bwd_to_fwd_map: Vec::new(),
             // edge-metrics
             metrics: Vec::new(),
+            means: None,
             // edge-ids
             edge_ids: Vec::new(),
             edge_ids_to_idx_map: Vec::new(),
@@ -70,7 +72,7 @@ impl Graph {
 
         for metric_idx in 0..proto_edge.metrics.len() {
             if Approx(proto_edge.metrics[metric_idx]) == Approx(0.0) {
-                debug!(
+                trace!(
                     "Proto-edge (id:{}->id:{}) has {} around 0.0, hence is corrected to {}.",
                     self.nodes().id(proto_edge.src_idx),
                     self.nodes().id(proto_edge.dst_idx),
@@ -1323,6 +1325,66 @@ impl GraphBuilder {
                     }
                 }
             }
+        }
+
+        if graph.cfg().edges.metrics.are_normalized {
+            info!("DO Normalize metrics:");
+
+            // get divisor of mean
+
+            let n = graph.fwd_edges().count();
+            if n == 0 {
+                return Err(err::Msg::from(format!(
+                    "{}{}",
+                    "The metrics should be normalized,",
+                    " but the graph has no edges, hence no metrics, hence no mean.",
+                )));
+            }
+            let n = graph.fwd_edges().count() as f64;
+
+            // compute mean
+
+            let means: DimVec<_> = graph
+                .metrics
+                .iter()
+                .fold(smallvec![0.0; graph.metrics().dim()], |acc, b| {
+                    helpers::add(&acc, b)
+                })
+                .iter_mut()
+                .map(|sum| *sum / n)
+                .collect();
+
+            // print mean
+
+            for (metric_id, mean) in graph.cfg().edges.metrics.ids.iter().zip(&means) {
+                info!("    {}: {}", metric_id, mean);
+            }
+
+            // if any mean is 0.0 -> error
+
+            if means.iter().any(|mean| Approx(mean) == Approx(&0.0)) {
+                return Err(err::Msg::from(
+                    "A metric-mean is zero, hence no normalization can be done.",
+                ));
+            }
+
+            // normalize
+
+            for edge_metrics in graph.metrics.iter_mut() {
+                edge_metrics
+                    .iter_mut()
+                    .enumerate()
+                    .for_each(|(metric_idx, metric)| {
+                        *metric /= means[metric_idx];
+                        if Approx(*metric) == Approx(0.0) {
+                            *metric = defaults::accuracy::F64_ABS
+                        }
+                    });
+            }
+
+            // and remember means
+
+            graph.means = Some(means);
         }
 
         info!("FINISHED Finalizing graph has finished.");

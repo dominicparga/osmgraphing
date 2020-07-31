@@ -18,12 +18,6 @@ pub fn build(mchc_cfg: &configs::Config) -> err::Feedback {
     let cmd_arg = &format!("GRAPH_DIM={}", mchc_cfg.dim);
     cmd_args.push(cmd_arg);
 
-    // minimum-cost
-
-    cmd_args.push("-D");
-    let cmd_arg = &format!("MIN_COST={}", mchc_cfg.min_cost);
-    cmd_args.push(cmd_arg);
-
     // cost-accuracy
 
     cmd_args.push("-D");

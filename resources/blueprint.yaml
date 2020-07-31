@@ -32,28 +32,31 @@ parsing:
   - metric: { unit: 'Latitude', id: 'latitude' }
   - metric: { unit: 'Longitude', id: 'longitude' }
   - ignored
-  # With edges, the order matters, if the map-file has a metric-order, like `fmi`-files.
-  # Each metric below will be stored in the graph.
   edges:
-    # This category can be provided once.
-  - meta: { info: 'SrcId', id: 'src-id'}
-  - meta: { info: 'DstId', id: 'dst-id'}
-    # This category is used for ch-graph and can be provided once.
-  - meta: { info: 'ShortcutIdx0', id: 'sc-idx-0'}
-  - meta: { info: 'ShortcutIdx1', id: 'sc-idx-1'}
-    # This id can be used to import/export matching edge-data.
-    # This category can be provided once.
-  - meta: { info: 'EdgeId', id: 'edge-id' }
-    # metrics, which can be used multiple times (with unique id)
-  - metric: { unit: 'Meters', id: 'meters' }
-  - metric: { unit: 'Kilometers', id: 'kilometers' }
-  - metric: { unit: 'Seconds', id: 'seconds' }
-  - metric: { unit: 'Minutes', id: 'minutes' }
-  - metric: { unit: 'Hours', id: 'hours' }
-  - metric: { unit: 'KilometersPerHour', id: 'kmph' }
-  - metric: { unit: 'LaneCount', id: 'lanecount' }
-  - metric: { unit: 'F64', id: 'f64' }
-  - ignored
+    # optional; default is false, so the graph's edge-metrics aren't being normalized
+    will_normalize_metrics_by_mean: false
+    # With edges, the order matters, if the map-file has a metric-order, like `fmi`-files.
+    # Each metric below will be stored in the graph.
+    data:
+      # This category can be provided once.
+    - meta: { info: 'SrcId', id: 'src-id'}
+    - meta: { info: 'DstId', id: 'dst-id'}
+      # This category is used for ch-graph and can be provided once.
+    - meta: { info: 'ShortcutIdx0', id: 'sc-idx-0'}
+    - meta: { info: 'ShortcutIdx1', id: 'sc-idx-1'}
+      # This id can be used to import/export matching edge-data.
+      # This category can be provided once.
+    - meta: { info: 'EdgeId', id: 'edge-id' }
+      # metrics, which can be used multiple times (with unique id)
+    - metric: { unit: 'Meters', id: 'meters' }
+    - metric: { unit: 'Kilometers', id: 'kilometers' }
+    - metric: { unit: 'Seconds', id: 'seconds' }
+    - metric: { unit: 'Minutes', id: 'minutes' }
+    - metric: { unit: 'Hours', id: 'hours' }
+    - metric: { unit: 'KilometersPerHour', id: 'kmph' }
+    - metric: { unit: 'LaneCount', id: 'lanecount' }
+    - metric: { unit: 'F64', id: 'f64' }
+    - ignored
   # In case metrics can not be read from the graph directly, they may be generated or added here.
   generating:
     nodes:
@@ -103,6 +106,9 @@ parsing:
         - id: 'some-value'
 # optional
 # This config is used for the balancer-binary.
+# Pay with the normalization-option.
+# Normalizing metrics from a ch-graph makes the shortcuts incorrect,
+# because they are calculated with personalized-routing (using alpha-vectors).
 balancing:
   # optional; default is 42
   seed: 42
@@ -134,20 +140,32 @@ balancing:
     is_printing_osm-ids: false
     # If true, external edge-ids are piped through the multi-ch-constructor.
     is_using_external_edge-ids: false
-  # these metrics are needed for balancing (calculating edge-capacity)
-  metric-ids:
+  # These metrics were used for calculating an edge's capacity.
+  # Now, they are just kept for monitoring (e.g. for plotting later).
+  monitoring:
     distance: 'kilometers'
     lane-count: 'lane-count'
     workload: 'workload'
-  explicit_euler:
-    # old + (new - old) * correction
-    correction: 0.3
+    # False means
+    # if the graph has normalized metrics,
+    # it will be printed normalized.
+    # If true, metrics will be denormalized before printing.
+    will_denormalize_metrics_by_mean: false
   # important to keep non-zero workloads (if generated non-zero):
   # - zero-edges creates more uninteresting shortcuts -> less performance
   # - zero-edges makes Dijkstra running longer/inefficiently
   min_new_metric: 0.1
   # optional; default is true
   throw_err_when_new_metric_is_zero: true
+  # In the following, multiple optimization-methods are listed.
+  # Only one is allowed.
+  optimizing_with:
+    # old + (new - old) * correction
+    explicit_euler:
+      correction: 0.3
+    # (iter * old + new) / (iter + 1)
+    # Note, that iter is 0 in the first iteration.
+    averaging
 # optional
 # This config can be used with the binary wrapping multi-ch-constructor
 multi-ch-constructor:
@@ -155,9 +173,7 @@ multi-ch-constructor:
   contracted-graph: 'path/to/contracted_graph.ch.fmi'
   dimension: 3
   # optional
-  minimum-cost: 0.0
-  # optional
-  cost-accuracy: 0.0001
+  cost-accuracy: 0.000001
   # optional; default is "99.8"
   # This is a string, not a float, because it is provided as cmdline-argument
   contraction-ratio: "99.8"
@@ -205,6 +221,11 @@ writing:
     - id: 'level'
     - id: 'longitude'
     edges:
+      # optional; default is false, meaning
+      # if the graph has normalized metrics,
+      # it will be printed normalized.
+      # If true, metrics will be denormalized before printing.
+      will_denormalize_metrics_by_mean: false
       with_shortcuts: false
       ids:
       - id: 'src-id'
@@ -213,6 +234,11 @@ writing:
       - id: 'meters'
   edges-info:
     file: 'relative-path-to-map-file'
+    # optional; default is false, meaning
+    # if the graph has normalized metrics,
+    # it will be printed normalized.
+    # If true, metrics will be denormalized before printing.
+    will_denormalize_metrics_by_mean: false
     with_shortcuts: false
     ids:
     - id: 'edge-id'

@@ -47,11 +47,13 @@ class Machine():
     def __init__(
         self,
         *,
-        dpi=1024,
+        dpi=256,
+        plot_file_type='png',
         is_light: bool,
         fig_style=Figure(colorbar=Figure.Colorbar()),
     ):
         self._dpi = dpi
+        self._plot_file_type = plot_file_type
         self._is_light = is_light
 
         self._fig_style = fig_style
@@ -59,6 +61,10 @@ class Machine():
     @property
     def dpi(self) -> int:
         return self._dpi
+
+    @property
+    def plot_file_type(self) -> str:
+        return self._plot_file_type
 
     @property
     def is_light(self) -> bool:
@@ -134,7 +140,7 @@ class Machine():
 
         ax.set_xlabel('')
         ax.set_ylabel('workload')
-        plt.grid(True)
+        ax.grid(b=True)
         plt.tight_layout()
 
         # save plot
@@ -142,7 +148,7 @@ class Machine():
         plt.savefig(
             os.path.join(
                 sim.results_dir,
-                'sorted_workloads.png'
+                f'sorted_workloads.{self.plot_file_type}'
             ),
             dpi=self.dpi
         )
@@ -158,13 +164,13 @@ class Machine():
 
         data = Data(global_data=global_data)
 
-        q_low, q_high = 5, 95
+        q_low, q_high = 0, 99
 
         # setup figure
 
         plt.style.use(self.plt_theme)
         _fig, ax = plt.subplots()
-        ax.set_title(f'all workloads in [{q_low} %, {q_high} %]')
+        ax.set_title(f'all workloads > 0, then in [{q_low} %, {q_high} %]')
 
         #  set cmap
 
@@ -188,7 +194,7 @@ class Machine():
 
         ax.set_xlabel('iteration')
         ax.set_ylabel('workload')
-        plt.grid(False)
+        ax.grid(b=True, axis='y', which='both')
         plt.tight_layout()
 
         # save plot
@@ -196,7 +202,7 @@ class Machine():
         plt.savefig(
             os.path.join(
                 sim.results_dir,
-                'workload-boxplots.png'
+                f'workload-boxplots.{self.plot_file_type}'
             ),
             dpi=self.dpi
         )
@@ -268,7 +274,7 @@ class Machine():
 
         ax.set_xlabel('iteration')
         ax.set_ylabel('(delta-) workload')
-        plt.grid(True)
+        ax.grid(b=True)
         plt.legend()
         plt.tight_layout()
 
@@ -277,7 +283,7 @@ class Machine():
         plt.savefig(
             os.path.join(
                 sim.results_dir,
-                'max_workloads.png'
+                f'max_workloads.{self.plot_file_type}'
             ),
             dpi=self.dpi
         )
@@ -323,7 +329,7 @@ class Machine():
 
         ax.set_xlabel('iteration')
         ax.set_ylabel('amount of unique edges')
-        plt.grid(True)
+        ax.grid(b=True, axis='y', which='both')
         plt.tight_layout()
 
         # save plot
@@ -331,7 +337,7 @@ class Machine():
         plt.savefig(
             os.path.join(
                 sim.results_dir,
-                'num_unique_edges.png'
+                f'num_unique_edges.{self.plot_file_type}'
             ),
             dpi=self.dpi
         )
@@ -361,7 +367,8 @@ class Machine():
         # set norm and cmap
 
         if self.is_light:
-            cmap = 'binary'
+            # cmap = 'binary'
+            cmap = 'cubehelix_r'
         else:
             cmap = 'copper'
         norm = {
@@ -399,7 +406,7 @@ class Machine():
             shrink=self.fig.colorbar.shrink,
             extend=self.fig.colorbar.extend
         )
-        plt.grid(False)
+        ax.grid(b=False)
         plt.tight_layout()
 
         # save plot
@@ -409,7 +416,7 @@ class Machine():
                 sim.results_dir,
                 f'{data.iteration}',
                 'stats',
-                'workloads.png'
+                f'workloads.{self.plot_file_type}'
             ),
             dpi=self.dpi
         )
@@ -425,15 +432,14 @@ class Machine():
 
         sorted_lon_lat_workloads = data.sorted_lon_lat_workloads()
         n = len(sorted_lon_lat_workloads)
-        q_low, q_mid, q_high = 0.0, 0.5, 0.95
-        q_low_idx, q_mid_idx, q_high_idx = (
+
+        q_low, q_high = 0.0, 0.95
+        q_low_idx, q_high_idx = (
             int(q_low * n),
-            int(q_mid * n),
             int(q_high * n)
         )
-        q_low_val, _q_mid_val, q_high_val = (
+        q_low_val, q_high_val = (
             sorted_lon_lat_workloads[q_low_idx, 2],
-            sorted_lon_lat_workloads[q_mid_idx, 2],
             sorted_lon_lat_workloads[q_high_idx, 2]
         )
 
@@ -496,7 +502,7 @@ class Machine():
             shrink=self.fig.colorbar.shrink,
             extend=self.fig.colorbar.extend
         )
-        plt.grid(False)
+        ax.grid(b=False)
         plt.tight_layout()
 
         # save plot
@@ -506,7 +512,7 @@ class Machine():
                 sim.results_dir,
                 f'{data.iteration}',
                 'stats',
-                'workload-quantiles.png'
+                f'workload-quantiles.{self.plot_file_type}'
             ),
             dpi=self.dpi
         )
@@ -567,7 +573,7 @@ class Machine():
             shrink=self.fig.colorbar.shrink,
             extend=self.fig.colorbar.extend
         )
-        plt.grid(False)
+        ax.grid(b=False)
         plt.tight_layout()
 
         # save plot
@@ -577,7 +583,7 @@ class Machine():
                 sim.results_dir,
                 f'{data.iteration}',
                 'stats',
-                'delta_workloads.png'
+                f'delta_workloads.{self.plot_file_type}'
             ),
             dpi=self.dpi
         )
@@ -589,6 +595,7 @@ class Machine():
 
         sorted_lon_lat_deltas = data.sorted_lon_lat_deltas()
         n = len(sorted_lon_lat_deltas)
+
         q_low, q_high = 0.05, 0.95
         q_low_idx, q_high_idx = (
             int(q_low * n),
@@ -598,7 +605,6 @@ class Machine():
             sorted_lon_lat_deltas[q_low_idx, 2],
             sorted_lon_lat_deltas[q_high_idx, 2]
         )
-        sorted_lon_lat_deltas = data.abs_sorted_lon_lat_deltas()
 
         # setup figure
 
@@ -660,7 +666,7 @@ class Machine():
             shrink=self.fig.colorbar.shrink,
             extend=self.fig.colorbar.extend
         )
-        plt.grid(False)
+        ax.grid(b=False)
         plt.tight_layout()
 
         # save plot
@@ -670,7 +676,7 @@ class Machine():
                 sim.results_dir,
                 f'{data.iteration}',
                 'stats',
-                'delta_workloads-quantiles.png'
+                f'delta_workloads-quantiles{self.plot_file_type}'
             ),
             dpi=self.dpi
         )
@@ -713,7 +719,7 @@ class Machine():
 
         ax.set_xlabel('workloads')
         ax.set_ylabel('amount of occurence')
-        plt.grid(False)
+        ax.grid(b=True, axis='y', which='both')
         plt.tight_layout()
 
         # save plot
@@ -723,7 +729,85 @@ class Machine():
                 sim.results_dir,
                 f'{data.iteration}',
                 'stats',
-                'workloads_hist.png'
+                f'workloads_hist.{self.plot_file_type}'
+            ),
+            dpi=self.dpi
+        )
+        # plt.show()
+        plt.close()
+
+    def plot_lanecount_to_workload(self, data: Data, sim: Simulation):
+        # setup simulatoin
+
+        q_low, q_high = 1, 99
+
+        # setup figure
+
+        plt.style.use(self.plt_theme)
+        _fig, ax = plt.subplots()
+        ax.set_title(
+            f'workloads'
+            + '$_{'
+            + f'{data.iteration}'
+            + '}$ > 0, then'
+            + f' in [{q_low} %, {q_high} %], per lane-count'
+        )
+
+        # plot data
+        # -> separate workloads by lane-count
+
+        zipped_data = sorted(
+            filter(
+                lambda x: x[1] > 0.0,
+                zip(data.lane_counts.raw, data.workloads.raw)
+            ),
+            key=lambda x: x[0]
+        )
+        split_indices = []
+        for i in range(1, len(zipped_data)):
+            prev_lane_count = zipped_data[i-1][0]
+            lane_count = zipped_data[i][0]
+            if prev_lane_count != lane_count:
+                split_indices.append(i)
+        zipped_data = list(
+            zipped_data[i:j]
+            for i, j in zip(
+                [0] + split_indices,
+                split_indices + [None]
+            )
+        )
+        # now: [
+        #     [(1.0, wl_1_0), (1.0, wl_1_1), ...],
+        #     [(2.0, wl_2_0), (2.0, wl_2_1), ...],
+        # ]
+
+        for vec in zipped_data:
+            workloads = list(map(lambda x: x[1], vec))
+            lane_count = int(vec[0][0])
+            ax.boxplot(
+                workloads,
+                positions=[lane_count],
+                showfliers=False,
+                notch=True,
+                whis=[q_low, q_high],
+            )
+
+        # finalize plot
+
+        ax.set_xlabel('lane-count')
+        ax.set_ylabel('workload')
+        ax.minorticks_on()
+        ax.grid(b=True, axis='y', which='both')
+        plt.tight_layout()
+
+        # save plot
+
+        plt.savefig(
+            os.path.join(
+                sim.results_dir,
+                f'{data.iteration}',
+                'stats',
+                f'lane-count_to_workload.{self.plot_file_type}'
             ),
             dpi=self.dpi
         )

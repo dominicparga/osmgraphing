@@ -14,7 +14,7 @@ use crate::{
         paths::Path,
     },
 };
-use log::{debug, trace, warn};
+use log::{trace, warn};
 use nd_triangulation::Triangulation;
 use smallvec::smallvec;
 use std::{
@@ -55,7 +55,7 @@ impl<'a> Query<'a> {
             .iter()
             .map(|alpha| alpha > &0.0)
             .collect();
-        debug!("is_metric_considered: {:?}", is_metric_considered);
+        trace!("is_metric_considered: {:?}", is_metric_considered);
 
         Query {
             src_idx,
@@ -238,7 +238,28 @@ impl ConvexHullExplorator {
                     // If Dijkstra finds a better path for this alpha-vector,
                     // the path's cost is part of the convex-hull.
 
-                    let (rows, b) = ConvexHullExplorator::create_linear_system(&cell, &query);
+                    let (rows, b) = if let Some((rows, b)) =
+                        ConvexHullExplorator::create_linear_system(&cell, &query)
+                    {
+                        (rows, b)
+                    } else {
+                        warn!("graph-dim:  {}", query.graph_dim);
+                        warn!(
+                            "considered: {}",
+                            query
+                                .is_metric_considered
+                                .iter()
+                                .filter(|&ism| *ism)
+                                .count()
+                        );
+                        warn!("cell-verts: {}", cell.vertices().len());
+                        warn!(
+                            "{}{}",
+                            "The linear system has less rows than the convex-hull has dimensions.",
+                            "This doesn't lead to a unique solution.",
+                        );
+                        continue;
+                    };
 
                     // calculate alphas
                     query.routing_cfg.alphas =
@@ -283,7 +304,7 @@ impl ConvexHullExplorator {
                         let is_path_new = Approx(new_alpha_cost) < Approx(any_alpha_cost)
                             && !new_found_paths.contains(&new_path);
                         if is_path_new {
-                            debug!("Push {}", new_path);
+                            trace!("Push {}", new_path);
                             new_found_paths.push(new_path);
                         } else {
                             trace!("Already found path {}", new_path);
@@ -343,32 +364,51 @@ impl ConvexHullExplorator {
         dijkstra: &mut Dijkstra,
     ) {
         // find initial convex-hull
-        // adding d initial points
+        // -> go through all combinations, where at least one alpha-entry is > 0.0
+        // -> at least d+1 points for dimension d
+        // -> at least all points from lower (e.g. "previous") dimensions
 
         let mut init_alphas: CHDimVec<_> = CHDimVec::new();
-        // and adding an average point as point number dim+1
-        // -> remember for later
-        let mut avg_alphas: DimVec<f64> = smallvec![0.0; query.graph_dim];
 
-        // add peak-alphas ([0, ..., 0, 1, 0, ..., 0]) for considered metrics
+        // create imc-mask from is_metric_considered
+        // rev() is important, because vectors grow from left and integers from right
+        let imc_mask = query
+            .is_metric_considered
+            .iter()
+            .rev()
+            .fold(0, |acc, &digit| 2 * acc + if digit { 1 } else { 0 });
 
-        for metric_idx in
-            (0..query.graph_dim).filter(|&metric_idx| query.is_metric_considered[metric_idx])
-        {
-            let mut alphas = smallvec![0.0; query.graph_dim];
-            alphas[metric_idx] = 1.0;
-            init_alphas.push((Some(metric_idx), alphas));
+        // if mask is a power of 2 (e.g. 2==0x10, e.g. not 6==0x110)
+        // -> metric-idx should be set
+        let is_pow_of_2 = |mask: u32| mask & (mask - 1) == 0;
+        let mut metric_idx = 0;
 
-            avg_alphas[metric_idx] = 1.0;
+        // this whole loop is checked with a rust-playground-example:
+        // https://gist.github.com/dominicparga/069c014eb3a0c2cf655d4d89ae4e7391
+        for mask in 1..2u32.pow(query.graph_dim as u32) {
+            // this if-clause causes to discard masks, that have a 1 where imc_mask is 0
+            if ((imc_mask | mask) ^ imc_mask) == 0 {
+                // parse mask into vector of 0.0 and 1.0
+                let alphas = (0..query.graph_dim)
+                    .map(|idx| ((mask >> idx) & 1) as f64)
+                    .collect();
+
+                if is_pow_of_2(mask) {
+                    init_alphas.push((Some(metric_idx), alphas));
+                    metric_idx += 1;
+                } else {
+                    init_alphas.push((None, alphas));
+                }
+            } else if is_pow_of_2(mask) {
+                metric_idx += 1;
+            }
         }
 
-        // plus add avg-alpha, because cyclops-convex-hull needs at least dim+1 points
-        // (another pro: this can be seen as addition, when not enough paths are found)
-        init_alphas.push((None, avg_alphas));
+        // add all init-alphas' paths
 
         let mut found_paths = CHDimVec::new();
         for (metric_idx, alphas) in init_alphas {
-            debug!("Trying init-alpha {:?}", alphas);
+            trace!("Trying init-alpha {:?}", alphas);
 
             query.routing_cfg.alphas = alphas;
             if let Some(mut best_path) = dijkstra.compute_best_path(dijkstra::Query {
@@ -398,7 +438,7 @@ impl ConvexHullExplorator {
                     .map(|path: &Path| path.costs())
                     .any(|costs| Approx(costs) == Approx(best_path.costs()))
                 {
-                    debug!("Found and pushing init-path {}", best_path);
+                    trace!("Found and pushing init-path {}", best_path);
                     found_paths.push(best_path);
                 }
             }
@@ -429,7 +469,10 @@ impl ConvexHullExplorator {
         }
     }
 
-    fn create_linear_system(cell: &Cell, query: &Query) -> (DimVec<DimVec<f64>>, DimVec<f64>) {
+    fn create_linear_system(
+        cell: &Cell,
+        query: &Query,
+    ) -> Option<(DimVec<DimVec<f64>>, DimVec<f64>)> {
         trace!("Create linear system with paths:");
         for vertex in cell.vertices() {
             trace!("  {}", vertex.path);
@@ -473,16 +516,12 @@ impl ConvexHullExplorator {
                 rows.push(smallvec![1.0; query.graph_dim]);
                 b.push(1.0);
             }
-            _ => panic!(
-                "{}{}",
-                "The linear system has less rows than the convex-hull has dimensions.",
-                "This doesn't lead to a unique solution."
-            ),
+            _ => return None,
         }
 
         trace!("rows = {:?}", rows);
         trace!("b = {:?}", b);
-        (rows, b)
+        Some((rows, b))
     }
 
     fn update(
@@ -492,7 +531,7 @@ impl ConvexHullExplorator {
         new_found_paths: &mut Vec<Path>,
         triangulation: &mut Triangulation,
     ) {
-        debug!(
+        trace!(
             "Updating triangulation with {} new found paths.",
             new_found_paths.len()
         );

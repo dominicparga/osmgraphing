@@ -1,10 +1,16 @@
 use crate::helpers::defaults;
 use std::path::Path;
 
-const STORAGE: &[(&str, &str)] = &[(
-    defaults::paths::resources::stuttgart_regbez::DIR,
-    defaults::paths::resources::stuttgart_regbez::URL,
-)];
+const STORAGE: &[(&str, &str)] = &[
+    (
+        defaults::paths::resources::stuttgart_regbez::DIR,
+        defaults::paths::resources::stuttgart_regbez::URL,
+    ),
+    (
+        defaults::paths::resources::saarland::DIR,
+        defaults::paths::resources::saarland::URL,
+    ),
+];
 
 #[test]
 pub fn are_files_complete() {

@@ -11,6 +11,10 @@
 
 [![License][github/self/license/badge]][github/self/license]
 
+| Initial workload (`10,000 s-t-pairs` on `Isle of Man`) | Same `s-t-pairs` after balancing |
+|:-:|:-:|
+|[<img title="Initial workload" src="resources/isle_of_man_2020-03-14/balancing/workloads_0.png" alt="Initial workloads" />](resources/isle_of_man_2020-03-14/balancing/workloads_0.png)|[<img title="Workload after balancing" src="resources/isle_of_man_2020-03-14/balancing/workloads_2.png" alt="Workload after balancing" />](resources/isle_of_man_2020-03-14/balancing/workloads_2.png)|
+
 Welcome to the `osmgraphing`-repo! `:)`
 Goal of this repo is parsing [openstreetmap][osm]-data to calculate traffic-routes and different related use-cases on it.
 This repo will be involved in dealing with the analysis of selfish routing and learning metrics for balancing load in street-networks.

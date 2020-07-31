@@ -1,7 +1,11 @@
 pub mod edges;
 pub mod graph;
 
-use crate::{configs, defaults, helpers::err, network::Graph};
+use crate::{
+    configs, defaults,
+    helpers::err,
+    network::{Graph, MetricIdx},
+};
 use log::info;
 use progressing::{bernoulli::Bar as BernoulliBar, Baring};
 use std::io::Write;
@@ -135,19 +139,31 @@ fn write_edges_to_file<W: Write>(
                             }
 
                             // get metric-idx from graph's config
-                            let metric_idx = graph
-                                .cfg()
-                                .edges
-                                .metrics
-                                .ids
-                                .iter()
-                                .position(|id| metric_id == id)
-                                .expect(&format!(
-                                    "The metric-id {} doesn't exist in graph.",
-                                    metric_id
-                                ));
+                            let metric_idx = MetricIdx(
+                                graph
+                                    .cfg()
+                                    .edges
+                                    .metrics
+                                    .ids
+                                    .iter()
+                                    .position(|id| metric_id == id)
+                                    .expect(&format!(
+                                        "The metric-id {} doesn't exist in graph.",
+                                        metric_id
+                                    )),
+                            );
 
-                            write!(writer, "{}", graph.metrics()[edge_idx][metric_idx])?;
+                            // denormalize metric if wished
+
+                            let mut metric_value = graph.metrics()[edge_idx][*metric_idx];
+                            if writing_cfg.is_denormalizing {
+                                // check if graph is normalized
+                                if let Some(mean) = graph.metrics().mean(metric_idx) {
+                                    metric_value *= mean;
+                                }
+                            };
+
+                            write!(writer, "{}", metric_value)?;
                         }
                         configs::parsing::edges::Category::Ignored => continue, // covered in else-case
                     }

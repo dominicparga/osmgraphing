@@ -1,5 +1,4 @@
 use crate::{approximating::Approx, configs, defaults, helpers::err, network::Graph};
-use kissunits::distance::Kilometers;
 use std::{
     fs::OpenOptions,
     io::{BufWriter, Write},
@@ -50,18 +49,22 @@ impl Writer {
 
         writeln!(
             writer,
-            "edge-id src_lat src_lon dst_lat dst_lon kilometers lane_count"
+            "edge-id src_lat src_lon dst_lat dst_lon {} {}",
+            balancing_cfg.monitoring.distance_id, balancing_cfg.monitoring.lane_count_id,
         )?;
 
         // write data
 
-        let distance_idx = graph.cfg().edges.metrics.idx_of(&balancing_cfg.distance_id);
+        let distance_idx = graph
+            .cfg()
+            .edges
+            .metrics
+            .idx_of(&balancing_cfg.monitoring.distance_id);
         let lane_count_idx = graph
             .cfg()
             .edges
             .metrics
-            .idx_of(&balancing_cfg.lane_count_id);
-        let distance_unit = graph.cfg().edges.metrics.units[*distance_idx];
+            .idx_of(&balancing_cfg.monitoring.lane_count_id);
 
         for edge_idx in fwd_edges
             .iter()
@@ -80,24 +83,27 @@ impl Writer {
                 (coord.lat, coord.lon)
             };
 
-            let (raw_distance, lane_count) = {
+            // get distance denormalized if wished
+
+            let (mut distance, mut lane_count) = {
                 let tmp = &metrics[edge_idx];
-                (tmp[*distance_idx], tmp[*lane_count_idx] as u64)
+                (tmp[*distance_idx], tmp[*lane_count_idx])
             };
-            // use correct unit for distance
-            let distance = {
-                // convert value to meters
-                let raw_value = distance_unit.convert(
-                    &configs::parsing::edges::metrics::UnitInfo::Kilometers,
-                    raw_distance,
-                );
-                Kilometers(raw_value)
+            if balancing_cfg.monitoring.is_denormalizing {
+                // check if graph is normalized
+                if let Some(mean) = graph.metrics().mean(distance_idx) {
+                    distance *= mean;
+                }
+                // check if graph is normalized
+                if let Some(mean) = graph.metrics().mean(lane_count_idx) {
+                    lane_count *= mean;
+                }
             };
 
             writeln!(
                 writer,
                 "{} {} {} {} {} {} {}",
-                edge_id, src_lat, src_lon, dst_lat, dst_lon, *distance, lane_count
+                edge_id, src_lat, src_lon, dst_lat, dst_lon, distance, lane_count
             )?;
         }
 
