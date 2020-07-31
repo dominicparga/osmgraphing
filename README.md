@@ -11,9 +11,9 @@
 
 [![License][github/self/license/badge]][github/self/license]
 
-| Initial workload (`10,000 s-t-pairs` on `Isle of Man`) | Same `s-t-pairs` after balancing |
-|:-:|:-:|
-|[<img title="Initial workload" src="resources/isle_of_man_2020-03-14/balancing/workloads_0.png" alt="Initial workloads" />](resources/isle_of_man_2020-03-14/balancing/workloads_0.png)|[<img title="Workload after balancing" src="resources/isle_of_man_2020-03-14/balancing/workloads_2.png" alt="Workload after balancing" />](resources/isle_of_man_2020-03-14/balancing/workloads_2.png)|
+[<img title="Balancing Saarland" src="resources/saarland_2020-07-30/balancing/workloads.gif" alt="Balancing Saarland" />](resources/saarland_2020-07-30/balancing/workloads.gif)
+> This GIF shows, how the balancing improves the distribution of `10,000` paths over the network of the German state `Saarland`.
+> New paths from `s` to `t` are not worse than `25 %` than the optimal path from `s` to `t`, with respect to travel-duration (so `55 min` becomes less than `1 h 10 min` in worst-case).
 
 Welcome to the `osmgraphing`-repo! `:)`
 Goal of this repo is parsing [openstreetmap][osm]-data to calculate traffic-routes and different related use-cases on it.
