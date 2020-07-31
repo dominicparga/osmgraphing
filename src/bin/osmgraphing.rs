@@ -157,10 +157,7 @@ fn run(args: CmdlineArgs) -> err::Feedback {
         // measure writing-time
         let now = Instant::now();
 
-        match io::routing::Writer::write(&graph, &routing_cfg, &writing_cfg) {
-            Ok(()) => (),
-            Err(msg) => return Err(err::Msg::from(format!("{}", msg))),
-        };
+        io::routing::Writer::write(&graph, &routing_cfg, &writing_cfg)?;
         info!(
             "Finished writing in {} seconds ({} µs).",
             now.elapsed().as_secs(),
@@ -223,33 +220,35 @@ fn run(args: CmdlineArgs) -> err::Feedback {
 
         // calculate best paths
 
-        for RoutePair { src, dst } in io::routing::Parser::parse(&routing_cfg)?
+        for (RoutePair { src, dst }, route_count) in io::routing::Parser::parse(&routing_cfg)?
             .iter()
-            .map(|(route_pair, _)| route_pair.into_node(&graph))
+            .map(|(route_pair, route_count)| (route_pair.into_node(&graph), *route_count))
         {
-            info!("");
+            for _ in 0..route_count {
+                info!("");
 
-            let now = Instant::now();
-            let found_paths = explorator.fully_explorate(
-                dijkstra::Query {
-                    src_idx: src.idx(),
-                    dst_idx: dst.idx(),
-                    graph: &graph,
-                    routing_cfg: &routing_cfg,
-                },
-                &mut dijkstra,
-            );
+                let now = Instant::now();
+                let found_paths = explorator.fully_explorate(
+                    dijkstra::Query {
+                        src_idx: src.idx(),
+                        dst_idx: dst.idx(),
+                        graph: &graph,
+                        routing_cfg: &routing_cfg,
+                    },
+                    &mut dijkstra,
+                );
 
-            info!("");
-            info!(
-                "Ran Exploration-query in {} ms",
-                now.elapsed().as_micros() as f64 / 1_000.0,
-            );
-            if found_paths.is_empty() {
-                info!("No path found from ({}) to ({}).", src, dst);
-            } else {
-                info!("Found {} path(s):", found_paths.len());
-                found_paths.iter().for_each(|path| info!("  {}", path))
+                info!("");
+                info!(
+                    "Ran Exploration-query in {} ms",
+                    now.elapsed().as_micros() as f64 / 1_000.0,
+                );
+                if found_paths.is_empty() {
+                    info!("No path found from ({}) to ({}).", src, dst);
+                } else {
+                    info!("Found {} path(s):", found_paths.len());
+                    found_paths.iter().for_each(|path| info!("  {}", path))
+                }
             }
         }
     }

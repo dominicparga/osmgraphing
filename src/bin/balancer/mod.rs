@@ -95,7 +95,7 @@ fn run(args: CmdlineArgs) -> err::Feedback {
 mod simulation_pipeline {
     use super::multithreading;
     use chrono;
-    use log::info;
+    use log::{debug, info};
     use osmgraphing::{configs, defaults, helpers::err, io, multi_ch_constructor, network::Graph};
     use progressing::{mapping::Bar as MappingBar, Baring};
     use rand::Rng;
@@ -320,12 +320,13 @@ mod simulation_pipeline {
         let mut route_pairs = io::routing::Parser::parse(&routing_cfg)?;
         route_pairs.reverse();
         let mut avg_num_of_found_paths = 0;
+        // not routes, because progress can be shown without it (though it is less accurate)
         let num_of_route_pairs = route_pairs.len();
 
         // simple init-logging
 
         info!("START Executing routes and analyzing workload",);
-        let mut progress_bar = MappingBar::with_range(0, route_pairs.len()).timed();
+        let mut progress_bar = MappingBar::with_range(0, num_of_route_pairs).timed();
 
         // find all routes and count density on graph
 
@@ -346,11 +347,18 @@ mod simulation_pipeline {
                     .iter()
                     .for_each(|k| avg_num_of_found_paths += k);
 
-                progress_bar.add(outcome.num_routes);
+                // num_of_routes is ignored here
+                progress_bar.add(outcome.num_of_route_pairs);
                 // print and update progress
                 if progress_bar.has_progressed_significantly() {
                     progress_bar.remember_significant_progress();
                     info!("{}", progress_bar);
+                    debug!(
+                        "{}{}{}",
+                        "On average over all route-pairs so far, ",
+                        (1 + 2 * avg_num_of_found_paths / progress_bar.progress()) / 2,
+                        " path(s) per exploration were found.",
+                    );
                 }
 
                 // send new work

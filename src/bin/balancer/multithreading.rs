@@ -1,4 +1,4 @@
-use log::{debug, warn};
+use log::{trace, warn};
 use osmgraphing::{
     configs, defaults,
     helpers::err,
@@ -216,7 +216,7 @@ pub struct Work {
 pub struct Outcome {
     pub path_edges: Vec<EdgeIdx>,
     pub num_of_found_paths: Vec<usize>,
-    pub num_routes: usize,
+    pub num_of_route_pairs: usize,
 }
 
 struct WorkerContext {
@@ -260,7 +260,7 @@ impl Worker {
                 Outcome {
                     path_edges: Vec::new(),
                     num_of_found_paths: Vec::new(),
-                    num_routes: 0,
+                    num_of_route_pairs: 0,
                 },
             ))
             .map_err(|e| format!("Sending initial outcome stucks due to {}", e))?;
@@ -293,10 +293,10 @@ impl Worker {
     fn work_off(&mut self, work: Work) -> Outcome {
         let mut path_edges = Vec::new();
         let mut num_of_found_paths = Vec::new();
-        let num_routes = work.route_pairs.len();
+        let num_of_route_pairs = work.route_pairs.len();
         let mut rng = rand_pcg::Pcg32::seed_from_u64(work.seed);
 
-        for (route_pair, count) in work.route_pairs {
+        for (route_pair, route_count) in work.route_pairs {
             let RoutePair { src, dst } = route_pair.into_node(&self.graph);
 
             // find explorated routes
@@ -311,7 +311,7 @@ impl Worker {
                 },
                 &mut self.dijkstra,
             );
-            debug!(
+            trace!(
                 "Ran Explorator-query from src-id {} to dst-id {} in {} ms. Found {} path(s).",
                 src.id(),
                 dst.id(),
@@ -327,12 +327,12 @@ impl Worker {
 
             if found_paths.len() > 0 {
                 let die = Uniform::from(0..found_paths.len());
-                for _ in 0..count {
+                for _ in 0..route_count {
                     let path = found_paths[die.sample(&mut rng)]
                         .clone()
                         .flatten(&self.graph);
 
-                    debug!("    {}", path);
+                    trace!("    {}", path);
 
                     for edge_idx in path {
                         path_edges.push(edge_idx);
@@ -349,7 +349,7 @@ impl Worker {
         Outcome {
             path_edges,
             num_of_found_paths,
-            num_routes,
+            num_of_route_pairs,
         }
     }
 }

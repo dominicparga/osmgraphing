@@ -14,7 +14,7 @@ use crate::{
         paths::Path,
     },
 };
-use log::{debug, trace, warn};
+use log::{trace, warn};
 use nd_triangulation::Triangulation;
 use smallvec::smallvec;
 use std::{
@@ -55,7 +55,7 @@ impl<'a> Query<'a> {
             .iter()
             .map(|alpha| alpha > &0.0)
             .collect();
-        debug!("is_metric_considered: {:?}", is_metric_considered);
+        trace!("is_metric_considered: {:?}", is_metric_considered);
 
         Query {
             src_idx,
@@ -304,7 +304,7 @@ impl ConvexHullExplorator {
                         let is_path_new = Approx(new_alpha_cost) < Approx(any_alpha_cost)
                             && !new_found_paths.contains(&new_path);
                         if is_path_new {
-                            debug!("Push {}", new_path);
+                            trace!("Push {}", new_path);
                             new_found_paths.push(new_path);
                         } else {
                             trace!("Already found path {}", new_path);
@@ -408,7 +408,7 @@ impl ConvexHullExplorator {
 
         let mut found_paths = CHDimVec::new();
         for (metric_idx, alphas) in init_alphas {
-            debug!("Trying init-alpha {:?}", alphas);
+            trace!("Trying init-alpha {:?}", alphas);
 
             query.routing_cfg.alphas = alphas;
             if let Some(mut best_path) = dijkstra.compute_best_path(dijkstra::Query {
@@ -438,7 +438,7 @@ impl ConvexHullExplorator {
                     .map(|path: &Path| path.costs())
                     .any(|costs| Approx(costs) == Approx(best_path.costs()))
                 {
-                    debug!("Found and pushing init-path {}", best_path);
+                    trace!("Found and pushing init-path {}", best_path);
                     found_paths.push(best_path);
                 }
             }
@@ -531,7 +531,7 @@ impl ConvexHullExplorator {
         new_found_paths: &mut Vec<Path>,
         triangulation: &mut Triangulation,
     ) {
-        debug!(
+        trace!(
             "Updating triangulation with {} new found paths.",
             new_found_paths.len()
         );

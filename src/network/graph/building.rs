@@ -10,7 +10,7 @@ use crate::{
     helpers::{self, err, MemSize},
 };
 use kissunits::geo::Coordinate;
-use log::{debug, info};
+use log::{debug, info, trace};
 use progressing::{mapping::Bar as MappingBar, Baring};
 use smallvec::smallvec;
 use std::{
@@ -72,7 +72,7 @@ impl Graph {
 
         for metric_idx in 0..proto_edge.metrics.len() {
             if Approx(proto_edge.metrics[metric_idx]) == Approx(0.0) {
-                debug!(
+                trace!(
                     "Proto-edge (id:{}->id:{}) has {} around 0.0, hence is corrected to {}.",
                     self.nodes().id(proto_edge.src_idx),
                     self.nodes().id(proto_edge.dst_idx),
