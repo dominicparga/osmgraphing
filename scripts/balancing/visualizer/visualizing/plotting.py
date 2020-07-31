@@ -47,11 +47,13 @@ class Machine():
     def __init__(
         self,
         *,
-        dpi=1024,
+        dpi=512,
+        plot_file_type='png',
         is_light: bool,
         fig_style=Figure(colorbar=Figure.Colorbar()),
     ):
         self._dpi = dpi
+        self._plot_file_type = plot_file_type
         self._is_light = is_light
 
         self._fig_style = fig_style
@@ -59,6 +61,10 @@ class Machine():
     @property
     def dpi(self) -> int:
         return self._dpi
+
+    @property
+    def plot_file_type(self) -> str:
+        return self._plot_file_type
 
     @property
     def is_light(self) -> bool:
@@ -142,7 +148,7 @@ class Machine():
         plt.savefig(
             os.path.join(
                 sim.results_dir,
-                'sorted_workloads.png'
+                f'sorted_workloads.{self.plot_file_type}'
             ),
             dpi=self.dpi
         )
@@ -196,7 +202,7 @@ class Machine():
         plt.savefig(
             os.path.join(
                 sim.results_dir,
-                'workload-boxplots.png'
+                f'workload-boxplots.{self.plot_file_type}'
             ),
             dpi=self.dpi
         )
@@ -277,7 +283,7 @@ class Machine():
         plt.savefig(
             os.path.join(
                 sim.results_dir,
-                'max_workloads.png'
+                f'max_workloads.{self.plot_file_type}'
             ),
             dpi=self.dpi
         )
@@ -331,7 +337,7 @@ class Machine():
         plt.savefig(
             os.path.join(
                 sim.results_dir,
-                'num_unique_edges.png'
+                f'num_unique_edges.{self.plot_file_type}'
             ),
             dpi=self.dpi
         )
@@ -410,7 +416,7 @@ class Machine():
                 sim.results_dir,
                 f'{data.iteration}',
                 'stats',
-                'workloads.png'
+                f'workloads.{self.plot_file_type}'
             ),
             dpi=self.dpi
         )
@@ -506,7 +512,7 @@ class Machine():
                 sim.results_dir,
                 f'{data.iteration}',
                 'stats',
-                'workload-quantiles.png'
+                f'workload-quantiles.{self.plot_file_type}'
             ),
             dpi=self.dpi
         )
@@ -577,7 +583,7 @@ class Machine():
                 sim.results_dir,
                 f'{data.iteration}',
                 'stats',
-                'delta_workloads.png'
+                f'delta_workloads.{self.plot_file_type}'
             ),
             dpi=self.dpi
         )
@@ -670,7 +676,7 @@ class Machine():
                 sim.results_dir,
                 f'{data.iteration}',
                 'stats',
-                'delta_workloads-quantiles.png'
+                f'delta_workloads-quantiles{self.plot_file_type}'
             ),
             dpi=self.dpi
         )
@@ -723,7 +729,7 @@ class Machine():
                 sim.results_dir,
                 f'{data.iteration}',
                 'stats',
-                'workloads_hist.png'
+                f'workloads_hist.{self.plot_file_type}'
             ),
             dpi=self.dpi
         )
@@ -801,7 +807,7 @@ class Machine():
                 sim.results_dir,
                 f'{data.iteration}',
                 'stats',
-                'lane-count_to_workload.png'
+                f'lane-count_to_workload.{self.plot_file_type}'
             ),
             dpi=self.dpi
         )
