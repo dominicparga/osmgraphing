@@ -47,7 +47,7 @@ class Machine():
     def __init__(
         self,
         *,
-        dpi=512,
+        dpi=256,
         plot_file_type='png',
         is_light: bool,
         fig_style=Figure(colorbar=Figure.Colorbar()),
