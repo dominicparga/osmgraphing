@@ -2,6 +2,7 @@
 * text=auto
 
 # Ignore line ending conversion for binary files
+*.gif   binary
 *.jar   binary
 *.jpg   binary
 *.pbf   binary
