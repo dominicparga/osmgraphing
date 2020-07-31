@@ -95,6 +95,7 @@ impl From<ProtoConfig> for Config {
 #[derive(Debug, Clone)]
 pub enum Optimization {
     ExplicitEuler { correction: f64 },
+    Averaging,
 }
 
 impl From<ProtoOptimization> for Optimization {
@@ -103,6 +104,7 @@ impl From<ProtoOptimization> for Optimization {
             ProtoOptimization::ExplicitEuler { correction } => Optimization::ExplicitEuler {
                 correction: correction,
             },
+            ProtoOptimization::Averaging => Optimization::Averaging,
         }
     }
 }
@@ -185,6 +187,7 @@ impl From<RawMonitoringConfig> for ProtoMonitoringConfig {
 #[derive(Debug)]
 pub enum ProtoOptimization {
     ExplicitEuler { correction: f64 },
+    Averaging,
 }
 
 impl From<RawOptimization> for ProtoOptimization {
@@ -193,6 +196,7 @@ impl From<RawOptimization> for ProtoOptimization {
             RawOptimization::ExplicitEuler { correction } => ProtoOptimization::ExplicitEuler {
                 correction: correction,
             },
+            RawOptimization::Averaging => ProtoOptimization::Averaging,
         }
     }
 }
@@ -217,7 +221,7 @@ pub struct RawContent {
     #[serde(rename = "number_of_metric-updates")]
     pub number_of_metric_updates: usize,
     pub monitoring: RawMonitoringConfig,
-    #[serde(flatten)]
+    #[serde(rename = "optimizing_with")]
     pub optimization: RawOptimization,
     #[serde(rename = "number_of_threads")]
     pub num_threads: Option<usize>,
@@ -246,6 +250,8 @@ pub enum RawOptimization {
         #[serde(rename = "correction")]
         correction: f64,
     },
+    #[serde(rename = "averaging")]
+    Averaging,
     // some kind of correction-function:
     // interpolating linear between point-pairs given in a file?
 }

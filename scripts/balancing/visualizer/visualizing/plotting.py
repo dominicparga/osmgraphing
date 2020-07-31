@@ -361,7 +361,8 @@ class Machine():
         # set norm and cmap
 
         if self.is_light:
-            cmap = 'binary'
+            # cmap = 'binary'
+            cmap = 'cubehelix_r'
         else:
             cmap = 'copper'
         norm = {
@@ -426,21 +427,13 @@ class Machine():
         sorted_lon_lat_workloads = data.sorted_lon_lat_workloads()
         n = len(sorted_lon_lat_workloads)
 
-        # remove values <= 0
-        # k = n - sorted_lon_lat_workloads[::-1].index(0.0) - 1
-        k = np.where(sorted_lon_lat_workloads[:, 2] > 0.0)[0][0]
-        sorted_lon_lat_workloads = sorted_lon_lat_workloads[k:n]
-        n = len(sorted_lon_lat_workloads)
-
-        q_low, q_mid, q_high = 0.0, 0.5, 0.95
-        q_low_idx, q_mid_idx, q_high_idx = (
+        q_low, q_high = 0.0, 0.95
+        q_low_idx, q_high_idx = (
             int(q_low * n),
-            int(q_mid * n),
             int(q_high * n)
         )
-        q_low_val, _q_mid_val, q_high_val = (
+        q_low_val, q_high_val = (
             sorted_lon_lat_workloads[q_low_idx, 2],
-            sorted_lon_lat_workloads[q_mid_idx, 2],
             sorted_lon_lat_workloads[q_high_idx, 2]
         )
 
@@ -498,8 +491,7 @@ class Machine():
             label=f'upper {100 * (1.0 - q_high):3.1f} % of workloads'
             + '$_{'
             + f'{data.iteration}'
-            + '}$'
-            + ' > 0.0',
+            + '}$',
             mappable=plot_collection,
             shrink=self.fig.colorbar.shrink,
             extend=self.fig.colorbar.extend
@@ -596,14 +588,8 @@ class Machine():
         # setup data
 
         sorted_lon_lat_deltas = data.sorted_lon_lat_deltas()
-
-        # filter out zero-values
-        all_negatives = sorted_lon_lat_deltas[:, 2] < 0.0
-        all_positives = sorted_lon_lat_deltas[:, 2] > 0.0
-        all_nz = np.any([all_negatives, all_positives], axis=0)
-        sorted_lon_lat_deltas = sorted_lon_lat_deltas[all_nz]
-
         n = len(sorted_lon_lat_deltas)
+
         q_low, q_high = 0.05, 0.95
         q_low_idx, q_high_idx = (
             int(q_low * n),
@@ -613,7 +599,6 @@ class Machine():
             sorted_lon_lat_deltas[q_low_idx, 2],
             sorted_lon_lat_deltas[q_high_idx, 2]
         )
-        sorted_lon_lat_deltas = data.abs_sorted_lon_lat_deltas()
 
         # setup figure
 
@@ -670,8 +655,7 @@ class Machine():
             + f' and upper {100 * (1.0 - q_high):3.1f} % \n'
             + 'of delta-workloads$_{'
             + f'{data.iteration - 1}, {data.iteration}'
-            + '}$'
-            + ' != 0.0',
+            + '}$',
             mappable=plot_collection,
             shrink=self.fig.colorbar.shrink,
             extend=self.fig.colorbar.extend

@@ -104,6 +104,7 @@ pub mod balancing {
 
     /// This is only called once per balancer-iteration or undefined behaviour occurs!
     pub fn update_new_metric(
+        iteration: usize,
         abs_workloads: &Vec<usize>,
         graph: &mut Graph,
         balancing_cfg: &configs::balancing::Config,
@@ -151,6 +152,9 @@ pub mod balancing {
                 match balancing_cfg.optimization {
                     configs::balancing::Optimization::ExplicitEuler { correction } => {
                         old_metric + (*new_metric - old_metric) * correction
+                    }
+                    configs::balancing::Optimization::Averaging => {
+                        (iteration as f64 * old_metric + *new_metric) / ((iteration + 1) as f64)
                     }
                 }
             };

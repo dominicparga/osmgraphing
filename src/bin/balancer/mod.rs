@@ -1,4 +1,4 @@
-use log::{error, info};
+use log::{debug, error, info};
 use osmgraphing::{
     configs,
     helpers::{err, init_logging},
@@ -389,6 +389,7 @@ mod simulation_pipeline {
 
         // update graph with new values
         defaults::balancing::update_new_metric(
+            iter,
             &abs_workloads,
             Arc::get_mut(ch_graph).expect(
                 "Mutable access to graph should be possible, since Arc should be the only owner.",
@@ -467,8 +468,8 @@ fn parse_graph(parsing_cfg: configs::parsing::Config) -> err::Result<Graph> {
         now.elapsed().as_micros(),
     );
     info!("");
-    info!("{}", graph);
-    info!("");
+    debug!("{}", graph);
+    debug!("");
 
     Ok(graph)
 }

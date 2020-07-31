@@ -60,13 +60,14 @@ balancing:
     lane-count: 'lane-count'
     workload: 'workload'
     will_denormalize_metrics_by_mean: false
-  explicit_euler:
-    # old + (new - old) * correction
-    correction: 1.0
   # important to keep non-zero workloads (if generated non-zero):
   # - zero-edges creates more uninteresting shortcuts -> less performance
   # - zero-edges makes Dijkstra running longer/inefficiently
   min_new_metric: 0.1
+  optimizing_with:
+    # (iter * old + new) / (iter + 1)
+    # Note, that iter is 0 in the first iteration.
+    averaging
 # define routing
 routing:
   route-pairs-file: 'resources/isle_of_man_2020-03-14/10_000.route-pairs'

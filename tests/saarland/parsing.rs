@@ -19,7 +19,7 @@ fn ch_fmi_yaml() {
     assert!(
         configs::writing::network::graph::Config::try_from_yaml(resources::CH_FMI_YAML).is_err()
     );
-    assert!(configs::writing::routing::Config::try_from_yaml(resources::CH_FMI_YAML).is_err());
+    configs::writing::routing::Config::from_yaml(resources::CH_FMI_YAML);
     configs::routing::Config::from_yaml(resources::CH_FMI_YAML, &parsing_cfg);
 }
 
