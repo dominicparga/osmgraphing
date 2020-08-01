@@ -93,6 +93,21 @@ As defined in the `config.yaml`, the results can be found in `custom/results/isl
 The python-tool has a help-msg, but the balancer also prints the respective command after finishing.
 
 
+### Overview over all features
+
+The following table shows all features of this repository.
+The `cargo`-features are needed to build the respective feature.
+Some `cargo`-features are optional for the feature, meaning that the `cargo`-feature adds extra-functionality.
+You can build with `cargo`-features using `cargo build --features='F0,F1,...'` (`cargo run` builds implicitely).
+
+| Feature | `cargo`-feature | Notes |
+|:-------:|:---------------:|:-----|
+| binary: `osmgraphing` | `'gpl-3.0'` (optional) | This tool takes a config and parses a graph respectively. It can execute routing-queries (explorating with `'gpl-3.0'`) and export new graphs. |
+| binary: `multi-ch-constructor` | `'gpl-3.0'` | This tool is a wrapper for the submodule `multi-ch-constructor`, which is written in `c++`. Depending on a config, it constructs a new graph from the provided one via `contraction-hierarchies`. |
+| binary: `balancer` | `'gpl-3.0'` | This tool uses an iterative approach to distribute provided routes over a provided graph. |
+| Custom maps and respective test-cases | `'custom'` | This repository ships with small maps, like handmade maps or `Isle-of-Man`, but larger maps like the German state `Saarland`, parts of German states like `Stuttgart-Regierungsbezirk` or countires like `Germany` consume multiple `100 MB` and more memory. Although, some tests are using these maps and configs may be useful, which is the reason for this `cargo`-feature. To get this feature working, simply download the maps, move them into the respective map-directory in `resources/`, and name them according to other map-directories. |
+
+
 ### Downloading and generating maps <a name="downloading-and-generating"></a>
 
 Downloaded osm-data is provided in xml (`osm`) or binary (`pbf`), where nodes are related to location in latitude and longitude.
