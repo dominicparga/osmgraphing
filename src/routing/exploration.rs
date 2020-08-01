@@ -14,7 +14,7 @@ use crate::{
         paths::Path,
     },
 };
-use log::{trace, warn};
+use log::{debug, trace, warn};
 use nd_triangulation::Triangulation;
 use smallvec::smallvec;
 use std::{
@@ -243,20 +243,18 @@ impl ConvexHullExplorator {
                     {
                         (rows, b)
                     } else {
-                        warn!("graph-dim:  {}", query.graph_dim);
-                        warn!(
-                            "considered: {}",
+                        debug!(
+                            "{}{}{}{}{}{}",
+                            "The linear system misses some rows due to less cell-vertices. ",
+                            "(considered metrics: ",
                             query
                                 .is_metric_considered
                                 .iter()
                                 .filter(|&ism| *ism)
-                                .count()
-                        );
-                        warn!("cell-verts: {}", cell.vertices().len());
-                        warn!(
-                            "{}{}",
-                            "The linear system has less rows than the convex-hull has dimensions.",
-                            "This doesn't lead to a unique solution.",
+                                .count(),
+                            ", cell-vertices: ",
+                            cell.vertices().len(),
+                            ")",
                         );
                         continue;
                     };

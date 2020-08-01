@@ -18,9 +18,6 @@ pub mod routing {
     pub use crate::io::parsing::routing::Parser;
     pub use crate::io::writing::routing::Writer;
 }
-pub mod balancing {
-    pub use crate::io::writing::balancing::Writer;
-}
 
 pub fn ext_from<P: AsRef<Path> + ?Sized>(path: &P) -> err::Result<&str> {
     let path = path.as_ref();

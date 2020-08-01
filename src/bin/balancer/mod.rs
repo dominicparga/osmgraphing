@@ -96,7 +96,13 @@ mod simulation_pipeline {
     use super::multithreading;
     use chrono;
     use log::{debug, info};
-    use osmgraphing::{configs, defaults, helpers::err, io, multi_ch_constructor, network::Graph};
+    use osmgraphing::{
+        configs::{self, SimpleId},
+        defaults,
+        helpers::err,
+        io, multi_ch_constructor,
+        network::Graph,
+    };
     use progressing::{mapping::Bar as MappingBar, Baring};
     use rand::Rng;
     use std::{
@@ -421,7 +427,44 @@ mod simulation_pipeline {
         writing_cfg.file = stats_dir.join(writing_cfg.file);
         io::network::edges::Writer::write(&ch_graph, &writing_cfg)?;
 
-        io::balancing::Writer::write(iter, &abs_workloads, &ch_graph, &balancing_cfg)?;
+        // look for name of edge-id (which occurs only once)
+        let edge_id_name = {
+            let id = ch_graph
+                .cfg()
+                .edges
+                .categories
+                .iter()
+                .find_map(|category| match category {
+                    configs::parsing::edges::Category::Meta { info, id } => {
+                        if info == &configs::parsing::edges::MetaInfo::EdgeId {
+                            Some(id)
+                        } else {
+                            None
+                        }
+                    }
+                    configs::parsing::edges::Category::Metric { unit: _, id: _ }
+                    | configs::parsing::edges::Category::Ignored => None,
+                });
+            if let Some(id) = id {
+                id.clone()
+            } else {
+                return Err(err::Msg::from(
+                    "For writing absolute workloads to csv, an edge-id should be given.",
+                ));
+            }
+        };
+        let mut writing_cfg = balancing_cfg.monitoring.edges_info.clone();
+        // path is relative to results-dir
+        writing_cfg.file = stats_dir.join(defaults::balancing::stats::files::ABS_WORKLOADS);
+        // header-line
+        writing_cfg.ids = vec![
+            Some(edge_id_name),
+            Some(SimpleId::from(
+                defaults::balancing::stats::csv_names::NUM_ROUTES,
+            )),
+        ];
+        io::network::edges::Writer::write_external_values(&abs_workloads, &ch_graph, &writing_cfg)?;
+
         info!(
             "FINISHED Written in {} seconds ({} µs).",
             now.elapsed().as_secs(),

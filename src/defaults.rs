@@ -86,9 +86,11 @@ pub mod balancing {
         pub const DIR: &str = "stats";
 
         pub mod files {
-            pub const EDGES_WRITER: &str = "edge-info.csv";
             pub const ABS_WORKLOADS: &str = "abs_workloads.csv";
-            pub const NEW_METRICS: &str = "new_metrics.csv";
+        }
+
+        pub mod csv_names {
+            pub const NUM_ROUTES: &str = "num_routes";
         }
     }
 
