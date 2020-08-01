@@ -1,5 +1,6 @@
 use crate::{
     defaults,
+    helpers::err,
     io::{routing::Writer, SupportingFileExts},
 };
 use serde::Deserialize;
@@ -31,24 +32,36 @@ impl From<WrappedProtoConfig> for Config {
 }
 
 impl Config {
-    pub fn try_from_yaml<P: AsRef<Path> + ?Sized>(path: &P) -> Result<Config, String> {
+    pub fn try_from_yaml<P: AsRef<Path> + ?Sized>(path: &P) -> err::Result<Config> {
         let path = path.as_ref();
         let file = {
             Config::find_supported_ext(path)?;
-            OpenOptions::new()
-                .read(true)
-                .open(path)
-                .expect(&format!("Couldn't open {}", path.display()))
+            match OpenOptions::new().read(true).open(path) {
+                Ok(file) => file,
+                Err(e) => {
+                    return Err(err::Msg::from(format!(
+                        "Couldn't open {} due to error: {}",
+                        path.display(),
+                        e
+                    )))
+                }
+            }
         };
 
         let cfg: Config = match serde_yaml::from_reader(file) {
             Ok(cfg) => cfg,
-            Err(msg) => return Err(format!("{}", msg)),
+            Err(e) => {
+                return Err(err::Msg::from(format!(
+                    "Serde couldn't read {} due to error: {}",
+                    path.display(),
+                    e
+                )))
+            }
         };
 
         match Writer::find_supported_ext(&cfg.file) {
             Ok(_) => Ok(cfg),
-            Err(msg) => Err(format!("Wrong writer-routes-file: {}", msg)),
+            Err(msg) => Err(err::Msg::from(format!("Wrong writer-routes-file: {}", msg))),
         }
     }
 

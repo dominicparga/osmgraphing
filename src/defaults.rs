@@ -47,6 +47,7 @@ pub mod writing {
     pub use super::parsing::NO_SHORTCUT_IDX;
     pub const IGNORE_STR: &str = "_";
 
+    pub const IS_WRITING_WITH_HEADER: bool = true;
     pub const WILL_DENORMALIZE_METRICS_BY_MEAN: bool = false;
 }
 
@@ -115,11 +116,11 @@ pub mod balancing {
         // so the influence of the speed-limit would be increased indirectly.
         // But that's the point, the new metric should balance.
 
-        let workload_idx = graph
+        let old_metric_idx = graph
             .cfg()
             .edges
             .metrics
-            .idx_of(&balancing_cfg.monitoring.workload_id);
+            .idx_of(&balancing_cfg.optimization.metric_id);
 
         let mut new_metrics: Vec<_> = abs_workloads.iter().map(|&w| w as f64).collect();
         let mut metrics = graph.metrics_mut();
@@ -147,13 +148,13 @@ pub mod balancing {
 
         for (edge_idx, new_metric) in new_metrics.iter_mut().enumerate() {
             *new_metric = {
-                let old_metric = metrics[EdgeIdx(edge_idx)][*workload_idx];
+                let old_metric = metrics[EdgeIdx(edge_idx)][*old_metric_idx];
 
-                match balancing_cfg.optimization {
-                    configs::balancing::Optimization::ExplicitEuler { correction } => {
+                match balancing_cfg.optimization.method {
+                    configs::balancing::OptimizationMethod::ExplicitEuler { correction } => {
                         old_metric + (*new_metric - old_metric) * correction
                     }
-                    configs::balancing::Optimization::Averaging => {
+                    configs::balancing::OptimizationMethod::Averaging => {
                         (iteration as f64 * old_metric + *new_metric) / ((iteration + 1) as f64)
                     }
                 }
@@ -219,14 +220,14 @@ pub mod balancing {
         // update graph's metric's mean
 
         if let Some(means) = metrics.means() {
-            means[*workload_idx] = mean;
-            info!("New workload-metric has mean: {}", means[*workload_idx]);
+            means[*old_metric_idx] = mean;
+            info!("New workload-metric has mean: {}", means[*old_metric_idx]);
         }
 
         // update graph's metric
 
         for (edge_idx, new_metric) in new_metrics.into_iter().enumerate() {
-            metrics[EdgeIdx(edge_idx)][*workload_idx] = new_metric;
+            metrics[EdgeIdx(edge_idx)][*old_metric_idx] = new_metric;
         }
 
         Ok(())

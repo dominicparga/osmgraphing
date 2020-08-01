@@ -1,7 +1,6 @@
 use crate::{configs, helpers::err, io::SupportingFileExts, network::Graph};
 use log::info;
 
-mod edges;
 mod new_metrics;
 mod workloads;
 
@@ -15,7 +14,6 @@ impl Writer {
         balancing_cfg: &configs::balancing::Config,
     ) -> err::Feedback {
         info!("START Write graph's route-workload");
-        edges::Writer::new().write(iter, graph, balancing_cfg)?;
         new_metrics::Writer::new().write(iter, graph, balancing_cfg)?;
         workloads::Writer::new().write(iter, abs_workloads, graph, balancing_cfg)?;
         info!("FINISHED");

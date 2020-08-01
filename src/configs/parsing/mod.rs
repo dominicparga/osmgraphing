@@ -25,7 +25,7 @@ pub mod vehicles;
 /// Internally, a default-metric uses provided calculation-rules to be calculated by other default-categories as well (like the duration from distance and maxspeed).
 ///
 /// Keep in mind, that metrics (except for id) are stored as `f64` for better maintainability and efficiency.
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 #[serde(try_from = "ProtoConfig")]
 pub struct Config {
     pub map_file: PathBuf,
@@ -61,24 +61,36 @@ impl TryFrom<ProtoConfig> for Config {
 }
 
 impl Config {
-    pub fn try_from_yaml<P: AsRef<Path> + ?Sized>(path: &P) -> Result<Config, String> {
+    pub fn try_from_yaml<P: AsRef<Path> + ?Sized>(path: &P) -> err::Result<Config> {
         let path = path.as_ref();
         let file = {
             Config::find_supported_ext(path)?;
-            OpenOptions::new()
-                .read(true)
-                .open(path)
-                .expect(&format!("Couldn't open {}", path.display()))
+            match OpenOptions::new().read(true).open(path) {
+                Ok(file) => file,
+                Err(e) => {
+                    return Err(err::Msg::from(format!(
+                        "Couldn't open {} due to error: {}",
+                        path.display(),
+                        e
+                    )))
+                }
+            }
         };
 
         let cfg: Config = match serde_yaml::from_reader(file) {
             Ok(cfg) => cfg,
-            Err(msg) => return Err(format!("{}", msg)),
+            Err(e) => {
+                return Err(err::Msg::from(format!(
+                    "Serde couldn't read {} due to error: {}",
+                    path.display(),
+                    e
+                )))
+            }
         };
 
         match Parser::find_supported_ext(&cfg.map_file) {
             Ok(_) => Ok(cfg),
-            Err(msg) => Err(format!("Wrong parser-map-file: {}", msg)),
+            Err(msg) => Err(err::Msg::from(format!("Wrong parser-map-file: {}", msg))),
         }
     }
 

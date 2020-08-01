@@ -28,12 +28,18 @@ impl SupportingFileExts for Config {
 
 impl From<WrappedProtoConfig> for Config {
     fn from(proto_cfg: WrappedProtoConfig) -> Config {
+        Config::from(proto_cfg.writing)
+    }
+}
+
+impl From<ProtoConfig> for Config {
+    fn from(proto_cfg: ProtoConfig) -> Config {
         Config {
             file: proto_cfg.file,
             is_writing_shortcuts: proto_cfg
                 .is_writing_shortcuts
                 .unwrap_or(defaults::parsing::IS_USING_SHORTCUTS),
-            is_writing_header: true,
+            is_writing_header: defaults::writing::IS_WRITING_WITH_HEADER,
             is_denormalizing: proto_cfg
                 .is_denormalizing
                 .unwrap_or(defaults::writing::WILL_DENORMALIZE_METRICS_BY_MEAN),
@@ -60,15 +66,27 @@ impl Config {
         let path = path.as_ref();
         let file = {
             Config::find_supported_ext(path)?;
-            OpenOptions::new()
-                .read(true)
-                .open(path)
-                .expect(&format!("Couldn't open {}", path.display()))
+            match OpenOptions::new().read(true).open(path) {
+                Ok(file) => file,
+                Err(e) => {
+                    return Err(err::Msg::from(format!(
+                        "Couldn't open {} due to error: {}",
+                        path.display(),
+                        e
+                    )))
+                }
+            }
         };
 
         let cfg: Config = match serde_yaml::from_reader(file) {
             Ok(cfg) => cfg,
-            Err(e) => return Err(err::Msg::from(format!("{}", e))),
+            Err(e) => {
+                return Err(err::Msg::from(format!(
+                    "Serde couldn't read {} due to error: {}",
+                    path.display(),
+                    e
+                )))
+            }
         };
 
         match Writer::find_supported_ext(&cfg.file) {
@@ -88,17 +106,31 @@ impl Config {
 #[derive(Debug, Deserialize)]
 #[serde(from = "WrappedRawConfig")]
 pub struct WrappedProtoConfig {
+    pub writing: ProtoConfig,
+}
+
+impl From<WrappedRawConfig> for WrappedProtoConfig {
+    fn from(raw_cfg: WrappedRawConfig) -> WrappedProtoConfig {
+        WrappedProtoConfig {
+            writing: ProtoConfig::from(raw_cfg.writing),
+        }
+    }
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(from = "RawConfig")]
+pub struct ProtoConfig {
     pub file: PathBuf,
     pub is_writing_shortcuts: Option<bool>,
     pub is_denormalizing: Option<bool>,
     pub ids: Vec<Option<SimpleId>>,
 }
 
-impl From<WrappedRawConfig> for WrappedProtoConfig {
-    fn from(raw_cfg: WrappedRawConfig) -> WrappedProtoConfig {
-        let raw_cfg = raw_cfg.writing.edges_info;
+impl From<RawConfig> for ProtoConfig {
+    fn from(raw_cfg: RawConfig) -> ProtoConfig {
+        let raw_cfg = raw_cfg.edges_info;
 
-        WrappedProtoConfig {
+        ProtoConfig {
             file: raw_cfg.file,
             is_writing_shortcuts: raw_cfg.is_writing_shortcuts,
             is_denormalizing: raw_cfg.is_denormalizing,

@@ -55,8 +55,16 @@ parsing:
     nodes:
     - meta: { info: 'NodeIdx', id: 'node-idx' }
     edges:
+      # src-idx
     - meta: { info: 'SrcIdx', id: 'src-idx' }
+      # src-coords
+    - meta: { info: 'SrcLat', id: 'src-lat' }
+    - meta: { info: 'SrcLon', id: 'src-lon' }
+      # dst-idx
     - meta: { info: 'DstIdx', id: 'dst-idx' }
+      # dst-coords
+    - meta: { info: 'DstLat', id: 'dst-lat' }
+    - meta: { info: 'DstLon', id: 'dst-lon' }
     - custom:
         id: 'lane-count'
         unit: 'LaneCount'

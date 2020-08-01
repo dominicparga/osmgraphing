@@ -2,7 +2,7 @@ use crate::configs::SimpleId;
 use serde::Deserialize;
 pub mod metrics;
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct Config {
     pub categories: Vec<Category>,
 }

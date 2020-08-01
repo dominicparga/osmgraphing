@@ -10,7 +10,7 @@ use kissunits::{
 };
 use serde::Deserialize;
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Config {
     pub are_normalized: bool,
     pub units: DimVec<UnitInfo>,

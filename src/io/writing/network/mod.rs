@@ -22,7 +22,6 @@ fn write_edges_to_file<W: Write>(
     // write header
 
     if writing_cfg.is_writing_header {
-        write!(writer, "# ")?;
         for (i, edge_info) in writing_cfg
             .ids
             .iter()
@@ -53,7 +52,7 @@ fn write_edges_to_file<W: Write>(
     // for every edge
     for edge_idx in fwd_edges.iter() {
         // if shortcut, check if shortcuts are expected to be written
-        if fwd_edges.is_shortcut(edge_idx) && !writing_cfg.is_writing_shortcuts {
+        if !writing_cfg.is_writing_shortcuts && fwd_edges.is_shortcut(edge_idx) {
             // print progress
             progress_bar.add(true);
             if progress_bar.has_progressed_significantly() {
@@ -99,6 +98,16 @@ fn write_edges_to_file<W: Write>(
                                     let src_idx = bwd_edges.dst_idx(edge_idx);
                                     write!(writer, "{}", src_idx)?;
                                 }
+                                configs::parsing::edges::MetaInfo::SrcLat => {
+                                    let src_idx = bwd_edges.dst_idx(edge_idx);
+                                    let src_lat = nodes.coord(src_idx).lat;
+                                    write!(writer, "{}", src_lat)?;
+                                }
+                                configs::parsing::edges::MetaInfo::SrcLon => {
+                                    let src_idx = bwd_edges.dst_idx(edge_idx);
+                                    let src_lon = nodes.coord(src_idx).lon;
+                                    write!(writer, "{}", src_lon)?;
+                                }
                                 configs::parsing::edges::MetaInfo::DstId => {
                                     let dst_idx = fwd_edges.dst_idx(edge_idx);
                                     let dst_id = nodes.id(dst_idx);
@@ -107,6 +116,16 @@ fn write_edges_to_file<W: Write>(
                                 configs::parsing::edges::MetaInfo::DstIdx => {
                                     let dst_idx = fwd_edges.dst_idx(edge_idx);
                                     write!(writer, "{}", dst_idx)?;
+                                }
+                                configs::parsing::edges::MetaInfo::DstLat => {
+                                    let dst_idx = bwd_edges.dst_idx(edge_idx);
+                                    let dst_lat = nodes.coord(dst_idx).lat;
+                                    write!(writer, "{}", dst_lat)?;
+                                }
+                                configs::parsing::edges::MetaInfo::DstLon => {
+                                    let dst_idx = bwd_edges.dst_idx(edge_idx);
+                                    let dst_lon = nodes.coord(dst_idx).lon;
+                                    write!(writer, "{}", dst_lon)?;
                                 }
                                 configs::parsing::edges::MetaInfo::ShortcutIdx0 => {
                                     match fwd_edges.sc_edges(edge_idx) {

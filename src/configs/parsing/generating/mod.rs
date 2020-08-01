@@ -2,7 +2,7 @@ use serde::Deserialize;
 pub mod edges;
 pub mod nodes;
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct Config {
     pub nodes: nodes::Config,

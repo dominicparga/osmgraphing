@@ -126,7 +126,7 @@ class Data():
     def path_to_edge_info(self, iteration=None):
         if iteration is None:
             iteration = self.iteration
-        return os.path.join(f'{iteration}', 'stats', 'edge-info.csv')
+        return os.path.join(f'{iteration}', 'stats', 'edges-info.csv')
 
     def path_to_abs_workloads(self, iteration=None):
         if iteration is None:
@@ -255,10 +255,10 @@ class Data():
             edges_info = []
             for row in csv_reader:
                 edge_id = int(row['edge-id'])
-                src_lat = float(row['src_lat'])
-                src_lon = float(row['src_lon'])
-                dst_lat = float(row['dst_lat'])
-                dst_lon = float(row['dst_lon'])
+                src_lat = float(row['src-lat'])
+                src_lon = float(row['src-lon'])
+                dst_lat = float(row['dst-lat'])
+                dst_lon = float(row['dst-lon'])
                 kilometers = float(row['kilometers'])
                 lane_count = float(row['lane-count'])
 

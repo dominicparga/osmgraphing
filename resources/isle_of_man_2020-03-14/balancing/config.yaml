@@ -19,9 +19,18 @@ parsing:
     nodes:
     - meta: { info: 'NodeIdx', id: 'node-idx' }
     edges:
-    - meta: { info: 'SrcIdx', id: 'src-idx' }
-    - meta: { info: 'DstIdx', id: 'dst-idx' }
     - meta: { info: 'EdgeId', id: 'edge-id' }
+      # src-idx
+    - meta: { info: 'SrcIdx', id: 'src-idx' }
+      # src-coords
+    - meta: { info: 'SrcLat', id: 'src-lat' }
+    - meta: { info: 'SrcLon', id: 'src-lon' }
+      # dst-idx
+    - meta: { info: 'DstIdx', id: 'dst-idx' }
+      # dst-coords
+    - meta: { info: 'DstLat', id: 'dst-lat' }
+    - meta: { info: 'DstLon', id: 'dst-lon' }
+      # metrics
     - haversine: { unit: 'Kilometers', id: 'kilometers' }
     - copy:
         from: { unit: 'Kilometers', id: 'kilometers' }
@@ -33,15 +42,27 @@ parsing:
     - custom:
         id: 'workload'
         unit: 'F64'
+        # is ignored anyways, see optimizing-method
+        # BUT 0.0 would lead to errors due to mean-normalization
         default: 1.0
 # define balancing-configs
 balancing:
   seed: 42
   number_of_threads: 4
   results-dir: 'custom/results/isle_of_man_2020-03-14'
-  number_of_metric-updates: 5
   iter-0-cfg: 'resources/isle_of_man_2020-03-14/balancing/init.yaml'
   iter-i-cfg: 'resources/isle_of_man_2020-03-14/balancing/iteration.yaml'
+  optimizing_with:
+    metric-id: 'workload'
+    method:
+      # (iter * old + new) / (iter + 1)
+      # Note, that iter is 0 in the first iteration.
+      averaging
+  number_of_metric-updates: 2
+  # important to keep non-zero workloads (if generated non-zero):
+  # - zero-edges creates more uninteresting shortcuts -> less performance
+  # - zero-edges makes Dijkstra running longer/inefficiently
+  min_new_metric: 0.1
   multi-ch-constructor:
     fmi-graph: 'graph.fmi'
     contracted-graph: 'graph.ch.fmi'
@@ -56,18 +77,22 @@ balancing:
     # If true, external edge-ids are piped through the multi-ch-constructor.
     is_using_external_edge-ids: true
   monitoring:
-    distance: 'kilometers'
-    lane-count: 'lane-count'
-    workload: 'workload'
-    will_denormalize_metrics_by_mean: false
-  # important to keep non-zero workloads (if generated non-zero):
-  # - zero-edges creates more uninteresting shortcuts -> less performance
-  # - zero-edges makes Dijkstra running longer/inefficiently
-  min_new_metric: 0.1
-  optimizing_with:
-    # (iter * old + new) / (iter + 1)
-    # Note, that iter is 0 in the first iteration.
-    averaging
+    edges-info:
+      file: 'edges-info.csv'
+      # optional; default is false, meaning
+      # if the graph has normalized metrics,
+      # it will be printed normalized.
+      # If true, metrics will be denormalized before printing.
+      will_denormalize_metrics_by_mean: false
+      with_shortcuts: false
+      ids:
+      - id: 'edge-id'
+      - id: 'src-lat'
+      - id: 'src-lon'
+      - id: 'dst-lat'
+      - id: 'dst-lon'
+      - id: 'kilometers'
+      - id: 'lane-count'
 # define routing
 routing:
   route-pairs-file: 'resources/isle_of_man_2020-03-14/10_000.route-pairs'

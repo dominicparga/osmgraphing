@@ -1,10 +1,10 @@
-use crate::configs::SimpleId;
+use crate::{configs::SimpleId, defaults};
 use serde::Deserialize;
 use std::path::PathBuf;
 pub mod merge;
 pub mod metrics;
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct Config {
     pub categories: Vec<Category>,
 }
@@ -45,6 +45,7 @@ pub enum Category {
     // in-place
     Merge {
         from: PathBuf,
+        is_file_with_header: bool,
         edge_id: SimpleId,
         edges_info: Vec<merge::Category>,
     },
@@ -81,10 +82,13 @@ impl From<ProtoCategory> for Category {
             },
             ProtoCategory::Merge {
                 from,
+                is_file_with_header,
                 edge_id,
                 edges_info,
             } => Category::Merge {
                 from,
+                is_file_with_header: is_file_with_header
+                    .unwrap_or(defaults::writing::IS_WRITING_WITH_HEADER),
                 edge_id,
                 edges_info: edges_info.into_iter().map(merge::Category::from).collect(),
             },
@@ -96,7 +100,11 @@ impl From<ProtoCategory> for Category {
 pub enum MetaInfo {
     EdgeId,
     SrcIdx,
+    SrcLat,
+    SrcLon,
     DstIdx,
+    DstLat,
+    DstLon,
     ShortcutIdx0,
     ShortcutIdx1,
 }
@@ -106,7 +114,11 @@ impl From<ProtoMetaInfo> for MetaInfo {
         match proto_info {
             ProtoMetaInfo::EdgeId => MetaInfo::EdgeId,
             ProtoMetaInfo::SrcIdx => MetaInfo::SrcIdx,
+            ProtoMetaInfo::SrcLat => MetaInfo::SrcLat,
+            ProtoMetaInfo::SrcLon => MetaInfo::SrcLon,
             ProtoMetaInfo::DstIdx => MetaInfo::DstIdx,
+            ProtoMetaInfo::DstLat => MetaInfo::DstLat,
+            ProtoMetaInfo::DstLon => MetaInfo::DstLon,
             ProtoMetaInfo::ShortcutIdx0 => MetaInfo::ShortcutIdx0,
             ProtoMetaInfo::ShortcutIdx1 => MetaInfo::ShortcutIdx1,
         }
@@ -154,6 +166,7 @@ pub enum ProtoCategory {
     },
     Merge {
         from: PathBuf,
+        is_file_with_header: Option<bool>,
         edge_id: SimpleId,
         edges_info: Vec<merge::ProtoCategory>,
     },
@@ -190,10 +203,12 @@ impl From<RawCategory> for ProtoCategory {
             },
             RawCategory::Merge {
                 from,
+                is_file_with_header,
                 edge_id,
                 edges_info,
             } => ProtoCategory::Merge {
                 from,
+                is_file_with_header,
                 edge_id,
                 edges_info: edges_info
                     .into_iter()
@@ -208,7 +223,11 @@ impl From<RawCategory> for ProtoCategory {
 pub enum ProtoMetaInfo {
     EdgeId,
     SrcIdx,
+    SrcLat,
+    SrcLon,
     DstIdx,
+    DstLat,
+    DstLon,
     ShortcutIdx0,
     ShortcutIdx1,
 }
@@ -218,7 +237,11 @@ impl From<RawMetaInfo> for ProtoMetaInfo {
         match raw_info {
             RawMetaInfo::EdgeId => ProtoMetaInfo::EdgeId,
             RawMetaInfo::SrcIdx => ProtoMetaInfo::SrcIdx,
+            RawMetaInfo::SrcLat => ProtoMetaInfo::SrcLat,
+            RawMetaInfo::SrcLon => ProtoMetaInfo::SrcLon,
             RawMetaInfo::DstIdx => ProtoMetaInfo::DstIdx,
+            RawMetaInfo::DstLat => ProtoMetaInfo::DstLat,
+            RawMetaInfo::DstLon => ProtoMetaInfo::DstLon,
         }
     }
 }
@@ -258,6 +281,8 @@ pub enum RawCategory {
     },
     Merge {
         from: PathBuf,
+        #[serde(rename = "with_header-line")]
+        is_file_with_header: Option<bool>,
         #[serde(rename = "edge-id")]
         edge_id: SimpleId,
         #[serde(rename = "edges-info")]
@@ -269,5 +294,9 @@ pub enum RawCategory {
 pub enum RawMetaInfo {
     EdgeId,
     SrcIdx,
+    SrcLat,
+    SrcLon,
     DstIdx,
+    DstLat,
+    DstLon,
 }

@@ -265,7 +265,12 @@ impl ProtoShortcut {
                             }
                         }
                     }
-                    edges::MetaInfo::SrcIdx | edges::MetaInfo::DstIdx => {
+                    edges::MetaInfo::SrcIdx
+                    | edges::MetaInfo::SrcLat
+                    | edges::MetaInfo::SrcLon
+                    | edges::MetaInfo::DstIdx
+                    | edges::MetaInfo::DstLat
+                    | edges::MetaInfo::DstLon => {
                         return Err(format!("Unsupported category {:?}", category))
                     }
                 },

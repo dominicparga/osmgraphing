@@ -99,7 +99,16 @@ mod simulation_pipeline {
     use osmgraphing::{configs, defaults, helpers::err, io, multi_ch_constructor, network::Graph};
     use progressing::{mapping::Bar as MappingBar, Baring};
     use rand::Rng;
-    use std::{fs, path::Path, sync::Arc, time::Instant};
+    use std::{
+        fs,
+        path::{Path, PathBuf},
+        sync::Arc,
+        time::Instant,
+    };
+
+    fn iter_dir(iter: usize, balancing_cfg: &configs::balancing::Config) -> PathBuf {
+        balancing_cfg.results_dir.join(format!("{}", iter))
+    }
 
     pub fn read_in_custom_graph(raw_parsing_cfg: &str) -> err::Result<Graph> {
         let parsing_cfg = configs::parsing::Config::try_from_yaml(&raw_parsing_cfg)?;
@@ -138,7 +147,7 @@ mod simulation_pipeline {
     ) -> err::Feedback {
         // create directory for results
 
-        let iter_dir = balancing_cfg.results_dir.join(format!("{}", iter));
+        let iter_dir = iter_dir(iter, balancing_cfg);
         fs::create_dir_all(&iter_dir.join(defaults::balancing::stats::DIR))?;
 
         // copy all necessary configs in there
@@ -160,7 +169,7 @@ mod simulation_pipeline {
         graph: Graph,
         iter: usize,
     ) -> err::Feedback {
-        let iter_dir = balancing_cfg.results_dir.join(format!("{}", iter));
+        let iter_dir = iter_dir(iter, balancing_cfg);
 
         // writing graph
 
@@ -194,7 +203,7 @@ mod simulation_pipeline {
             mchc_cfg.dim -= 1;
         }
 
-        let iter_dir = balancing_cfg.results_dir.join(format!("{}", iter));
+        let iter_dir = iter_dir(iter, balancing_cfg);
         mchc_cfg.fmi_graph = iter_dir.join(mchc_cfg.fmi_graph);
         mchc_cfg.ch_fmi_graph = iter_dir.join(mchc_cfg.ch_fmi_graph);
 
@@ -208,7 +217,7 @@ mod simulation_pipeline {
         balancing_cfg: &configs::balancing::Config,
         iter: usize,
     ) -> err::Result<Graph> {
-        let iter_dir = balancing_cfg.results_dir.join(format!("{}", iter));
+        let iter_dir = iter_dir(iter, balancing_cfg);
         let mut parsing_cfg = configs::parsing::Config::try_from_yaml(
             &iter_dir.join(defaults::balancing::files::ITERATION_CFG),
         )?;
@@ -228,6 +237,7 @@ mod simulation_pipeline {
             match category {
                 configs::parsing::generating::edges::Category::Merge {
                     from,
+                    is_file_with_header: _,
                     edge_id: _,
                     edges_info: _,
                 } => *from = iter_dir.join(&from),
@@ -277,12 +287,13 @@ mod simulation_pipeline {
         if iter == 0 {
             // -> deactivate workload-metric
 
-            let workload_idx = ch_graph
+            // The 'new_metric' is probably workload or something related to it.
+            let new_metric_id = ch_graph
                 .cfg()
                 .edges
                 .metrics
-                .try_idx_of(&balancing_cfg.monitoring.workload_id)?;
-            routing_cfg.alphas[*workload_idx] = 0.0;
+                .try_idx_of(&balancing_cfg.optimization.metric_id)?;
+            routing_cfg.alphas[*new_metric_id] = 0.0;
 
             // -> and copy route-pairs-file into the results-directory
             match fs::copy(&old_route_pairs_file, &new_route_pairs_file) {
@@ -401,6 +412,14 @@ mod simulation_pipeline {
 
         // measure writing-time
         let now = Instant::now();
+
+        // write results from this iteration
+
+        let stats_dir = iter_dir(iter, balancing_cfg).join(defaults::balancing::stats::DIR);
+        let mut writing_cfg = balancing_cfg.monitoring.edges_info.clone();
+        // path is relative to results-dir
+        writing_cfg.file = stats_dir.join(writing_cfg.file);
+        io::network::edges::Writer::write(&ch_graph, &writing_cfg)?;
 
         io::balancing::Writer::write(iter, &abs_workloads, &ch_graph, &balancing_cfg)?;
         info!(

@@ -1,7 +1,7 @@
 use crate::network::vehicles::Category as VehicleCategory;
 use serde::Deserialize;
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Config {
     pub category: VehicleCategory,
     pub are_drivers_picky: bool,

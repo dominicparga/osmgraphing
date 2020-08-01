@@ -2,7 +2,7 @@ use crate::configs::{parsing::generating::nodes as gen, SimpleId};
 use serde::Deserialize;
 pub mod metrics;
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Config {
     pub categories: Vec<Category>,
 }

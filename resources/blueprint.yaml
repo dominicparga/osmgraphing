@@ -70,6 +70,11 @@ parsing:
       # Register these ids, so indices could be used as ids in a new graph-file.
     - meta: { info: 'SrcIdx', id: 'src-idx' }
     - meta: { info: 'DstIdx', id: 'dst-idx' }
+      # Register these ids, e.g. for writing later
+    - meta: { info: 'SrcLat', id: 'src-lat' }
+    - meta: { info: 'SrcLon', id: 'src-lon' }
+    - meta: { info: 'DstLat', id: 'dst-lat' }
+    - meta: { info: 'DstLon', id: 'dst-lon' }
       # used for ch-graph, using a default-value, if no shortcut-idx exists yet
     - meta: { info: 'ShortcutIdx0', id: 'sc-idx-0' }
     - meta: { info: 'ShortcutIdx1', id: 'sc-idx-1' }
@@ -94,7 +99,11 @@ parsing:
         default: 0.0 # optional; default is 0.0
       # Read the edge-data from the provided csv-file and add it to the graph.
     - merge:
+        # csv is important, because a header-line is expected
+        # and hence removed automatically
         from: 'path/to/csv'
+        # optional; default is true
+        with_header-line: true
         # this is needed to make parsing easier
         edge-id: 'edge-id'
         # csv-columns
@@ -117,22 +126,28 @@ balancing:
   # every (map-)file is relative to this directory,
   # after this directory was extended by a date
   results-dir: 'custom/results/isle_of_man_2020-03-14'
+  iter-0-cfg: 'resources/isle_of_man_2020-03-14/balancing/init.yaml'
+  iter-i-cfg: 'resources/isle_of_man_2020-03-14/balancing/iteration.yaml'
   # In the following, multiple optimization-methods are listed.
   # Only one is allowed.
   optimizing_with:
-    # old + (new - old) * correction
-    explicit_euler:
-      correction: 0.3
-    # (iter * old + new) / (iter + 1)
-    # Note, that iter is 0 in the first iteration.
-    averaging
+    metric-id: workload
+    method:
+      # old + (new - old) * correction
+      explicit_euler:
+        correction: 0.3
+      # (iter * old + new) / (iter + 1)
+      # Note, that iter is 0 in the first iteration.
+      averaging
   # For analysing the new graph, one iteration will be added.
   # -> number_of_metric-updates == 1 implies that 2 iterations will be done.
   # When using averaging as optimization-method, which is recommended,
   # 2 metric-updates are sufficient. More metric-updates worsen the results.
   number_of_metric-updates: 2
-  iter-0-cfg: 'resources/isle_of_man_2020-03-14/balancing/init.yaml'
-  iter-i-cfg: 'resources/isle_of_man_2020-03-14/balancing/iteration.yaml'
+  # important to keep non-zero workloads (if generated non-zero):
+  # - zero-edges creates more uninteresting shortcuts -> less performance
+  # - zero-edges makes Dijkstra running longer/inefficiently
+  min_new_metric: 0.1
   multi-ch-constructor:
     fmi-graph: 'graph.fmi'
     contracted-graph: 'graph.ch.fmi'
@@ -152,21 +167,13 @@ balancing:
     is_printing_osm-ids: false
     # If true, external edge-ids are piped through the multi-ch-constructor.
     is_using_external_edge-ids: false
-  # These metrics were used for calculating an edge's capacity.
-  # Now, they are just kept for monitoring (e.g. for plotting later).
+  # After every metric-update, graph-data is exported for visualization-purpose.
+  # If this uses certain graph-data, that has to be generated (e.g. src-lat),
+  # this has to be generated in every balancing-config as well!
+  # (init.yaml and iteration.yaml)
   monitoring:
-    distance: 'kilometers'
-    lane-count: 'lane-count'
-    workload: 'workload'
-    # False means
-    # if the graph has normalized metrics,
-    # it will be printed normalized.
-    # If true, metrics will be denormalized before printing.
-    will_denormalize_metrics_by_mean: false
-  # important to keep non-zero workloads (if generated non-zero):
-  # - zero-edges creates more uninteresting shortcuts -> less performance
-  # - zero-edges makes Dijkstra running longer/inefficiently
-  min_new_metric: 0.1
+    edges-info:
+      # see writing: { edges-info: { ... } }
   # optional; default is true
   throw_err_when_new_metric_is_zero: true
 # optional

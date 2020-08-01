@@ -48,11 +48,11 @@ impl Writer {
 
         // write data
 
-        let workload_idx = graph
+        let new_metric_idx = graph
             .cfg()
             .edges
             .metrics
-            .try_idx_of(&balancing_cfg.monitoring.workload_id)?;
+            .try_idx_of(&balancing_cfg.optimization.metric_id)?;
         let metrics = graph.metrics();
 
         for edge_idx in fwd_edges
@@ -61,9 +61,9 @@ impl Writer {
         {
             let edge_id = fwd_edges.id(edge_idx);
 
-            let mut new_metric = metrics[edge_idx][*workload_idx];
+            let mut new_metric = metrics[edge_idx][*new_metric_idx];
             if graph.cfg().edges.metrics.are_normalized {
-                if let Some(mean) = metrics.mean(workload_idx) {
+                if let Some(mean) = metrics.mean(new_metric_idx) {
                     new_metric *= mean;
                 }
             }

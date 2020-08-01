@@ -7,7 +7,7 @@ use serde::Deserialize;
 pub mod metrics;
 use std::convert::TryFrom;
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Config {
     // store all for order
     pub categories: Vec<Category>,
@@ -140,8 +140,12 @@ pub enum MetaInfo {
     EdgeId,
     SrcId,
     SrcIdx,
+    SrcLat,
+    SrcLon,
     DstId,
     DstIdx,
+    DstLat,
+    DstLon,
     ShortcutIdx0,
     ShortcutIdx1,
 }
@@ -163,7 +167,11 @@ impl From<generating::edges::MetaInfo> for MetaInfo {
         match gen_info {
             generating::edges::MetaInfo::EdgeId => MetaInfo::EdgeId,
             generating::edges::MetaInfo::SrcIdx => MetaInfo::SrcIdx,
+            generating::edges::MetaInfo::SrcLat => MetaInfo::SrcLat,
+            generating::edges::MetaInfo::SrcLon => MetaInfo::SrcLon,
             generating::edges::MetaInfo::DstIdx => MetaInfo::DstIdx,
+            generating::edges::MetaInfo::DstLat => MetaInfo::DstLat,
+            generating::edges::MetaInfo::DstLon => MetaInfo::DstLon,
             generating::edges::MetaInfo::ShortcutIdx0 => MetaInfo::ShortcutIdx0,
             generating::edges::MetaInfo::ShortcutIdx1 => MetaInfo::ShortcutIdx1,
         }

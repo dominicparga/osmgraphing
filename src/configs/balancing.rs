@@ -1,4 +1,10 @@
-use crate::{configs::SimpleId, defaults, io::SupportingFileExts, multi_ch_constructor};
+use crate::{
+    configs::{self, SimpleId},
+    defaults,
+    helpers::err,
+    io::SupportingFileExts,
+    multi_ch_constructor,
+};
 use serde::Deserialize;
 use std::{
     fs::OpenOptions,
@@ -9,11 +15,11 @@ use std::{
 pub struct Config {
     pub results_dir: PathBuf,
     pub multi_ch_constructor: multi_ch_constructor::Config,
-    pub num_iter: usize,
     pub iter_0_cfg: PathBuf,
     pub iter_i_cfg: PathBuf,
-    pub monitoring: MonitoringConfig,
     pub optimization: Optimization,
+    pub num_iter: usize,
+    pub monitoring: MonitoringConfig,
     pub num_threads: usize,
     pub seed: u64,
     pub min_new_metric: Option<f64>,
@@ -27,11 +33,16 @@ impl SupportingFileExts for Config {
 }
 
 impl Config {
-    pub fn try_from_str(yaml_str: &str) -> Result<Config, String> {
+    pub fn try_from_str(yaml_str: &str) -> err::Result<Config> {
         let proto_cfg: ProtoConfig = {
             match serde_yaml::from_str(yaml_str) {
                 Ok(proto_cfg) => proto_cfg,
-                Err(e) => return Err(format!("{}", e)),
+                Err(e) => {
+                    return Err(err::Msg::from(format!(
+                        "Serde couldn't parse yaml-str due to error: {}",
+                        e
+                    )))
+                }
             }
         };
         Ok(Config::from(proto_cfg))
@@ -44,19 +55,31 @@ impl Config {
         }
     }
 
-    pub fn try_from_yaml<P: AsRef<Path> + ?Sized>(path: &P) -> Result<Config, String> {
+    pub fn try_from_yaml<P: AsRef<Path> + ?Sized>(path: &P) -> err::Result<Config> {
         let path = path.as_ref();
         let file = {
             Config::find_supported_ext(path)?;
-            OpenOptions::new()
-                .read(true)
-                .open(path)
-                .expect(&format!("Couldn't open {}", path.display()))
+            match OpenOptions::new().read(true).open(path) {
+                Ok(file) => file,
+                Err(e) => {
+                    return Err(err::Msg::from(format!(
+                        "Couldn't open {} due to error: {}",
+                        path.display(),
+                        e
+                    )))
+                }
+            }
         };
 
         let proto_cfg: ProtoConfig = match serde_yaml::from_reader(file) {
             Ok(proto_cfg) => proto_cfg,
-            Err(e) => return Err(format!("{}", e)),
+            Err(e) => {
+                return Err(err::Msg::from(format!(
+                    "Serde couldn't read {} due to error: {}",
+                    path.display(),
+                    e
+                )))
+            }
         };
         Ok(Config::from(proto_cfg))
     }
@@ -92,38 +115,47 @@ impl From<ProtoConfig> for Config {
     }
 }
 
-#[derive(Debug, Clone)]
-pub enum Optimization {
-    ExplicitEuler { correction: f64 },
-    Averaging,
+#[derive(Clone, Debug)]
+pub struct Optimization {
+    pub metric_id: SimpleId,
+    pub method: OptimizationMethod,
 }
 
 impl From<ProtoOptimization> for Optimization {
     fn from(proto_optimization: ProtoOptimization) -> Optimization {
-        match proto_optimization {
-            ProtoOptimization::ExplicitEuler { correction } => Optimization::ExplicitEuler {
-                correction: correction,
-            },
-            ProtoOptimization::Averaging => Optimization::Averaging,
+        Optimization {
+            metric_id: proto_optimization.metric_id,
+            method: OptimizationMethod::from(proto_optimization.method),
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
+pub enum OptimizationMethod {
+    ExplicitEuler { correction: f64 },
+    Averaging,
+}
+
+impl From<ProtoOptimizationMethod> for OptimizationMethod {
+    fn from(proto_method: ProtoOptimizationMethod) -> OptimizationMethod {
+        match proto_method {
+            ProtoOptimizationMethod::ExplicitEuler { correction } => {
+                OptimizationMethod::ExplicitEuler { correction }
+            }
+            ProtoOptimizationMethod::Averaging => OptimizationMethod::Averaging,
         }
     }
 }
 
 #[derive(Clone, Debug)]
 pub struct MonitoringConfig {
-    pub is_denormalizing: bool,
-    pub workload_id: SimpleId,
-    pub lane_count_id: SimpleId,
-    pub distance_id: SimpleId,
+    pub edges_info: configs::writing::network::edges::Config,
 }
 
 impl From<ProtoMonitoringConfig> for MonitoringConfig {
     fn from(proto_cfg: ProtoMonitoringConfig) -> MonitoringConfig {
         MonitoringConfig {
-            is_denormalizing: proto_cfg.is_denormalizing,
-            workload_id: proto_cfg.workload_id,
-            lane_count_id: proto_cfg.lane_count_id,
-            distance_id: proto_cfg.distance_id,
+            edges_info: proto_cfg.edges_info,
         }
     }
 }
@@ -167,36 +199,45 @@ impl From<RawConfig> for ProtoConfig {
 
 #[derive(Clone, Debug)]
 pub struct ProtoMonitoringConfig {
-    pub is_denormalizing: bool,
-    pub workload_id: SimpleId,
-    pub lane_count_id: SimpleId,
-    pub distance_id: SimpleId,
+    pub edges_info: configs::writing::network::edges::Config,
 }
 
 impl From<RawMonitoringConfig> for ProtoMonitoringConfig {
     fn from(raw_cfg: RawMonitoringConfig) -> ProtoMonitoringConfig {
         ProtoMonitoringConfig {
-            is_denormalizing: raw_cfg.is_denormalizing,
-            workload_id: raw_cfg.workload,
-            lane_count_id: raw_cfg.lane_count,
-            distance_id: raw_cfg.distance,
+            edges_info: configs::writing::network::edges::Config::from(raw_cfg.edges_info),
         }
     }
 }
 
-#[derive(Debug)]
-pub enum ProtoOptimization {
-    ExplicitEuler { correction: f64 },
-    Averaging,
+#[derive(Clone, Debug)]
+pub struct ProtoOptimization {
+    metric_id: SimpleId,
+    method: ProtoOptimizationMethod,
 }
 
 impl From<RawOptimization> for ProtoOptimization {
     fn from(raw_optimization: RawOptimization) -> ProtoOptimization {
-        match raw_optimization {
-            RawOptimization::ExplicitEuler { correction } => ProtoOptimization::ExplicitEuler {
-                correction: correction,
-            },
-            RawOptimization::Averaging => ProtoOptimization::Averaging,
+        ProtoOptimization {
+            metric_id: raw_optimization.metric_id,
+            method: ProtoOptimizationMethod::from(raw_optimization.method),
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
+pub enum ProtoOptimizationMethod {
+    ExplicitEuler { correction: f64 },
+    Averaging,
+}
+
+impl From<RawOptimizationMethod> for ProtoOptimizationMethod {
+    fn from(raw_method: RawOptimizationMethod) -> ProtoOptimizationMethod {
+        match raw_method {
+            RawOptimizationMethod::ExplicitEuler { correction } => {
+                ProtoOptimizationMethod::ExplicitEuler { correction }
+            }
+            RawOptimizationMethod::Averaging => ProtoOptimizationMethod::Averaging,
         }
     }
 }
@@ -234,17 +275,21 @@ pub struct RawContent {
 #[derive(Clone, Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct RawMonitoringConfig {
-    #[serde(rename = "will_denormalize_metrics_by_mean")]
-    pub is_denormalizing: bool,
-    pub workload: SimpleId,
-    #[serde(rename = "lane-count")]
-    pub lane_count: SimpleId,
-    pub distance: SimpleId,
+    #[serde(flatten)]
+    edges_info: configs::writing::network::edges::ProtoConfig,
 }
 
 #[derive(Clone, Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
-pub enum RawOptimization {
+pub struct RawOptimization {
+    #[serde(rename = "metric-id")]
+    metric_id: SimpleId,
+    method: RawOptimizationMethod,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub enum RawOptimizationMethod {
     #[serde(rename = "explicit_euler")]
     ExplicitEuler {
         #[serde(rename = "correction")]

@@ -40,7 +40,12 @@ impl Config {
         let proto_cfg = {
             match serde_yaml::from_str(yaml_str) {
                 Ok(proto_cfg) => proto_cfg,
-                Err(e) => return Err(format!("{}", e).into()),
+                Err(e) => {
+                    return Err(err::Msg::from(format!(
+                        "Serde couldn't parse yaml-str due to error: {}",
+                        e
+                    )))
+                }
             }
         };
         Config::try_from_proto(proto_cfg, parsing_cfg)
@@ -92,16 +97,26 @@ impl Config {
         let path = path.as_ref();
         let file = {
             Config::find_supported_ext(path)?;
-            OpenOptions::new()
-                .read(true)
-                .open(path)
-                .expect(&format!("Couldn't open {}", path.display()))
+            match OpenOptions::new().read(true).open(path) {
+                Ok(file) => file,
+                Err(e) => {
+                    return Err(err::Msg::from(format!(
+                        "Couldn't open {} due to error: {}",
+                        path.display(),
+                        e
+                    )))
+                }
+            }
         };
 
         let proto_cfg = match serde_yaml::from_reader(file) {
             Ok(proto_cfg) => proto_cfg,
             Err(e) => {
-                return Err(format!("Couldn't open {} due to error: {}", path.display(), e).into())
+                return Err(err::Msg::from(format!(
+                    "Serde couldn't read {} due to error: {}",
+                    path.display(),
+                    e
+                )))
             }
         };
         Config::try_from_proto(proto_cfg, parsing_cfg)

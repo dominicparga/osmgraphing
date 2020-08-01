@@ -166,6 +166,7 @@ fn check_config(cfg: &parsing::Config) -> err::Feedback {
                     } => 1,
                     generating::edges::Category::Merge {
                         from: _,
+                        is_file_with_header: _,
                         edge_id: _,
                         edges_info: _,
                     } => 0,
@@ -207,8 +208,12 @@ fn check_config(cfg: &parsing::Config) -> err::Feedback {
                     parsing::edges::MetaInfo::EdgeId
                     | parsing::edges::MetaInfo::SrcId
                     | parsing::edges::MetaInfo::SrcIdx
+                    | parsing::edges::MetaInfo::SrcLat
+                    | parsing::edges::MetaInfo::SrcLon
                     | parsing::edges::MetaInfo::DstId
-                    | parsing::edges::MetaInfo::DstIdx => false,
+                    | parsing::edges::MetaInfo::DstIdx
+                    | parsing::edges::MetaInfo::DstLat
+                    | parsing::edges::MetaInfo::DstLon => false,
                 },
                 parsing::edges::Category::Metric { unit: _, id: _ }
                 | parsing::edges::Category::Ignored => false,

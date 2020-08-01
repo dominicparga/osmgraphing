@@ -1,4 +1,6 @@
+use super::edges;
 use crate::{
+    defaults,
     helpers::err,
     io::{network::graph::Writer, SupportingFileExts},
 };
@@ -7,7 +9,6 @@ use std::{
     fs::OpenOptions,
     path::{Path, PathBuf},
 };
-pub mod edges;
 pub mod nodes;
 
 #[derive(Clone, Debug, Deserialize)]
@@ -29,15 +30,27 @@ impl Config {
         let path = path.as_ref();
         let file = {
             Config::find_supported_ext(path)?;
-            OpenOptions::new()
-                .read(true)
-                .open(path)
-                .expect(&format!("Couldn't open {}", path.display()))
+            match OpenOptions::new().read(true).open(path) {
+                Ok(file) => file,
+                Err(e) => {
+                    return Err(err::Msg::from(format!(
+                        "Couldn't open {} due to error: {}",
+                        path.display(),
+                        e
+                    )))
+                }
+            }
         };
 
         let cfg: Config = match serde_yaml::from_reader(file) {
             Ok(cfg) => cfg,
-            Err(e) => return Err(err::Msg::from(format!("{}", e))),
+            Err(e) => {
+                return Err(err::Msg::from(format!(
+                    "Serde couldn't read {} due to error: {}",
+                    path.display(),
+                    e
+                )))
+            }
         };
 
         match Writer::find_supported_ext(&cfg.map_file) {
@@ -57,9 +70,21 @@ impl Config {
 impl From<WrappedProtoConfig> for Config {
     fn from(proto_cfg: WrappedProtoConfig) -> Config {
         Config {
-            map_file: proto_cfg.map_file,
+            map_file: proto_cfg.map_file.clone(),
             nodes: nodes::Config::from(proto_cfg.nodes),
-            edges: edges::Config::from(proto_cfg.edges),
+            edges: edges::Config {
+                file: proto_cfg.map_file,
+                is_writing_shortcuts: proto_cfg
+                    .edges
+                    .is_writing_shortcuts
+                    .unwrap_or(defaults::parsing::IS_USING_SHORTCUTS),
+                is_writing_header: false,
+                is_denormalizing: proto_cfg
+                    .edges
+                    .is_denormalizing
+                    .unwrap_or(defaults::writing::WILL_DENORMALIZE_METRICS_BY_MEAN),
+                ids: proto_cfg.edges.ids,
+            },
         }
     }
 }
@@ -77,9 +102,16 @@ impl From<WrappedRawConfig> for WrappedProtoConfig {
         let raw_cfg = raw_cfg.writing.graph;
 
         WrappedProtoConfig {
-            map_file: raw_cfg.map_file,
+            map_file: raw_cfg.map_file.clone(),
             nodes: nodes::ProtoConfig::from(raw_cfg.nodes),
-            edges: edges::ProtoConfig::from(raw_cfg.edges),
+            edges: edges::ProtoConfig::from(edges::RawConfig {
+                edges_info: edges::RawContent {
+                    file: raw_cfg.map_file,
+                    is_writing_shortcuts: raw_cfg.edges.is_writing_shortcuts,
+                    is_denormalizing: raw_cfg.edges.is_denormalizing,
+                    ids: raw_cfg.edges.ids,
+                },
+            }),
         }
     }
 }
@@ -102,5 +134,21 @@ pub struct RawContent {
     #[serde(rename = "map-file")]
     map_file: PathBuf,
     nodes: nodes::RawConfig,
-    edges: edges::RawConfig,
+    edges: raw_edges::Config,
+}
+
+// TODO module raw exporting stuff for pub(crate) etc.
+mod raw_edges {
+    use super::edges::RawCategory;
+    use serde::Deserialize;
+
+    #[derive(Debug, Deserialize)]
+    #[serde(deny_unknown_fields)]
+    pub struct Config {
+        #[serde(rename = "with_shortcuts")]
+        pub is_writing_shortcuts: Option<bool>,
+        #[serde(rename = "will_denormalize_metrics_by_mean")]
+        pub is_denormalizing: Option<bool>,
+        pub ids: Vec<RawCategory>,
+    }
 }
