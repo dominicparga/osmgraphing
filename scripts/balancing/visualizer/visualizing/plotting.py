@@ -377,7 +377,7 @@ class Machine():
             'binary': TwoSlopeLoggedNorm(base=5),
             'Purples': TwoSlopeLoggedNorm(base=10),
             'gist_heat_r': TwoSlopeLoggedNorm(base=20),
-            'cubehelix_r': TwoSlopeLoggedNorm(),
+            'cubehelix_r': TwoSlopeLoggedNorm(base=3),
             # dark
             'copper': TwoSlopeLoggedNorm(base=50),
         }.get(cmap, colors.Normalize())

@@ -114,11 +114,23 @@ balancing:
   seed: 42
   # optional; default is 4
   number_of_threads: 4
-  # every (map-)file is relative to this directory, after this directory was extended by a date
+  # every (map-)file is relative to this directory,
+  # after this directory was extended by a date
   results-dir: 'custom/results/isle_of_man_2020-03-14'
+  # In the following, multiple optimization-methods are listed.
+  # Only one is allowed.
+  optimizing_with:
+    # old + (new - old) * correction
+    explicit_euler:
+      correction: 0.3
+    # (iter * old + new) / (iter + 1)
+    # Note, that iter is 0 in the first iteration.
+    averaging
   # For analysing the new graph, one iteration will be added.
   # -> number_of_metric-updates == 1 implies that 2 iterations will be done.
-  number_of_metric-updates: 3
+  # When using averaging as optimization-method, which is recommended,
+  # 2 metric-updates are sufficient. More metric-updates worsen the results.
+  number_of_metric-updates: 2
   iter-0-cfg: 'resources/isle_of_man_2020-03-14/balancing/init.yaml'
   iter-i-cfg: 'resources/isle_of_man_2020-03-14/balancing/iteration.yaml'
   multi-ch-constructor:
@@ -157,15 +169,6 @@ balancing:
   min_new_metric: 0.1
   # optional; default is true
   throw_err_when_new_metric_is_zero: true
-  # In the following, multiple optimization-methods are listed.
-  # Only one is allowed.
-  optimizing_with:
-    # old + (new - old) * correction
-    explicit_euler:
-      correction: 0.3
-    # (iter * old + new) / (iter + 1)
-    # Note, that iter is 0 in the first iteration.
-    averaging
 # optional
 # This config can be used with the binary wrapping multi-ch-constructor
 multi-ch-constructor:
