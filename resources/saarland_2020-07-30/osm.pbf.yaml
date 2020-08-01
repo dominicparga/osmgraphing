@@ -1,0 +1,33 @@
+parsing:
+  map-file: 'resources/saarland_2020-07-30/graph.osm.pbf'
+  vehicles:
+    category: 'Car'
+    are_drivers_picky: false
+  nodes:
+  - meta: { info: 'NodeId', id: 'node-id' }
+  - metric: { unit: 'Latitude', id: 'latitude' }
+  - metric: { unit: 'Longitude', id: 'longitude' }
+  edges:
+    will_normalize_metrics_by_mean: true
+    data:
+    - meta: { info: 'SrcId', id: 'src-id' }
+    - meta: { info: 'DstId', id: 'dst-id' }
+    - ignored # shouldn't matter, so add it here to test this
+    - metric: { unit: 'KilometersPerHour', id: 'kmph' }
+    - metric: { unit: 'LaneCount', id: 'lanecount' }
+  generating:
+    nodes:
+    - meta: { info: 'NodeIdx', id: 'node-idx' }
+    edges:
+    - meta: { info: 'SrcIdx', id: 'src-idx' }
+    - meta: { info: 'DstIdx', id: 'dst-idx' }
+    - haversine: { unit: 'Kilometers', id: 'kilometers' }
+    - calc:
+        result: { unit: 'Hours', id: 'hours' }
+        a: { unit: 'Kilometers', id: 'kilometers' }
+        b: { unit: 'KilometersPerHour', id: 'kmph' }
+routing:
+  route-pairs-file: 'resources/saarland_2020-07-30/10_000.route-pairs'
+  is_ch-dijkstra: false
+  metrics:
+  - id: 'kilometers'

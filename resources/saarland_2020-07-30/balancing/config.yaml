@@ -1,0 +1,95 @@
+# read in custom graph
+parsing:
+  map-file: 'resources/saarland_2020-07-30/graph.osm.pbf'
+  vehicles:
+    category: 'Car'
+    are_drivers_picky: false
+  nodes:
+  - meta: { info: 'NodeId', id: 'node-id' }
+  - metric: { unit: 'Latitude', id: 'latitude' }
+  - metric: { unit: 'Longitude', id: 'longitude' }
+  edges:
+    will_normalize_metrics_by_mean: true
+    data:
+    - meta: { info: 'SrcId', id: 'src-id' }
+    - meta: { info: 'DstId', id: 'dst-id' }
+    - metric: { unit: 'KilometersPerHour', id: 'kmph' }
+    - metric: { unit: 'LaneCount', id: 'lane-count' }
+  generating:
+    nodes:
+    - meta: { info: 'NodeIdx', id: 'node-idx' }
+    edges:
+    - meta: { info: 'SrcIdx', id: 'src-idx' }
+    - meta: { info: 'DstIdx', id: 'dst-idx' }
+    - meta: { info: 'EdgeId', id: 'edge-id' }
+    - haversine: { unit: 'Kilometers', id: 'kilometers' }
+    - calc:
+        result: { unit: 'Hours', id: 'hours' }
+        a: { unit: 'Kilometers', id: 'kilometers' }
+        b: { unit: 'KilometersPerHour', id: 'kmph' }
+    - custom:
+        id: 'workload'
+        unit: 'F64'
+        default: 1.0
+# define balancing-configs
+balancing:
+  seed: 42
+  number_of_threads: 15
+  results-dir: 'custom/results/saarland_2020-07-30'
+  iter-0-cfg: 'resources/saarland_2020-07-30/balancing/init.yaml'
+  iter-i-cfg: 'resources/saarland_2020-07-30/balancing/iteration.yaml'
+  optimizing_with:
+    # (iter * old + new) / (iter + 1)
+    # Note, that iter is 0 in the first iteration.
+    averaging
+  number_of_metric-updates: 2
+  multi-ch-constructor:
+    fmi-graph: 'graph.fmi'
+    contracted-graph: 'graph.ch.fmi'
+    # This depends on how many metrics are outsourced to edges-info.csv
+    # and includes the new metric as well.
+    dimension: 3
+    # This is a string, not a float, because it is provided as cmdline-argument
+    contraction-ratio: "99.8"
+    number_of_threads: 15
+    # If true, the edge's nodes' osm-ids instead of their indices are used.
+    is_printing_osm-ids: true
+    # If true, external edge-ids are piped through the multi-ch-constructor.
+    is_using_external_edge-ids: true
+  monitoring:
+    distance: 'kilometers'
+    lane-count: 'lane-count'
+    workload: 'workload'
+    will_denormalize_metrics_by_mean: false
+  # important to keep non-zero workloads (if generated non-zero):
+  # - zero-edges creates more uninteresting shortcuts -> less performance
+  # - zero-edges makes Dijkstra running longer/inefficiently
+  min_new_metric: 0.1
+# define routing
+routing:
+  route-pairs-file: 'resources/saarland_2020-07-30/10_000.route-pairs'
+  is_ch-dijkstra: true
+  metrics:
+  - id: 'kilometers'
+  - id: 'hours'
+    tolerated-scale: 1.25
+  - id: 'workload' # gets deactivated in first iteration
+# write balanced graph after final iteration
+writing:
+  graph:
+    map-file: 'balanced_graph.fmi'
+    nodes:
+    - id: 'node-idx'
+    - id: 'node-id'
+    - id: 'latitude'
+    - id: 'longitude'
+    edges:
+      with_shortcuts: false
+      will_denormalize_metrics_by_mean: false
+      ids:
+      - id: 'src-id'
+      - id: 'dst-id'
+      - id: 'kilometers'
+      - id: 'hours'
+      - id: 'lane-count'
+      - id: 'workload'
