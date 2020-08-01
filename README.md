@@ -13,7 +13,7 @@
 
 [<img title="Balancing Saarland" src="resources/saarland_2020-07-30/balancing/workloads.gif" alt="Balancing Saarland" />](resources/saarland_2020-07-30/balancing/workloads.gif)
 > This GIF shows, how the balancing improves the distribution of `10,000` paths over the network of the German state `Saarland`.
-> New paths from `s` to `t` are not worse than `25 %` than the optimal path from `s` to `t`, with respect to travel-duration (so `55 min` becomes less than `1 h 10 min` in worst-case).
+> New paths from `s` to `t` are not worse than `25 %` than the optimal path from `s` to `t`, with respect to travel-duration (so `55 min` becomes under `1 h 10 min` in the worst-case).
 
 Welcome to the `osmgraphing`-repo! `:)`
 Goal of this repo is parsing [openstreetmap][osm]-data to calculate traffic-routes and different related use-cases on it.
