@@ -12,7 +12,9 @@ use osmgraphing::{
 };
 #[cfg(feature = "gpl-3.0")]
 use rand::SeedableRng;
-use std::{convert::TryFrom, path::PathBuf, sync::Arc, time::Instant};
+#[cfg(feature = "gpl-3.0")]
+use std::sync::Arc;
+use std::{convert::TryFrom, path::PathBuf, time::Instant};
 
 //------------------------------------------------------------------------------------------------//
 // points in Germany
@@ -170,6 +172,7 @@ fn run(args: CmdlineArgs) -> err::Feedback {
         if !args.is_evaluating_balance {
             do_simply_routing(&args, &graph)?;
         } else {
+            #[cfg(feature = "gpl-3.0")]
             do_evaluating_routing(&args, &Arc::new(graph))?;
         }
     }
@@ -203,7 +206,7 @@ fn do_simply_routing(args: &CmdlineArgs, graph: &Graph) -> err::Feedback {
         .routing_algo
         .expect("Routing-algo should already be set.")
     {
-        balancing::RoutingAlgo::Dijkstra => {
+        RoutingAlgo::Dijkstra => {
             for (RoutePair { src, dst }, _route_count) in iter_route_pairs {
                 let now = Instant::now();
                 let best_path = dijkstra.compute_best_path(dijkstra::Query {
@@ -233,7 +236,7 @@ fn do_simply_routing(args: &CmdlineArgs, graph: &Graph) -> err::Feedback {
             }
         }
         #[cfg(feature = "gpl-3.0")]
-        balancing::RoutingAlgo::Explorator => {
+        RoutingAlgo::Explorator => {
             let mut explorator = ConvexHullExplorator::new();
 
             for (RoutePair { src, dst }, _route_count) in iter_route_pairs {
@@ -390,9 +393,9 @@ fn parse_cmdline<'a>() -> err::Result<CmdlineArgs> {
     };
 
     let mut possible_values = Vec::new();
-    possible_values.push(balancing::RoutingAlgo::Dijkstra.name());
+    possible_values.push(RoutingAlgo::Dijkstra.name());
     #[cfg(feature = "gpl-3.0")]
-    possible_values.push(balancing::RoutingAlgo::Explorator.name());
+    possible_values.push(RoutingAlgo::Explorator.name());
     let args = {
         let arg_is_routing = clap::Arg::with_name(constants::ids::IS_ROUTING)
             .long("routing")
@@ -468,13 +471,39 @@ mod constants {
     }
 }
 
+#[derive(Copy, Clone, Debug)]
+pub enum RoutingAlgo {
+    Dijkstra,
+    #[cfg(feature = "gpl-3.0")]
+    Explorator,
+}
+
+impl RoutingAlgo {
+    pub fn name(&self) -> String {
+        format!("{:?}", self)
+    }
+
+    pub fn from_name(name: &str) -> Option<RoutingAlgo> {
+        if RoutingAlgo::Dijkstra.name().to_lowercase() == name {
+            return Some(RoutingAlgo::Dijkstra);
+        }
+
+        #[cfg(feature = "gpl-3.0")]
+        if RoutingAlgo::Explorator.name().to_lowercase() == name {
+            return Some(RoutingAlgo::Explorator);
+        }
+
+        None
+    }
+}
+
 struct CmdlineArgs {
     max_log_level: String,
     cfg: String,
     is_writing_graph: bool,
     is_writing_edges: bool,
     is_writing_routes: bool,
-    routing_algo: Option<balancing::RoutingAlgo>,
+    routing_algo: Option<RoutingAlgo>,
     #[cfg(feature = "gpl-3.0")]
     is_balancing: bool,
     is_evaluating_balance: bool,
@@ -493,9 +522,8 @@ impl<'a> TryFrom<clap::ArgMatches<'a>> for CmdlineArgs {
         let is_writing_graph = matches.is_present(constants::ids::IS_WRITING_GRAPH);
         let is_writing_edges = matches.is_present(constants::ids::IS_WRITING_EDGES);
         let is_writing_routes = matches.is_present(constants::ids::IS_WRITING_ROUTES);
-        let routing_algo = balancing::RoutingAlgo::from_name(
-            matches.value_of(constants::ids::IS_ROUTING).unwrap_or(""),
-        );
+        let routing_algo =
+            RoutingAlgo::from_name(matches.value_of(constants::ids::IS_ROUTING).unwrap_or(""));
         let is_explorating = matches.is_present(constants::ids::IS_EXPLORATING);
         let is_balancing = matches.is_present(constants::ids::IS_BALANCING);
         let is_evaluating_balance = matches.is_present(constants::ids::IS_EVALUATING_BALANCE);

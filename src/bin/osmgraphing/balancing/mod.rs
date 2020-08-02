@@ -1,34 +1,10 @@
+use super::RoutingAlgo;
 use log::{debug, info};
 use osmgraphing::{configs, helpers::err, io, network::Graph};
 use rand::SeedableRng;
 use std::{path::Path, sync::Arc, time::Instant};
+
 pub mod multithreading;
-
-#[derive(Copy, Clone, Debug)]
-pub enum RoutingAlgo {
-    Dijkstra,
-    #[cfg(feature = "gpl-3.0")]
-    Explorator,
-}
-
-impl RoutingAlgo {
-    pub fn name(&self) -> String {
-        format!("{:?}", self)
-    }
-
-    pub fn from_name(name: &str) -> Option<RoutingAlgo> {
-        if RoutingAlgo::Dijkstra.name().to_lowercase() == name {
-            return Some(RoutingAlgo::Dijkstra);
-        }
-
-        #[cfg(feature = "gpl-3.0")]
-        if RoutingAlgo::Explorator.name().to_lowercase() == name {
-            return Some(RoutingAlgo::Explorator);
-        }
-
-        None
-    }
-}
 
 pub fn run(args: CmdlineArgs) -> err::Feedback {
     // check writing-cfg

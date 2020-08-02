@@ -31,6 +31,7 @@ jobs:
         cargo build --release --verbose
     - name: Run tests
       run: |
+        cargo test --verbose
         cargo test --verbose --features='gpl-3.0'
         cargo fmt -- --check
     - name: Run binaries
@@ -66,6 +67,7 @@ jobs:
         cargo build --release --verbose
     - name: Run tests
       run: |
+        cargo test --verbose
         cargo test --verbose --features='gpl-3.0'
     - name: Run binaries
       run: |
@@ -101,6 +103,7 @@ jobs:
       continue-on-error: true
     - name: Run tests
       run: |
+        cargo test --verbose
         cargo test --verbose --features='gpl-3.0'
     - name: Run binaries
       run: |
