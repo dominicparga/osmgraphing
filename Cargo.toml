@@ -32,13 +32,8 @@ custom = []
 
 
 [[bin]]
-name = 'osmgraphing' # bin/osmgraphing.rs
-path = 'src/bin/osmgraphing.rs'
-
-[[bin]]
-name = 'balancer'
-path = 'src/bin/balancer/mod.rs'
-required-features = ['gpl-3.0']
+name = 'osmgraphing'
+path = 'src/bin/osmgraphing/mod.rs'
 
 [[bin]]
 name = 'multi-ch-constructor'

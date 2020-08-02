@@ -35,7 +35,7 @@ However, the underlying parser and graph-structure are working very stable, effi
 Please refer to `LICENSE.md` for details.
 Copyright-owner is `Parga Cacheiro, Dominic`.
 In short, this repository is licensed under the `Apache-2.0`-license as long as you are not using the `cargo`-feature `gpl-3.0`.
-Using this feature adds some code and binaries around the balancer, which depends on code licensed under the `GPL-3.0`.
+Using this `cargo`-feature adds some code and binaries, which depend on code licensed under the `GPL-3.0`.
 
 
 ## Table of contents <a name="toc"></a>
@@ -85,12 +85,14 @@ For usage, this `osmgraphing`-repo has a module wrapping the submodule, using co
 git submodule update --init --recursive
 # Build also features licensed under the `GPL-3.0`.
 # Build with GRAPH_DIM=6.
-GRAPH_DIM=6 cargo run --release --features 'gpl-3.0' --bin balancer -- --config resources/isle_of_man_2020-03-14/balancing/config.yaml
+GRAPH_DIM=6 cargo run --release --features='gpl-3.0' --bin osmgraphing -- --config resources/isle_of_man_2020-03-14/balancing/config.yaml --balancing
 ```
 
 As mentioned above, you may find a detailled config-blueprint in `resources/` and a balancing-example in `resources/isle_of_man/`.
 As defined in the `config.yaml`, the results can be found in `custom/results/isle_of_man` and may be visualized with the python-module in `scripts/`.
 The python-tool has a help-msg, but the balancer also prints the respective command after finishing.
+
+Get further help with `cargo run --bin osmgraphing -- --help`.
 
 
 ### Overview over all features
@@ -100,12 +102,10 @@ The `cargo`-features are needed to build the respective feature.
 Some `cargo`-features are optional for the feature, meaning that the `cargo`-feature adds extra-functionality.
 You can build with `cargo`-features using `cargo build --features='F0,F1,...'` (`cargo run` builds implicitely).
 
-| Feature | `cargo`-feature | Notes |
-|:-------:|:---------------:|:-----|
-| binary: `osmgraphing` | `'gpl-3.0'` (optional) | This tool takes a config and parses a graph respectively. It can execute routing-queries (explorating with `'gpl-3.0'`) and export new graphs. |
-| binary: `multi-ch-constructor` | `'gpl-3.0'` | This tool is a wrapper for the submodule `multi-ch-constructor`, which is written in `c++`. Depending on a config, it constructs a new graph from the provided one via `contraction-hierarchies`. |
-| binary: `balancer` | `'gpl-3.0'` | This tool uses an iterative approach to distribute provided routes over a provided graph. |
-| Custom maps and respective test-cases | `'custom'` | This repository ships with small maps, like handmade maps or `Isle-of-Man`, but larger maps like the German state `Saarland`, parts of German states like `Stuttgart-Regierungsbezirk` or countires like `Germany` consume multiple `100 MB` and more memory. Although, some tests are using these maps and configs may be useful, which is the reason for this `cargo`-feature. To get this feature working, simply download the maps, move them into the respective map-directory in `resources/`, and name them according to other map-directories. |
+| `cargo`-feature | Notes |
+|:---------------:|:------|
+| `'gpl-3.0'` | This feature is needed for every part of the code, that is licensed under the `GPL-3.0`. Even if you are using this `cargo`-feature, it doesn't force you to license data under the `GPL-3.0`, that has been created with the `gpl-3.0`-code. |
+| `'custom'` | This repository ships with small maps, like handmade maps or `Isle-of-Man`, but larger maps like the German state `Saarland`, parts of German states like `Stuttgart-Regierungsbezirk` or countires like `Germany` consume multiple `100 MB` and more memory. Although, some tests are using these maps and configs may be useful, which is the reason for this `cargo`-feature. To get this feature working, simply download the maps, move them into the respective map-directory in `resources/`, and name them according to other map-directories. |
 
 
 ### Downloading and generating maps <a name="downloading-and-generating"></a>
@@ -125,7 +125,7 @@ Further, this repo has a wrapping binary `multi-ch-constructor` for the submodul
 ### Editing the config <a name="editing-the-config"></a>
 
 Every possible option of a config is described in [`resources/blueprint.yaml`][github/self/blob/blueprint.yaml].
-The binaries (`osmgraphing`, `balancer`, `multi-ch-constructor`) (binaries are in `target/release` after release-building) use the config for different use-cases.
+The binaries (`osmgraphing`, `multi-ch-constructor`) (binaries are in `target/release` after release-building) use the config for different use-cases.
 
 ### Inlined metrics <a name="inlined-metrics"></a>
 
@@ -190,7 +190,7 @@ See its README for more info.
 
 ## Balancing <a name="balancing"></a>
 
-See `cargo run --features='gpl-3.0' --release --bin balancer -- --help`.
+See `cargo run --features='gpl-3.0' --release --bin osmgraphing -- --help`.
 
 
 ## Credits <a name="credits"></a>

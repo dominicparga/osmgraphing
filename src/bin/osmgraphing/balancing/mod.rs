@@ -1,29 +1,10 @@
-use log::{debug, error, info};
-use osmgraphing::{
-    configs,
-    helpers::{err, init_logging},
-    io,
-    network::Graph,
-};
+use log::{debug, info};
+use osmgraphing::{configs, helpers::err, io, network::Graph};
 use rand::SeedableRng;
 use std::{path::Path, sync::Arc, time::Instant};
 mod multithreading;
 
-fn main() {
-    let args = parse_cmdline();
-    let result = init_logging(&args.max_log_level, &["balancer"]);
-    if let Err(msg) = result {
-        error!("{}{}", msg, "\n");
-        panic!("{}", msg);
-    }
-    let result = run(args);
-    if let Err(msg) = result {
-        error!("{}{}", msg, "\n");
-        panic!("{}", msg);
-    }
-}
-
-fn run(args: CmdlineArgs) -> err::Feedback {
+pub fn run(args: CmdlineArgs) -> err::Feedback {
     // check writing-cfg
     let _ = configs::writing::network::graph::Config::try_from_yaml(&args.cfg)?;
     let mut balancing_cfg = configs::balancing::Config::try_from_yaml(&args.cfg)?;
@@ -592,95 +573,7 @@ fn write_edges(
     Ok(())
 }
 
-fn parse_cmdline<'a>() -> CmdlineArgs {
-    // arg: quiet
-    let tmp = &[
-        "Sets the logging-level according to the env-variable 'RUST_LOG'.",
-        "The env-variable 'RUST_LOG' has precedence.",
-        "It takes values of modules, e.g.",
-        "export RUST_LOG='warn,osmgraphing=info'",
-        "for getting warn's by default, but 'info' about the others",
-    ]
-    .join("\n");
-    let arg_log_level = clap::Arg::with_name(constants::ids::MAX_LOG_LEVEL)
-        .long("log")
-        .short("l")
-        .value_name("FILTER-LEVEL")
-        .help(tmp)
-        .takes_value(true)
-        .required(false)
-        .case_insensitive(true)
-        .default_value("INFO")
-        .possible_values(&vec!["TRACE", "DEBUG", "INFO", "WARN", "ERROR"]);
-
-    let arg_cfg = clap::Arg::with_name(constants::ids::CFG)
-        .long("config")
-        .short("c")
-        .alias("parsing")
-        .value_name("PATH")
-        .help(
-            "Sets the parser and other configurations according to this config. \
-            See resources/blueprint.yaml for more info.",
-        )
-        .takes_value(true)
-        .required(true);
-
-    // all
-    clap::App::new(env!("CARGO_PKG_NAME"))
-        .version(env!("CARGO_PKG_VERSION"))
-        .author(env!("CARGO_PKG_AUTHORS"))
-        .about(env!("CARGO_PKG_DESCRIPTION"))
-        .long_about(
-            (&[
-                "",
-                "This balancer takes a config-file, parses the chosen graph with specified \
-                settings, and optimizes found routes with the provided balancing- and routing- \
-                config before writing the balanced graph into a fmi-file. Optimizing means \
-                generating a new metric.",
-                "",
-                "Hence a correct config-file contains following:",
-                "- A parsing-config reading graph being balanced.",
-                "- A balancing-config defining the settings for the balancer.",
-                "- A routing-config specifying the routing-settings, which are used for \
-                calculating the new metric.",
-                "- A writing-config for exporting the balanced graph.",
-                "",
-                "You can visualize the results with the python-module",
-                "py ./scripts/balancing/visualizer --results-dir <RESULTS_DIR/DATE>",
-            ]
-            .join("\n"))
-                .as_ref(),
-        )
-        .arg(arg_log_level)
-        .arg(arg_cfg)
-        .get_matches()
-        .into()
-}
-
-mod constants {
-    pub mod ids {
-        pub const MAX_LOG_LEVEL: &str = "max-log-level";
-        pub const CFG: &str = "cfg";
-    }
-}
-
-struct CmdlineArgs {
-    max_log_level: String,
-    cfg: String,
-}
-
-impl<'a> From<clap::ArgMatches<'a>> for CmdlineArgs {
-    fn from(matches: clap::ArgMatches<'a>) -> CmdlineArgs {
-        let max_log_level = matches
-            .value_of(constants::ids::MAX_LOG_LEVEL)
-            .expect(&format!("cmdline-arg: {}", constants::ids::MAX_LOG_LEVEL));
-        let cfg = matches
-            .value_of(constants::ids::CFG)
-            .expect(&format!("cmdline-arg: {}", constants::ids::CFG));
-
-        CmdlineArgs {
-            max_log_level: String::from(max_log_level),
-            cfg: String::from(cfg),
-        }
-    }
+pub struct CmdlineArgs {
+    pub max_log_level: String,
+    pub cfg: String,
 }
