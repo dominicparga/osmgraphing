@@ -96,7 +96,7 @@ balancing:
 # define routing
 routing:
   route-pairs-file: 'resources/isle_of_man_2020-03-14/10_000.route-pairs'
-  is_ch-dijkstra: true
+  algorithm: 'CHDijkstra'
   metrics:
   - id: 'kilometers'
   - id: 'hours'

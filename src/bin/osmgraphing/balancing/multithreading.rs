@@ -1,6 +1,7 @@
 use log::{debug, info, trace, warn};
 use osmgraphing::{
-    configs, defaults,
+    configs::{self, routing::RoutingAlgo},
+    defaults,
     helpers::err,
     network::{EdgeIdx, Graph, RoutePair},
     routing::{
@@ -35,7 +36,7 @@ impl Master {
         mut route_pairs: Vec<(RoutePair<i64>, usize)>,
         ch_graph: &Arc<Graph>,
         rng: &mut rand_pcg::Lcg64Xsh32,
-        routing_algo: super::RoutingAlgo,
+        routing_algo: RoutingAlgo,
     ) -> err::Result<Vec<usize>> {
         info!(
             "Using {} threads working off with {}",
@@ -297,7 +298,7 @@ impl WorkerSocket {
 pub struct Work {
     pub route_pairs: Vec<(RoutePair<i64>, usize)>,
     pub seed: u64,
-    pub routing_algo: super::RoutingAlgo,
+    pub routing_algo: RoutingAlgo,
 }
 
 pub struct Outcome {
@@ -366,6 +367,7 @@ impl Worker {
                 // do work
                 let outcome = match work.routing_algo {
                     super::RoutingAlgo::Dijkstra => self.work_off_with_dijkstra(work),
+                    super::RoutingAlgo::CHDijkstra => self.work_off_with_dijkstra(work),
                     super::RoutingAlgo::Explorator => self.work_off_with_explorator(work),
                 };
 

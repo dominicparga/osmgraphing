@@ -29,7 +29,7 @@ parsing:
     - meta: { info: 'DstLon', id: 'dst-lon' }
 routing:
   route-pairs-file: 'custom/results/isle_of_man_2020-03-14/evaluation/10_000.route-pairs'
-  is_ch-dijkstra: false
+  algorithm: 'Dijkstra'
   metrics:
   - id: 'kilometers'
   - id: 'hours'

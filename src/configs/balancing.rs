@@ -95,18 +95,18 @@ impl Config {
 impl From<ProtoConfig> for Config {
     fn from(proto_cfg: ProtoConfig) -> Config {
         Config {
+            seed: proto_cfg.seed.unwrap_or(defaults::SEED),
             results_dir: proto_cfg.results_dir,
+            iter_0_cfg: proto_cfg.iter_0_cfg,
+            iter_i_cfg: proto_cfg.iter_i_cfg,
             multi_ch_constructor: proto_cfg.multi_ch_constructor,
             // +1 because analysing last graph needs one iteration as well
             num_iter: proto_cfg.num_metric_updates + 1,
-            iter_0_cfg: proto_cfg.iter_0_cfg,
-            iter_i_cfg: proto_cfg.iter_i_cfg,
             monitoring: MonitoringConfig::from(proto_cfg.monitoring),
             optimization: Optimization::from(proto_cfg.optimization),
             num_threads: proto_cfg
                 .num_threads
                 .unwrap_or(defaults::balancing::NUM_THREADS),
-            seed: proto_cfg.seed.unwrap_or(defaults::SEED),
             min_new_metric: proto_cfg.min_new_metric,
             is_err_when_metric_is_zero: proto_cfg
                 .is_err_when_metric_is_zero
@@ -164,15 +164,15 @@ impl From<ProtoMonitoringConfig> for MonitoringConfig {
 #[derive(Debug, Deserialize)]
 #[serde(try_from = "RawConfig")]
 pub struct ProtoConfig {
+    pub seed: Option<u64>,
     pub results_dir: PathBuf,
-    pub multi_ch_constructor: multi_ch_constructor::Config,
-    pub num_metric_updates: usize,
     pub iter_0_cfg: PathBuf,
     pub iter_i_cfg: PathBuf,
+    pub multi_ch_constructor: multi_ch_constructor::Config,
+    pub num_metric_updates: usize,
     pub monitoring: ProtoMonitoringConfig,
     pub optimization: ProtoOptimization,
     pub num_threads: Option<usize>,
-    pub seed: Option<u64>,
     pub min_new_metric: Option<f64>,
     pub is_err_when_metric_is_zero: Option<bool>,
 }
@@ -182,6 +182,7 @@ impl From<RawConfig> for ProtoConfig {
         let raw_cfg = raw_cfg.balancing;
 
         ProtoConfig {
+            seed: raw_cfg.seed,
             results_dir: raw_cfg.results_dir,
             multi_ch_constructor: raw_cfg.multi_ch_constructor,
             num_metric_updates: raw_cfg.number_of_metric_updates,
@@ -190,7 +191,6 @@ impl From<RawConfig> for ProtoConfig {
             monitoring: ProtoMonitoringConfig::from(raw_cfg.monitoring),
             optimization: ProtoOptimization::from(raw_cfg.optimization),
             num_threads: raw_cfg.num_threads,
-            seed: raw_cfg.seed,
             min_new_metric: raw_cfg.min_new_metric,
             is_err_when_metric_is_zero: raw_cfg.is_err_when_metric_is_zero,
         }
@@ -251,6 +251,7 @@ pub struct RawConfig {
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct RawContent {
+    pub seed: Option<u64>,
     #[serde(rename = "results-dir")]
     pub results_dir: PathBuf,
     #[serde(rename = "iter-0-cfg")]
@@ -266,7 +267,6 @@ pub struct RawContent {
     pub optimization: RawOptimization,
     #[serde(rename = "number_of_threads")]
     pub num_threads: Option<usize>,
-    pub seed: Option<u64>,
     pub min_new_metric: Option<f64>,
     #[serde(rename = "throw_err_when_new_metric_is_zero")]
     pub is_err_when_metric_is_zero: Option<bool>,

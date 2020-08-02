@@ -2,14 +2,13 @@ use crate::helpers::{compare_dijkstras, defaults, test_dijkstra, TestNode};
 use defaults::paths::resources::small as resources;
 use kissunits::{distance::Kilometers, geo::Coordinate};
 use osmgraphing::{
-    configs::{self, SimpleId},
+    configs::{self, routing::RoutingAlgo, SimpleId},
     defaults::capacity::DimVec,
     network::{MetricIdx, NodeIdx},
 };
 use smallvec::smallvec;
 
 const METRIC_ID: &str = defaults::DISTANCE_ID;
-const IS_CH_DIJKSTRA: bool = true;
 
 #[test]
 fn compare_dijkstras_on_ch_fmi_map() {
@@ -21,7 +20,7 @@ fn chdijkstra_on_chmap() {
     test_dijkstra(
         resources::CH_FMI_YAML,
         METRIC_ID,
-        IS_CH_DIJKSTRA,
+        RoutingAlgo::CHDijkstra,
         Box::new(expected_paths),
     )
 }
@@ -31,7 +30,7 @@ fn dijkstra_on_chmap() {
     test_dijkstra(
         resources::CH_FMI_YAML,
         METRIC_ID,
-        !IS_CH_DIJKSTRA,
+        RoutingAlgo::Dijkstra,
         Box::new(expected_paths),
     )
 }
@@ -41,7 +40,7 @@ fn chdijkstra_on_map() {
     test_dijkstra(
         resources::FMI_YAML,
         METRIC_ID,
-        IS_CH_DIJKSTRA,
+        RoutingAlgo::CHDijkstra,
         Box::new(expected_paths),
     )
 }
@@ -51,7 +50,7 @@ fn dijkstra_on_map() {
     test_dijkstra(
         resources::FMI_YAML,
         METRIC_ID,
-        !IS_CH_DIJKSTRA,
+        RoutingAlgo::Dijkstra,
         Box::new(expected_paths),
     )
 }

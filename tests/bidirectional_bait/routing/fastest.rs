@@ -5,21 +5,20 @@ use kissunits::{
     time::{Hours, Seconds},
 };
 use osmgraphing::{
-    configs::{self, SimpleId},
+    configs::{self, routing::RoutingAlgo, SimpleId},
     defaults::capacity::DimVec,
     network::{MetricIdx, NodeIdx},
 };
 use smallvec::smallvec;
 
 const METRIC_ID: &str = defaults::DURATION_ID;
-const IS_CH_DIJKSTRA: bool = true;
 
 #[test]
 fn chdijkstra_on_map() {
     test_dijkstra(
         resources::FMI_YAML,
         METRIC_ID,
-        IS_CH_DIJKSTRA,
+        RoutingAlgo::CHDijkstra,
         Box::new(expected_paths),
     )
 }
@@ -29,7 +28,7 @@ fn dijkstra_on_map() {
     test_dijkstra(
         resources::FMI_YAML,
         METRIC_ID,
-        !IS_CH_DIJKSTRA,
+        RoutingAlgo::Dijkstra,
         Box::new(expected_paths),
     )
 }

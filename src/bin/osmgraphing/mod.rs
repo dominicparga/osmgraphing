@@ -4,7 +4,7 @@ mod balancing;
 #[cfg(feature = "gpl-3.0")]
 use osmgraphing::routing::explorating::ConvexHullExplorator;
 use osmgraphing::{
-    configs,
+    configs::{self, routing::RoutingAlgo},
     helpers::{err, init_logging},
     io,
     network::{Graph, RoutePair},
@@ -168,7 +168,7 @@ fn run(args: CmdlineArgs) -> err::Feedback {
 
     // routing-example
 
-    if args.routing_algo.is_some() {
+    if args.is_routing {
         if !args.is_evaluating_balance {
             do_simply_routing(&args, &graph)?;
         } else {
@@ -202,11 +202,8 @@ fn do_simply_routing(args: &CmdlineArgs, graph: &Graph) -> err::Feedback {
     // Init Dijkstra, which is used in both routing-algorithms.
     let mut dijkstra = Dijkstra::new();
 
-    match args
-        .routing_algo
-        .expect("Routing-algo should already be set.")
-    {
-        RoutingAlgo::Dijkstra => {
+    match routing_cfg.routing_algo {
+        RoutingAlgo::Dijkstra | RoutingAlgo::CHDijkstra => {
             for (RoutePair { src, dst }, _route_count) in iter_route_pairs {
                 let now = Instant::now();
                 let best_path = dijkstra.compute_best_path(dijkstra::Query {
@@ -276,10 +273,6 @@ fn do_simply_routing(args: &CmdlineArgs, graph: &Graph) -> err::Feedback {
 
 #[cfg(feature = "gpl-3.0")]
 fn do_evaluating_routing(args: &CmdlineArgs, graph: &Arc<Graph>) -> err::Feedback {
-    let routing_algo = args
-        .routing_algo
-        .expect("Routing-algo should already be set.");
-
     // get config by provided user-input
     let routing_cfg = configs::routing::Config::try_from_yaml(&args.cfg, graph.cfg())?;
     let evaluating_balance_cfg = configs::evaluating_balance::Config::try_from_yaml(&args.cfg)?;
@@ -296,12 +289,14 @@ fn do_evaluating_routing(args: &CmdlineArgs, graph: &Arc<Graph>) -> err::Feedbac
 
     // work-off multithreaded
 
+    let arc_routing_cfg = Arc::new(routing_cfg);
     let mut master = balancing::multithreading::Master::spawn_some(
         evaluating_balance_cfg.num_threads,
         &graph,
-        &Arc::new(routing_cfg),
+        &arc_routing_cfg,
     )?;
-    let abs_workloads = master.work_off(route_pairs, &graph, &mut rng, routing_algo)?;
+    let abs_workloads =
+        master.work_off(route_pairs, &graph, &mut rng, arc_routing_cfg.routing_algo)?;
 
     // write results from (optional) evaluation
     io::evaluating_balance::Writer::write(&abs_workloads, &graph, &evaluating_balance_cfg)?;
@@ -392,22 +387,11 @@ fn parse_cmdline<'a>() -> err::Result<CmdlineArgs> {
         args.arg(arg_is_writing_routes)
     };
 
-    let mut possible_values = Vec::new();
-    possible_values.push(RoutingAlgo::Dijkstra.name());
-    #[cfg(feature = "gpl-3.0")]
-    possible_values.push(RoutingAlgo::Explorator.name());
     let args = {
         let arg_is_routing = clap::Arg::with_name(constants::ids::IS_ROUTING)
             .long("routing")
             .help("Does routing as specified in the provided config.")
-            .takes_value(true)
-            .case_insensitive(true)
-            .possible_values(
-                &possible_values
-                    .iter()
-                    .map(|name| name.as_ref())
-                    .collect::<Vec<_>>(),
-            )
+            .takes_value(false)
             .requires(constants::ids::CFG);
         args.arg(arg_is_routing)
     };
@@ -471,39 +455,13 @@ mod constants {
     }
 }
 
-#[derive(Copy, Clone, Debug)]
-pub enum RoutingAlgo {
-    Dijkstra,
-    #[cfg(feature = "gpl-3.0")]
-    Explorator,
-}
-
-impl RoutingAlgo {
-    pub fn name(&self) -> String {
-        format!("{:?}", self)
-    }
-
-    pub fn from_name(name: &str) -> Option<RoutingAlgo> {
-        if RoutingAlgo::Dijkstra.name().to_lowercase() == name {
-            return Some(RoutingAlgo::Dijkstra);
-        }
-
-        #[cfg(feature = "gpl-3.0")]
-        if RoutingAlgo::Explorator.name().to_lowercase() == name {
-            return Some(RoutingAlgo::Explorator);
-        }
-
-        None
-    }
-}
-
 struct CmdlineArgs {
     max_log_level: String,
     cfg: String,
     is_writing_graph: bool,
     is_writing_edges: bool,
     is_writing_routes: bool,
-    routing_algo: Option<RoutingAlgo>,
+    is_routing: bool,
     #[cfg(feature = "gpl-3.0")]
     is_balancing: bool,
     is_evaluating_balance: bool,
@@ -522,8 +480,7 @@ impl<'a> TryFrom<clap::ArgMatches<'a>> for CmdlineArgs {
         let is_writing_graph = matches.is_present(constants::ids::IS_WRITING_GRAPH);
         let is_writing_edges = matches.is_present(constants::ids::IS_WRITING_EDGES);
         let is_writing_routes = matches.is_present(constants::ids::IS_WRITING_ROUTES);
-        let routing_algo =
-            RoutingAlgo::from_name(matches.value_of(constants::ids::IS_ROUTING).unwrap_or(""));
+        let is_routing = matches.is_present(constants::ids::IS_ROUTING);
         let is_explorating = matches.is_present(constants::ids::IS_EXPLORATING);
         let is_balancing = matches.is_present(constants::ids::IS_BALANCING);
         let is_evaluating_balance = matches.is_present(constants::ids::IS_EVALUATING_BALANCE);
@@ -538,7 +495,7 @@ impl<'a> TryFrom<clap::ArgMatches<'a>> for CmdlineArgs {
             is_writing_graph,
             is_writing_edges,
             is_writing_routes,
-            routing_algo,
+            is_routing,
             #[cfg(feature = "gpl-3.0")]
             is_balancing,
             is_evaluating_balance,

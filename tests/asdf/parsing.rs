@@ -17,30 +17,26 @@ fn wrong_extension() {
 fn routing_config_from_str() {
     let parsing_cfg =
         configs::parsing::Config::from_yaml(defaults::paths::resources::small::FMI_YAML);
-    let yaml_str = &format!(
-        "routing: {{ route-pairs-file: 'asdf', metrics: [{{ id: '{}' }}, {{ id: '{}' }}] }}",
-        defaults::SPEED_ID,
-        defaults::SPEED_ID
-    );
-    configs::routing::Config::from_str(yaml_str, &parsing_cfg);
 
     let yaml_str = &format!(
-        "routing: {{ route-pairs-file: 'asdf', metrics: [{{ id: '{}' }}], is_ch-dijkstra: true }}",
+        "routing: {{ route-pairs-file: 'asdf', metrics: [{{ id: '{}' }}], algorithm: CHDijkstra }}",
         defaults::SPEED_ID
     );
     let routing_cfg = configs::routing::Config::from_str(yaml_str, &parsing_cfg);
-    assert!(
-        routing_cfg.is_ch_dijkstra,
+    assert_eq!(
+        routing_cfg.routing_algo,
+        configs::routing::RoutingAlgo::CHDijkstra,
         "Routing-config should specify ch-dijkstra."
     );
 
     let yaml_str = &format!(
-        "routing: {{ route-pairs-file: 'asdf', metrics: [{{ id: '{}' }}], is_ch-dijkstra: false }}",
+        "routing: {{ route-pairs-file: 'asdf', metrics: [{{ id: '{}' }}], algorithm: Dijkstra }}",
         defaults::SPEED_ID
     );
     let routing_cfg = configs::routing::Config::from_str(yaml_str, &parsing_cfg);
-    assert!(
-        !routing_cfg.is_ch_dijkstra,
+    assert_ne!(
+        routing_cfg.routing_algo,
+        configs::routing::RoutingAlgo::CHDijkstra,
         "Routing-config should specify normal dijkstra."
     );
 }

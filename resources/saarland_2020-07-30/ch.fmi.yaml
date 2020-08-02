@@ -20,7 +20,7 @@ parsing:
     - meta: { info: 'ShortcutIdx1', id: 'sc-idx-1' }
 routing:
   route-pairs-file: 'resources/saarland_2020-07-30/1.route-pairs'
-  is_ch-dijkstra: true
+  algorithm: 'CHDijkstra'
   metrics:
   - id: 'kilometers'
 writing:

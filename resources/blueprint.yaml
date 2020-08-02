@@ -214,8 +214,8 @@ multi-ch-constructor:
 # It is recommended to set this properly.
 routing:
   route-pairs-file: 'relative-path-to-file-containing-route-pairs'
-  # optional; default is false
-  is_ch-dijkstra: true
+  # Dijkstra, CHDijkstra, Explorator
+  algorithm: 'Dijkstra'
   # list of routing-relevant metrics
   metrics:
   - id: 'kilometers'

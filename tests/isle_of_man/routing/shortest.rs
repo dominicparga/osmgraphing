@@ -1,9 +1,12 @@
 use crate::helpers::{compare_dijkstras, defaults, test_dijkstra, TestNode};
 use defaults::paths::resources::isle_of_man as resources;
-use osmgraphing::{configs, defaults::capacity::DimVec, network::MetricIdx};
+use osmgraphing::{
+    configs::{self, routing::RoutingAlgo},
+    defaults::capacity::DimVec,
+    network::MetricIdx,
+};
 
 const METRIC_ID: &str = defaults::DISTANCE_ID;
-const IS_CH_DIJKSTRA: bool = true;
 
 #[test]
 fn compare_dijkstras_on_ch_fmi_map() {
@@ -16,7 +19,7 @@ fn chdijkstra_on_ch_fmi_map() {
     test_dijkstra(
         resources::CH_FMI_YAML,
         METRIC_ID,
-        IS_CH_DIJKSTRA,
+        RoutingAlgo::CHDijkstra,
         Box::new(expected_paths),
     )
 }
@@ -27,7 +30,7 @@ fn dijkstra_on_ch_fmi_map() {
     test_dijkstra(
         resources::CH_FMI_YAML,
         METRIC_ID,
-        !IS_CH_DIJKSTRA,
+        RoutingAlgo::Dijkstra,
         Box::new(expected_paths),
     )
 }
@@ -38,7 +41,7 @@ fn chdijkstra_on_fmi_map() {
     test_dijkstra(
         resources::FMI_YAML,
         METRIC_ID,
-        IS_CH_DIJKSTRA,
+        RoutingAlgo::CHDijkstra,
         Box::new(expected_paths),
     )
 }
@@ -49,7 +52,7 @@ fn dijkstra_on_fmi_map() {
     test_dijkstra(
         resources::FMI_YAML,
         METRIC_ID,
-        !IS_CH_DIJKSTRA,
+        RoutingAlgo::Dijkstra,
         Box::new(expected_paths),
     )
 }
@@ -60,7 +63,7 @@ fn chdijkstra_on_pbf_map() {
     test_dijkstra(
         resources::OSM_PBF_YAML,
         METRIC_ID,
-        IS_CH_DIJKSTRA,
+        RoutingAlgo::CHDijkstra,
         Box::new(expected_paths),
     )
 }
@@ -71,7 +74,7 @@ fn dijkstra_on_pbf_map() {
     test_dijkstra(
         resources::OSM_PBF_YAML,
         METRIC_ID,
-        !IS_CH_DIJKSTRA,
+        RoutingAlgo::Dijkstra,
         Box::new(expected_paths),
     )
 }

@@ -1,6 +1,6 @@
 use super::paths::Path;
 use crate::{
-    configs::routing::Config,
+    configs::routing::{Config, RoutingAlgo},
     defaults::routing::IS_USING_CH_LEVEL_SPEEDUP,
     helpers,
     network::{EdgeIdx, Graph, NodeIdx},
@@ -147,7 +147,15 @@ impl Dijkstra {
             }
         }
 
-        self.is_ch_dijkstra = query.routing_cfg.is_ch_dijkstra;
+        self.is_ch_dijkstra = match query.routing_cfg.routing_algo {
+            RoutingAlgo::Dijkstra => false,
+            RoutingAlgo::CHDijkstra => true,
+            #[cfg(feature = "gpl-3.0")]
+            RoutingAlgo::Explorator => panic!(
+                "Dijkstra is called with {:?} as specified routing-algorithm",
+                RoutingAlgo::Explorator
+            ),
+        };
 
         //----------------------------------------------------------------------------------------//
         // initialization-stuff

@@ -68,7 +68,7 @@ balancing:
 # define routing
 routing:
   route-pairs-file: 'resources/saarland_2020-07-30/10_000.route-pairs'
-  is_ch-dijkstra: true
+  algorithm: 'CHDijkstra'
   metrics:
   - id: 'kilometers'
   - id: 'hours'

@@ -21,7 +21,7 @@ use std::{
 #[derive(Clone, Debug)]
 pub struct Config {
     pub route_pairs_file: Option<PathBuf>,
-    pub is_ch_dijkstra: bool,
+    pub routing_algo: RoutingAlgo,
     pub alphas: DimVec<f64>,
     pub tolerated_scales: DimVec<f64>,
 }
@@ -77,7 +77,7 @@ impl Config {
 
         Ok(Config {
             route_pairs_file: proto_cfg.route_pairs_file,
-            is_ch_dijkstra: proto_cfg.is_ch_dijkstra,
+            routing_algo: RoutingAlgo::from(proto_cfg.routing_algo),
             alphas,
             tolerated_scales,
         })
@@ -133,12 +133,50 @@ impl Config {
     }
 }
 
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub enum RoutingAlgo {
+    Dijkstra,
+    CHDijkstra,
+    #[cfg(feature = "gpl-3.0")]
+    Explorator,
+}
+
+impl RoutingAlgo {
+    pub fn name(&self) -> String {
+        format!("{:?}", self)
+    }
+
+    pub fn from_name(name: &str) -> Option<RoutingAlgo> {
+        if RoutingAlgo::Dijkstra.name().to_lowercase() == name {
+            return Some(RoutingAlgo::Dijkstra);
+        }
+
+        #[cfg(feature = "gpl-3.0")]
+        if RoutingAlgo::Explorator.name().to_lowercase() == name {
+            return Some(RoutingAlgo::Explorator);
+        }
+
+        None
+    }
+}
+
+impl From<ProtoRoutingAlgo> for RoutingAlgo {
+    fn from(proto_routing_algo: ProtoRoutingAlgo) -> RoutingAlgo {
+        match proto_routing_algo {
+            ProtoRoutingAlgo::Dijkstra => RoutingAlgo::Dijkstra,
+            ProtoRoutingAlgo::CHDijkstra => RoutingAlgo::CHDijkstra,
+            #[cfg(feature = "gpl-3.0")]
+            ProtoRoutingAlgo::Explorator => RoutingAlgo::Explorator,
+        }
+    }
+}
+
 /// Don't deny unknown fields to allow multiple configs in one yaml-file.
 #[derive(Debug, Deserialize)]
 #[serde(try_from = "RawConfig")]
 pub struct ProtoConfig {
     pub route_pairs_file: Option<PathBuf>,
-    pub is_ch_dijkstra: bool,
+    pub routing_algo: ProtoRoutingAlgo,
     pub metrics: DimVec<ProtoEntry>,
 }
 
@@ -146,17 +184,38 @@ impl TryFrom<RawConfig> for ProtoConfig {
     type Error = String;
 
     fn try_from(raw_cfg: RawConfig) -> Result<ProtoConfig, String> {
-        let mut metrics = DimVec::with_capacity(raw_cfg.routing.metrics.len());
+        let raw_cfg = raw_cfg.routing;
 
-        for raw_entry in raw_cfg.routing.metrics {
+        let mut metrics = DimVec::with_capacity(raw_cfg.metrics.len());
+
+        for raw_entry in raw_cfg.metrics {
             metrics.push(ProtoEntry::try_from(raw_entry)?);
         }
 
         Ok(ProtoConfig {
-            route_pairs_file: raw_cfg.routing.route_pairs_file,
-            is_ch_dijkstra: raw_cfg.routing.is_ch_dijkstra.unwrap_or(false),
+            route_pairs_file: raw_cfg.route_pairs_file,
+            routing_algo: ProtoRoutingAlgo::from(raw_cfg.routing_algo),
             metrics,
         })
+    }
+}
+
+#[derive(Clone, Debug)]
+pub enum ProtoRoutingAlgo {
+    Dijkstra,
+    CHDijkstra,
+    #[cfg(feature = "gpl-3.0")]
+    Explorator,
+}
+
+impl From<RawRoutingAlgo> for ProtoRoutingAlgo {
+    fn from(raw_routing_algo: RawRoutingAlgo) -> ProtoRoutingAlgo {
+        match raw_routing_algo {
+            RawRoutingAlgo::Dijkstra => ProtoRoutingAlgo::Dijkstra,
+            RawRoutingAlgo::CHDijkstra => ProtoRoutingAlgo::CHDijkstra,
+            #[cfg(feature = "gpl-3.0")]
+            RawRoutingAlgo::Explorator => ProtoRoutingAlgo::Explorator,
+        }
     }
 }
 
@@ -201,9 +260,18 @@ pub struct RawConfig {
 pub struct RawContent {
     #[serde(rename = "route-pairs-file")]
     pub route_pairs_file: Option<PathBuf>,
-    #[serde(rename = "is_ch-dijkstra")]
-    pub is_ch_dijkstra: Option<bool>,
+    #[serde(rename = "algorithm")]
+    pub routing_algo: RawRoutingAlgo,
     pub metrics: Vec<RawEntry>,
+}
+
+#[derive(Copy, Clone, Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub enum RawRoutingAlgo {
+    Dijkstra,
+    CHDijkstra,
+    #[cfg(feature = "gpl-3.0")]
+    Explorator,
 }
 
 #[derive(Debug, Deserialize)]

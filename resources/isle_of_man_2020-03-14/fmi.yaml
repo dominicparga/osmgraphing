@@ -25,6 +25,7 @@ writing:
     random_or_all: { max_count: 100 }
 # needed for examples/exploration.rs
 routing:
+  algorithm: 'Dijkstra'
   metrics:
   - id: 'kilometers'
   - id: 'hours'

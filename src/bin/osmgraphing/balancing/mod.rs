@@ -1,6 +1,10 @@
-use super::RoutingAlgo;
 use log::{debug, info};
-use osmgraphing::{configs, helpers::err, io, network::Graph};
+use osmgraphing::{
+    configs::{self, routing::RoutingAlgo},
+    helpers::err,
+    io,
+    network::Graph,
+};
 use rand::SeedableRng;
 use std::{path::Path, sync::Arc, time::Instant};
 
@@ -313,7 +317,7 @@ mod simulation_pipeline {
         let mut master =
             multithreading::Master::spawn_some(balancing_cfg.num_threads, &ch_graph, &routing_cfg)?;
         let abs_workloads =
-            master.work_off(route_pairs, &ch_graph, rng, super::RoutingAlgo::Explorator)?;
+            master.work_off(route_pairs, &ch_graph, rng, routing_cfg.routing_algo)?;
 
         // update graph with new values
         defaults::balancing::update_new_metric(
