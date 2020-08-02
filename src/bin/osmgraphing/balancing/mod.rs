@@ -2,7 +2,33 @@ use log::{debug, info};
 use osmgraphing::{configs, helpers::err, io, network::Graph};
 use rand::SeedableRng;
 use std::{path::Path, sync::Arc, time::Instant};
-mod multithreading;
+pub mod multithreading;
+
+#[derive(Copy, Clone, Debug)]
+pub enum RoutingAlgo {
+    Dijkstra,
+    #[cfg(feature = "gpl-3.0")]
+    Explorator,
+}
+
+impl RoutingAlgo {
+    pub fn name(&self) -> String {
+        format!("{:?}", self)
+    }
+
+    pub fn from_name(name: &str) -> Option<RoutingAlgo> {
+        if RoutingAlgo::Dijkstra.name().to_lowercase() == name {
+            return Some(RoutingAlgo::Dijkstra);
+        }
+
+        #[cfg(feature = "gpl-3.0")]
+        if RoutingAlgo::Explorator.name().to_lowercase() == name {
+            return Some(RoutingAlgo::Explorator);
+        }
+
+        None
+    }
+}
 
 pub fn run(args: CmdlineArgs) -> err::Feedback {
     // check writing-cfg
@@ -76,16 +102,8 @@ pub fn run(args: CmdlineArgs) -> err::Feedback {
 mod simulation_pipeline {
     use super::multithreading;
     use chrono;
-    use log::{debug, info};
-    use osmgraphing::{
-        configs::{self, SimpleId},
-        defaults,
-        helpers::err,
-        io, multi_ch_constructor,
-        network::Graph,
-    };
-    use progressing::{mapping::Bar as MappingBar, Baring};
-    use rand::Rng;
+    use log::info;
+    use osmgraphing::{configs, defaults, helpers::err, io, multi_ch_constructor, network::Graph};
     use std::{
         fs,
         path::{Path, PathBuf},
@@ -312,78 +330,14 @@ mod simulation_pipeline {
             ch_graph.cfg().edges.metrics.units,
             routing_cfg.alphas,
         );
-        info!("Using {} threads", balancing_cfg.num_threads);
 
         // reverse this vector to make splice efficient
-        let mut route_pairs = io::routing::Parser::parse(&routing_cfg)?;
-        route_pairs.reverse();
-        let mut avg_num_of_found_paths = 0;
-        // not routes, because progress can be shown without it (though it is less accurate)
-        let num_of_route_pairs = route_pairs.len();
+        let route_pairs = io::routing::Parser::parse(&routing_cfg)?;
 
-        // simple init-logging
-
-        info!("START Executing routes and analyzing workload",);
-        let mut progress_bar = MappingBar::with_range(0, num_of_route_pairs).timed();
-
-        // find all routes and count density on graph
-
-        let mut abs_workloads: Vec<usize> = vec![0; ch_graph.fwd_edges().count()];
         let mut master =
             multithreading::Master::spawn_some(balancing_cfg.num_threads, &ch_graph, &routing_cfg)?;
-
-        loop {
-            if let Ok(outcome) = master.recv() {
-                // update counts from outcome
-
-                for edge_idx in outcome.path_edges {
-                    abs_workloads[*edge_idx] += 1;
-                }
-                // remember for avg later
-                outcome
-                    .num_of_found_paths
-                    .iter()
-                    .for_each(|k| avg_num_of_found_paths += k);
-
-                // num_of_routes is ignored here
-                progress_bar.add(outcome.num_of_route_pairs);
-                // print and update progress
-                if progress_bar.has_progressed_significantly() {
-                    progress_bar.remember_significant_progress();
-                    info!("{}", progress_bar);
-                    debug!(
-                        "{}{}{}",
-                        "On average over all route-pairs so far, ",
-                        (1 + 2 * avg_num_of_found_paths / progress_bar.progress()) / 2,
-                        " path(s) per exploration were found.",
-                    );
-                }
-
-                // send new work
-
-                if route_pairs.len() > 0 {
-                    let chunk_len = std::cmp::min(route_pairs.len(), master.work_size());
-                    let chunk: Vec<_> = route_pairs
-                        .splice((route_pairs.len() - chunk_len).., vec![])
-                        .rev()
-                        .collect();
-                    master.send(multithreading::Work {
-                        route_pairs: chunk,
-                        seed: rng.gen(),
-                    })?;
-                } else {
-                    master.drop_and_join_worker()?;
-                }
-            } else {
-                // disconnected when all workers are dropped
-                break;
-            }
-        }
-
-        info!(
-            "On average, {} path(s) per exploration were found.",
-            (1 + 2 * avg_num_of_found_paths / num_of_route_pairs) / 2
-        );
+        let abs_workloads =
+            master.work_off(route_pairs, &ch_graph, rng, super::RoutingAlgo::Explorator)?;
 
         // update graph with new values
         defaults::balancing::update_new_metric(
@@ -403,48 +357,14 @@ mod simulation_pipeline {
         // write results from this iteration
 
         let stats_dir = iter_dir(iter, balancing_cfg).join(defaults::balancing::stats::DIR);
-        let mut writing_cfg = balancing_cfg.monitoring.edges_info.clone();
-        // path is relative to results-dir
-        writing_cfg.file = stats_dir.join(writing_cfg.file);
-        io::network::edges::Writer::write(&ch_graph, &writing_cfg)?;
 
-        // look for name of edge-id (which occurs only once)
-        let edge_id_name = {
-            let id = ch_graph
-                .cfg()
-                .edges
-                .categories
-                .iter()
-                .find_map(|category| match category {
-                    configs::parsing::edges::Category::Meta { info, id } => {
-                        if info == &configs::parsing::edges::MetaInfo::EdgeId {
-                            Some(id)
-                        } else {
-                            None
-                        }
-                    }
-                    configs::parsing::edges::Category::Metric { unit: _, id: _ }
-                    | configs::parsing::edges::Category::Ignored => None,
-                });
-            if let Some(id) = id {
-                id.clone()
-            } else {
-                return Err(err::Msg::from(
-                    "For writing absolute workloads to csv, an edge-id should be given.",
-                ));
-            }
+        let writing_cfg = configs::evaluating_balance::Config {
+            seed: balancing_cfg.seed,
+            results_dir: stats_dir.clone(),
+            monitoring: balancing_cfg.monitoring.clone(),
+            num_threads: balancing_cfg.num_threads,
         };
-        let mut writing_cfg = balancing_cfg.monitoring.edges_info.clone();
-        // path is relative to results-dir
-        writing_cfg.file = stats_dir.join(defaults::balancing::stats::files::ABS_WORKLOADS);
-        // header-line
-        writing_cfg.ids = vec![
-            Some(edge_id_name),
-            Some(SimpleId::from(
-                defaults::balancing::stats::csv_names::NUM_ROUTES,
-            )),
-        ];
-        io::network::edges::Writer::write_external_values(&abs_workloads, &ch_graph, &writing_cfg)?;
+        io::evaluating_balance::Writer::write(&abs_workloads, &ch_graph, &writing_cfg)?;
 
         info!(
             "FINISHED Written in {} seconds ({} µs).",

@@ -49,10 +49,9 @@ trait Parsing {
         &mut self,
         cfg: &configs::routing::Config,
     ) -> err::Result<Vec<(RoutePair<i64>, usize)>> {
-        info!("START Process given file");
+        info!("DO Parse route-pairs");
         self.preprocess(cfg)?;
         let routes = self.parse_route_pairs(cfg)?;
-        info!("FINISHED");
 
         Ok(routes)
     }

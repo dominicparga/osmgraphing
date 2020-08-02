@@ -1,22 +1,22 @@
-use log::{trace, warn};
+use log::{debug, info, trace, warn};
 use osmgraphing::{
     configs, defaults,
     helpers::err,
     network::{EdgeIdx, Graph, RoutePair},
     routing::{
         dijkstra::{self, Dijkstra},
-        exploration::ConvexHullExplorator,
+        explorating::ConvexHullExplorator,
     },
 };
+use progressing::{mapping::Bar as MappingBar, Baring};
 use rand::{
     distributions::{Distribution, Uniform},
-    SeedableRng,
+    Rng, SeedableRng,
 };
 use std::{
     ops::Deref,
     sync::{mpsc, Arc},
     thread,
-    time::Instant,
 };
 
 pub struct Master {
@@ -30,7 +30,89 @@ pub struct Master {
 }
 
 impl Master {
-    pub fn work_size(&self) -> usize {
+    pub fn work_off(
+        &mut self,
+        mut route_pairs: Vec<(RoutePair<i64>, usize)>,
+        ch_graph: &Arc<Graph>,
+        rng: &mut rand_pcg::Lcg64Xsh32,
+        routing_algo: super::RoutingAlgo,
+    ) -> err::Result<Vec<usize>> {
+        info!(
+            "Using {} threads working off with {}",
+            self.num_threads(),
+            routing_algo.name()
+        );
+
+        route_pairs.reverse();
+        // not routes, because progress can be shown without it (though it is less accurate)
+        let num_of_route_pairs = route_pairs.len();
+
+        let mut abs_workloads: Vec<usize> = vec![0; ch_graph.fwd_edges().count()];
+        let mut avg_num_of_found_paths = 0;
+
+        let mut progress_bar = MappingBar::with_range(0, num_of_route_pairs).timed();
+
+        info!("START Executing routes and analyzing workload",);
+        loop {
+            if let Ok(outcome) = self.recv() {
+                // update counts from outcome
+
+                for edge_idx in outcome.path_edges {
+                    abs_workloads[*edge_idx] += 1;
+                }
+                // remember for avg later
+                outcome
+                    .num_of_found_paths
+                    .iter()
+                    .for_each(|k| avg_num_of_found_paths += k);
+
+                // num_of_routes is ignored here
+                progress_bar.add(outcome.num_of_route_pairs);
+                // print and update progress
+                if progress_bar.has_progressed_significantly() {
+                    progress_bar.remember_significant_progress();
+                    info!("{}", progress_bar);
+                    debug!(
+                        "{}{}{}{}{}",
+                        "On average over all route-pairs so far, ",
+                        (1 + 2 * avg_num_of_found_paths / progress_bar.progress()) / 2,
+                        " path(s) per ",
+                        routing_algo.name(),
+                        "-run were found.",
+                    );
+                }
+
+                // send new work
+
+                if route_pairs.len() > 0 {
+                    let chunk_len = std::cmp::min(route_pairs.len(), self.work_size());
+                    let chunk: Vec<_> = route_pairs
+                        .splice((route_pairs.len() - chunk_len).., vec![])
+                        .rev()
+                        .collect();
+                    self.send(Work {
+                        route_pairs: chunk,
+                        seed: rng.gen(),
+                        routing_algo,
+                    })?;
+                } else {
+                    self.drop_and_join_worker()?;
+                }
+            } else {
+                // disconnected when all workers are dropped
+                break;
+            }
+        }
+
+        info!(
+            "On average, {} path(s) per exploration were found.",
+            (1 + 2 * avg_num_of_found_paths / num_of_route_pairs) / 2
+        );
+
+        Ok(abs_workloads)
+    }
+
+    fn work_size(&self) -> usize {
         // give one worker just 1 work-package, e.g. for monitoring
 
         // If only one worker exists
@@ -44,6 +126,10 @@ impl Master {
         } else {
             self.work_size
         }
+    }
+
+    fn num_threads(&self) -> usize {
+        self.worker_sockets.len()
     }
 
     fn last_worker_idx(&self) -> WorkerIdx {
@@ -211,6 +297,7 @@ impl WorkerSocket {
 pub struct Work {
     pub route_pairs: Vec<(RoutePair<i64>, usize)>,
     pub seed: u64,
+    pub routing_algo: super::RoutingAlgo,
 }
 
 pub struct Outcome {
@@ -277,7 +364,10 @@ impl Worker {
                 };
 
                 // do work
-                let outcome = self.work_off(work);
+                let outcome = match work.routing_algo {
+                    super::RoutingAlgo::Dijkstra => self.work_off_with_dijkstra(work),
+                    super::RoutingAlgo::Explorator => self.work_off_with_explorator(work),
+                };
 
                 // return outcome
                 self.outcome_tx
@@ -290,7 +380,51 @@ impl Worker {
         Ok(handle)
     }
 
-    fn work_off(&mut self, work: Work) -> Outcome {
+    fn work_off_with_dijkstra(&mut self, work: Work) -> Outcome {
+        let mut path_edges = Vec::new();
+        let mut num_of_found_paths = Vec::new();
+        let num_of_route_pairs = work.route_pairs.len();
+
+        for (route_pair, route_count) in work.route_pairs {
+            let RoutePair { src, dst } = route_pair.into_node(&self.graph);
+
+            // find explorated routes
+
+            let best_path = self.dijkstra.compute_best_path(dijkstra::Query {
+                src_idx: src.idx(),
+                dst_idx: dst.idx(),
+                graph: &self.graph,
+                routing_cfg: &self.routing_cfg,
+            });
+
+            // Update next workload by looping over all found routes
+            // -> Routes have to be flattened,
+            // -> or shortcuts will lead to wrong best-paths, because counts won't be cumulated.
+
+            if let Some(best_path) = best_path {
+                num_of_found_paths.push(1);
+
+                for edge_idx in best_path.flatten(&self.graph) {
+                    for _ in 0..route_count {
+                        path_edges.push(edge_idx);
+                    }
+                }
+            } else {
+                warn!("Didn't find any path when executing Dijkstra.")
+            }
+        }
+
+        path_edges.shrink_to_fit();
+        num_of_found_paths.shrink_to_fit();
+
+        Outcome {
+            path_edges,
+            num_of_found_paths,
+            num_of_route_pairs,
+        }
+    }
+
+    fn work_off_with_explorator(&mut self, work: Work) -> Outcome {
         let mut path_edges = Vec::new();
         let mut num_of_found_paths = Vec::new();
         let num_of_route_pairs = work.route_pairs.len();
@@ -301,7 +435,6 @@ impl Worker {
 
             // find explorated routes
 
-            let now = Instant::now();
             let found_paths = self.explorator.fully_explorate(
                 dijkstra::Query {
                     src_idx: src.idx(),
@@ -310,13 +443,6 @@ impl Worker {
                     routing_cfg: &self.routing_cfg,
                 },
                 &mut self.dijkstra,
-            );
-            trace!(
-                "Ran Explorator-query from src-id {} to dst-id {} in {} ms. Found {} path(s).",
-                src.id(),
-                dst.id(),
-                now.elapsed().as_micros() as f64 / 1_000.0,
-                found_paths.len()
             );
 
             num_of_found_paths.push(found_paths.len());

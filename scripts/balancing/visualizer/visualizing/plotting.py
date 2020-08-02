@@ -676,7 +676,7 @@ class Machine():
                 sim.results_dir,
                 f'{data.iteration}',
                 'stats',
-                f'delta_workloads-quantiles{self.plot_file_type}'
+                f'delta_workloads-quantiles.{self.plot_file_type}'
             ),
             dpi=self.dpi
         )

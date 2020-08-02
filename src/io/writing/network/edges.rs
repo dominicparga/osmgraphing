@@ -15,6 +15,16 @@ use std::{
 pub struct Writer;
 
 impl Writer {
+    pub fn check(writing_cfg: &WritingConfig) -> err::Feedback {
+        if writing_cfg.file.exists() {
+            Err(err::Msg::from(
+                "New map-file {} does already exist. Please remove it.",
+            ))
+        } else {
+            Ok(())
+        }
+    }
+
     pub fn write(graph: &Graph, writing_cfg: &WritingConfig) -> err::Feedback {
         info!(
             "START Write the graph's edges with {}",
@@ -27,10 +37,20 @@ impl Writer {
 
         // prepare
 
-        let output_file = OpenOptions::new()
+        let output_file = match OpenOptions::new()
             .write(true)
             .create_new(true)
-            .open(&writing_cfg.file)?;
+            .open(&writing_cfg.file)
+        {
+            Ok(file) => file,
+            Err(e) => {
+                return Err(err::Msg::from(format!(
+                    "Couldn't open {} due to error: {}",
+                    writing_cfg.file.display(),
+                    e
+                )))
+            }
+        };
         let mut writer = BufWriter::new(output_file);
 
         write_edges_to_file(&mut writer, graph, writing_cfg)?;

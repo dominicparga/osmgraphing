@@ -1,6 +1,14 @@
 use serde::Deserialize;
 use std::{fmt, fmt::Display};
 
+#[cfg(feature = "gpl-3.0")]
+pub mod balancing;
+#[cfg(feature = "gpl-3.0")]
+pub mod evaluating_balance;
+pub mod parsing;
+pub mod routing;
+pub mod writing;
+
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Ord, PartialOrd)]
 #[serde(from = "String")]
 pub struct SimpleId(pub String);
@@ -40,8 +48,3 @@ impl AsRef<SimpleId> for SimpleId {
         &self
     }
 }
-
-pub mod balancing;
-pub mod parsing;
-pub mod routing;
-pub mod writing;

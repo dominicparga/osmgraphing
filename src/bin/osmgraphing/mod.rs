@@ -1,16 +1,18 @@
-use log::{error, info};
+use log::{debug, error, info, warn};
 #[cfg(feature = "gpl-3.0")]
 mod balancing;
 #[cfg(feature = "gpl-3.0")]
-use osmgraphing::routing::exploration::ConvexHullExplorator;
+use osmgraphing::routing::explorating::ConvexHullExplorator;
 use osmgraphing::{
     configs,
     helpers::{err, init_logging},
     io,
-    network::RoutePair,
+    network::{Graph, RoutePair},
     routing::dijkstra::{self, Dijkstra},
 };
-use std::{convert::TryFrom, path::PathBuf, time::Instant};
+#[cfg(feature = "gpl-3.0")]
+use rand::SeedableRng;
+use std::{convert::TryFrom, path::PathBuf, sync::Arc, time::Instant};
 
 //------------------------------------------------------------------------------------------------//
 // points in Germany
@@ -70,16 +72,15 @@ fn run(args: CmdlineArgs) -> err::Feedback {
 
         // measure parsing-time
         let now = Instant::now();
-
         let graph = io::network::graph::Parser::parse_and_finalize(parsing_cfg)?;
-        info!(
+        debug!(
             "Finished parsing in {} seconds ({} µs).",
             now.elapsed().as_secs(),
             now.elapsed().as_micros(),
         );
-        info!("");
-        info!("{}", graph);
-        info!("");
+        debug!("");
+        debug!("{}", graph);
+        debug!("");
 
         graph
     };
@@ -101,17 +102,7 @@ fn run(args: CmdlineArgs) -> err::Feedback {
         }
 
         // writing to file
-
-        // measure writing-time
-        let now = Instant::now();
-
         io::network::graph::Writer::write(&graph, &writing_cfg)?;
-        info!(
-            "Finished writing in {} seconds ({} µs).",
-            now.elapsed().as_secs(),
-            now.elapsed().as_micros(),
-        );
-        info!("");
     }
 
     // writing edges to file
@@ -134,14 +125,13 @@ fn run(args: CmdlineArgs) -> err::Feedback {
 
         // measure writing-time
         let now = Instant::now();
-
         io::network::edges::Writer::write(&graph, &writing_cfg)?;
-        info!(
+        debug!(
             "Finished writing in {} seconds ({} µs).",
             now.elapsed().as_secs(),
             now.elapsed().as_micros(),
         );
-        info!("");
+        debug!("");
     }
 
     // writing routes to file
@@ -165,77 +155,88 @@ fn run(args: CmdlineArgs) -> err::Feedback {
 
         // measure writing-time
         let now = Instant::now();
-
         io::routing::Writer::write(&graph, &routing_cfg, &writing_cfg)?;
-        info!(
+        debug!(
             "Finished writing in {} seconds ({} µs).",
             now.elapsed().as_secs(),
             now.elapsed().as_micros(),
         );
-        info!("");
+        debug!("");
     }
 
     // routing-example
 
-    if args.is_routing && !args.is_checking_balance {
-        // get config by provided user-input
-
-        let routing_cfg = configs::routing::Config::try_from_yaml(&args.cfg, graph.cfg())?;
-
-        info!("EXECUTE Do routing with alphas: {:?}", routing_cfg.alphas);
-
-        let mut dijkstra = Dijkstra::new();
-
-        // calculate best paths
-
-        for RoutePair { src, dst } in io::routing::Parser::parse(&routing_cfg)?
-            .iter()
-            .map(|(route_pair, _)| route_pair.into_node(&graph))
-        {
-            info!("");
-
-            let now = Instant::now();
-            let best_path = dijkstra.compute_best_path(dijkstra::Query {
-                src_idx: src.idx(),
-                dst_idx: dst.idx(),
-                graph: &graph,
-                routing_cfg: &routing_cfg,
-            });
-            info!(
-                "Ran Dijkstra-query in {} ms",
-                now.elapsed().as_micros() as f64 / 1_000.0,
-            );
-            if let Some(best_path) = best_path {
-                let best_path = best_path.flatten(&graph);
-                info!("Found path {}.", best_path);
-            } else {
-                info!("No path from ({}) to ({}).", src, dst);
-            }
+    if args.routing_algo.is_some() {
+        if !args.is_evaluating_balance {
+            do_simply_routing(&args, &graph)?;
+        } else {
+            do_evaluating_routing(&args, &Arc::new(graph))?;
         }
     }
 
-    // explorating-example
-
     #[cfg(feature = "gpl-3.0")]
-    if args.is_explorating && !args.is_checking_balance {
-        // get config by provided user-input
+    if args.is_balancing {
+        balancing::run(balancing::CmdlineArgs {
+            max_log_level: args.max_log_level.clone(),
+            cfg: args.cfg.clone(),
+        })?;
+    }
 
-        let routing_cfg = configs::routing::Config::try_from_yaml(&args.cfg, graph.cfg())?;
+    Ok(())
+}
 
-        info!("EXECUTE Do routing with alphas: {:?}", routing_cfg.alphas);
+fn do_simply_routing(args: &CmdlineArgs, graph: &Graph) -> err::Feedback {
+    // get config by provided user-input
+    let routing_cfg = configs::routing::Config::try_from_yaml(&args.cfg, graph.cfg())?;
+    info!("EXECUTE Do routing with alphas: {:?}", routing_cfg.alphas);
 
-        let mut dijkstra = Dijkstra::new();
-        let mut explorator = ConvexHullExplorator::new();
+    // get routing-pairs
+    let routing_pairs = io::routing::Parser::parse(&routing_cfg)?;
+    let iter_route_pairs = routing_pairs
+        .iter()
+        .map(|(route_pair, route_count)| (route_pair.into_node(&graph), *route_count));
 
-        // calculate best paths
+    // Init Dijkstra, which is used in both routing-algorithms.
+    let mut dijkstra = Dijkstra::new();
 
-        for (RoutePair { src, dst }, route_count) in io::routing::Parser::parse(&routing_cfg)?
-            .iter()
-            .map(|(route_pair, route_count)| (route_pair.into_node(&graph), *route_count))
-        {
-            for _ in 0..route_count {
+    match args
+        .routing_algo
+        .expect("Routing-algo should already be set.")
+    {
+        balancing::RoutingAlgo::Dijkstra => {
+            for (RoutePair { src, dst }, _route_count) in iter_route_pairs {
+                let now = Instant::now();
+                let best_path = dijkstra.compute_best_path(dijkstra::Query {
+                    src_idx: src.idx(),
+                    dst_idx: dst.idx(),
+                    graph: &graph,
+                    routing_cfg: &routing_cfg,
+                });
                 info!("");
+                info!(
+                    "Ran Dijkstra-query in {} ms",
+                    now.elapsed().as_micros() as f64 / 1_000.0,
+                );
 
+                if let Some(best_path) = best_path {
+                    let best_path = best_path.flatten(&graph);
+
+                    info!(
+                        "Path costs {:?} from ({}) to ({}).",
+                        best_path.costs(),
+                        src,
+                        dst
+                    );
+                } else {
+                    warn!("No path from ({}) to ({}).", src, dst);
+                }
+            }
+        }
+        #[cfg(feature = "gpl-3.0")]
+        balancing::RoutingAlgo::Explorator => {
+            let mut explorator = ConvexHullExplorator::new();
+
+            for (RoutePair { src, dst }, _route_count) in iter_route_pairs {
                 let now = Instant::now();
                 let found_paths = explorator.fully_explorate(
                     dijkstra::Query {
@@ -252,28 +253,55 @@ fn run(args: CmdlineArgs) -> err::Feedback {
                     "Ran Exploration-query in {} ms",
                     now.elapsed().as_micros() as f64 / 1_000.0,
                 );
-                if found_paths.is_empty() {
-                    info!("No path found from ({}) to ({}).", src, dst);
+
+                if !found_paths.is_empty() {
+                    if !found_paths.is_empty() {
+                        info!("Found {} path(s):", found_paths.len());
+                        found_paths.iter().for_each(|path| info!("  {}", path))
+                    } else {
+                        info!("No path found from ({}) to ({}).", src, dst);
+                    }
                 } else {
-                    info!("Found {} path(s):", found_paths.len());
-                    found_paths.iter().for_each(|path| info!("  {}", path))
+                    warn!("No path found from ({}) to ({}).", src, dst);
                 }
             }
         }
     }
 
-    #[cfg(feature = "gpl-3.0")]
-    if args.is_checking_balance {
-        unimplemented!("TODO");
-    }
+    Ok(())
+}
 
-    #[cfg(feature = "gpl-3.0")]
-    if args.is_balancing {
-        balancing::run(balancing::CmdlineArgs {
-            max_log_level: args.max_log_level.clone(),
-            cfg: args.cfg.clone(),
-        })?;
-    }
+#[cfg(feature = "gpl-3.0")]
+fn do_evaluating_routing(args: &CmdlineArgs, graph: &Arc<Graph>) -> err::Feedback {
+    let routing_algo = args
+        .routing_algo
+        .expect("Routing-algo should already be set.");
+
+    // get config by provided user-input
+    let routing_cfg = configs::routing::Config::try_from_yaml(&args.cfg, graph.cfg())?;
+    let evaluating_balance_cfg = configs::evaluating_balance::Config::try_from_yaml(&args.cfg)?;
+
+    // check if files exist
+    io::evaluating_balance::Writer::check(&evaluating_balance_cfg)?;
+
+    let mut rng = rand_pcg::Pcg32::seed_from_u64(evaluating_balance_cfg.seed);
+
+    info!("EXECUTE Do routing with alphas: {:?}", routing_cfg.alphas);
+
+    // get routing-pairs
+    let route_pairs = io::routing::Parser::parse(&routing_cfg)?;
+
+    // work-off multithreaded
+
+    let mut master = balancing::multithreading::Master::spawn_some(
+        evaluating_balance_cfg.num_threads,
+        &graph,
+        &Arc::new(routing_cfg),
+    )?;
+    let abs_workloads = master.work_off(route_pairs, &graph, &mut rng, routing_algo)?;
+
+    // write results from (optional) evaluation
+    io::evaluating_balance::Writer::write(&abs_workloads, &graph, &evaluating_balance_cfg)?;
 
     Ok(())
 }
@@ -361,18 +389,23 @@ fn parse_cmdline<'a>() -> err::Result<CmdlineArgs> {
         args.arg(arg_is_writing_routes)
     };
 
+    let mut possible_values = Vec::new();
+    possible_values.push(balancing::RoutingAlgo::Dijkstra.name());
+    #[cfg(feature = "gpl-3.0")]
+    possible_values.push(balancing::RoutingAlgo::Explorator.name());
     let args = {
-        let mut arg_is_routing = clap::Arg::with_name(constants::ids::IS_ROUTING)
+        let arg_is_routing = clap::Arg::with_name(constants::ids::IS_ROUTING)
             .long("routing")
             .help("Does routing as specified in the provided config.")
             .takes_value(true)
             .case_insensitive(true)
+            .possible_values(
+                &possible_values
+                    .iter()
+                    .map(|name| name.as_ref())
+                    .collect::<Vec<_>>(),
+            )
             .requires(constants::ids::CFG);
-        if cfg!(feature = "gpl-3.0") {
-            arg_is_routing = arg_is_routing.possible_values(&vec!["dijkstra", "explorating"]);
-        } else {
-            arg_is_routing = arg_is_routing.possible_values(&vec!["dijkstra"]);
-        }
         args.arg(arg_is_routing)
     };
 
@@ -402,8 +435,8 @@ fn parse_cmdline<'a>() -> err::Result<CmdlineArgs> {
     };
 
     let args = {
-        let arg_is_checking_balance = clap::Arg::with_name(constants::ids::IS_CHECKING_BALANCE)
-            .long("checking_balance")
+        let arg_is_evaluating_balance = clap::Arg::with_name(constants::ids::IS_EVALUATING_BALANCE)
+            .long("evaluating_balance")
             .help(
                 "With this flag, the provided graph is executed with the defined \
                 routing-algorithm. In opposite to simply executing the routing-queries, the \
@@ -415,7 +448,7 @@ fn parse_cmdline<'a>() -> err::Result<CmdlineArgs> {
             .takes_value(false)
             .hidden(!cfg!(feature = "gpl-3.0"))
             .requires_all(&[constants::ids::CFG, constants::ids::IS_ROUTING]);
-        args.arg(arg_is_checking_balance)
+        args.arg(arg_is_evaluating_balance)
     };
 
     CmdlineArgs::try_from(args.get_matches())
@@ -431,7 +464,7 @@ mod constants {
         pub const IS_ROUTING: &str = "is_routing";
         pub const IS_EXPLORATING: &str = "is_explorating";
         pub const IS_BALANCING: &str = "is_balancing";
-        pub const IS_CHECKING_BALANCE: &str = "is_checking_balance";
+        pub const IS_EVALUATING_BALANCE: &str = "is_evaluating_balance";
     }
 }
 
@@ -441,12 +474,10 @@ struct CmdlineArgs {
     is_writing_graph: bool,
     is_writing_edges: bool,
     is_writing_routes: bool,
-    is_routing: bool,
-    #[cfg(feature = "gpl-3.0")]
-    is_explorating: bool,
+    routing_algo: Option<balancing::RoutingAlgo>,
     #[cfg(feature = "gpl-3.0")]
     is_balancing: bool,
-    is_checking_balance: bool,
+    is_evaluating_balance: bool,
 }
 
 impl<'a> TryFrom<clap::ArgMatches<'a>> for CmdlineArgs {
@@ -462,12 +493,14 @@ impl<'a> TryFrom<clap::ArgMatches<'a>> for CmdlineArgs {
         let is_writing_graph = matches.is_present(constants::ids::IS_WRITING_GRAPH);
         let is_writing_edges = matches.is_present(constants::ids::IS_WRITING_EDGES);
         let is_writing_routes = matches.is_present(constants::ids::IS_WRITING_ROUTES);
-        let is_routing = matches.is_present(constants::ids::IS_ROUTING);
+        let routing_algo = balancing::RoutingAlgo::from_name(
+            matches.value_of(constants::ids::IS_ROUTING).unwrap_or(""),
+        );
         let is_explorating = matches.is_present(constants::ids::IS_EXPLORATING);
         let is_balancing = matches.is_present(constants::ids::IS_BALANCING);
-        let is_checking_balance = matches.is_present(constants::ids::IS_CHECKING_BALANCE);
+        let is_evaluating_balance = matches.is_present(constants::ids::IS_EVALUATING_BALANCE);
 
-        if is_explorating || is_balancing || is_checking_balance {
+        if is_explorating || is_balancing || is_evaluating_balance {
             check_for_activated_feature()?;
         }
 
@@ -477,12 +510,10 @@ impl<'a> TryFrom<clap::ArgMatches<'a>> for CmdlineArgs {
             is_writing_graph,
             is_writing_edges,
             is_writing_routes,
-            is_routing,
-            #[cfg(feature = "gpl-3.0")]
-            is_explorating,
+            routing_algo,
             #[cfg(feature = "gpl-3.0")]
             is_balancing,
-            is_checking_balance,
+            is_evaluating_balance,
         })
     }
 }
