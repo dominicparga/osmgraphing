@@ -151,9 +151,9 @@ impl Dijkstra {
             RoutingAlgo::Dijkstra => false,
             RoutingAlgo::CHDijkstra => true,
             #[cfg(feature = "gpl-3.0")]
-            RoutingAlgo::Explorator => panic!(
+            RoutingAlgo::Explorator { algo } => panic!(
                 "Dijkstra is called with {:?} as specified routing-algorithm",
-                RoutingAlgo::Explorator
+                RoutingAlgo::Explorator { algo }
             ),
         };
 

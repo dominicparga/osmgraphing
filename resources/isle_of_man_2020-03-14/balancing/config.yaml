@@ -97,6 +97,9 @@ balancing:
 routing:
   route-pairs-file: 'resources/isle_of_man_2020-03-14/10_000.route-pairs'
   algorithm: 'CHDijkstra'
+  # algorithm: 'CHDijkstra'
+    # Explorator:
+    #   algo: 'CHDijkstra'
   metrics:
   - id: 'kilometers'
   - id: 'hours'

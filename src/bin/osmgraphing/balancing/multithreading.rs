@@ -1,6 +1,9 @@
 use log::{debug, info, trace, warn};
 use osmgraphing::{
-    configs::{self, routing::RoutingAlgo},
+    configs::{
+        self,
+        routing::{ExploratorAlgo, RoutingAlgo},
+    },
     defaults,
     helpers::err,
     network::{EdgeIdx, Graph, RoutePair},
@@ -34,21 +37,16 @@ impl Master {
     pub fn work_off(
         &mut self,
         mut route_pairs: Vec<(RoutePair<i64>, usize)>,
-        ch_graph: &Arc<Graph>,
+        arc_ch_graph: &Arc<Graph>,
         rng: &mut rand_pcg::Lcg64Xsh32,
-        routing_algo: RoutingAlgo,
     ) -> err::Result<Vec<usize>> {
-        info!(
-            "Using {} threads working off with {}",
-            self.num_threads(),
-            routing_algo.name()
-        );
+        info!("Using {} threads working off", self.num_threads(),);
 
         route_pairs.reverse();
         // not routes, because progress can be shown without it (though it is less accurate)
         let num_of_route_pairs = route_pairs.len();
 
-        let mut abs_workloads: Vec<usize> = vec![0; ch_graph.fwd_edges().count()];
+        let mut abs_workloads: Vec<usize> = vec![0; arc_ch_graph.fwd_edges().count()];
         let mut avg_num_of_found_paths = 0;
 
         let mut progress_bar = MappingBar::with_range(0, num_of_route_pairs).timed();
@@ -74,12 +72,10 @@ impl Master {
                     progress_bar.remember_significant_progress();
                     info!("{}", progress_bar);
                     debug!(
-                        "{}{}{}{}{}",
+                        "{}{}{}",
                         "On average over all route-pairs so far, ",
                         (1 + 2 * avg_num_of_found_paths / progress_bar.progress()) / 2,
-                        " path(s) per ",
-                        routing_algo.name(),
-                        "-run were found.",
+                        " path(s) per routing-query were found.",
                     );
                 }
 
@@ -94,7 +90,6 @@ impl Master {
                     self.send(Work {
                         route_pairs: chunk,
                         seed: rng.gen(),
-                        routing_algo,
                     })?;
                 } else {
                     self.drop_and_join_worker()?;
@@ -142,9 +137,10 @@ impl Master {
 
     pub fn spawn_some(
         count: usize,
-        graph: &Arc<Graph>,
-        routing_cfg: &Arc<configs::routing::Config>,
+        arc_graph: &Arc<Graph>,
+        arc_routing_cfg: &Arc<configs::routing::Config>,
     ) -> err::Result<Master> {
+        info!("Using routing-algo: {:?}", arc_routing_cfg.routing_algo);
         let mut worker_sockets = Vec::with_capacity(count);
 
         let (outcome_tx, outcome_rx) = mpsc::channel();
@@ -156,8 +152,8 @@ impl Master {
             let (work_tx, work_rx) = mpsc::channel();
             let worker = Worker::new(WorkerContext {
                 idx,
-                graph: Arc::clone(graph),
-                routing_cfg: Arc::clone(routing_cfg),
+                arc_graph: Arc::clone(arc_graph),
+                arc_routing_cfg: Arc::clone(arc_routing_cfg),
                 work_rx,
                 outcome_tx: outcome_txs
                     .pop()
@@ -298,7 +294,6 @@ impl WorkerSocket {
 pub struct Work {
     pub route_pairs: Vec<(RoutePair<i64>, usize)>,
     pub seed: u64,
-    pub routing_algo: RoutingAlgo,
 }
 
 pub struct Outcome {
@@ -309,8 +304,8 @@ pub struct Outcome {
 
 struct WorkerContext {
     idx: WorkerIdx,
-    graph: Arc<Graph>,
-    routing_cfg: Arc<configs::routing::Config>,
+    arc_graph: Arc<Graph>,
+    arc_routing_cfg: Arc<configs::routing::Config>,
     work_rx: mpsc::Receiver<Work>,
     outcome_tx: mpsc::Sender<(WorkerIdx, Outcome)>,
 }
@@ -320,8 +315,8 @@ struct Worker {
     explorator: ConvexHullExplorator,
     // context
     idx: WorkerIdx,
-    graph: Arc<Graph>,
-    routing_cfg: Arc<configs::routing::Config>,
+    arc_graph: Arc<Graph>,
+    arc_routing_cfg: Arc<configs::routing::Config>,
     work_rx: mpsc::Receiver<Work>,
     outcome_tx: mpsc::Sender<(WorkerIdx, Outcome)>,
 }
@@ -332,8 +327,8 @@ impl Worker {
             dijkstra: Dijkstra::new(),
             explorator: ConvexHullExplorator::new(),
             idx: context.idx,
-            graph: context.graph,
-            routing_cfg: context.routing_cfg,
+            arc_graph: context.arc_graph,
+            arc_routing_cfg: context.arc_routing_cfg,
             work_rx: context.work_rx,
             outcome_tx: context.outcome_tx,
         }
@@ -365,10 +360,12 @@ impl Worker {
                 };
 
                 // do work
-                let outcome = match work.routing_algo {
+                let outcome = match self.arc_routing_cfg.routing_algo {
                     super::RoutingAlgo::Dijkstra => self.work_off_with_dijkstra(work),
                     super::RoutingAlgo::CHDijkstra => self.work_off_with_dijkstra(work),
-                    super::RoutingAlgo::Explorator => self.work_off_with_explorator(work),
+                    super::RoutingAlgo::Explorator { algo } => {
+                        self.work_off_with_explorator(work, algo)
+                    }
                 };
 
                 // return outcome
@@ -388,15 +385,15 @@ impl Worker {
         let num_of_route_pairs = work.route_pairs.len();
 
         for (route_pair, route_count) in work.route_pairs {
-            let RoutePair { src, dst } = route_pair.into_node(&self.graph);
+            let RoutePair { src, dst } = route_pair.into_node(&self.arc_graph);
 
             // find explorated routes
 
             let best_path = self.dijkstra.compute_best_path(dijkstra::Query {
                 src_idx: src.idx(),
                 dst_idx: dst.idx(),
-                graph: &self.graph,
-                routing_cfg: &self.routing_cfg,
+                graph: &self.arc_graph,
+                routing_cfg: &self.arc_routing_cfg,
             });
 
             // Update next workload by looping over all found routes
@@ -406,7 +403,7 @@ impl Worker {
             if let Some(best_path) = best_path {
                 num_of_found_paths.push(1);
 
-                for edge_idx in best_path.flatten(&self.graph) {
+                for edge_idx in best_path.flatten(&self.arc_graph) {
                     for _ in 0..route_count {
                         path_edges.push(edge_idx);
                     }
@@ -426,14 +423,17 @@ impl Worker {
         }
     }
 
-    fn work_off_with_explorator(&mut self, work: Work) -> Outcome {
+    fn work_off_with_explorator(&mut self, work: Work, explorator_algo: ExploratorAlgo) -> Outcome {
         let mut path_edges = Vec::new();
         let mut num_of_found_paths = Vec::new();
         let num_of_route_pairs = work.route_pairs.len();
         let mut rng = rand_pcg::Pcg32::seed_from_u64(work.seed);
 
+        let mut routing_cfg = self.arc_routing_cfg.as_ref().clone();
+        routing_cfg.routing_algo = RoutingAlgo::from(explorator_algo);
+
         for (route_pair, route_count) in work.route_pairs {
-            let RoutePair { src, dst } = route_pair.into_node(&self.graph);
+            let RoutePair { src, dst } = route_pair.into_node(&self.arc_graph);
 
             // find explorated routes
 
@@ -441,8 +441,8 @@ impl Worker {
                 dijkstra::Query {
                     src_idx: src.idx(),
                     dst_idx: dst.idx(),
-                    graph: &self.graph,
-                    routing_cfg: &self.routing_cfg,
+                    graph: &self.arc_graph,
+                    routing_cfg: &routing_cfg,
                 },
                 &mut self.dijkstra,
             );
@@ -458,7 +458,7 @@ impl Worker {
                 for _ in 0..route_count {
                     let path = found_paths[die.sample(&mut rng)]
                         .clone()
-                        .flatten(&self.graph);
+                        .flatten(&self.arc_graph);
 
                     trace!("    {}", path);
 

@@ -138,25 +138,24 @@ pub enum RoutingAlgo {
     Dijkstra,
     CHDijkstra,
     #[cfg(feature = "gpl-3.0")]
-    Explorator,
+    Explorator {
+        algo: ExploratorAlgo,
+    },
 }
 
 impl RoutingAlgo {
     pub fn name(&self) -> String {
         format!("{:?}", self)
     }
+}
 
-    pub fn from_name(name: &str) -> Option<RoutingAlgo> {
-        if RoutingAlgo::Dijkstra.name().to_lowercase() == name {
-            return Some(RoutingAlgo::Dijkstra);
+#[cfg(feature = "gpl-3.0")]
+impl From<ExploratorAlgo> for RoutingAlgo {
+    fn from(algo: ExploratorAlgo) -> RoutingAlgo {
+        match algo {
+            ExploratorAlgo::Dijkstra => RoutingAlgo::Dijkstra,
+            ExploratorAlgo::CHDijkstra => RoutingAlgo::CHDijkstra,
         }
-
-        #[cfg(feature = "gpl-3.0")]
-        if RoutingAlgo::Explorator.name().to_lowercase() == name {
-            return Some(RoutingAlgo::Explorator);
-        }
-
-        None
     }
 }
 
@@ -166,7 +165,26 @@ impl From<ProtoRoutingAlgo> for RoutingAlgo {
             ProtoRoutingAlgo::Dijkstra => RoutingAlgo::Dijkstra,
             ProtoRoutingAlgo::CHDijkstra => RoutingAlgo::CHDijkstra,
             #[cfg(feature = "gpl-3.0")]
-            ProtoRoutingAlgo::Explorator => RoutingAlgo::Explorator,
+            ProtoRoutingAlgo::Explorator { algo } => RoutingAlgo::Explorator {
+                algo: ExploratorAlgo::from(algo),
+            },
+        }
+    }
+}
+
+#[cfg(feature = "gpl-3.0")]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub enum ExploratorAlgo {
+    Dijkstra,
+    CHDijkstra,
+}
+
+#[cfg(feature = "gpl-3.0")]
+impl From<ProtoExploratorAlgo> for ExploratorAlgo {
+    fn from(proto_algo: ProtoExploratorAlgo) -> ExploratorAlgo {
+        match proto_algo {
+            ProtoExploratorAlgo::Dijkstra => ExploratorAlgo::Dijkstra,
+            ProtoExploratorAlgo::CHDijkstra => ExploratorAlgo::CHDijkstra,
         }
     }
 }
@@ -205,7 +223,9 @@ pub enum ProtoRoutingAlgo {
     Dijkstra,
     CHDijkstra,
     #[cfg(feature = "gpl-3.0")]
-    Explorator,
+    Explorator {
+        algo: ProtoExploratorAlgo,
+    },
 }
 
 impl From<RawRoutingAlgo> for ProtoRoutingAlgo {
@@ -214,7 +234,26 @@ impl From<RawRoutingAlgo> for ProtoRoutingAlgo {
             RawRoutingAlgo::Dijkstra => ProtoRoutingAlgo::Dijkstra,
             RawRoutingAlgo::CHDijkstra => ProtoRoutingAlgo::CHDijkstra,
             #[cfg(feature = "gpl-3.0")]
-            RawRoutingAlgo::Explorator => ProtoRoutingAlgo::Explorator,
+            RawRoutingAlgo::Explorator { algo } => ProtoRoutingAlgo::Explorator {
+                algo: ProtoExploratorAlgo::from(algo),
+            },
+        }
+    }
+}
+
+#[cfg(feature = "gpl-3.0")]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub enum ProtoExploratorAlgo {
+    Dijkstra,
+    CHDijkstra,
+}
+
+#[cfg(feature = "gpl-3.0")]
+impl From<RawExploratorAlgo> for ProtoExploratorAlgo {
+    fn from(raw_algo: RawExploratorAlgo) -> ProtoExploratorAlgo {
+        match raw_algo {
+            RawExploratorAlgo::Dijkstra => ProtoExploratorAlgo::Dijkstra,
+            RawExploratorAlgo::CHDijkstra => ProtoExploratorAlgo::CHDijkstra,
         }
     }
 }
@@ -271,7 +310,17 @@ pub enum RawRoutingAlgo {
     Dijkstra,
     CHDijkstra,
     #[cfg(feature = "gpl-3.0")]
-    Explorator,
+    Explorator {
+        algo: RawExploratorAlgo,
+    },
+}
+
+#[cfg(feature = "gpl-3.0")]
+#[derive(Copy, Clone, Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub enum RawExploratorAlgo {
+    Dijkstra,
+    CHDijkstra,
 }
 
 #[derive(Debug, Deserialize)]

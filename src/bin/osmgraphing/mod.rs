@@ -199,11 +199,10 @@ fn do_simply_routing(args: &CmdlineArgs, graph: &Graph) -> err::Feedback {
         .iter()
         .map(|(route_pair, route_count)| (route_pair.into_node(&graph), *route_count));
 
-    // Init Dijkstra, which is used in both routing-algorithms.
-    let mut dijkstra = Dijkstra::new();
-
     match routing_cfg.routing_algo {
         RoutingAlgo::Dijkstra | RoutingAlgo::CHDijkstra => {
+            let mut dijkstra = Dijkstra::new();
+
             for (RoutePair { src, dst }, _route_count) in iter_route_pairs {
                 let now = Instant::now();
                 let best_path = dijkstra.compute_best_path(dijkstra::Query {
@@ -233,8 +232,11 @@ fn do_simply_routing(args: &CmdlineArgs, graph: &Graph) -> err::Feedback {
             }
         }
         #[cfg(feature = "gpl-3.0")]
-        RoutingAlgo::Explorator => {
+        RoutingAlgo::Explorator { algo } => {
+            let mut dijkstra = Dijkstra::new();
             let mut explorator = ConvexHullExplorator::new();
+            let mut routing_cfg = routing_cfg.clone();
+            routing_cfg.routing_algo = RoutingAlgo::from(algo);
 
             for (RoutePair { src, dst }, _route_count) in iter_route_pairs {
                 let now = Instant::now();
@@ -272,9 +274,9 @@ fn do_simply_routing(args: &CmdlineArgs, graph: &Graph) -> err::Feedback {
 }
 
 #[cfg(feature = "gpl-3.0")]
-fn do_evaluating_routing(args: &CmdlineArgs, graph: &Arc<Graph>) -> err::Feedback {
+fn do_evaluating_routing(args: &CmdlineArgs, arc_graph: &Arc<Graph>) -> err::Feedback {
     // get config by provided user-input
-    let routing_cfg = configs::routing::Config::try_from_yaml(&args.cfg, graph.cfg())?;
+    let routing_cfg = configs::routing::Config::try_from_yaml(&args.cfg, arc_graph.cfg())?;
     let evaluating_balance_cfg = configs::evaluating_balance::Config::try_from_yaml(&args.cfg)?;
 
     // check if files exist
@@ -292,14 +294,13 @@ fn do_evaluating_routing(args: &CmdlineArgs, graph: &Arc<Graph>) -> err::Feedbac
     let arc_routing_cfg = Arc::new(routing_cfg);
     let mut master = balancing::multithreading::Master::spawn_some(
         evaluating_balance_cfg.num_threads,
-        &graph,
+        &arc_graph,
         &arc_routing_cfg,
     )?;
-    let abs_workloads =
-        master.work_off(route_pairs, &graph, &mut rng, arc_routing_cfg.routing_algo)?;
+    let abs_workloads = master.work_off(route_pairs, &arc_graph, &mut rng)?;
 
     // write results from (optional) evaluation
-    io::evaluating_balance::Writer::write(&abs_workloads, &graph, &evaluating_balance_cfg)?;
+    io::evaluating_balance::Writer::write(&abs_workloads, &arc_graph, &evaluating_balance_cfg)?;
 
     Ok(())
 }

@@ -301,29 +301,31 @@ mod simulation_pipeline {
     pub fn balance(
         iter: usize,
         balancing_cfg: &configs::balancing::Config,
-        ch_graph: &mut Arc<Graph>,
-        routing_cfg: &Arc<configs::routing::Config>,
+        arc_ch_graph: &mut Arc<Graph>,
+        arc_routing_cfg: &Arc<configs::routing::Config>,
         rng: &mut rand_pcg::Lcg64Xsh32,
     ) -> err::Feedback {
         info!(
             "Balance via explorating several routes for metrics {:?}x{:?}",
-            ch_graph.cfg().edges.metrics.units,
-            routing_cfg.alphas,
+            arc_ch_graph.cfg().edges.metrics.units,
+            arc_routing_cfg.alphas,
         );
 
         // reverse this vector to make splice efficient
-        let route_pairs = io::routing::Parser::parse(&routing_cfg)?;
+        let route_pairs = io::routing::Parser::parse(&arc_routing_cfg)?;
 
-        let mut master =
-            multithreading::Master::spawn_some(balancing_cfg.num_threads, &ch_graph, &routing_cfg)?;
-        let abs_workloads =
-            master.work_off(route_pairs, &ch_graph, rng, routing_cfg.routing_algo)?;
+        let mut master = multithreading::Master::spawn_some(
+            balancing_cfg.num_threads,
+            &arc_ch_graph,
+            &arc_routing_cfg,
+        )?;
+        let abs_workloads = master.work_off(route_pairs, &arc_ch_graph, rng)?;
 
         // update graph with new values
         defaults::balancing::update_new_metric(
             iter,
             &abs_workloads,
-            Arc::get_mut(ch_graph).expect(
+            Arc::get_mut(arc_ch_graph).expect(
                 "Mutable access to graph should be possible, since Arc should be the only owner.",
             ),
             &balancing_cfg,
@@ -344,7 +346,7 @@ mod simulation_pipeline {
             monitoring: balancing_cfg.monitoring.clone(),
             num_threads: balancing_cfg.num_threads,
         };
-        io::evaluating_balance::Writer::write(&abs_workloads, &ch_graph, &writing_cfg)?;
+        io::evaluating_balance::Writer::write(&abs_workloads, &arc_ch_graph, &writing_cfg)?;
 
         info!(
             "FINISHED Written in {} seconds ({} µs).",
