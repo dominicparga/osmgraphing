@@ -96,14 +96,14 @@ balancing:
 # define routing
 routing:
   route-pairs-file: 'resources/isle_of_man_2020-03-14/10_000.route-pairs'
-  algorithm: 'CHDijkstra'
   # algorithm: 'CHDijkstra'
-    # Explorator:
-    #   algo: 'CHDijkstra'
+  algorithm:
+    Explorator:
+      algo: 'CHDijkstra'
   metrics:
   - id: 'kilometers'
   - id: 'hours'
-    tolerated-scale: 1.5
+    tolerated-scale: 1.4
   - id: 'workload' # gets deactivated in first iteration
 # write balanced graph after final iteration
 writing:
@@ -118,6 +118,7 @@ writing:
       with_shortcuts: false
       will_denormalize_metrics_by_mean: false
       ids:
+      # - id: 'edge-id'
       - id: 'src-id'
       - id: 'dst-id'
       - id: 'kilometers'

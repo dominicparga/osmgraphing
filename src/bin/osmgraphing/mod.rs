@@ -14,7 +14,7 @@ use osmgraphing::{
 use rand::SeedableRng;
 #[cfg(feature = "gpl-3.0")]
 use std::sync::Arc;
-use std::{convert::TryFrom, path::PathBuf, time::Instant};
+use std::{convert::TryFrom, fs, path::PathBuf, time::Instant};
 
 //------------------------------------------------------------------------------------------------//
 // points in Germany
@@ -168,7 +168,7 @@ fn run(args: CmdlineArgs) -> err::Feedback {
 
     // routing-example
 
-    if args.is_routing {
+    if args.is_routing || args.is_evaluating_balance {
         if !args.is_evaluating_balance {
             do_simply_routing(&args, &graph)?;
         } else {
@@ -300,6 +300,7 @@ fn do_evaluating_routing(args: &CmdlineArgs, arc_graph: &Arc<Graph>) -> err::Fee
     let abs_workloads = master.work_off(route_pairs, &arc_graph, &mut rng)?;
 
     // write results from (optional) evaluation
+    fs::create_dir_all(&evaluating_balance_cfg.results_dir)?;
     io::evaluating_balance::Writer::write(&abs_workloads, &arc_graph, &evaluating_balance_cfg)?;
 
     Ok(())
@@ -435,7 +436,7 @@ fn parse_cmdline<'a>() -> err::Result<CmdlineArgs> {
             )
             .takes_value(false)
             .hidden(!cfg!(feature = "gpl-3.0"))
-            .requires_all(&[constants::ids::CFG, constants::ids::IS_ROUTING]);
+            .requires(constants::ids::CFG);
         args.arg(arg_is_evaluating_balance)
     };
 

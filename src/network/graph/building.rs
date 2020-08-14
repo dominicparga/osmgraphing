@@ -460,11 +460,11 @@ impl GraphBuilder {
             // - sort by src-id, then level of dst, then dst-id
             //   -> branch prediction in dijkstra when breaking after level is reached
             if !IS_USING_CH_LEVEL_SPEEDUP {
-                proto_edges.sort_by_key(|e| (e.src_idx, e.dst_idx));
+                proto_edges.sort_by_key(|e| (e.src_idx, e.dst_idx, e.id));
             } else {
                 let nodes = graph.nodes();
                 proto_edges
-                    .sort_by_key(|e| (e.src_idx, Reverse(nodes.level(e.dst_idx)), e.dst_idx));
+                    .sort_by_key(|e| (e.src_idx, Reverse(nodes.level(e.dst_idx)), e.dst_idx, e.id));
             }
         }
 

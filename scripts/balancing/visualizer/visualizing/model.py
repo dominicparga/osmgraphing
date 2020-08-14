@@ -296,7 +296,7 @@ class Data():
             for row in csv_reader:
                 unsorted_values.append((
                     int(row['edge-id']),
-                    float(row['num_routes'])
+                    int(row['num_routes'])
                 ))
 
             # sort by edge-id and add data

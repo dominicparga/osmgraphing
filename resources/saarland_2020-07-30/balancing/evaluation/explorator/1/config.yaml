@@ -1,5 +1,5 @@
 parsing:
-  map-file: 'custom/results/isle_of_man_2020-03-14/evaluation/balanced_graph.fmi'
+  map-file: 'custom/results/saarland_2020-07-30/evaluation/balanced_graph.fmi'
   vehicles:
     category: 'Car'
     are_drivers_picky: false
@@ -18,7 +18,6 @@ parsing:
     - metric: { unit: 'Hours', id: 'hours' }
     - metric: { unit: 'LaneCount', id: 'lane-count' }
     - metric: { unit: 'F64', id: 'workload' }
-    - ignored # dummy
   generating:
     nodes: []
     edges:
@@ -30,20 +29,20 @@ parsing:
     - meta: { info: 'DstLat', id: 'dst-lat' }
     - meta: { info: 'DstLon', id: 'dst-lon' }
 routing:
-  route-pairs-file: 'custom/results/isle_of_man_2020-03-14/evaluation/10_000_eval.route-pairs'
+  route-pairs-file: 'custom/results/saarland_2020-07-30/evaluation/10_000_eval.route-pairs'
   algorithm:
     Explorator:
       algo: 'Dijkstra'
   metrics:
   - id: 'kilometers'
   - id: 'hours'
-    tolerated-scale: 1.4
+    tolerated-scale: 1.25
   - id: 'workload'
 evaluating_balance:
   seed: 24
-  number_of_threads: 4
+  number_of_threads: 15
   # .../1/stats is needed for visualization via python-script
-  results-dir: 'custom/results/isle_of_man_2020-03-14/evaluation/explorator/1/stats'
+  results-dir: 'custom/results/saarland_2020-07-30/evaluation/explorator/1/stats'
   monitoring:
     edges-info:
       file: 'edges-info.csv'

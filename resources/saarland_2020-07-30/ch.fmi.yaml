@@ -22,11 +22,11 @@ routing:
   route-pairs-file: 'resources/saarland_2020-07-30/1.route-pairs'
   algorithm: 'CHDijkstra'
   metrics:
-  - id: 'kilometers'
+  - id: 'hours'
 writing:
   route-pairs:
-    file: 'resources/saarland_2020-07-30/10_000.route-pairs'
+    file: 'resources/saarland_2020-07-30/10_000_eval.route-pairs'
     random_or_all:
-      seed: 42
+      seed: 24
       max_count: 10000
 
