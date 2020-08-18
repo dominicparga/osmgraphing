@@ -47,7 +47,8 @@ impl Master {
         let num_of_route_pairs = route_pairs.len();
 
         let mut abs_workloads: Vec<usize> = vec![0; arc_ch_graph.fwd_edges().count()];
-        let mut avg_num_of_found_paths = 0;
+        let mut avg_num_of_found_paths = 0.0;
+        let mut var_num_of_found_paths = 0.0;
 
         let mut progress_bar = MappingBar::with_range(0, num_of_route_pairs).timed();
 
@@ -59,22 +60,56 @@ impl Master {
                 for edge_idx in outcome.path_edges {
                     abs_workloads[*edge_idx] += 1;
                 }
-                // remember for avg later
-                outcome
-                    .num_of_found_paths
-                    .iter()
-                    .for_each(|k| avg_num_of_found_paths += k);
-
                 // num_of_routes is ignored here
                 progress_bar.add(outcome.num_of_route_pairs);
+
+                // mean and variance
+                if outcome.num_of_found_paths.len() > 0 {
+                    let n = progress_bar.progress() as f64;
+                    let k = outcome.num_of_found_paths.len() as f64;
+
+                    // mean
+                    // outcome
+                    //     .num_of_found_paths
+                    //     .iter()
+                    //     .for_each(|k| avg_num_of_found_paths += k);
+                    let old_mean = avg_num_of_found_paths;
+                    let new_mean = old_mean
+                        + (outcome
+                            .num_of_found_paths
+                            .iter()
+                            .map(|x| *x as f64)
+                            .sum::<f64>()
+                            - k * old_mean)
+                            / n;
+
+                    // variance
+                    let old_var = var_num_of_found_paths;
+                    let new_var = old_var * ((n - k) / (n))
+                        + outcome
+                            .num_of_found_paths
+                            .iter()
+                            .map(|x| *x as f64)
+                            .map(|x| (x - old_mean) * (x - new_mean))
+                            .sum::<f64>()
+                            / n;
+
+                    // update
+                    avg_num_of_found_paths = new_mean;
+                    var_num_of_found_paths = new_var;
+                }
+
                 // print and update progress
                 if progress_bar.has_progressed_significantly() {
                     progress_bar.remember_significant_progress();
                     info!("{}", progress_bar);
                     debug!(
-                        "{}{}{}",
+                        "{}{:.1}{}{:.1}{}",
                         "On average over all route-pairs so far, ",
-                        (1 + 2 * avg_num_of_found_paths / progress_bar.progress()) / 2,
+                        // (1 + 2 * avg_num_of_found_paths / progress_bar.progress()) / 2,
+                        avg_num_of_found_paths,
+                        "+-",
+                        var_num_of_found_paths.sqrt(),
                         " path(s) per routing-query were found.",
                     );
                 }
@@ -101,8 +136,13 @@ impl Master {
         }
 
         info!(
-            "On average, {} path(s) per exploration were found.",
-            (1 + 2 * avg_num_of_found_paths / num_of_route_pairs) / 2
+            "{}{:.1}{}{:.1}{}",
+            "On average, ",
+            // (1 + 2 * avg_num_of_found_paths / num_of_route_pairs) / 2,
+            avg_num_of_found_paths,
+            "+-",
+            var_num_of_found_paths.sqrt(),
+            " path(s) per exploration were found.",
         );
 
         Ok(abs_workloads)
