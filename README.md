@@ -100,7 +100,7 @@ Get further help with `cargo run --bin osmgraphing -- --help`.
 The following table shows all features of this repository.
 The `cargo`-features are needed to build the respective feature.
 Some `cargo`-features are optional for the feature, meaning that the `cargo`-feature adds extra-functionality.
-You can build with `cargo`-features using `cargo build --features='F0,F1,...'` (`cargo run` builds implicitely).
+You can build with `cargo`-features using `cargo build --features='F0,F1,...'` (`cargo run` builds implicitly).
 
 | `cargo`-feature | Notes |
 |:---------------:|:------|

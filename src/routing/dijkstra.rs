@@ -90,6 +90,7 @@ impl Dijkstra {
     }
 
     fn visit(&mut self, costnode: &CostNode) {
+        // not needed for ch-dijkstra, because it has to dig through all candidates by cost
         if !self.is_ch_dijkstra {
             self.is_visited[self.dir_idx(costnode.direction)][*costnode.idx] = true
         }
@@ -201,7 +202,7 @@ impl Dijkstra {
         // search for shortest path
 
         while let Some(Reverse(current)) = self.queue.pop() {
-            // For non-contracted graphs, this could be an slight improvement.
+            // For non-contracted graphs, this could be a slight improvement.
             // For contracted graphs, this is the only stop-criterion.
             // This is needed, because the bidirectional Dijkstra processes sub-graphs,
             // which are not equal.
