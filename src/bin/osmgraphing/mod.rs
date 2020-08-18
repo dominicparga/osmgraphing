@@ -12,9 +12,9 @@ use osmgraphing::{
 };
 #[cfg(feature = "gpl-3.0")]
 use rand::SeedableRng;
+use std::{convert::TryFrom, path::PathBuf, time::Instant};
 #[cfg(feature = "gpl-3.0")]
-use std::sync::Arc;
-use std::{convert::TryFrom, fs, path::PathBuf, time::Instant};
+use std::{fs, sync::Arc};
 
 //------------------------------------------------------------------------------------------------//
 // points in Germany
