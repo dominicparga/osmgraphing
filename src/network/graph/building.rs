@@ -8,6 +8,7 @@ use crate::{
         routing::IS_USING_CH_LEVEL_SPEEDUP,
     },
     helpers::{self, err, MemSize},
+    io,
 };
 use kissunits::geo::Coordinate;
 use log::{debug, info, trace};
@@ -15,8 +16,6 @@ use progressing::{mapping::Bar as MappingBar, Baring};
 use smallvec::smallvec;
 use std::{
     cmp::{min, Reverse},
-    fs::OpenOptions,
-    io::{BufRead, BufReader},
     mem,
 };
 
@@ -461,11 +460,17 @@ impl GraphBuilder {
             // - sort by src-id, then level of dst, then dst-id
             //   -> branch prediction in dijkstra when breaking after level is reached
             if !IS_USING_CH_LEVEL_SPEEDUP {
-                proto_edges.sort_by_key(|e| (e.src_idx, e.dst_idx));
+                proto_edges.sort_by_key(|edge| (edge.src_idx, edge.dst_idx, edge.id));
             } else {
                 let nodes = graph.nodes();
-                proto_edges
-                    .sort_by_key(|e| (e.src_idx, Reverse(nodes.level(e.dst_idx)), e.dst_idx));
+                proto_edges.sort_by_key(|edge| {
+                    (
+                        edge.src_idx,
+                        Reverse(nodes.level(edge.dst_idx)),
+                        edge.dst_idx,
+                        edge.id,
+                    )
+                });
             }
         }
 
@@ -816,6 +821,7 @@ impl GraphBuilder {
                         edge.dst_idx,
                         Reverse(nodes.level(edge.src_idx)),
                         edge.src_idx,
+                        edge.id,
                     )
                 });
             }
@@ -984,6 +990,7 @@ impl GraphBuilder {
                     }
                     generating::edges::Category::Merge {
                         from: _,
+                        is_file_with_header: _,
                         edge_id: _,
                         edges_info: _,
                     }
@@ -1046,6 +1053,67 @@ impl GraphBuilder {
                                     .categories
                                     .push(parsing::edges::Category::Meta {
                                         info: parsing::edges::MetaInfo::DstIdx,
+                                        id: new_id.clone(),
+                                    });
+                            }
+                            // coordinates
+                            generating::edges::MetaInfo::SrcLat => {
+                                // update graph
+                                //
+                                // -> already done
+
+                                // update config
+                                graph
+                                    .cfg
+                                    .edges
+                                    .categories
+                                    .push(parsing::edges::Category::Meta {
+                                        info: parsing::edges::MetaInfo::SrcLat,
+                                        id: new_id.clone(),
+                                    });
+                            }
+                            generating::edges::MetaInfo::SrcLon => {
+                                // update graph
+                                //
+                                // -> already done
+
+                                // update config
+                                graph
+                                    .cfg
+                                    .edges
+                                    .categories
+                                    .push(parsing::edges::Category::Meta {
+                                        info: parsing::edges::MetaInfo::SrcLon,
+                                        id: new_id.clone(),
+                                    });
+                            }
+                            generating::edges::MetaInfo::DstLat => {
+                                // update graph
+                                //
+                                // -> already done
+
+                                // update config
+                                graph
+                                    .cfg
+                                    .edges
+                                    .categories
+                                    .push(parsing::edges::Category::Meta {
+                                        info: parsing::edges::MetaInfo::DstLat,
+                                        id: new_id.clone(),
+                                    });
+                            }
+                            generating::edges::MetaInfo::DstLon => {
+                                // update graph
+                                //
+                                // -> already done
+
+                                // update config
+                                graph
+                                    .cfg
+                                    .edges
+                                    .categories
+                                    .push(parsing::edges::Category::Meta {
+                                        info: parsing::edges::MetaInfo::DstLon,
                                         id: new_id.clone(),
                                     });
                             }
@@ -1250,19 +1318,14 @@ impl GraphBuilder {
                     }
                     generating::edges::Category::Merge {
                         from,
+                        is_file_with_header,
                         edge_id,
                         edges_info,
                     } => {
                         // open file
 
-                        let file = OpenOptions::new()
-                            .read(true)
-                            .open(&from)
-                            .expect(&format!("Couldn't open {}", from.display()));
-                        let reader = BufReader::new(file)
-                            .lines()
-                            .map(Result::unwrap)
-                            .filter(helpers::is_line_functional);
+                        let reader =
+                            io::network::edges::Parser::new_reader(from, *is_file_with_header)?;
 
                         // parse edge-id and metric
 
@@ -1278,9 +1341,13 @@ impl GraphBuilder {
                                         let param = params[col_idx];
 
                                         if id == edge_id {
-                                            let raw_edge_id = param.parse::<usize>().ok().ok_or(
-                                                format!("Parsing edge-id '{}' didn't work.", param),
-                                            )?;
+                                            let raw_edge_id =
+                                                param.parse::<usize>().ok().ok_or(format!(
+                                                    "{}{}{}",
+                                                    "Parsing edge-id '",
+                                                    param,
+                                                    "' (should be usize) didn't work."
+                                                ))?;
                                             edge_idx =
                                                 Some(graph.fwd_edges().try_idx_from(raw_edge_id)?);
                                             break;

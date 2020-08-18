@@ -31,7 +31,11 @@ impl super::Parsing for Parser {
                     }
                     edges::MetaInfo::EdgeId
                     | edges::MetaInfo::SrcIdx
+                    | edges::MetaInfo::SrcLat
+                    | edges::MetaInfo::SrcLon
                     | edges::MetaInfo::DstIdx
+                    | edges::MetaInfo::DstLat
+                    | edges::MetaInfo::DstLon
                     | edges::MetaInfo::ShortcutIdx0
                     | edges::MetaInfo::ShortcutIdx1 => {
                         return Err(format!("{:?} are not supported in pbf-files.", category).into())

@@ -40,7 +40,9 @@ parsing:
   - ignored # height
   - meta: { info: 'CHLevel', id: 'ch-level' }
   edges:
-    will_normalize_metrics_by_mean: false # is already normalized
+    # is already normalized
+    # and normalizing againg would damage the correctness of shortcuts
+    will_normalize_metrics_by_mean: false
     data:
     - meta: { info: 'EdgeId', id: 'edge-id' }
     - meta: { info: 'SrcId', id: 'src-id' }
@@ -53,8 +55,16 @@ parsing:
     nodes:
     - meta: { info: 'NodeIdx', id: 'node-idx' }
     edges:
+      # src-idx
     - meta: { info: 'SrcIdx', id: 'src-idx' }
+      # src-coords
+    - meta: { info: 'SrcLat', id: 'src-lat' }
+    - meta: { info: 'SrcLon', id: 'src-lon' }
+      # dst-idx
     - meta: { info: 'DstIdx', id: 'dst-idx' }
+      # dst-coords
+    - meta: { info: 'DstLat', id: 'dst-lat' }
+    - meta: { info: 'DstLon', id: 'dst-lon' }
     - custom:
         id: 'workload'
         unit: 'F64'

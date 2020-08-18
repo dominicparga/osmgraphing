@@ -29,5 +29,6 @@ writing:
     random_or_all: { max_count: 100 }
 # needed for examples/dijkstra
 routing:
+  algorithm: 'Dijkstra'
   metrics:
   - id: 'kilometers'

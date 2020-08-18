@@ -3,7 +3,6 @@ use crate::{
     helpers::{self, err},
     network::RoutePair,
 };
-use log::info;
 use std::{
     fs::OpenOptions,
     io::{BufRead, BufReader},
@@ -22,8 +21,6 @@ impl Parser {
 
 impl super::Parsing for Parser {
     fn preprocess(&mut self, cfg: &configs::routing::Config) -> err::Feedback {
-        info!("START Start preprocessing routes-parser.");
-
         let route_pairs_file = cfg
             .route_pairs_file
             .as_ref()
@@ -73,7 +70,6 @@ impl super::Parsing for Parser {
         let end = start + routes_count;
         self.route_lines = start..end;
 
-        info!("FINISHED");
         Ok(())
     }
 
@@ -81,8 +77,6 @@ impl super::Parsing for Parser {
         &self,
         cfg: &configs::routing::Config,
     ) -> Result<Vec<(RoutePair<i64>, usize)>, String> {
-        info!("START Create routes from input-file.");
-
         let mut route_pairs = Vec::with_capacity(self.route_lines.len());
         let route_pairs_file = cfg
             .route_pairs_file
@@ -142,7 +136,6 @@ impl super::Parsing for Parser {
             ));
         }
 
-        info!("FINISHED");
         Ok(route_pairs)
     }
 }

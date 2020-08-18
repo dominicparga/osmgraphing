@@ -1,0 +1,62 @@
+parsing:
+  map-file: 'custom/results/saarland_2020-07-30/evaluation/balanced_graph.fmi'
+  vehicles:
+    category: 'Car'
+    are_drivers_picky: false
+  nodes:
+  - ignored # node-idx
+  - meta: { info: 'NodeId', id: 'node-id' }
+  - metric: { unit: 'Latitude', id: 'latitude' }
+  - metric: { unit: 'Longitude', id: 'longitude' }
+  edges:
+    # already normalized
+    will_normalize_metrics_by_mean: false
+    data:
+    - meta: { info: 'SrcId', id: 'src-id' }
+    - meta: { info: 'DstId', id: 'dst-id' }
+    - metric: { unit: 'Kilometers', id: 'kilometers' }
+    - metric: { unit: 'Hours', id: 'hours' }
+    - metric: { unit: 'LaneCount', id: 'lane-count' }
+    - metric: { unit: 'F64', id: 'workload' }
+  generating:
+    nodes: []
+    edges:
+    - meta: { info: 'EdgeId', id: 'edge-id' }
+      # src-coords
+    - meta: { info: 'SrcLat', id: 'src-lat' }
+    - meta: { info: 'SrcLon', id: 'src-lon' }
+      # dst-coords
+    - meta: { info: 'DstLat', id: 'dst-lat' }
+    - meta: { info: 'DstLon', id: 'dst-lon' }
+routing:
+  route-pairs-file: 'custom/results/saarland_2020-07-30/evaluation/10_000_eval.route-pairs'
+  algorithm:
+    Explorator:
+      algo: 'Dijkstra'
+  metrics:
+  - id: 'kilometers'
+  - id: 'hours'
+    tolerated-scale: 1.25
+  - id: 'workload'
+evaluating_balance:
+  seed: 24
+  number_of_threads: 15
+  # .../1/stats is needed for visualization via python-script
+  results-dir: 'custom/results/saarland_2020-07-30/evaluation/explorator/1/stats'
+  monitoring:
+    edges-info:
+      file: 'edges-info.csv'
+      # optional; default is false, meaning
+      # if the graph has normalized metrics,
+      # it will be printed normalized.
+      # If true, metrics will be denormalized before printing.
+      will_denormalize_metrics_by_mean: false
+      with_shortcuts: false
+      ids:
+      - id: 'edge-id'
+      - id: 'src-lat'
+      - id: 'src-lon'
+      - id: 'dst-lat'
+      - id: 'dst-lon'
+      - id: 'kilometers'
+      - id: 'lane-count'

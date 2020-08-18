@@ -5,7 +5,7 @@ use osmgraphing::{
     io::network::graph::Parser,
     routing::{
         dijkstra::{self, Dijkstra},
-        exploration::ConvexHullExplorator,
+        explorating::ConvexHullExplorator,
     },
 };
 use std::{path::PathBuf, time::Instant};
@@ -70,11 +70,11 @@ fn run() -> err::Feedback {
         "Ran Exploration-query in {} ms",
         now.elapsed().as_micros() as f64 / 1_000.0,
     );
-    if found_paths.is_empty() {
-        info!("No path found from ({}) to ({}).", src, dst);
-    } else {
+    if !found_paths.is_empty() {
         info!("Found {} path(s):", found_paths.len());
         found_paths.iter().for_each(|path| info!("  {}", path))
+    } else {
+        info!("No path found from ({}) to ({}).", src, dst);
     }
 
     Ok(())

@@ -78,7 +78,7 @@ pub fn parse(cfg: configs::parsing::Config) -> Graph {
 pub fn test_dijkstra(
     config_file: &str,
     metric_id: &str,
-    is_ch_dijkstra: bool,
+    routing_algo: configs::routing::RoutingAlgo,
     expected_paths: Box<
         dyn Fn(
             &configs::parsing::Config,
@@ -107,10 +107,7 @@ pub fn test_dijkstra(
         "{}\n{}\n{}\n{}\n{}",
         "routing:",
         format!("  route-pairs-file: '{}'", routes_cfg.file.display()),
-        format!(
-            "  is_ch-dijkstra: {}",
-            if is_ch_dijkstra { "true" } else { "false" }
-        ),
+        format!("  algorithm: {}", routing_algo.name()),
         "  metrics:",
         format!("  - id: '{}'", metric_id),
     );
@@ -163,16 +160,17 @@ pub fn compare_dijkstras(ch_fmi_config_file: &str, metric_id: &str) {
     let mut dijkstra = Dijkstra::new();
 
     let raw_cfg = format!(
-        "{}\n{}\n{}\n{}",
+        "{}\n{}\n{}\n{}\n{}",
         "routing:",
         format!("  route-pairs-file: '{}'", routes_cfg.file.display()),
+        "  algorithm: 'Dijkstra'",
         "  metrics:",
         format!("  - id: '{}'", metric_id),
     );
     let mut routing_cfg = configs::routing::Config::from_str(&raw_cfg, graph.cfg());
-    routing_cfg.is_ch_dijkstra = false;
+    routing_cfg.routing_algo = configs::routing::RoutingAlgo::Dijkstra;
     let mut ch_routing_cfg = routing_cfg.clone();
-    ch_routing_cfg.is_ch_dijkstra = true;
+    ch_routing_cfg.routing_algo = configs::routing::RoutingAlgo::CHDijkstra;
 
     // testing
 

@@ -28,6 +28,6 @@ parsing:
         b: { unit: 'KilometersPerHour', id: 'kmph' }
 routing:
   route-pairs-file: 'resources/saarland_2020-07-30/10_000.route-pairs'
-  is_ch-dijkstra: false
+  algorithm: 'Dijkstra'
   metrics:
   - id: 'kilometers'

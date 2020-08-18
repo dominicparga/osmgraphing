@@ -24,8 +24,8 @@ fn do_benchmark(criterion: &mut Criterion) {
     let parsing_cfg =
         configs::parsing::Config::from_yaml("resources/isle_of_man_2020-03-14/osm.pbf.yaml");
     let routing_strs = vec![
-        "routing: { metrics: [{ id: 'kilometers' }] }",
-        "routing: { metrics: [{ id: 'kilometers' }, { id: 'hours' }] }",
+        "routing: { algorithm: Dijkstra, metrics: [{ id: 'kilometers' }] }",
+        "routing: { algorithm: Dijkstra, metrics: [{ id: 'kilometers' }, { id: 'hours' }] }",
     ];
 
     // create graph

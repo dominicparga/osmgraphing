@@ -11,6 +11,11 @@ from visualizing.model import Data, GlobalData
 from visualizing.helpers import TwoSlopeLoggedNorm
 
 
+is_evaluating = False
+workload_max = None  # 700
+delta_workload_min_max = None  # (-300, +300)
+
+
 class Figure():
     class Colorbar():
         def __init__(self, shrink=0.9, extend='neither'):
@@ -150,7 +155,8 @@ class Machine():
                 sim.results_dir,
                 f'sorted_workloads.{self.plot_file_type}'
             ),
-            dpi=self.dpi
+            dpi=self.dpi,
+            bbox_inches="tight"
         )
         # plt.show()
         plt.close()
@@ -204,7 +210,8 @@ class Machine():
                 sim.results_dir,
                 f'workload-boxplots.{self.plot_file_type}'
             ),
-            dpi=self.dpi
+            dpi=self.dpi,
+            bbox_inches="tight"
         )
         # plt.show()
         plt.close()
@@ -285,7 +292,8 @@ class Machine():
                 sim.results_dir,
                 f'max_workloads.{self.plot_file_type}'
             ),
-            dpi=self.dpi
+            dpi=self.dpi,
+            bbox_inches="tight"
         )
         # plt.show()
         plt.close()
@@ -339,7 +347,8 @@ class Machine():
                 sim.results_dir,
                 f'num_unique_edges.{self.plot_file_type}'
             ),
-            dpi=self.dpi
+            dpi=self.dpi,
+            bbox_inches="tight"
         )
         # plt.show()
         plt.close()
@@ -359,7 +368,7 @@ class Machine():
         fig, ax = plt.subplots()
         ax.set_title(
             'workloads$_{'
-            + f'{data.iteration}'
+            + (f'{data.iteration}' if not is_evaluating else 'eval')
             + '}$'
             + f' in [{data.workloads.min}, {data.workloads.max}]'
         )
@@ -381,7 +390,10 @@ class Machine():
             # dark
             'copper': TwoSlopeLoggedNorm(base=50),
         }.get(cmap, colors.Normalize())
-        norm.vmax = data.global_data.max_workload
+        if workload_max is not None:
+            norm.vmax = workload_max
+        else:
+            norm.vmax = data.global_data.max_workload
 
         # plot data
 
@@ -418,7 +430,8 @@ class Machine():
                 'stats',
                 f'workloads.{self.plot_file_type}'
             ),
-            dpi=self.dpi
+            dpi=self.dpi,
+            bbox_inches="tight"
         )
         # plt.show()
         plt.close()
@@ -449,7 +462,7 @@ class Machine():
         fig, ax = plt.subplots()
         ax.set_title(
             'workloads$_{'
-            + f'{data.iteration}'
+            + (f'{data.iteration}' if not is_evaluating else 'eval')
             + '}$'
             + f' in [{data.workloads.min}, {data.workloads.max}]'
         )
@@ -514,7 +527,8 @@ class Machine():
                 'stats',
                 f'workload-quantiles.{self.plot_file_type}'
             ),
-            dpi=self.dpi
+            dpi=self.dpi,
+            bbox_inches="tight"
         )
         # plt.show()
         plt.close()
@@ -529,8 +543,8 @@ class Machine():
         plt.style.use(self.plt_theme)
         fig, ax = plt.subplots()
         ax.set_title(
-            'delta-workloads$_{' +
-            f'{data.iteration-1}, {data.iteration}'
+            'delta-workloads$_{'
+            + (f'{data.iteration-1}, {data.iteration}' if not is_evaluating else 'eval')
             + '}$'
             + f' in [{data.delta_workloads.min}, {data.delta_workloads.max}]'
         )
@@ -549,6 +563,9 @@ class Machine():
             # dark
             'twilight': TwoSlopeLoggedNorm(vcenter=0.0),
         }.get(cmap, colors.TwoSlopeNorm(vcenter=0.0))
+        if delta_workload_min_max is not None:
+            norm.vmin = delta_workload_min_max[0]
+            norm.vmax = delta_workload_min_max[1]
 
         # plot data
 
@@ -585,7 +602,8 @@ class Machine():
                 'stats',
                 f'delta_workloads.{self.plot_file_type}'
             ),
-            dpi=self.dpi
+            dpi=self.dpi,
+            bbox_inches="tight"
         )
         # plt.show()
         plt.close()
@@ -612,7 +630,7 @@ class Machine():
         fig, ax = plt.subplots()
         ax.set_title(
             'delta-workloads$_{'
-            + f'{data.iteration-1}, {data.iteration}'
+            + (f'{data.iteration-1}, {data.iteration}' if not is_evaluating else 'eval')
             + '}$'
             + f' in [{data.delta_workloads.min}, {data.delta_workloads.max}]'
         )
@@ -676,9 +694,10 @@ class Machine():
                 sim.results_dir,
                 f'{data.iteration}',
                 'stats',
-                f'delta_workloads-quantiles{self.plot_file_type}'
+                f'delta_workloads-quantiles.{self.plot_file_type}'
             ),
-            dpi=self.dpi
+            dpi=self.dpi,
+            bbox_inches="tight"
         )
         # plt.show()
         plt.close()
@@ -691,7 +710,7 @@ class Machine():
         ax.set_title(
             f'density-function of workloads'
             + '$_{'
-            + f'{data.iteration}'
+            + (f'{data.iteration}' if not is_evaluating else 'eval')
             + '}$ > 0'
         )
 
@@ -731,7 +750,8 @@ class Machine():
                 'stats',
                 f'workloads_hist.{self.plot_file_type}'
             ),
-            dpi=self.dpi
+            dpi=self.dpi,
+            bbox_inches="tight"
         )
         # plt.show()
         plt.close()
@@ -748,7 +768,7 @@ class Machine():
         ax.set_title(
             f'workloads'
             + '$_{'
-            + f'{data.iteration}'
+            + (f'{data.iteration}' if not is_evaluating else 'eval')
             + '}$ > 0, then'
             + f' in [{q_low} %, {q_high} %], per lane-count'
         )
@@ -809,7 +829,8 @@ class Machine():
                 'stats',
                 f'lane-count_to_workload.{self.plot_file_type}'
             ),
-            dpi=self.dpi
+            dpi=self.dpi,
+            bbox_inches="tight"
         )
         # plt.show()
         plt.close()

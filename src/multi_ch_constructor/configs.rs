@@ -1,4 +1,4 @@
-use crate::{io::SupportingFileExts, multi_ch_constructor::defaults};
+use crate::{helpers::err, io::SupportingFileExts, multi_ch_constructor::defaults};
 use serde::Deserialize;
 use std::{
     fs::OpenOptions,
@@ -25,11 +25,16 @@ impl SupportingFileExts for Config {
 }
 
 impl Config {
-    pub fn try_from_str(yaml_str: &str) -> Result<Config, String> {
+    pub fn try_from_str(yaml_str: &str) -> err::Result<Config> {
         let proto_cfg: ProtoConfig = {
             match serde_yaml::from_str(yaml_str) {
                 Ok(proto_cfg) => proto_cfg,
-                Err(e) => return Err(format!("{}", e)),
+                Err(e) => {
+                    return Err(err::Msg::from(format!(
+                        "Serde couldn't read yaml-str due to error: {}",
+                        e
+                    )))
+                }
             }
         };
         Ok(Config::from(proto_cfg))
@@ -42,19 +47,31 @@ impl Config {
         }
     }
 
-    pub fn try_from_yaml<P: AsRef<Path> + ?Sized>(path: &P) -> Result<Config, String> {
+    pub fn try_from_yaml<P: AsRef<Path> + ?Sized>(path: &P) -> err::Result<Config> {
         let path = path.as_ref();
         let file = {
             Config::find_supported_ext(path)?;
-            OpenOptions::new()
-                .read(true)
-                .open(path)
-                .expect(&format!("Couldn't open {}", path.display()))
+            match OpenOptions::new().read(true).open(path) {
+                Ok(file) => file,
+                Err(e) => {
+                    return Err(err::Msg::from(format!(
+                        "Couldn't open {} due to error: {}",
+                        path.display(),
+                        e
+                    )))
+                }
+            }
         };
 
         let proto_cfg: ProtoConfig = match serde_yaml::from_reader(file) {
             Ok(proto_cfg) => proto_cfg,
-            Err(e) => return Err(format!("{}", e)),
+            Err(e) => {
+                return Err(err::Msg::from(format!(
+                    "Serde couldn't read {} due to error: {}",
+                    path.display(),
+                    e
+                )))
+            }
         };
         Ok(Config::from(proto_cfg))
     }
