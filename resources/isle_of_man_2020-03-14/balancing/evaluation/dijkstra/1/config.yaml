@@ -35,12 +35,11 @@ routing:
   metrics:
   - id: 'kilometers'
   - id: 'hours'
-    tolerated-scale: 1.5
+    tolerated-scale: 1.4
   - id: 'workload'
 evaluating_balance:
-  # optional; default is 42
-  seed: 42
-  number_of_threads: 15
+  seed: 24
+  number_of_threads: 4
   # .../1/stats is needed for visualization via python-script
   results-dir: 'custom/results/isle_of_man_2020-03-14/evaluation/dijkstra/1/stats'
   monitoring:

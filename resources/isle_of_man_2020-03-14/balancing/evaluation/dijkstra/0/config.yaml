@@ -1,5 +1,5 @@
 parsing:
-  map-file: 'resources/isle_of_man_2020-03-14/graph.fmi'
+  map-file: 'resources/isle_of_man_2020-03-14/balanced_graph.fmi'
   vehicles:
     category: 'Car'
     are_drivers_picky: false
@@ -28,15 +28,14 @@ parsing:
     - meta: { info: 'DstLat', id: 'dst-lat' }
     - meta: { info: 'DstLon', id: 'dst-lon' }
 routing:
-  route-pairs-file: 'custom/results/isle_of_man_2020-03-14/evaluation/10_000.route-pairs'
+  route-pairs-file: 'custom/results/isle_of_man_2020-03-14/evaluation/10_000_eval.route-pairs'
   algorithm: 'Dijkstra'
   metrics:
   - id: 'kilometers'
   - id: 'hours'
-    tolerated-scale: 1.5
+    tolerated-scale: 1.4
 evaluating_balance:
-  # optional; default is 42
-  seed: 42
+  seed: 24
   number_of_threads: 15
   # .../0/stats is needed for visualization via python-script
   results-dir: 'custom/results/isle_of_man_2020-03-14/evaluation/dijkstra/0/stats'
