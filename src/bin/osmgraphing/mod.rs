@@ -1,16 +1,15 @@
 use log::{debug, error, info, warn};
 #[cfg(feature = "gpl-3.0")]
 mod balancing;
-#[cfg(feature = "gpl-3.0")]
-use osmgraphing::routing::explorating::ConvexHullExplorator;
 use osmgraphing::{
     configs::{self, routing::RoutingAlgo},
-    defaults,
     helpers::{err, init_logging},
     io,
     network::{Graph, RoutePair},
     routing::dijkstra::{self, Dijkstra},
 };
+#[cfg(feature = "gpl-3.0")]
+use osmgraphing::{defaults, routing::explorating::ConvexHullExplorator};
 #[cfg(feature = "gpl-3.0")]
 use rand::SeedableRng;
 use std::{convert::TryFrom, path::PathBuf, time::Instant};
