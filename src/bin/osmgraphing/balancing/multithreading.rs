@@ -6,10 +6,11 @@ use osmgraphing::{
     },
     defaults,
     helpers::err,
-    network::{EdgeIdx, Graph, RoutePair},
+    network::{Graph, RoutePair},
     routing::{
         dijkstra::{self, Dijkstra},
         explorating::ConvexHullExplorator,
+        paths::Path,
     },
 };
 use progressing::{mapping::Bar as MappingBar, Baring};
@@ -40,7 +41,7 @@ impl Master {
         arc_ch_graph: &Arc<Graph>,
         rng: &mut rand_pcg::Lcg64Xsh32,
     ) -> err::Result<Vec<usize>> {
-        info!("Using {} threads working off", self.num_threads(),);
+        info!("Using {} threads working off", self.num_threads());
 
         route_pairs.reverse();
         // not routes, because progress can be shown without it (though it is less accurate)
@@ -57,8 +58,14 @@ impl Master {
             if let Ok(outcome) = self.recv() {
                 // update counts from outcome
 
-                for edge_idx in outcome.path_edges {
-                    abs_workloads[*edge_idx] += 1;
+                for path in outcome
+                    .chosen_paths
+                    .into_iter()
+                    .map(|path| path.flatten(&arc_ch_graph))
+                {
+                    for &edge_idx in &path {
+                        abs_workloads[*edge_idx] += 1;
+                    }
                 }
                 // num_of_routes is ignored here
                 progress_bar.add(outcome.num_of_route_pairs);
@@ -112,6 +119,7 @@ impl Master {
                         var_num_of_found_paths.sqrt(),
                         " path(s) per routing-query were found.",
                     );
+                    debug!("Current work-size: {}", self.work_size);
                 }
 
                 // send new work
@@ -336,8 +344,9 @@ pub struct Work {
     pub seed: u64,
 }
 
+/// Chosen paths are not necessarily the same as found paths (e.g. when using explorator), for which reason the `num_of_found_paths` is provided separatedly.
 pub struct Outcome {
-    pub path_edges: Vec<EdgeIdx>,
+    pub chosen_paths: Vec<Path>,
     pub num_of_found_paths: Vec<usize>,
     pub num_of_route_pairs: usize,
 }
@@ -381,7 +390,7 @@ impl Worker {
             .send((
                 self.idx,
                 Outcome {
-                    path_edges: Vec::new(),
+                    chosen_paths: Vec::new(),
                     num_of_found_paths: Vec::new(),
                     num_of_route_pairs: 0,
                 },
@@ -420,7 +429,7 @@ impl Worker {
     }
 
     fn work_off_with_dijkstra(&mut self, work: Work) -> Outcome {
-        let mut path_edges = Vec::new();
+        let mut chosen_paths = Vec::new();
         let mut num_of_found_paths = Vec::new();
         let num_of_route_pairs = work.route_pairs.len();
 
@@ -438,33 +447,33 @@ impl Worker {
 
             // Update next workload by looping over all found routes
             // -> Routes have to be flattened,
-            // -> or shortcuts will lead to wrong best-paths, because counts won't be cumulated.
+            // -> or future shortcuts using the resulting workload
+            //    will lead to wrong best-paths, because counts won't be cumulated.
 
             if let Some(best_path) = best_path {
                 num_of_found_paths.push(1);
 
-                for edge_idx in best_path.flatten(&self.arc_graph) {
-                    for _ in 0..route_count {
-                        path_edges.push(edge_idx);
-                    }
+                for _ in 0..(route_count - 1) {
+                    chosen_paths.push(best_path.clone());
                 }
+                chosen_paths.push(best_path);
             } else {
                 warn!("Didn't find any path when executing Dijkstra.")
             }
         }
 
-        path_edges.shrink_to_fit();
+        chosen_paths.shrink_to_fit();
         num_of_found_paths.shrink_to_fit();
 
         Outcome {
-            path_edges,
+            chosen_paths,
             num_of_found_paths,
             num_of_route_pairs,
         }
     }
 
     fn work_off_with_explorator(&mut self, work: Work, explorator_algo: ExploratorAlgo) -> Outcome {
-        let mut path_edges = Vec::new();
+        let mut chosen_paths = Vec::new();
         let mut num_of_found_paths = Vec::new();
         let num_of_route_pairs = work.route_pairs.len();
         let mut rng = rand_pcg::Pcg32::seed_from_u64(work.seed);
@@ -496,26 +505,20 @@ impl Worker {
             if found_paths.len() > 0 {
                 let die = Uniform::from(0..found_paths.len());
                 for _ in 0..route_count {
-                    let path = found_paths[die.sample(&mut rng)]
-                        .clone()
-                        .flatten(&self.arc_graph);
-
-                    trace!("    {}", path);
-
-                    for edge_idx in path {
-                        path_edges.push(edge_idx);
-                    }
+                    let chosen_path = found_paths[die.sample(&mut rng)].clone();
+                    trace!("    {}", chosen_path);
+                    chosen_paths.push(chosen_path);
                 }
             } else {
                 warn!("Didn't find any path when explorating.")
             }
         }
 
-        path_edges.shrink_to_fit();
+        chosen_paths.shrink_to_fit();
         num_of_found_paths.shrink_to_fit();
 
         Outcome {
-            path_edges,
+            chosen_paths,
             num_of_found_paths,
             num_of_route_pairs,
         }
