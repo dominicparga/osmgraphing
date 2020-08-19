@@ -172,6 +172,11 @@ balancing:
   # this has to be generated in every balancing-config as well!
   # (init.yaml and iteration.yaml)
   monitoring:
+    # optional; default is false
+    # This exports the found paths as xml-file containing all paths according to
+    # the simulation called SMARTS.
+    export_vehicles_for_SMARTS: false
+    # necessary
     edges-info:
       # see writing: { edges-info: { ... } }
   # optional; default is true

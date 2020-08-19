@@ -18,6 +18,9 @@ impl Writer {
             writing_cfg
                 .results_dir
                 .join(defaults::balancing::stats::files::ABS_WORKLOADS),
+            writing_cfg
+                .results_dir
+                .join(defaults::smarts::XML_FILE_NAME),
         ] {
             if path.exists() {
                 return Err(err::Msg::from(format!(
@@ -33,12 +36,14 @@ impl Writer {
     where
         T: Display,
     {
-        // write results from this iteration
+        // write edges-info
 
         let mut tmp_cfg = writing_cfg.monitoring.edges_info.clone();
         // path is relative to results-dir
         tmp_cfg.file = writing_cfg.results_dir.join(tmp_cfg.file);
         io::network::edges::Writer::write(&graph, &tmp_cfg)?;
+
+        // write absolute workloads
 
         // look for name of edge-id (which occurs only once)
         let edge_id_name = {

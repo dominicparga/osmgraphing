@@ -40,7 +40,8 @@ impl Master {
         mut route_pairs: Vec<(RoutePair<i64>, usize)>,
         arc_ch_graph: &Arc<Graph>,
         rng: &mut rand_pcg::Lcg64Xsh32,
-    ) -> err::Result<Vec<usize>> {
+        is_collecting_paths: bool,
+    ) -> err::Result<(Vec<usize>, Option<Vec<Path>>)> {
         info!("Using {} threads working off", self.num_threads());
 
         route_pairs.reverse();
@@ -48,6 +49,12 @@ impl Master {
         let num_of_route_pairs = route_pairs.len();
 
         let mut abs_workloads: Vec<usize> = vec![0; arc_ch_graph.fwd_edges().count()];
+        let mut chosen_paths = if is_collecting_paths {
+            // num_of_route_pairs is not accurate, but lower bound
+            Some(Vec::with_capacity(num_of_route_pairs))
+        } else {
+            None
+        };
         let mut avg_num_of_found_paths = 0.0;
         let mut var_num_of_found_paths = 0.0;
 
@@ -65,6 +72,10 @@ impl Master {
                 {
                     for &edge_idx in &path {
                         abs_workloads[*edge_idx] += 1;
+                    }
+
+                    if let Some(chosen_paths) = chosen_paths.as_mut() {
+                        chosen_paths.push(path);
                     }
                 }
                 // num_of_routes is ignored here
@@ -153,7 +164,7 @@ impl Master {
             " path(s) per exploration were found.",
         );
 
-        Ok(abs_workloads)
+        Ok((abs_workloads, chosen_paths))
     }
 
     fn work_size(&self) -> usize {

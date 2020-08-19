@@ -319,7 +319,12 @@ mod simulation_pipeline {
             &arc_ch_graph,
             &arc_routing_cfg,
         )?;
-        let abs_workloads = master.work_off(route_pairs, &arc_ch_graph, rng)?;
+        let (abs_workloads, chosen_paths) = master.work_off(
+            route_pairs,
+            &arc_ch_graph,
+            rng,
+            balancing_cfg.monitoring.is_writing_for_smarts,
+        )?;
 
         // update graph with new values
         defaults::balancing::update_new_metric(
@@ -347,6 +352,15 @@ mod simulation_pipeline {
             num_threads: balancing_cfg.num_threads,
         };
         io::evaluating_balance::Writer::write(&abs_workloads, &arc_ch_graph, &writing_cfg)?;
+        // write SMARTS-paths
+        if let Some(chosen_paths) = chosen_paths {
+            let tmp_cfg = configs::writing::smarts::Config {
+                file: writing_cfg
+                    .results_dir
+                    .join(defaults::smarts::XML_FILE_NAME),
+            };
+            io::smarts::Writer::write(&chosen_paths, &arc_ch_graph, &tmp_cfg)?;
+        }
 
         info!(
             "FINISHED Written in {} seconds ({} µs).",
