@@ -37,9 +37,9 @@ impl Dijkstra {
         Dijkstra {
             is_ch_dijkstra: false,
             queue: BinaryHeap::new(),
-            costs: [Vec::new(), Vec::new()],
-            predecessors: [Vec::new(), Vec::new()],
-            is_visited: [Vec::new(), Vec::new()],
+            costs: [vec![], vec![]],
+            predecessors: [vec![], vec![]],
+            is_visited: [vec![], vec![]],
             has_found_best_meeting_node: [false, false],
             touched: [vec![], vec![]],
         }
@@ -77,9 +77,9 @@ impl Dijkstra {
                 self.predecessors[dir].resize(new_len, None);
             }
 
-            for n in self.touched[dir].drain(..) {
-                self.costs[dir][n] = std::f64::INFINITY;
-                self.predecessors[dir][n] = None;
+            for i in self.touched[dir].drain(..) {
+                self.costs[dir][i] = std::f64::INFINITY;
+                self.predecessors[dir][i] = None;
             }
 
             // assert!(self.costs[dir].iter().all(|&c| c == f64::INFINITY));
