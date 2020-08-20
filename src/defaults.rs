@@ -355,9 +355,9 @@ pub mod network {
                 StreetCategory::Unclassified => true,
                 StreetCategory::Residential => true,
                 StreetCategory::LivingStreet => true,
-                StreetCategory::Service => !is_driver_picky,
+                StreetCategory::Service => false,
                 StreetCategory::Track => !is_driver_picky,
-                StreetCategory::Road => !is_driver_picky,
+                StreetCategory::Road => false,
                 StreetCategory::Cycleway => false,
                 StreetCategory::Pedestrian => false,
                 StreetCategory::Path => false,
@@ -381,14 +381,14 @@ pub mod network {
                 StreetCategory::LivingStreet => true,
                 StreetCategory::Service => true,
                 StreetCategory::Track => !is_driver_picky,
-                StreetCategory::Road => !is_driver_picky,
+                StreetCategory::Road => false,
                 StreetCategory::Cycleway => true,
                 StreetCategory::Pedestrian => !is_driver_picky,
                 StreetCategory::Path => !is_driver_picky,
             }
         }
 
-        fn is_for_pedestrians(&self, is_driver_picky: bool) -> bool {
+        fn is_for_pedestrians(&self, _is_driver_picky: bool) -> bool {
             match self {
                 StreetCategory::Motorway => false,
                 StreetCategory::MotorwayLink => false,
@@ -405,7 +405,7 @@ pub mod network {
                 StreetCategory::LivingStreet => true,
                 StreetCategory::Service => true,
                 StreetCategory::Track => true,
-                StreetCategory::Road => !is_driver_picky,
+                StreetCategory::Road => false,
                 StreetCategory::Cycleway => false,
                 StreetCategory::Pedestrian => true,
                 StreetCategory::Path => true,
