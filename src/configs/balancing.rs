@@ -150,12 +150,16 @@ impl From<ProtoOptimizationMethod> for OptimizationMethod {
 #[derive(Clone, Debug)]
 pub struct MonitoringConfig {
     pub edges_info: configs::writing::network::edges::Config,
+    pub is_writing_for_smarts: bool,
 }
 
 impl From<ProtoMonitoringConfig> for MonitoringConfig {
     fn from(proto_cfg: ProtoMonitoringConfig) -> MonitoringConfig {
         MonitoringConfig {
             edges_info: proto_cfg.edges_info,
+            is_writing_for_smarts: proto_cfg
+                .is_writing_for_smarts
+                .unwrap_or(defaults::smarts::IS_WRITING),
         }
     }
 }
@@ -200,12 +204,14 @@ impl From<RawConfig> for ProtoConfig {
 #[derive(Clone, Debug)]
 pub struct ProtoMonitoringConfig {
     pub edges_info: configs::writing::network::edges::Config,
+    pub is_writing_for_smarts: Option<bool>,
 }
 
 impl From<RawMonitoringConfig> for ProtoMonitoringConfig {
     fn from(raw_cfg: RawMonitoringConfig) -> ProtoMonitoringConfig {
         ProtoMonitoringConfig {
             edges_info: configs::writing::network::edges::Config::from(raw_cfg.edges_info),
+            is_writing_for_smarts: raw_cfg.is_writing_for_smarts,
         }
     }
 }
@@ -277,6 +283,8 @@ pub struct RawContent {
 pub struct RawMonitoringConfig {
     #[serde(flatten)]
     edges_info: configs::writing::network::edges::ProtoConfig,
+    #[serde(rename = "export_vehicles_for_SMARTS")]
+    is_writing_for_smarts: Option<bool>,
 }
 
 #[derive(Clone, Debug, Deserialize)]

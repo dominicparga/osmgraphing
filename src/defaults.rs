@@ -51,6 +51,19 @@ pub mod writing {
     pub const WILL_DENORMALIZE_METRICS_BY_MEAN: bool = false;
 }
 
+pub mod smarts {
+    pub const IS_WRITING: bool = false;
+    pub const XML_FILE_NAME: &str = "smarts.xml";
+
+    /// Route-File-Format from [SMARTS-homepage](https://projects.eng.unimelb.edu.au/smarts/documentation/)
+    pub mod route_file_format {
+        pub const VERSION: &str = "1.0";
+        pub const VEHICLE_TYPE: &str = "CAR";
+        pub const START_TIME: &str = "0.4";
+        pub const DRIVER_PROFILE: &str = "NORMAL";
+    }
+}
+
 pub mod routing {
     pub const ALPHA: f64 = 1.0;
     pub const TOLERATED_SCALE_INF: f64 = std::f64::INFINITY;

@@ -29,6 +29,7 @@ pub struct Dijkstra {
     predecessors: [Vec<Option<EdgeIdx>>; 2],
     is_visited: [Vec<bool>; 2],
     has_found_best_meeting_node: [bool; 2],
+    touched: [Vec<usize>; 2],
 }
 
 impl Dijkstra {
@@ -36,10 +37,11 @@ impl Dijkstra {
         Dijkstra {
             is_ch_dijkstra: false,
             queue: BinaryHeap::new(),
-            costs: [Vec::new(), Vec::new()],
-            predecessors: [Vec::new(), Vec::new()],
-            is_visited: [Vec::new(), Vec::new()],
+            costs: [vec![], vec![]],
+            predecessors: [vec![], vec![]],
+            is_visited: [vec![], vec![]],
             has_found_best_meeting_node: [false, false],
+            touched: [vec![], vec![]],
         }
     }
 
@@ -68,15 +70,20 @@ impl Dijkstra {
     /// Resizes existing datastructures storing routing-data, like costs, saving re-allocations.
     fn init_query(&mut self, new_len: usize) {
         // fwd and bwd
-        for dir in vec![Direction::FWD, Direction::BWD] {
+        for &dir in &[Direction::FWD, Direction::BWD] {
             let dir = self.dir_idx(dir);
-            self.costs[dir].resize(new_len, std::f64::INFINITY);
-            self.costs[dir]
-                .iter_mut()
-                .for_each(|c| *c = std::f64::INFINITY);
+            if self.costs.len() != new_len {
+                self.costs[dir].resize(new_len, std::f64::INFINITY);
+                self.predecessors[dir].resize(new_len, None);
+            }
 
-            self.predecessors[dir].resize(new_len, None);
-            self.predecessors[dir].iter_mut().for_each(|p| *p = None);
+            for i in self.touched[dir].drain(..) {
+                self.costs[dir][i] = std::f64::INFINITY;
+                self.predecessors[dir][i] = None;
+            }
+
+            // assert!(self.costs[dir].iter().all(|&c| c == f64::INFINITY));
+            // assert!(self.predecessors[dir].iter().all(|&p| p == None));
 
             if !self.is_ch_dijkstra {
                 self.is_visited[dir].resize(new_len, false);
@@ -136,7 +143,7 @@ impl Dijkstra {
     /// If any alpha-value in the routing-config is negative, or any metric in the graph is negative, this method won't terminate.
     pub fn compute_best_path(&mut self, query: Query) -> Option<Path> {
         debug_assert!(
-            query.routing_cfg.alphas.len() > 0,
+            !query.routing_cfg.alphas.is_empty(),
             "Best path should be computed, but no alphas are specified."
         );
 
@@ -195,8 +202,11 @@ impl Dijkstra {
         }));
         // update fwd-stats
         self.costs[self.fwd_idx()][*query.src_idx] = 0.0;
+        self.touched[self.fwd_idx()].push(*query.src_idx);
+
         // update bwd-stats
         self.costs[self.bwd_idx()][*query.dst_idx] = 0.0;
+        self.touched[self.bwd_idx()].push(*query.dst_idx);
 
         //----------------------------------------------------------------------------------------//
         // search for shortest path
@@ -243,9 +253,9 @@ impl Dijkstra {
                 if new_total_cost < best_total_cost {
                     best_meeting = Some((current.idx, new_total_cost));
                 }
-            } else
+            }
             // if meeting-node is found for the first time, remember it
-            if self.is_meeting_costnode(&current) {
+            else if self.is_meeting_costnode(&current) {
                 let new_total_cost = self.total_cost(&current);
                 best_meeting = Some((current.idx, new_total_cost));
             }
@@ -268,6 +278,7 @@ impl Dijkstra {
                 if new_cost < self.costs[dir][*leaving_edge.dst_idx()] {
                     self.predecessors[dir][*leaving_edge.dst_idx()] = Some(leaving_edge.idx());
                     self.costs[dir][*leaving_edge.dst_idx()] = new_cost;
+                    self.touched[dir].push(*leaving_edge.dst_idx());
 
                     // if path is found
                     // -> Run until queue is empty

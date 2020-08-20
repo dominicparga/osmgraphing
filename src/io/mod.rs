@@ -4,6 +4,9 @@ use std::path::Path;
 mod parsing;
 mod writing;
 
+pub mod smarts {
+    pub use crate::io::writing::smarts::Writer;
+}
 pub mod network {
     pub mod graph {
         pub use crate::io::parsing::network::graph::Parser;

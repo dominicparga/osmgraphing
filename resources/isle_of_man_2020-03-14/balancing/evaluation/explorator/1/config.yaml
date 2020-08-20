@@ -1,5 +1,5 @@
 parsing:
-  map-file: 'custom/results/isle_of_man_2020-03-14/evaluation/balanced_graph.fmi'
+  map-file: 'isle_of_man_2020-03-14/utc_YYYY-mm-dd_HH-MM-SS/balanced_graph.fmi'
   vehicles:
     category: 'Car'
     are_drivers_picky: false
@@ -30,7 +30,7 @@ parsing:
     - meta: { info: 'DstLat', id: 'dst-lat' }
     - meta: { info: 'DstLon', id: 'dst-lon' }
 routing:
-  route-pairs-file: 'custom/results/isle_of_man_2020-03-14/evaluation/10_000_eval.route-pairs'
+  route-pairs-file: 'isle_of_man_2020-03-14/utc_YYYY-mm-dd_HH-MM-SS/evaluation/10_000_eval.route-pairs'
   algorithm:
     Explorator:
       algo: 'Dijkstra'
@@ -42,9 +42,10 @@ routing:
 evaluating_balance:
   seed: 24
   number_of_threads: 4
-  # .../1/stats is needed for visualization via python-script
-  results-dir: 'custom/results/isle_of_man_2020-03-14/evaluation/explorator/1/stats'
+  # .../1/stats is needed, e.g. for visualization via python-script
+  results-dir: 'isle_of_man_2020-03-14/utc_YYYY-mm-dd_HH-MM-SS/evaluation/explorator/1/stats'
   monitoring:
+    export_vehicles_for_SMARTS: true
     edges-info:
       file: 'edges-info.csv'
       # optional; default is false, meaning

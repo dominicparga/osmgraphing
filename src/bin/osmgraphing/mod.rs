@@ -1,8 +1,6 @@
 use log::{debug, error, info, warn};
 #[cfg(feature = "gpl-3.0")]
 mod balancing;
-#[cfg(feature = "gpl-3.0")]
-use osmgraphing::routing::explorating::ConvexHullExplorator;
 use osmgraphing::{
     configs::{self, routing::RoutingAlgo},
     helpers::{err, init_logging},
@@ -10,6 +8,8 @@ use osmgraphing::{
     network::{Graph, RoutePair},
     routing::dijkstra::{self, Dijkstra},
 };
+#[cfg(feature = "gpl-3.0")]
+use osmgraphing::{defaults, routing::explorating::ConvexHullExplorator};
 #[cfg(feature = "gpl-3.0")]
 use rand::SeedableRng;
 use std::{convert::TryFrom, path::PathBuf, time::Instant};
@@ -138,7 +138,7 @@ fn run(args: CmdlineArgs) -> err::Feedback {
 
     // writing routes to file
 
-    if args.is_writing_routes {
+    if args.is_writing_route_pairs {
         // get config by provided user-input
 
         let routing_cfg = configs::routing::Config::try_from_yaml(&args.cfg, graph.cfg())?;
@@ -297,11 +297,26 @@ fn do_evaluating_routing(args: &CmdlineArgs, arc_graph: &Arc<Graph>) -> err::Fee
         &arc_graph,
         &arc_routing_cfg,
     )?;
-    let abs_workloads = master.work_off(route_pairs, &arc_graph, &mut rng)?;
+    let (abs_workloads, chosen_paths) = master.work_off(
+        route_pairs,
+        &arc_graph,
+        &mut rng,
+        evaluating_balance_cfg.monitoring.is_writing_for_smarts,
+    )?;
 
     // write results from (optional) evaluation
+
     fs::create_dir_all(&evaluating_balance_cfg.results_dir)?;
     io::evaluating_balance::Writer::write(&abs_workloads, &arc_graph, &evaluating_balance_cfg)?;
+    // write SMARTS-paths
+    if let Some(chosen_paths) = chosen_paths {
+        let tmp_cfg = configs::writing::smarts::Config {
+            file: evaluating_balance_cfg
+                .results_dir
+                .join(defaults::smarts::XML_FILE_NAME),
+        };
+        io::smarts::Writer::write(&chosen_paths, &arc_graph, &tmp_cfg)?;
+    }
 
     Ok(())
 }
@@ -377,16 +392,17 @@ fn parse_cmdline<'a>() -> err::Result<CmdlineArgs> {
     };
 
     let args = {
-        let arg_is_writing_routes = clap::Arg::with_name(constants::ids::IS_WRITING_ROUTES)
-            .long("writing_routes")
-            .help(
-                "The generated graph will be used to \
+        let arg_is_writing_route_pairs =
+            clap::Arg::with_name(constants::ids::IS_WRITING_ROUTE_PAIRS)
+                .long("writing_route-pairs")
+                .help(
+                    "The generated graph will be used to \
                generate and export valid routes \
                as described in the provided config.",
-            )
-            .takes_value(false)
-            .requires(constants::ids::CFG);
-        args.arg(arg_is_writing_routes)
+                )
+                .takes_value(false)
+                .requires(constants::ids::CFG);
+        args.arg(arg_is_writing_route_pairs)
     };
 
     let args = {
@@ -449,7 +465,7 @@ mod constants {
         pub const CFG: &str = "cfg";
         pub const IS_WRITING_GRAPH: &str = "is_writing_graph";
         pub const IS_WRITING_EDGES: &str = "is_writing_edges";
-        pub const IS_WRITING_ROUTES: &str = "is_writing_routes";
+        pub const IS_WRITING_ROUTE_PAIRS: &str = "is_writing_route_pairs";
         pub const IS_ROUTING: &str = "is_routing";
         pub const IS_EXPLORATING: &str = "is_explorating";
         pub const IS_BALANCING: &str = "is_balancing";
@@ -462,7 +478,7 @@ struct CmdlineArgs {
     cfg: String,
     is_writing_graph: bool,
     is_writing_edges: bool,
-    is_writing_routes: bool,
+    is_writing_route_pairs: bool,
     is_routing: bool,
     #[cfg(feature = "gpl-3.0")]
     is_balancing: bool,
@@ -481,7 +497,7 @@ impl<'a> TryFrom<clap::ArgMatches<'a>> for CmdlineArgs {
             .expect(&format!("cmdline-arg: {}", constants::ids::CFG));
         let is_writing_graph = matches.is_present(constants::ids::IS_WRITING_GRAPH);
         let is_writing_edges = matches.is_present(constants::ids::IS_WRITING_EDGES);
-        let is_writing_routes = matches.is_present(constants::ids::IS_WRITING_ROUTES);
+        let is_writing_route_pairs = matches.is_present(constants::ids::IS_WRITING_ROUTE_PAIRS);
         let is_routing = matches.is_present(constants::ids::IS_ROUTING);
         let is_explorating = matches.is_present(constants::ids::IS_EXPLORATING);
         let is_balancing = matches.is_present(constants::ids::IS_BALANCING);
@@ -496,7 +512,7 @@ impl<'a> TryFrom<clap::ArgMatches<'a>> for CmdlineArgs {
             cfg: String::from(cfg),
             is_writing_graph,
             is_writing_edges,
-            is_writing_routes,
+            is_writing_route_pairs,
             is_routing,
             #[cfg(feature = "gpl-3.0")]
             is_balancing,
