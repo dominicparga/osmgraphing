@@ -89,7 +89,10 @@ impl TryFrom<ProtoConfig> for Config {
     fn try_from(proto_cfg: ProtoConfig) -> err::Result<Config> {
         Ok(Config {
             map_file: proto_cfg.map_file,
-            vehicles: vehicles::Config::from(proto_cfg.vehicles),
+            vehicles: match proto_cfg.vehicles {
+                Some(proto_vehicles) => vehicles::Config::from(proto_vehicles),
+                None => vehicles::Config::default(),
+            },
             nodes: nodes::Config::from(proto_cfg.nodes),
             edges: edges::Config::try_from(proto_cfg.edges)?,
             generating: proto_cfg.generating.map(generating::Config::from),
@@ -101,7 +104,7 @@ impl TryFrom<ProtoConfig> for Config {
 #[serde(try_from = "RawConfig")]
 pub struct ProtoConfig {
     pub map_file: PathBuf,
-    pub vehicles: vehicles::ProtoConfig,
+    pub vehicles: Option<vehicles::ProtoConfig>,
     pub nodes: nodes::ProtoConfig,
     pub edges: edges::ProtoConfig,
     pub generating: Option<generating::ProtoConfig>,
@@ -113,7 +116,7 @@ impl From<RawConfig> for ProtoConfig {
 
         ProtoConfig {
             map_file: raw_cfg.map_file,
-            vehicles: vehicles::ProtoConfig::from(raw_cfg.vehicles),
+            vehicles: raw_cfg.vehicles.map(vehicles::ProtoConfig::from),
             nodes: nodes::ProtoConfig::from(raw_cfg.nodes),
             edges: edges::ProtoConfig::from(raw_cfg.edges),
             generating: raw_cfg.generating.map(generating::ProtoConfig::from),
@@ -132,7 +135,7 @@ pub struct RawConfig {
 pub struct RawContent {
     #[serde(rename = "map-file")]
     pub map_file: PathBuf,
-    pub vehicles: vehicles::RawConfig,
+    pub vehicles: Option<vehicles::RawConfig>,
     pub nodes: nodes::RawConfig,
     pub edges: edges::RawConfig,
     pub generating: Option<generating::RawConfig>,

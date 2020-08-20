@@ -41,6 +41,15 @@ pub mod parsing {
     pub const IS_USING_SHORTCUTS: bool = false;
 
     pub const WILL_NORMALIZE_METRICS_BY_MEAN: bool = false;
+
+    // vehicles
+
+    pub mod vehicles {
+        use crate::network::vehicles::Category as VehicleCategory;
+
+        pub const CATEGORY: VehicleCategory = VehicleCategory::Car;
+        pub const ARE_DRIVERS_PICKY: bool = true;
+    }
 }
 
 pub mod writing {

@@ -1,8 +1,5 @@
 parsing:
   map-file: 'resources/isle_of_man_2020-03-14/graph.fmi'
-  vehicles:
-    category: 'Car'
-    are_drivers_picky: false
   nodes:
   - ignored # node-idx
   - meta: { info: 'NodeId', id: 'node-id' } # osm-id
@@ -10,6 +7,7 @@ parsing:
   - metric: { unit: 'Longitude', id: 'longitude' }
   edges:
     data:
+    - meta: { info: 'EdgeId', id: 'edge-id' }
     - meta: { info: 'SrcId', id: 'src-id' } # src-idx
     - meta: { info: 'DstId', id: 'dst-id' } # dst-idx
     - metric: { unit: 'Kilometers', id: 'kilometers' }
@@ -17,12 +15,7 @@ parsing:
     - metric: { unit: 'LaneCount', id: 'lane-count' }
   generating:
     nodes: []
-    edges:
-    - meta: { info: 'EdgeId', id: 'edge-id' }
-writing:
-  route-pairs:
-    file: 'resources/isle_of_man_2020-03-14/100.fmi.route-pairs'
-    random_or_all: { max_count: 100 }
+    edges: []
 # needed for examples/exploration.rs
 routing:
   algorithm: 'Dijkstra'
