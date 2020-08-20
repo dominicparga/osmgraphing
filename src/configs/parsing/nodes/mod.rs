@@ -19,7 +19,7 @@ impl From<ProtoConfig> for Config {
     }
 }
 
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug)]
 pub enum Category {
     Meta {
         info: MetaInfo,
@@ -59,7 +59,7 @@ impl From<gen::Category> for Category {
     }
 }
 
-#[derive(Copy, Clone, Debug, Deserialize, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum MetaInfo {
     NodeId,
     NodeIdx,
@@ -85,8 +85,7 @@ impl From<gen::MetaInfo> for MetaInfo {
     }
 }
 
-#[derive(Debug, Deserialize)]
-#[serde(from = "RawConfig")]
+#[derive(Clone, Debug)]
 pub struct ProtoConfig(pub Vec<ProtoCategory>);
 
 impl From<RawConfig> for ProtoConfig {
@@ -95,7 +94,7 @@ impl From<RawConfig> for ProtoConfig {
     }
 }
 
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug)]
 pub enum ProtoCategory {
     Meta {
         info: ProtoMetaInfo,
@@ -124,7 +123,7 @@ impl From<RawCategory> for ProtoCategory {
     }
 }
 
-#[derive(Copy, Clone, Debug, Deserialize, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum ProtoMetaInfo {
     NodeId,
     CHLevel,

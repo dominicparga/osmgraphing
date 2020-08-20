@@ -41,25 +41,6 @@ impl SupportingFileExts for Config {
     }
 }
 
-impl TryFrom<ProtoConfig> for Config {
-    type Error = err::Msg;
-
-    fn try_from(proto_cfg: ProtoConfig) -> err::Result<Config> {
-        let proto_cfg = proto_cfg.parsing;
-
-        Ok(Config {
-            map_file: proto_cfg.map_file,
-            vehicles: proto_cfg.vehicles.into(),
-            nodes: proto_cfg.nodes.into(),
-            edges: edges::Config::try_from(proto_cfg.edges)?,
-            generating: match proto_cfg.generating {
-                Some(generating_cfg) => Some(generating_cfg.into()),
-                None => None,
-            },
-        })
-    }
-}
-
 impl Config {
     pub fn try_from_yaml<P: AsRef<Path> + ?Sized>(path: &P) -> err::Result<Config> {
         let path = path.as_ref();
@@ -102,18 +83,57 @@ impl Config {
     }
 }
 
-/// Don't deny unknown fields to allow multiple configs in one yaml-file.
-#[derive(Debug, Deserialize)]
-pub struct ProtoConfig {
-    pub parsing: ProtoContent,
+impl TryFrom<ProtoConfig> for Config {
+    type Error = err::Msg;
+
+    fn try_from(proto_cfg: ProtoConfig) -> err::Result<Config> {
+        Ok(Config {
+            map_file: proto_cfg.map_file,
+            vehicles: vehicles::Config::from(proto_cfg.vehicles),
+            nodes: nodes::Config::from(proto_cfg.nodes),
+            edges: edges::Config::try_from(proto_cfg.edges)?,
+            generating: proto_cfg.generating.map(generating::Config::from),
+        })
+    }
 }
 
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "kebab-case", deny_unknown_fields)]
-pub struct ProtoContent {
+#[derive(Clone, Debug, Deserialize)]
+#[serde(try_from = "RawConfig")]
+pub struct ProtoConfig {
     pub map_file: PathBuf,
     pub vehicles: vehicles::ProtoConfig,
     pub nodes: nodes::ProtoConfig,
     pub edges: edges::ProtoConfig,
     pub generating: Option<generating::ProtoConfig>,
+}
+
+impl From<RawConfig> for ProtoConfig {
+    fn from(raw_cfg: RawConfig) -> ProtoConfig {
+        let raw_cfg = raw_cfg.parsing;
+
+        ProtoConfig {
+            map_file: raw_cfg.map_file,
+            vehicles: vehicles::ProtoConfig::from(raw_cfg.vehicles),
+            nodes: nodes::ProtoConfig::from(raw_cfg.nodes),
+            edges: edges::ProtoConfig::from(raw_cfg.edges),
+            generating: raw_cfg.generating.map(generating::ProtoConfig::from),
+        }
+    }
+}
+
+/// Don't deny unknown fields to allow multiple configs in one yaml-file.
+#[derive(Debug, Deserialize)]
+pub struct RawConfig {
+    pub parsing: RawContent,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct RawContent {
+    #[serde(rename = "map-file")]
+    pub map_file: PathBuf,
+    pub vehicles: vehicles::RawConfig,
+    pub nodes: nodes::RawConfig,
+    pub edges: edges::RawConfig,
+    pub generating: Option<generating::RawConfig>,
 }
