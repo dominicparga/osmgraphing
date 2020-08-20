@@ -24,8 +24,14 @@ fn do_benchmark(criterion: &mut Criterion) {
     let parsing_cfg =
         configs::parsing::Config::from_yaml("resources/isle_of_man_2020-03-14/osm.pbf.yaml");
     let routing_strs = vec![
-        "routing: { algorithm: Dijkstra, metrics: [{ id: 'kilometers' }] }",
-        "routing: { algorithm: Dijkstra, metrics: [{ id: 'kilometers' }, { id: 'hours' }] }",
+        (
+            "1D",
+            "routing: { algorithm: Dijkstra, metrics: [{ id: 'kilometers' }] }",
+        ),
+        (
+            "2D",
+            "routing: { algorithm: Dijkstra, metrics: [{ id: 'kilometers' }, { id: 'hours' }] }",
+        ),
     ];
 
     // create graph
@@ -70,12 +76,12 @@ fn do_benchmark(criterion: &mut Criterion) {
     ];
 
     // benchmarking shortest routing
-    for routing_str in routing_strs {
+    for (dim, routing_str) in routing_strs {
         let routing_cfg = configs::routing::Config::from_str(routing_str, graph.cfg());
 
         for (prefix, suffix, routes) in labelled_routes.iter() {
             criterion.bench_function(
-                &format!("{}Shortest Dijkstra (bidir){}", prefix, suffix),
+                &format!("{}Shortest Dijkstra (bidir, {}){}", prefix, dim, suffix),
                 |b| {
                     b.iter(|| {
                         bidir_shortest_dijkstra(
@@ -91,7 +97,7 @@ fn do_benchmark(criterion: &mut Criterion) {
         // benchmarking fastest routing
         for (prefix, suffix, routes) in labelled_routes.iter() {
             criterion.bench_function(
-                &format!("{}Fastest Dijkstra (bidir){}", prefix, suffix),
+                &format!("{}Fastest Dijkstra (bidir, {}){}", prefix, dim, suffix),
                 |b| {
                     b.iter(|| {
                         bidir_fastest_dijkstra(
