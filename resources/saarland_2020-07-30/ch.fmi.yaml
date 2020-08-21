@@ -1,8 +1,5 @@
 parsing:
   map-file: 'resources/saarland_2020-07-30/graph.ch.fmi'
-  vehicles:
-    category: 'Car'
-    are_drivers_picky: false
   nodes:
   - ignored # node-idx
   - meta: { info: 'NodeId', id: 'node-id' } # osm-id
@@ -12,15 +9,16 @@ parsing:
   - meta: { info: 'CHLevel', id: 'ch-level' }
   edges:
     data:
-    - meta: { info: 'SrcId', id: 'src-id' } # src-idx
-    - meta: { info: 'DstId', id: 'dst-id' } # dst-idx
+    - meta: { info: 'EdgeId', id: 'edge-id' }
+    - meta: { info: 'SrcId', id: 'src-id' }
+    - meta: { info: 'DstId', id: 'dst-id' }
     - metric: { unit: 'Kilometers', id: 'kilometers' }
     - metric: { unit: 'Hours', id: 'hours' }
     - meta: { info: 'ShortcutIdx0', id: 'sc-idx-0' }
     - meta: { info: 'ShortcutIdx1', id: 'sc-idx-1' }
 routing:
-  route-pairs-file: 'resources/saarland_2020-07-30/1.route-pairs'
   algorithm: 'CHDijkstra'
+  # list of routing-relevant metrics
   metrics:
   - id: 'hours'
 writing:
@@ -34,4 +32,3 @@ writing:
   #   random_or_all:
   #     seed: 24
   #     max_count: 10000
-

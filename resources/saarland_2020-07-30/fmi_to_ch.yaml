@@ -1,18 +1,17 @@
 parsing:
-  map-file: 'resources/saarland_2020-07-30/graph.osm.pbf'
-  vehicles:
-    category: 'Car'
-    are_drivers_picky: false
+  map-file: 'resources/saarland_2020-07-30/graph.fmi'
   nodes:
+  - ignored
   - meta: { info: 'NodeId', id: 'node-id' }
   - metric: { unit: 'Latitude', id: 'latitude' }
   - metric: { unit: 'Longitude', id: 'longitude' }
   edges:
-    will_normalize_metrics_by_mean: true
     data:
+    - meta: { info: 'EdgeId', id: 'edge-id' }
     - meta: { info: 'SrcId', id: 'src-id' }
     - meta: { info: 'DstId', id: 'dst-id' }
-    - metric: { unit: 'KilometersPerHour', id: 'kmph' }
+    - metric: { unit: 'Kilometers', id: 'kilometers' }
+    - metric: { unit: 'Hours', id: 'hours' }
     - metric: { unit: 'LaneCount', id: 'lane-count' }
   generating:
     nodes:
@@ -20,11 +19,6 @@ parsing:
     edges:
     - meta: { info: 'SrcIdx', id: 'src-idx' }
     - meta: { info: 'DstIdx', id: 'dst-idx' }
-    - haversine: { unit: 'Kilometers', id: 'kilometers' }
-    - calc:
-        result: { unit: 'Hours', id: 'hours' }
-        a: { unit: 'Kilometers', id: 'kilometers' }
-        b: { unit: 'KilometersPerHour', id: 'kmph' }
 writing:
   graph:
     map-file: 'resources/saarland_2020-07-30/graph_for_ch.fmi'
@@ -38,6 +32,7 @@ writing:
     edges:
       with_shortcuts: false
       ids:
+      - id: 'edge-id'
       - id: 'src-idx' # idx needed for multi-ch-constructor
       - id: 'dst-idx' # idx needed for multi-ch-constructor
       - id: 'kilometers'
@@ -51,8 +46,8 @@ multi-ch-constructor:
   cost-accuracy: 0.000001
   # This is a string, not a float, because it is provided as cmdline-argument
   contraction-ratio: "99.8"
-  number_of_threads: 15
+  number_of_threads: 4
   # If true, the edge's nodes' osm-ids instead of their indices are used.
   is_printing_osm-ids: true
   # If true, external edge-ids are piped through the multi-ch-constructor.
-  is_using_external_edge-ids: false
+  is_using_external_edge-ids: true

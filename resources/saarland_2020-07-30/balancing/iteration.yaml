@@ -29,9 +29,6 @@ writing:
     - id: 'lane-count'
 parsing:
   map-file: 'graph.ch.fmi'
-  vehicles:
-    category: 'Car'
-    are_drivers_picky: false
   nodes:
   - ignored # node-idx
   - meta: { info: 'NodeId', id: 'node-id' } # osm-id
