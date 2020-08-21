@@ -146,6 +146,15 @@ impl ConvexHullExplorator {
 
         let mut query = Query::with(query);
 
+        if query.src_idx == query.dst_idx {
+            warn!(
+                "{}{}{}",
+                "Asked for search-query from src-id ",
+                query.graph.nodes().id(query.src_idx),
+                " to itself.",
+            );
+        }
+
         let mut triangulation = Triangulation::new(query.triangulation_dim);
         let mut is_triangulation_dirty = false;
 

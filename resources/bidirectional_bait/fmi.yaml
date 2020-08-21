@@ -1,8 +1,5 @@
 parsing:
   map-file: 'resources/bidirectional_bait/graph.fmi'
-  vehicles:
-    category: 'Car'
-    are_drivers_picky: false
   nodes:
   - meta: { info: 'NodeId', id: 'node-id' }
   - metric: { unit: 'Latitude', id: 'latitude' }

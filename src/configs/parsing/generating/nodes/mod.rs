@@ -40,7 +40,7 @@ impl From<ProtoMetaInfo> for MetaInfo {
     }
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 #[serde(from = "RawConfig")]
 pub struct ProtoConfig {
     pub categories: Vec<ProtoCategory>,

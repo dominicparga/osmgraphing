@@ -69,7 +69,7 @@ fn do_benchmark(criterion: &mut Criterion) {
             "",
             " with long routes (~56 km)",
             vec![(
-                nodes.idx_from(1_151_603_193).expect("E"),
+                nodes.idx_from(1_700_989_735).expect("E"),
                 nodes.idx_from(456_478_793).expect("F"),
             )],
         ),

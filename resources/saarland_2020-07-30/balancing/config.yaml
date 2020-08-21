@@ -1,25 +1,24 @@
 # read in custom graph
 parsing:
-  map-file: 'resources/saarland_2020-07-30/graph.osm.pbf'
-  vehicles:
-    category: 'Car'
-    are_drivers_picky: false
+  map-file: 'resources/saarland_2020-07-30/graph.fmi'
   nodes:
+  - ignored
   - meta: { info: 'NodeId', id: 'node-id' }
   - metric: { unit: 'Latitude', id: 'latitude' }
   - metric: { unit: 'Longitude', id: 'longitude' }
   edges:
     will_normalize_metrics_by_mean: true
     data:
+    - meta: { info: 'EdgeId', id: 'edge-id' }
     - meta: { info: 'SrcId', id: 'src-id' }
     - meta: { info: 'DstId', id: 'dst-id' }
-    - metric: { unit: 'KilometersPerHour', id: 'kmph' }
+    - metric: { unit: 'Kilometers', id: 'kilometers' }
+    - metric: { unit: 'Hours', id: 'hours' }
     - metric: { unit: 'LaneCount', id: 'lane-count' }
   generating:
     nodes:
     - meta: { info: 'NodeIdx', id: 'node-idx' }
     edges:
-    - meta: { info: 'EdgeId', id: 'edge-id' }
       # src-idx
     - meta: { info: 'SrcIdx', id: 'src-idx' }
       # src-coords
@@ -30,12 +29,6 @@ parsing:
       # dst-coords
     - meta: { info: 'DstLat', id: 'dst-lat' }
     - meta: { info: 'DstLon', id: 'dst-lon' }
-      # metrics
-    - haversine: { unit: 'Kilometers', id: 'kilometers' }
-    - calc:
-        result: { unit: 'Hours', id: 'hours' }
-        a: { unit: 'Kilometers', id: 'kilometers' }
-        b: { unit: 'KilometersPerHour', id: 'kmph' }
     - custom:
         id: 'workload'
         unit: 'F64'
@@ -59,7 +52,7 @@ balancing:
   # important to keep non-zero workloads (if generated non-zero):
   # - zero-edges creates more uninteresting shortcuts -> less performance
   # - zero-edges makes Dijkstra running longer/inefficiently
-  min_new_metric: 0.1
+  min_new_metric: 0.001
   multi-ch-constructor:
     fmi-graph: 'graph.fmi'
     contracted-graph: 'graph.ch.fmi'
@@ -100,7 +93,7 @@ routing:
   metrics:
   - id: 'kilometers'
   - id: 'hours'
-    tolerated-scale: 1.25
+    tolerated-scale: 1.2
   - id: 'workload' # gets deactivated in first iteration
 # write balanced graph after final iteration
 writing:
@@ -115,6 +108,7 @@ writing:
       with_shortcuts: false
       will_denormalize_metrics_by_mean: false
       ids:
+      - id: 'edge-id'
       - id: 'src-id'
       - id: 'dst-id'
       - id: 'kilometers'

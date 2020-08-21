@@ -115,6 +115,34 @@ where
             cmp_0
         }
     }
+
+    fn le(&self, other: &Approx<&[T]>) -> bool {
+        for cmp in self
+            .0
+            .iter()
+            .zip(other.0)
+            .map(|(a, b)| Approx(a).partial_cmp(&Approx(b)))
+        {
+            if cmp == Some(Ordering::Greater) {
+                return false;
+            }
+        }
+        true
+    }
+
+    fn ge(&self, other: &Approx<&[T]>) -> bool {
+        for cmp in self
+            .0
+            .iter()
+            .zip(other.0)
+            .map(|(a, b)| Approx(a).partial_cmp(&Approx(b)))
+        {
+            if cmp == Some(Ordering::Less) {
+                return false;
+            }
+        }
+        true
+    }
 }
 
 impl<T> PartialEq for Approx<&[T]>
@@ -197,6 +225,14 @@ where
 {
     fn partial_cmp(&self, other: &Approx<&SmallVec<A>>) -> Option<Ordering> {
         Approx(&self.0[..]).partial_cmp(&Approx(&other.0[..]))
+    }
+
+    fn le(&self, other: &Approx<&SmallVec<A>>) -> bool {
+        Approx(&self.0[..]).le(&Approx(&other.0[..]))
+    }
+
+    fn ge(&self, other: &Approx<&SmallVec<A>>) -> bool {
+        Approx(&self.0[..]).ge(&Approx(&other.0[..]))
     }
 }
 

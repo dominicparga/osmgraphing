@@ -28,8 +28,8 @@ fn pbf_graph() {
     let parsing_cfg = configs::parsing::Config::from_yaml(resources::OSM_PBF_YAML);
     let graph = parse(parsing_cfg);
 
-    let expected_node_count = 577_337;
-    let expected_edge_count = 1_160_075;
+    let expected_node_count = 255_271;
+    let expected_edge_count = 493_346;
     assert_graph_sloppy(expected_node_count, expected_edge_count, &graph);
 }
 
@@ -38,7 +38,7 @@ fn ch_fmi_graph() {
     let parsing_cfg = configs::parsing::Config::from_yaml(resources::CH_FMI_YAML);
     let graph = parse(parsing_cfg);
 
-    let expected_node_count = 577_337;
-    let expected_edge_count = 2_138_097;
+    let expected_node_count = 255_271;
+    let expected_edge_count = 893_847;
     assert_graph_sloppy(expected_node_count, expected_edge_count, &graph);
 }

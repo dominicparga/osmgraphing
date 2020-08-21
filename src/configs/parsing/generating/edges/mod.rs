@@ -125,7 +125,7 @@ impl From<ProtoMetaInfo> for MetaInfo {
     }
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 #[serde(deny_unknown_fields, from = "RawConfig")]
 pub struct ProtoConfig(pub Vec<ProtoCategory>);
 

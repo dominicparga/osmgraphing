@@ -100,7 +100,9 @@ impl Writer {
                 };
 
                 let is_already_processed = !processed_indices.insert((src_idx, dst_idx));
-                if !is_already_processed
+                let src_equals_dst = src_idx == dst_idx;
+                if !src_equals_dst
+                    && !is_already_processed
                     && dijkstra
                         .compute_best_path(dijkstra::Query {
                             src_idx,

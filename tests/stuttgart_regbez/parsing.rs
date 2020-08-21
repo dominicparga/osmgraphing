@@ -36,8 +36,8 @@ fn pbf_graph() {
     let parsing_cfg = configs::parsing::Config::from_yaml(resources::OSM_PBF_YAML);
     let graph = parse(parsing_cfg);
 
-    let expected_node_count = 2_688_220;
-    let expected_edge_count = 5_592_414;
+    let expected_node_count = 2_363_392;
+    let expected_edge_count = 4_892_004;
     assert_graph_sloppy(expected_node_count, expected_edge_count, &graph);
 }
 

@@ -20,9 +20,12 @@
 parsing:
   # relative to user, not to script
   map-file: 'relative-path-to-map-file'
+  # optional
   vehicles:
+    # default is 'Car'
     category: 'Car' # | 'Bicycle' | 'Pedestrian'
     # Value `false` leads to more edges, because edges are added, which are okay, but not suitable for this vehicle-category.
+    # Default is true
     are_drivers_picky: false
   # With nodes, the order matters, if the map-file has a order, like `fmi`-files.
   # Behaviour with multiple occurences is undefined, but it probably overwrites previous ones.

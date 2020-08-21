@@ -1,25 +1,24 @@
 # read in custom graph
 parsing:
-  map-file: 'resources/isle_of_man_2020-03-14/graph.osm.pbf'
-  vehicles:
-    category: 'Car'
-    are_drivers_picky: false
+  map-file: 'resources/isle_of_man_2020-03-14/graph.fmi'
   nodes:
+  - ignored
   - meta: { info: 'NodeId', id: 'node-id' }
   - metric: { unit: 'Latitude', id: 'latitude' }
   - metric: { unit: 'Longitude', id: 'longitude' }
   edges:
     will_normalize_metrics_by_mean: true
     data:
+    - meta: { info: 'EdgeId', id: 'edge-id' }
     - meta: { info: 'SrcId', id: 'src-id' }
     - meta: { info: 'DstId', id: 'dst-id' }
-    - metric: { unit: 'KilometersPerHour', id: 'kmph' }
+    - metric: { unit: 'Kilometers', id: 'kilometers' }
+    - metric: { unit: 'Hours', id: 'hours' }
     - metric: { unit: 'LaneCount', id: 'lane-count' }
   generating:
     nodes:
     - meta: { info: 'NodeIdx', id: 'node-idx' }
     edges:
-    - meta: { info: 'EdgeId', id: 'edge-id' }
       # src-idx
     - meta: { info: 'SrcIdx', id: 'src-idx' }
       # src-coords
@@ -30,15 +29,9 @@ parsing:
       # dst-coords
     - meta: { info: 'DstLat', id: 'dst-lat' }
     - meta: { info: 'DstLon', id: 'dst-lon' }
-      # metrics
-    - haversine: { unit: 'Kilometers', id: 'kilometers' }
     - copy:
         from: { unit: 'Kilometers', id: 'kilometers' }
         to: { unit: 'Kilometers', id: 'dummy' }
-    - calc:
-        result: { unit: 'Hours', id: 'hours' }
-        a: { unit: 'Kilometers', id: 'kilometers' }
-        b: { unit: 'KilometersPerHour', id: 'kmph' }
     - custom:
         id: 'workload'
         unit: 'F64'
@@ -118,7 +111,7 @@ writing:
       with_shortcuts: false
       will_denormalize_metrics_by_mean: false
       ids:
-      # - id: 'edge-id'
+      - id: 'edge-id'
       - id: 'src-id'
       - id: 'dst-id'
       - id: 'kilometers'

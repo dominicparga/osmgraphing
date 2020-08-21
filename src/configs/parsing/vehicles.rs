@@ -1,10 +1,19 @@
-use crate::network::vehicles::Category as VehicleCategory;
+use crate::{defaults, network::vehicles::Category as VehicleCategory};
 use serde::Deserialize;
 
 #[derive(Clone, Debug)]
 pub struct Config {
     pub category: VehicleCategory,
     pub are_drivers_picky: bool,
+}
+
+impl Default for Config {
+    fn default() -> Config {
+        Config {
+            category: defaults::parsing::vehicles::CATEGORY,
+            are_drivers_picky: defaults::parsing::vehicles::ARE_DRIVERS_PICKY,
+        }
+    }
 }
 
 impl From<ProtoConfig> for Config {
@@ -16,8 +25,7 @@ impl From<ProtoConfig> for Config {
     }
 }
 
-#[derive(Debug, Deserialize)]
-#[serde(try_from = "RawConfig")]
+#[derive(Clone, Debug)]
 pub struct ProtoConfig {
     pub category: VehicleCategory,
     pub are_drivers_picky: bool,
@@ -34,7 +42,7 @@ impl From<RawConfig> for ProtoConfig {
 
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
-struct RawConfig {
+pub struct RawConfig {
     pub category: VehicleCategory,
     pub are_drivers_picky: bool,
 }

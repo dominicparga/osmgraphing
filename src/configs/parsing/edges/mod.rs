@@ -178,7 +178,7 @@ impl From<generating::edges::MetaInfo> for MetaInfo {
     }
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 #[serde(from = "RawConfig", deny_unknown_fields)]
 pub struct ProtoConfig {
     pub are_metrics_normalized: Option<bool>,
