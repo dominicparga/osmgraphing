@@ -322,7 +322,7 @@ pub mod network {
                 StreetCategory::TertiaryLink => 30,
                 StreetCategory::Unclassified => 50,
                 StreetCategory::Residential => 50,
-                StreetCategory::LivingStreet => 15,
+                StreetCategory::LivingStreet => 15, // TODO probably 10?
                 StreetCategory::Service => 20,
                 StreetCategory::Track => 30,
                 StreetCategory::Road => 50,
