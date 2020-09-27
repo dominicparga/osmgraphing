@@ -2,8 +2,8 @@ name: Rust
 on:
   push:
   pull_request:
-  schedule:
-  - cron: '0 6 * * 0-6'
+  #schedule:
+  #- cron: '0 6 * * 0-6'
 jobs:
   stable:
     runs-on: ubuntu-latest
