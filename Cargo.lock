@@ -1050,8 +1050,9 @@ dependencies = [
 
 [[package]]
 name = "kissunits"
-version = "1.1.0"
-source = "git+https://github.com/dominicparga/kissunits?branch=nightly#82b072fed0b6abee7dbc22566e07816b6686f516"
+version = "2.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0da2d7922dd5639d943995cebda362eb0075f49763b9a3239d9733210291d97e"
 
 [[package]]
 name = "language-tags"
@@ -1477,8 +1478,9 @@ dependencies = [
 
 [[package]]
 name = "progressing"
-version = "2.2.3"
-source = "git+https://github.com/dominicparga/progressing?branch=nightly#edddb59cdc5e0eeb0d88861932bac69f123a9815"
+version = "3.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "97b7db19a74ba7c34de36558abed080568491d2b8999a34de914b1793b0b4b1b"
 dependencies = [
  "log",
 ]
