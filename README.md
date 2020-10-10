@@ -12,7 +12,7 @@
 [![License][github/self/license/badge]][github/self/license]
 
 [<img title="Balancing Saarland" src="resources/saarland_2020-07-30/balancing/workloads.gif" alt="Balancing Saarland" />](resources/saarland_2020-07-30/balancing/workloads.gif)
-> This GIF shows, how the balancing improves the distribution of `10,000` paths over the network of the German state `Saarland`.
+> This GIF shows, how the balancing improves the spread of `10,000` paths over the network of the German state `Saarland`.
 > New paths from `s` to `t` are guaranteed being not worse than `25 %` than the optimal path from `s` to `t`, with respect to travel-duration (so `55 min` becomes under `1 h 10 min` in the worst-case).
 
 Welcome to the `osmgraphing`-repo! `:)`
@@ -25,23 +25,29 @@ All calculations will be optimized for a single desktop instead of a more expens
 The current machine (__August 2020__) uses an `AMD Ryzen 7 3700X 8-Core Processor` and has __`32 GB` of `RAM`__.
 
 
-## Reason for `version < 1.0.0` <a name="version"></a>
+## Reason for `version above 1.0.0` <a name="version"></a>
 
-I'm currently building this library for my master-thesis (submission __August 2020__), leading to interface-changes with breaking changes (at least) every few weeks, why version `1.0.0` is not supported yet.
-However, the underlying parser and graph-structure are working very stable, efficiently, tested with different maps (see `resources/`), and will be used to simulate different routing-scenarios, so version `1.0.0` should be reached soon. `:)`
+This repository is my first project in `Rust` `:)`.
+Some interface-decisions might be open for discussion (like the public `helpers`-module) and the graphbuilder has some quite long functions.
+The resources consume too much memory due to the graph- and routing-files (fresh clone around `20 MB`).
+However, the code works very solid.
+Large design-decisions are described nicely in my [master-thesis][github/dominicparga/master-thesis], which bases on this repository.
+This was a student-project, a master-thesis, a learning-project and fulfilled these purposes perfectly.
+Because of this, version `1.1.1` has been published in `October 2020` without many further refactoring.
 
 
 ## Copyright and License <a name="copyright_and_license"></a>
 
 Please refer to `LICENSE.md` for details.
 Copyright-owner is `Parga Cacheiro, Dominic`.
-In short, this repository is licensed under the `Apache-2.0`-license as long as you are not using the `cargo`-feature `gpl-3.0`.
+In short, this repository and generated binaries are licensed under the `Apache-2.0`-license as long as you are not using the `cargo`-feature `gpl-3.0`.
 Using this `cargo`-feature adds some code and binaries, which depend on code licensed under the `GPL-3.0`.
+Thus, the resulting binaries are licensed under the `GPL-3.0`.
 
 
 ## Table of contents <a name="toc"></a>
 
-1. [Reason for version < 1.0.0][self/version]
+1. [Reason for version above 1.0.0][self/version]
 1. [Copyright and License][self/copyright_and_license]
 1. [Table of contents][self/toc]
 1. [Setup and usage][self/setup-and-usage]
@@ -77,7 +83,7 @@ You can download `pbf`-files from [geofabrik][geofabrik] and cast them to other 
 When editing the config, take [`resources/blueprint.yaml`][github/self/blob/blueprint.yaml] as guide.
 
 To use the balancer, a [clone][github/dominicparga/multi-ch-constructor] of [`multi-ch-constructor`-repo][github/lesstat/multi-ch-constructor] is used as submodule, written in `c++`.
-This `osmgraphing`-repo is wrapping the submodule as `rust`-module, using configs for its execution-parameters.
+This `osmgraphing`-repo is wrapping the submodule as `Rust`-module, using configs for its execution-parameters.
 To get it run, please install the dependencies according to the [workflow-file][github/self/workflow] (working successfully in `August 2020`).
 Please note that the balancer bases on code, that is licensed under the `GPL-3.0`.
 Therefore, you have to enable features (via `cargo`).
@@ -105,7 +111,7 @@ The python-tool has a help-msg, but the balancer also prints the respective comm
 > Since this repository is used by just a very few people, these configs are still kept as helping example.
 
 
-### Overview over all features
+### Overview of all features
 
 The following table shows all features of this repository.
 The `cargo`-features are needed to build the respective feature.
@@ -212,18 +218,18 @@ __[Florian Barth][github/lesstat]__
 is the supervisor of the project since beginning and is always helping immediately with his experience and advice.
 
 __[Dominic Parga Cacheiro][github/dominicparga]__  
-has been part of the project's first weeks when project-planning and learning Rust was on the scope.
-He continues the work and is improving and extending the simulation.
-One large of his extensions is distributing routes over a given network.
+has been part of the project's first weeks when project-planning and learning `Rust` was on the scope.
+He continued the work until `October 2020` and has improved and extended the simulation.
+The largest part of his extensions is the metric-generation of a given network to improve the spread of a provided set of source-target-pairs.
 
 __[Jena Satkunarajan][github/jenasat]__  
-has been part of the project's first weeks when project-planning and learning Rust was on the scope.
+has been part of the project's first weeks when project-planning and learning `Rust` was on the scope.
 He has implemented the first (and running) approach of the `A*`-algorithm.
 
 
 [crates.io/self]: https://crates.io/crates/osmgraphing
 [crates.io/self/badge]: https://img.shields.io/crates/v/osmgraphing?style=for-the-badge
-[docs.rs/self]: https://docs.rs/osmgraphing/0/
+[docs.rs/self]: https://docs.rs/osmgraphing/
 [docs.rs/self/badge]: https://img.shields.io/crates/v/osmgraphing?color=informational&label=docs&style=for-the-badge
 [geofabrik]: https://geofabrik.de
 [github/dominicparga]: https://github.com/dominicparga
@@ -233,7 +239,6 @@ He has implemented the first (and running) approach of the `A*`-algorithm.
 [github/lesstat]: https://github.com/lesstat
 [github/lesstat/cyclops/blob/README]: https://github.com/Lesstat/cyclops/blob/master/README.md#graph-data
 [github/lesstat/multi-ch-constructor]: https://github.com/Lesstat/multi-ch-constructor
-[github/lesstat/multi-ch-constructor/change-dim]: https://github.com/Lesstat/multi-ch-constructor/blob/bec548c1a1ebeae7ac19d3250d5473199336d6fe/src/multi_lib/graph.hpp#L49
 [github/self/actions]: https://github.com/dominicparga/osmgraphing/actions
 [github/self/actions/badge]: https://img.shields.io/github/workflow/status/dominicparga/osmgraphing/Rust?label=nightly-build&style=for-the-badge
 [github/self/blob/blueprint.yaml]: https://github.com/dominicparga/osmgraphing/blob/nightly/resources/blueprint.yaml

@@ -1323,7 +1323,7 @@ checksum = "a170cebd8021a008ea92e4db85a72f80b35df514ec664b296fdcbb654eac0b2c"
 
 [[package]]
 name = "osmgraphing"
-version = "0.13.0"
+version = "1.1.1"
 dependencies = [
  "actix-rt",
  "actix-web",
