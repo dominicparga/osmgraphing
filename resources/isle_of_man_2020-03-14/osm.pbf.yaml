@@ -1,0 +1,31 @@
+parsing:
+  map-file: 'resources/isle_of_man_2020-03-14/graph.osm.pbf'
+  nodes:
+  - meta: { info: 'NodeId', id: 'node-id' }
+  - metric: { unit: 'Latitude', id: 'latitude' }
+  - metric: { unit: 'Longitude', id: 'longitude' }
+  edges:
+    data:
+    - meta: { info: 'SrcId', id: 'src-id' }
+    - meta: { info: 'DstId', id: 'dst-id' }
+    - ignored # shouldn't matter, so add it here to test this
+    - metric: { unit: 'KilometersPerHour', id: 'kmph' }
+    - metric: { unit: 'LaneCount', id: 'lanecount' }
+  generating:
+    nodes:
+    - meta: { info: 'NodeIdx', id: 'node-idx' }
+    edges:
+    - meta: { info: 'SrcIdx', id: 'src-idx' }
+    - meta: { info: 'DstIdx', id: 'dst-idx' }
+    - haversine: { unit: 'Kilometers', id: 'kilometers' }
+    - calc:
+        result: { unit: 'Hours', id: 'hours' }
+        a: { unit: 'Kilometers', id: 'kilometers' }
+        b: { unit: 'KilometersPerHour', id: 'kmph' }
+# needed for examples/exploration.rs
+routing:
+  route-pairs-file: 'resources/isle_of_man_2020-03-14/10_000.route-pairs'
+  algorithm: 'Dijkstra'
+  metrics:
+  - id: 'kilometers'
+  - id: 'hours'

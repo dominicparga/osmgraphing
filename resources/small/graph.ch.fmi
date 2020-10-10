@@ -1,0 +1,46 @@
+# Graph created at: 2020-03-14 20:15:56
+# Contracted to: 100%
+# Input Graphfile: ../osmgraphing/custom/resources/maps/small.fmi
+#
+# edge-metric-count
+# node-count
+# edge-count
+# nodes: [NodeIdx, NodeId, Latitude, Longitude, Ignore, Level]
+# edges: ["SrcIdx", "DstIdx", "Meters", "Seconds", "ShortcutEdgeIdx0", "ShortcutEdgeIdx1"]
+
+3
+8
+25
+0 0 0 0 0 1    # a
+3 3 0 0 0 1    # d
+6 6 0 0 0 1    # g
+2 2 0 0 0 2    # c
+4 4 0 0 0 2    # e
+1 1 0 0 0 3    # b
+5 5 0 0 0 3    # f
+7 7 0 0 0 4    # h
+1 0 1 0.12 -1 -1
+1 0 1 0.12 -1 -1 # duplicate
+1 0 1 0.12 -1 -1 # duplicate
+1 2 1 0.12 -1 -1
+2 0 1 0.12 -1 -1
+2 1 1 0.12 -1 -1
+3 1 1 0.12 -1 -1
+3 4 2 0.24 -1 -1
+3 7 1 0.12 -1 -1
+4 3 2 0.24 -1 -1
+4 5 1 0.12 -1 -1
+5 4 1 0.12 -1 -1
+5 4 1 0.12 -1 -1 # duplicate
+5 7 1 0.12 -1 -1
+6 4 1 0.12 -1 -1
+6 5 1 0.12 -1 -1 # needs >= (3 + 1) duplicates for testing sc-idx-correction
+6 5 1 0.12 -1 -1 # duplicate
+6 5 1 0.12 -1 -1 # duplicate
+6 5 1 0.12 -1 -1 # duplicate
+6 5 1 0.12 -1 -1 # duplicate
+7 2 4 0.48 -1 -1
+7 3 1 0.12 -1 -1
+7 5 1 0.12 -1 -1
+4 1 3 0.36 9 6 # shortcut (+1 above because of this one, adding one to 21 below)
+7 1 2 0.24 21 6 # shortcut

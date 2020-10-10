@@ -1,98 +1,119 @@
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [package]
-name = "osmgraphing" # lib.rs
-default-run = "osmgraphing" # bin/osmgraphing.rs
+name = 'osmgraphing' # lib.rs
+default-run = 'osmgraphing' # bin/osmgraphing.rs
 # Changing this version in a branch 'release' and pushing it to
 # GitHub will lead to publishing it automatically to crates.io.
 # Hence do not forget updating Unreleased in CHANGELOG.md.
-version = "0.13.0" # !!!
-description = "Playing around with graphs created via parsing OpenStreetMap data"
-edition = "2018"
+version = '1.1.1' # !!!
+description = 'Playing around with graphs created via parsing OpenStreetMap data'
+edition = '2018'
 
 authors = [
-    "Parga Cacheiro, Dominic (dominic.parga@gmail.com)",
+    'Parga Cacheiro, Dominic (dominic.parga@gmail.com)',
 ]
-repository = "https://github.com/dominicparga/osmgraphing"
-readme = "README.md"
-keywords = ["osm", "route", "routing", "pbf", "xml"]
-categories = ["algorithms", "data-structures", "parser-implementations", "parsing"]
-license = "Apache-2.0 OR GPL-3.0-or-later"
+repository = 'https://github.com/dominicparga/osmgraphing'
+readme = 'README.md'
+keywords = ['osm', 'route', 'routing', 'pbf', 'xml']
+categories = ['algorithms', 'data-structures', 'parser-implementations', 'parsing']
+license = 'Apache-2.0'
+
+build = "build.rs"
 
 
 [features]
-"gpl" = ["nd-triangulation"]
+default = []
+
+# TODO different test-lengths
+# https://testing.googleblog.com/2010/12/test-sizes.html
+custom = []
+'gpl-3.0' = [ 'nd-triangulation' ]
 
 
 [[bin]]
-name = 'osmgraphing' # bin/osmgraphing.rs
+name = 'osmgraphing'
+path = 'src/bin/osmgraphing/mod.rs'
 
 [[bin]]
-name = 'balancer' # bin/balancer.rs
-required-features = ["gpl"]
+name = 'multi-ch-constructor'
+path = 'src/bin/multi-ch-constructor.rs'
+required-features = ['gpl-3.0']
 
 
 [[example]]
-name = "parser"
-path = "examples/parser.rs"
+name = 'parser'
+path = 'examples/parser.rs'
 
 [[example]]
-name = "dijkstra"
-path = "examples/dijkstra.rs"
+name = 'dijkstra'
+path = 'examples/dijkstra.rs'
 
 [[example]]
-name = "playground_actix"
-path = "examples/playground/actix.rs"
+name = 'exploration'
+path = 'examples/exploration.rs'
+required-features = ['gpl-3.0']
+
 
 [[example]]
-name = "playground_random"
-path = "examples/playground/random.rs"
+name = 'playground_actix'
+path = 'examples/playground/actix.rs'
 
 [[example]]
-name = "playground_edge-containers"
-path = "examples/playground/edge_containers.rs"
+name = 'playground_edge-containers'
+path = 'examples/playground/edge_containers.rs'
 
 [[example]]
-name = "playground_graph"
-path = "examples/playground/graph.rs"
+name = 'playground_graph'
+path = 'examples/playground/graph.rs'
 
 [[example]]
-name = "playground_multithreading"
-path = "examples/playground/multithreading.rs"
+name = 'playground_multithreading'
+path = 'examples/playground/multithreading.rs'
 
 [[example]]
-name = "playground_pipes_and_filters"
-path = "examples/playground/pipes_and_filters.rs"
+name = 'playground_nd-triangulation'
+path = 'examples/playground/nd_triangulation.rs'
+required-features = ['gpl-3.0']
 
 [[example]]
-name = "playground_xml_reader"
-path = "examples/playground/xml_reader.rs"
+name = 'playground_pipes_and_filters'
+path = 'examples/playground/pipes_and_filters.rs'
+
+[[example]]
+name = 'playground_random'
+path = 'examples/playground/random.rs'
+
+[[example]]
+name = 'playground_xml_reader'
+path = 'examples/playground/xml_reader.rs'
 
 
 [[bench]]
-name = "routing"
+name = 'routing'
 harness = false
 
 
 [dependencies]
-clap = "2.33" # cmdline-parsing
-env_logger = "0.6" # logging for external use, e.g. main.rs and examples
-kissunits = "1" # units like Meters or Coordinate
-log = "0.4"        # logging for internal use, e.g. lib.rs
-osmpbfreader = "0.13" # read osm.pbf-files
-progressing = "2" # progress-bar
-rand = "0.7" # generate random numbers
-rand_pcg = "0.2" # generate random numbers
-serde = "1" # serialization
-serde_yaml = "0.8" # (de-)serialization
-smallvec = "1" # inlining small vecs
-
-nd-triangulation = { version = "0.3", optional = true } # CGAL-interface
+chrono = '0.4' # date and time
+clap = '2.33' # cmdline-parsing
+env_logger = '0.6' # logging for external use, e.g. main.rs and examples
+kissunits = { git = 'https://github.com/dominicparga/kissunits', branch = 'nightly' } # units like Meters or Coordinate
+log = '0.4' # logging for internal use, e.g. lib.rs
+nalgebra = '0.21' # vectors and matrics
+nd-triangulation = { version = '0.3', optional = true } # CGAL for convex hulls
+osmpbfreader = '0.13' # read osm.pbf-files
+progressing = { git = 'https://github.com/dominicparga/progressing', branch = 'nightly' } # progress-bar
+rand = '0.7' # generate random numbers
+rand_pcg = '0.2' # generate random numbers
+serde = '1' # serialization
+serde_yaml = '0.8' # (de-)serialization
+smallvec = '1' # inlining small vecs
 
 
 [dev-dependencies]
-actix-rt = "0.2" # backend-server
-actix-web = "1" # backend-server
-criterion = "0.3" # benchmarking
-futures = "0.1" # backend-server
-quick-xml = "0.14" # read xml-files
+actix-rt = '0.2' # backend-server
+actix-web = '1' # backend-server
+criterion = '0.3' # benchmarking
+futures = '0.1' # backend-server
+quick-xml = '0.14' # read xml-files

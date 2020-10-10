@@ -1,10 +1,15 @@
 pub mod building;
 mod indexing;
-pub use indexing::{EdgeIdx, MetricIdx, NodeIdx};
+pub use indexing::{EdgeIdx, EdgeIdxIterator, MetricIdx, NodeIdx, NodeIdxIterator};
 
-use crate::{configs::parsing::Config, defaults::capacity::DimVec};
+use crate::{configs::parsing::Config, defaults::capacity::DimVec, helpers::err};
 use kissunits::geo::Coordinate;
-use std::{fmt, fmt::Display, iter::Iterator, ops::Index};
+use std::{
+    fmt,
+    fmt::Display,
+    iter::Iterator,
+    ops::{Index, IndexMut},
+};
 
 /// Stores graph-data as offset-graph in arrays and provides methods and shallow structs for accessing them.
 ///
@@ -73,11 +78,11 @@ use std::{fmt, fmt::Display, iter::Iterator, ops::Index};
 #[derive(Debug)]
 pub struct Graph {
     cfg: Config,
-    // nodes
+    // nodes, ids sorted
     node_ids: Vec<i64>,
     // node-metrics
     node_coords: Vec<Coordinate>,
-    node_levels: Vec<usize>,
+    node_ch_levels: Vec<usize>,
     // node_heights: Vec<f64>,
     // edges: offset-graph and mappings, e.g. for metrics
     fwd_dsts: Vec<NodeIdx>,
@@ -88,6 +93,10 @@ pub struct Graph {
     bwd_to_fwd_map: Vec<EdgeIdx>,
     // edge-metrics (sorted according to fwd_dsts)
     metrics: Vec<DimVec<f64>>,
+    means: Option<DimVec<f64>>,
+    // mapping from id to EdgeIdx, sorted by id
+    edge_ids: Vec<Option<usize>>,
+    edge_ids_to_idx_map: Vec<(usize, EdgeIdx)>,
     // shortcuts (contraction-hierarchies)
     sc_offsets: Vec<usize>,
     sc_edges: Vec<[EdgeIdx; 2]>,
@@ -103,12 +112,14 @@ impl Graph {
         NodeAccessor {
             node_ids: &self.node_ids,
             node_coords: &self.node_coords,
-            node_levels: &self.node_levels,
+            node_ch_levels: &self.node_ch_levels,
         }
     }
 
     pub fn fwd_edges<'a>(&'a self) -> EdgeAccessor<'a> {
         EdgeAccessor {
+            edge_ids: &self.edge_ids,
+            edge_ids_to_idx_map: &self.edge_ids_to_idx_map,
             edge_dsts: &self.fwd_dsts,
             offsets: &self.fwd_offsets,
             xwd_to_fwd_map: &self.fwd_to_fwd_map,
@@ -120,6 +131,8 @@ impl Graph {
 
     pub fn bwd_edges<'a>(&'a self) -> EdgeAccessor<'a> {
         EdgeAccessor {
+            edge_ids: &self.edge_ids,
+            edge_ids_to_idx_map: &self.edge_ids_to_idx_map,
             edge_dsts: &(self.bwd_dsts),
             offsets: &(self.bwd_offsets),
             xwd_to_fwd_map: &(self.bwd_to_fwd_map),
@@ -133,6 +146,15 @@ impl Graph {
         MetricAccessor {
             cfg: &self.cfg,
             metrics: &self.metrics,
+            means: self.means.as_ref(),
+        }
+    }
+
+    pub fn metrics_mut<'a>(&'a mut self) -> MetricAccessorMut<'a> {
+        MetricAccessorMut {
+            cfg: &self.cfg,
+            metrics: &mut self.metrics,
+            means: self.means.as_mut(),
         }
     }
 }
@@ -197,34 +219,38 @@ impl Display for Graph {
             ),
         ];
         for stuff_idx in 0..graph_stuff.len() {
-            let (fwd_dsts, bwd_dsts, xwd_offsets, xwd_prefix) = &graph_stuff[stuff_idx];
+            let (fwd_edges, bwd_edges, xwd_offsets, xwd_prefix) = &graph_stuff[stuff_idx];
 
             // print up to m xwd-edges
             for mut j in 0..m {
                 // if enough edges are in the graph
-                if j < fwd_dsts.count() {
+                if j < fwd_edges.count() {
                     // if last edge that gets printed
                     if j == m - 1 {
                         // if at least 2 edges are missing -> print `...`
-                        if j + 1 < fwd_dsts.count() {
+                        if j + 1 < fwd_edges.count() {
                             writeln!(f, "{}edge: ...", xwd_prefix)?;
                         }
                         // print last edge
-                        j = fwd_dsts.count() - 1;
+                        j = fwd_edges.count() - 1;
                     }
                     let edge_idx = EdgeIdx(j);
-                    let src_idx = bwd_dsts.dst_idx(edge_idx);
-                    let half_edge = fwd_dsts.half_edge(edge_idx);
+                    let src_idx = bwd_edges.dst_idx(edge_idx);
+                    let half_edge = fwd_edges.half_edge(edge_idx);
                     let metrics = half_edge.metrics();
                     writeln!(
                         f,
-                        "{}edge: {{ idx: {}, sc-offset: {}, ({})-{:?}->({}) }}",
+                        "{}edge: {{ {}idx: {}, sc-offset: {}, (idx: {})-{:?}->(idx: {}) }}",
                         xwd_prefix,
+                        match fwd_edges.try_id(edge_idx) {
+                            Some(id) => format!("id: {}, ", id),
+                            None => String::from(""),
+                        },
                         j,
                         self.sc_offsets[j],
-                        self.node_ids[*src_idx],
+                        *src_idx,
                         metrics,
-                        self.node_ids[*half_edge.dst_idx()],
+                        *half_edge.dst_idx(),
                     )?;
                 } else {
                     break;
@@ -247,7 +273,7 @@ impl Display for Graph {
                     }
                     writeln!(
                         f,
-                        "{}offset: {{ id: {}, offset: {} }}",
+                        "{}offset: {{ node-id: {}, offset: {} }}",
                         xwd_prefix, i, xwd_offsets[i]
                     )?;
                 } else {
@@ -325,7 +351,7 @@ impl Node {
         self.coord
     }
 
-    pub fn level(&self) -> usize {
+    pub fn ch_level(&self) -> usize {
         self.level
     }
 }
@@ -390,8 +416,8 @@ impl<'a> Display for HalfEdge<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "{{ (src)-{}->({}) }}",
-            self.edge_accessor.metrics,
+            "{{ (src)-{:?}->(idx: {}) }}",
+            self.edge_accessor.metrics[self.idx],
             self.dst_idx(),
         )
     }
@@ -403,10 +429,32 @@ impl<'a> Display for HalfEdge<'a> {
 pub struct NodeAccessor<'a> {
     node_ids: &'a Vec<i64>,
     node_coords: &'a Vec<Coordinate>,
-    node_levels: &'a Vec<usize>,
+    node_ch_levels: &'a Vec<usize>,
+}
+
+impl IntoIterator for NodeAccessor<'_> {
+    type Item = NodeIdx;
+    type IntoIter = NodeIdxIterator;
+
+    fn into_iter(self) -> NodeIdxIterator {
+        (0..self.count()).into()
+    }
+}
+
+impl<'a> IntoIterator for &'a NodeAccessor<'_> {
+    type Item = NodeIdx;
+    type IntoIter = NodeIdxIterator;
+
+    fn into_iter(self) -> NodeIdxIterator {
+        (0..self.count()).into()
+    }
 }
 
 impl<'a> NodeAccessor<'a> {
+    pub fn iter(&self) -> NodeIdxIterator {
+        self.into_iter()
+    }
+
     pub fn count(&self) -> usize {
         self.node_ids.len()
     }
@@ -420,7 +468,7 @@ impl<'a> NodeAccessor<'a> {
     }
 
     pub fn level(&self, idx: NodeIdx) -> usize {
-        self.node_levels[*idx]
+        self.node_ch_levels[*idx]
     }
 
     pub fn idx_from(&self, id: i64) -> Result<NodeIdx, NodeIdx> {
@@ -455,6 +503,8 @@ impl<'a> NodeAccessor<'a> {
 /// Shallow means that it does only contain references to the graph's data-arrays.
 #[derive(Debug)]
 pub struct EdgeAccessor<'a> {
+    edge_ids: &'a Vec<Option<usize>>,
+    edge_ids_to_idx_map: &'a Vec<(usize, EdgeIdx)>,
     edge_dsts: &'a Vec<NodeIdx>,
     offsets: &'a Vec<usize>,
     // indirect mapping to save memory
@@ -465,7 +515,29 @@ pub struct EdgeAccessor<'a> {
     sc_edges: &'a Vec<[EdgeIdx; 2]>,
 }
 
+impl IntoIterator for EdgeAccessor<'_> {
+    type Item = EdgeIdx;
+    type IntoIter = EdgeIdxIterator;
+
+    fn into_iter(self) -> EdgeIdxIterator {
+        (0..self.count()).into()
+    }
+}
+
+impl<'a> IntoIterator for &'a EdgeAccessor<'_> {
+    type Item = EdgeIdx;
+    type IntoIter = EdgeIdxIterator;
+
+    fn into_iter(self) -> EdgeIdxIterator {
+        (0..self.count()).into()
+    }
+}
+
 impl<'a> EdgeAccessor<'a> {
+    pub fn iter(&self) -> EdgeIdxIterator {
+        self.into_iter()
+    }
+
     pub fn count(&self) -> usize {
         self.edge_dsts.len()
     }
@@ -474,6 +546,39 @@ impl<'a> EdgeAccessor<'a> {
         HalfEdge {
             idx,
             edge_accessor: self,
+        }
+    }
+
+    pub fn try_id(&self, idx: EdgeIdx) -> Option<usize> {
+        self.edge_ids[*idx]
+    }
+
+    pub fn id(&self, idx: EdgeIdx) -> usize {
+        self.edge_ids[*idx].expect(&format!("Edge-id expected at edge-idx {}.", *idx))
+    }
+
+    pub fn try_idx_from(&self, id: usize) -> err::Result<EdgeIdx> {
+        // edge-ids are sorted in this "map" (vector)
+        // -> mapped from id to edge-idx
+        match self
+            .edge_ids_to_idx_map
+            .binary_search_by_key(&id, |(edge_id, _edge_idx)| *edge_id)
+        {
+            Ok(idx) => {
+                let (_edge_id, edge_idx) = self.edge_ids_to_idx_map[idx];
+                Ok(edge_idx)
+            }
+            Err(_idx) => Err(err::Msg::from(format!(
+                "The provided edge-id {} is expected to be in the graph, but is not.",
+                id
+            ))),
+        }
+    }
+
+    pub fn idx_from(&self, id: usize) -> EdgeIdx {
+        match self.try_idx_from(id) {
+            Ok(edge_idx) => edge_idx,
+            Err(msg) => panic!("{}", msg),
         }
     }
 
@@ -533,17 +638,16 @@ impl<'a> EdgeAccessor<'a> {
 pub struct MetricAccessor<'a> {
     cfg: &'a Config,
     metrics: &'a Vec<DimVec<f64>>,
-}
-
-impl<'a> Display for MetricAccessor<'a> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{:?}", self.metrics)
-    }
+    means: Option<&'a DimVec<f64>>,
 }
 
 impl<'a> MetricAccessor<'a> {
     pub fn dim(&self) -> usize {
         self.cfg.edges.metrics.units.len()
+    }
+
+    pub fn mean(&self, idx: MetricIdx) -> Option<f64> {
+        Some(self.means?[*idx])
     }
 }
 
@@ -576,5 +680,100 @@ impl<'a> Index<&EdgeIdx> for &MetricAccessor<'a> {
 
     fn index(&self, edge_idx: &EdgeIdx) -> &DimVec<f64> {
         &self.metrics[**edge_idx]
+    }
+}
+
+/// A shallow container for accessing metrics.
+/// Shallow means that it does only contain references to the graph's data-arrays.
+#[derive(Debug)]
+pub struct MetricAccessorMut<'a> {
+    cfg: &'a Config,
+    metrics: &'a mut Vec<DimVec<f64>>,
+    means: Option<&'a mut DimVec<f64>>,
+}
+
+impl<'a> MetricAccessorMut<'a> {
+    pub fn dim(&self) -> usize {
+        self.cfg.edges.metrics.units.len()
+    }
+
+    pub fn mean(&self, idx: MetricIdx) -> Option<f64> {
+        Some(self.means.as_ref()?[*idx])
+    }
+
+    pub fn means(&mut self) -> Option<&mut DimVec<f64>> {
+        Some(self.means.as_mut()?)
+    }
+}
+
+impl<'a> Index<EdgeIdx> for MetricAccessorMut<'a> {
+    type Output = DimVec<f64>;
+
+    fn index(&self, edge_idx: EdgeIdx) -> &DimVec<f64> {
+        &self.metrics[*edge_idx]
+    }
+}
+
+impl<'a> IndexMut<EdgeIdx> for MetricAccessorMut<'a> {
+    fn index_mut(&mut self, edge_idx: EdgeIdx) -> &mut DimVec<f64> {
+        &mut self.metrics[*edge_idx]
+    }
+}
+
+impl<'a> Index<EdgeIdx> for &MetricAccessorMut<'a> {
+    type Output = DimVec<f64>;
+
+    fn index(&self, edge_idx: EdgeIdx) -> &DimVec<f64> {
+        &self.metrics[*edge_idx]
+    }
+}
+
+impl<'a> Index<EdgeIdx> for &mut MetricAccessorMut<'a> {
+    type Output = DimVec<f64>;
+
+    fn index(&self, edge_idx: EdgeIdx) -> &DimVec<f64> {
+        &self.metrics[*edge_idx]
+    }
+}
+
+impl<'a> IndexMut<EdgeIdx> for &mut MetricAccessorMut<'a> {
+    fn index_mut(&mut self, edge_idx: EdgeIdx) -> &mut DimVec<f64> {
+        &mut self.metrics[*edge_idx]
+    }
+}
+
+impl<'a> Index<&EdgeIdx> for MetricAccessorMut<'a> {
+    type Output = DimVec<f64>;
+
+    fn index(&self, edge_idx: &EdgeIdx) -> &DimVec<f64> {
+        &self.metrics[**edge_idx]
+    }
+}
+
+impl<'a> IndexMut<&EdgeIdx> for MetricAccessorMut<'a> {
+    fn index_mut(&mut self, edge_idx: &EdgeIdx) -> &mut DimVec<f64> {
+        &mut self.metrics[**edge_idx]
+    }
+}
+
+impl<'a> Index<&EdgeIdx> for &MetricAccessorMut<'a> {
+    type Output = DimVec<f64>;
+
+    fn index(&self, edge_idx: &EdgeIdx) -> &DimVec<f64> {
+        &self.metrics[**edge_idx]
+    }
+}
+
+impl<'a> Index<&EdgeIdx> for &mut MetricAccessorMut<'a> {
+    type Output = DimVec<f64>;
+
+    fn index(&self, edge_idx: &EdgeIdx) -> &DimVec<f64> {
+        &self.metrics[**edge_idx]
+    }
+}
+
+impl<'a> IndexMut<&EdgeIdx> for &mut MetricAccessorMut<'a> {
+    fn index_mut(&mut self, edge_idx: &EdgeIdx) -> &mut DimVec<f64> {
+        &mut self.metrics[**edge_idx]
     }
 }

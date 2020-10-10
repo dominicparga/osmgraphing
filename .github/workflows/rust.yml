@@ -2,17 +2,29 @@ name: Rust
 on:
   push:
   pull_request:
-  schedule:
-  - cron: '0 6 * * 0-6'
+  #schedule:
+  #- cron: '0 6 * * 0-6'
 jobs:
   stable:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
       uses: actions/checkout@v2
+      with:
+        submodules: 'recursive'
     - name: Install toolchain
       run: |
+        # install rust/cargo
         rustup component add rustfmt
+
+        # install nd-triangulator
+        sudo apt-get install g++
+        sudo apt-get install libcgal-dev
+        sudo apt-get install libeigen3-dev
+
+        # install multi-ch-constructor
+        sudo apt-get install libboost-all-dev
+        sudo apt-get install libglpk-dev
     - name: Build
       run: |
         cargo build --verbose
@@ -20,20 +32,35 @@ jobs:
     - name: Run tests
       run: |
         cargo test --verbose
-        cargo run --example dijkstra
-        cargo run --example parser
+        cargo test --verbose --features='gpl-3.0'
         cargo fmt -- --check
+    - name: Run binaries
+      run: |
+        cargo run --release --bin osmgraphing -- --config resources/isle_of_man_2020-03-14/osm.pbf.yaml
+        GRAPH_DIM=6 cargo run --release --features='gpl-3.0' --bin osmgraphing -- --config resources/isle_of_man_2020-03-14/balancing/config.yaml --balancing
     - name: Build docs
       run: cargo doc
   beta:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - name: Checkout
+      uses: actions/checkout@v2
+      with:
+        submodules: 'recursive'
     - name: Install toolchain
       run: |
+        # install rust/cargo
         rustup toolchain install beta
         rustup default beta
-        rustup component add rustfmt
+
+        # install nd-triangulator
+        sudo apt-get install g++
+        sudo apt-get install libcgal-dev
+        sudo apt-get install libeigen3-dev
+
+        # install multi-ch-constructor
+        sudo apt-get install libboost-all-dev
+        sudo apt-get install libglpk-dev
     - name: Build
       run: |
         cargo build --verbose
@@ -41,19 +68,33 @@ jobs:
     - name: Run tests
       run: |
         cargo test --verbose
-        cargo run --example dijkstra
-        cargo run --example parser
-        cargo fmt -- --check
+        cargo test --verbose --features='gpl-3.0'
+    - name: Run binaries
+      run: |
+        cargo run --release --bin osmgraphing -- --config resources/isle_of_man_2020-03-14/osm.pbf.yaml
+        GRAPH_DIM=6 cargo run --release --features='gpl-3.0' --bin osmgraphing -- --config resources/isle_of_man_2020-03-14/balancing/config.yaml --balancing
   nightly:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - name: Checkout
+      uses: actions/checkout@v2
+      with:
+        submodules: 'recursive'
       continue-on-error: true
     - name: Install
       run: |
+        # install rust/cargo
         rustup toolchain install nightly
         rustup default nightly
-        rustup component add rustfmt
+
+        # install nd-triangulator
+        sudo apt-get install g++
+        sudo apt-get install libcgal-dev
+        sudo apt-get install libeigen3-dev
+
+        # install multi-ch-constructor
+        sudo apt-get install libboost-all-dev
+        sudo apt-get install libglpk-dev
       continue-on-error: true
     - name: Build
       run: |
@@ -63,22 +104,26 @@ jobs:
     - name: Run tests
       run: |
         cargo test --verbose
-        cargo run --example dijkstra
-        cargo run --example parser
-        cargo fmt -- --check
+        cargo test --verbose --features='gpl-3.0'
+    - name: Run binaries
+      run: |
+        cargo run --release --bin osmgraphing -- --config resources/isle_of_man_2020-03-14/osm.pbf.yaml
+        GRAPH_DIM=6 cargo run --release --features='gpl-3.0' --bin osmgraphing -- --config resources/isle_of_man_2020-03-14/balancing/config.yaml --balancing
       continue-on-error: true
   benches:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
       uses: actions/checkout@v2
+      with:
+        submodules: 'recursive'
     - name: Run benchmarks
-      run: cargo bench --bench routing -- --warm-up-time 10 --measurement-time 120
+      run: cargo bench
     - name: Prepare upload
       run: |
-        __ARTIFACTS="artifacts/$(git rev-parse --verify HEAD)"
-        mkdir -p "${__ARTIFACTS}"
-        mv target/criterion/ "${__ARTIFACTS}/"
+        artifacts="artifacts/$(git rev-parse --verify HEAD)"
+        mkdir -p "${artifacts}"
+        mv target/criterion/ "${artifacts}/"
     - name: Upload results
       uses: actions/upload-artifact@v1
       with:
@@ -91,6 +136,8 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v2
+      with:
+        submodules: 'recursive'
     - name: Setup git-user
       env:
         GIT_USER_NAME: 'GitHub Actions'

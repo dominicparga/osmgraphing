@@ -1,0 +1,36 @@
+parsing:
+  map-file: 'resources/stuttgart-regbez_2019-09-07/graph.osm.pbf'
+  vehicles:
+    category: 'Car'
+    are_drivers_picky: false
+  nodes:
+  - meta: { info: 'NodeId', id: 'node-id' }
+  - metric: { unit: 'Latitude', id: 'latitude' }
+  - metric: { unit: 'Longitude', id: 'longitude' }
+  edges:
+    data:
+    - meta: { info: 'SrcId', id: 'src-id' }
+    - meta: { info: 'DstId', id: 'dst-id' }
+    - ignored # shouldn't matter, so add it here to test this
+    - metric: { unit: 'KilometersPerHour', id: 'kmph' }
+    - metric: { unit: 'LaneCount', id: 'lanecount' }
+  generating:
+    nodes:
+    - meta: { info: 'NodeIdx', id: 'node-idx' }
+    edges:
+    - meta: { info: 'SrcIdx', id: 'src-idx' }
+    - meta: { info: 'DstIdx', id: 'dst-idx' }
+    - haversine: { unit: 'Kilometers', id: 'kilometers' }
+    - calc:
+        result: { unit: 'Hours', id: 'hours' }
+        a: { unit: 'Kilometers', id: 'kilometers' }
+        b: { unit: 'KilometersPerHour', id: 'kmph' }
+routing:
+  route-pairs-file: 'resources/stuttgart-regbez_2019-09-07/10_000.route-pairs'
+  algorithm: 'Dijkstra'
+  metrics:
+  - id: 'kilometers'
+writing:
+  route-pairs:
+    file: 'resources/saarland_2020-07-30/10_000.route-pairs'
+    random_or_all: { max_count: 10000 }

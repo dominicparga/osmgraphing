@@ -1,8 +1,12 @@
 use crate::defaults::capacity::DimVec;
-use std::{fs::File, path::Path, str::FromStr};
+use std::str::FromStr;
 
-mod approx;
-pub use approx::{Approx, ApproxCmp, ApproxEq};
+pub mod algebra;
+pub mod err;
+
+pub fn is_line_functional(line: &String) -> bool {
+    line.len() > 0 && line.chars().next() != Some('#')
+}
 
 pub fn add(a: &DimVec<f64>, b: &DimVec<f64>) -> DimVec<f64> {
     a.iter().zip(b).map(|(aa, bb)| aa + bb).collect()
@@ -16,10 +20,16 @@ pub fn sub(a: &DimVec<f64>, b: &DimVec<f64>) -> DimVec<f64> {
     a.iter().zip(b).map(|(aa, bb)| aa - bb).collect()
 }
 
-pub fn dot_product(a: &DimVec<f64>, b: &DimVec<f64>) -> f64 {
+pub fn dot_product(a: &[f64], b: &[f64]) -> f64 {
     a.iter()
         .zip(b)
         .fold(0.0, |start, (aa, &bb)| start + aa * bb)
+}
+
+pub fn le(a: &[f64], b: &[f64]) -> bool {
+    a.iter()
+        .zip(b)
+        .fold(true, |start, (aa, bb)| start && aa.le(bb))
 }
 
 /// For example:
@@ -30,29 +40,6 @@ pub trait MemSize {
     fn mem_size_b() -> usize;
 }
 
-pub fn open_file<P: AsRef<Path> + ?Sized>(path: &P) -> Result<File, String> {
-    let path = path.as_ref();
-    match File::open(path) {
-        Ok(file) => Ok(file),
-        Err(_) => Err(format!("No such file {}", path.display())),
-    }
-}
-
-pub fn open_new_file<P: AsRef<Path> + ?Sized>(path: &P) -> Result<File, String> {
-    let path = path.as_ref();
-    if path.exists() {
-        return Err(format!(
-            "Provided file {} does already exist. Please remove it.",
-            path.display()
-        ));
-    }
-
-    match File::create(path) {
-        Ok(file) => Ok(file),
-        Err(e) => Err(format!("{}", e)),
-    }
-}
-
 /// Sets the logging-level of this repo.
 ///
 /// max_log_level: None
@@ -61,7 +48,7 @@ pub fn open_new_file<P: AsRef<Path> + ?Sized>(path: &P) -> Result<File, String> 
 /// modules: in addition to default (`env!("CARGO_PKG_NAME")`)
 ///
 /// Environment-variable RUST_LOG has precedence.
-pub fn init_logging(max_log_level: &str, mut modules: Vec<&str>) -> Result<(), String> {
+pub fn init_logging(max_log_level: &str, modules: &[&str]) -> err::Feedback {
     let mut builder = env_logger::Builder::new();
 
     // maximum filter-level for all components: `warn`
@@ -74,10 +61,10 @@ pub fn init_logging(max_log_level: &str, mut modules: Vec<&str>) -> Result<(), S
             "The provided max-log-level {} is not supported.",
             max_log_level
         ))?;
-    modules.push(env!("CARGO_PKG_NAME"));
     for module in modules {
         builder.filter(Some(module), max_log_level);
     }
+    builder.filter(Some(env!("CARGO_PKG_NAME")), max_log_level);
 
     // overwrite default with environment-variables
     if let Ok(filters) = std::env::var("RUST_LOG") {

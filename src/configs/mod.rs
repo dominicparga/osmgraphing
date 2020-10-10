@@ -1,57 +1,50 @@
-mod implementation;
+use serde::Deserialize;
+use std::{fmt, fmt::Display};
 
-pub use implementation::SimpleId;
+#[cfg(feature = "gpl-3.0")]
+pub mod balancing;
+#[cfg(feature = "gpl-3.0")]
+pub mod evaluating_balance;
+pub mod parsing;
+pub mod routing;
+pub mod writing;
 
-pub mod parsing {
-    pub use crate::configs::implementation::parsing::Config;
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Ord, PartialOrd)]
+#[serde(from = "String")]
+pub struct SimpleId(pub String);
 
-    pub mod nodes {
-        pub use crate::configs::implementation::parsing::nodes::{Category, Config, MetaInfo};
-
-        pub mod metrics {
-            pub use crate::configs::implementation::parsing::nodes::metrics::UnitInfo;
-        }
-    }
-
-    pub mod edges {
-        pub use crate::configs::implementation::parsing::edges::{Category, Config, MetaInfo};
-
-        pub mod metrics {
-            pub use crate::configs::implementation::parsing::edges::metrics::UnitInfo;
-        }
-    }
-
-    pub mod generating {
-        pub use crate::configs::implementation::parsing::generating::Config;
-
-        pub mod nodes {
-            pub use crate::configs::implementation::parsing::generating::nodes::{
-                Category, Config, MetaInfo,
-            };
-
-            pub mod metrics {
-                pub use crate::configs::implementation::parsing::generating::nodes::metrics::UnitInfo;
-            }
-        }
-
-        pub mod edges {
-            pub use crate::configs::implementation::parsing::generating::edges::{
-                Category, Config, MetaInfo,
-            };
-
-            pub mod metrics {
-                pub use crate::configs::implementation::parsing::generating::edges::metrics::{
-                    Category, UnitInfo,
-                };
-            }
-        }
+impl From<String> for SimpleId {
+    fn from(id: String) -> SimpleId {
+        SimpleId(id)
     }
 }
 
-pub mod writing {
-    pub use crate::configs::implementation::writing::Config;
+impl From<&str> for SimpleId {
+    fn from(id: &str) -> SimpleId {
+        SimpleId(id.to_owned())
+    }
 }
 
-pub mod routing {
-    pub use crate::configs::implementation::routing::Config;
+impl Display for SimpleId {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl AsRef<str> for SimpleId {
+    fn as_ref(&self) -> &str {
+        self.0.as_ref()
+    }
+}
+
+impl AsRef<String> for SimpleId {
+    fn as_ref(&self) -> &String {
+        &self.0
+    }
+}
+
+impl AsRef<SimpleId> for SimpleId {
+    fn as_ref(&self) -> &SimpleId {
+        &self
+    }
 }

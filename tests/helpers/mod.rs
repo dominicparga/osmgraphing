@@ -2,36 +2,60 @@
 // March 6th, 2020
 
 use osmgraphing::{
+    approximating::Approx,
     configs,
     defaults::capacity::DimVec,
-    helpers,
-    io::Parser,
-    network::{Graph, MetricIdx, NodeIdx},
-    routing,
-};
-use rand::{
-    distributions::{Distribution, Uniform},
-    SeedableRng,
+    helpers, io,
+    network::{Graph, MetricIdx, RoutePair},
+    routing::dijkstra::{self, Dijkstra},
 };
 
 #[allow(dead_code)]
 pub mod defaults {
     pub const DISTANCE_ID: &str = "kilometers";
-    pub const DURATION_ID: &str = "minutes";
+    pub const DURATION_ID: &str = "hours";
     pub const SPEED_ID: &str = "kmph";
 
     pub mod paths {
         pub mod resources {
-            pub mod configs {
-                pub const SIMPLE_STUTTGART_FMI: &str =
-                    "resources/configs/simple-stuttgart.fmi.yaml";
-                pub const SMALL_FMI: &str = "resources/configs/small.fmi.yaml";
-                pub const SMALL_CH_FMI: &str = "resources/configs/small.ch.fmi.yaml";
-                pub const BIDIRECTIONAL_BAIT_FMI: &str =
-                    "resources/configs/bidirectional-bait.fmi.yaml";
-                pub const ISLE_OF_MAN_FMI: &str = "resources/configs/isle-of-man.fmi.yaml";
-                pub const ISLE_OF_MAN_CH_FMI: &str = "resources/configs/isle-of-man.ch.fmi.yaml";
-                pub const ISLE_OF_MAN_PBF: &str = "resources/configs/isle-of-man.pbf.yaml";
+            pub const DIR: &str = "resources";
+
+            pub mod bidirectional_bait {
+                pub const FMI_YAML: &str = "resources/bidirectional_bait/fmi.yaml";
+            }
+
+            pub mod isle_of_man {
+                pub const FMI_YAML: &str = "resources/isle_of_man_2020-03-14/fmi.yaml";
+                pub const CH_FMI_YAML: &str = "resources/isle_of_man_2020-03-14/ch.fmi.yaml";
+                pub const OSM_PBF_YAML: &str = "resources/isle_of_man_2020-03-14/osm.pbf.yaml";
+            }
+
+            #[cfg(feature = "custom")]
+            pub mod stuttgart_regbez {
+                pub const DIR: &str = "resources/stuttgart-regbez_2019-09-07";
+                pub const URL: &str = "TODO: DEPRECATED URL https://firebasestorage.googleapis.com/v0/b/osmgraphing.appspot.com/o/stuttgart-regbez_2019-09-07.tar.xz?alt=media&token=ad181f8c-f23a-4bfa-9d2d-00e5acfbb182";
+                pub const FMI_YAML: &str = "resources/stuttgart-regbez_2019-09-07/fmi.yaml";
+                pub const CH_FMI_YAML: &str = "resources/stuttgart-regbez_2019-09-07/ch.fmi.yaml";
+                pub const OSM_PBF_YAML: &str = "resources/stuttgart-regbez_2019-09-07/osm.pbf.yaml";
+            }
+
+            #[cfg(feature = "custom")]
+            pub mod saarland {
+                pub const DIR: &str = "resources/saarland_2020-07-30";
+                pub const URL: &str = "<TODO: NO URL YET>";
+                pub const CH_FMI_YAML: &str = "resources/saarland_2020-07-30/ch.fmi.yaml";
+                pub const OSM_PBF_YAML: &str = "resources/saarland_2020-07-30/osm.pbf.yaml";
+            }
+
+            pub mod simple_stuttgart {
+                pub const FMI_YAML: &str = "resources/simple_stuttgart/fmi.yaml";
+                pub const NORMALIZED_FMI_YAML: &str =
+                    "resources/simple_stuttgart/normalized_fmi.yaml";
+            }
+
+            pub mod small {
+                pub const FMI_YAML: &str = "resources/small/fmi.yaml";
+                pub const CH_FMI_YAML: &str = "resources/small/ch.fmi.yaml";
             }
         }
     }
@@ -42,7 +66,7 @@ pub use components::{TestEdge, TestNode, TestPath};
 
 pub fn parse(cfg: configs::parsing::Config) -> Graph {
     let map_file = cfg.map_file.clone();
-    match Parser::parse_and_finalize(cfg) {
+    match io::network::graph::Parser::parse_and_finalize(cfg) {
         Ok(graph) => graph,
         Err(msg) => {
             panic!("Could not parse {}. ERROR: {}", map_file.display(), msg);
@@ -54,7 +78,7 @@ pub fn parse(cfg: configs::parsing::Config) -> Graph {
 pub fn test_dijkstra(
     config_file: &str,
     metric_id: &str,
-    is_ch_dijkstra: bool,
+    routing_algo: configs::routing::RoutingAlgo,
     expected_paths: Box<
         dyn Fn(
             &configs::parsing::Config,
@@ -71,24 +95,33 @@ pub fn test_dijkstra(
     let parsing_cfg = configs::parsing::Config::from_yaml(config_file);
     let graph = parse(parsing_cfg);
 
+    // get route-pairs from writing-section
+    let routes_cfg = configs::writing::routing::Config::from_yaml(config_file);
+
     // set up routing
 
-    let mut dijkstra = routing::Dijkstra::new();
+    let mut dijkstra = Dijkstra::new();
     let expected_paths = expected_paths(graph.cfg());
 
-    let routing_cfg = configs::routing::Config::from_str(
-        &format!(
-            "routing: {{ metrics: [{{ id: '{}' }}], is-ch-dijkstra: {} }}",
-            metric_id,
-            if is_ch_dijkstra { "true" } else { "false" }
-        ),
-        graph.cfg(),
+    let raw_cfg = format!(
+        "{}\n{}\n{}\n{}\n{}",
+        "routing:",
+        format!("  route-pairs-file: '{}'", routes_cfg.file.display()),
+        format!("  algorithm: {}", routing_algo.name()),
+        "  metrics:",
+        format!("  - id: '{}'", metric_id),
     );
+    let routing_cfg = configs::routing::Config::from_str(&raw_cfg, graph.cfg());
 
     // test
 
     for (src, dst, metric_indices, option_specs) in expected_paths {
-        let option_path = dijkstra.compute_best_path(src.idx, dst.idx, &graph, &routing_cfg);
+        let option_path = dijkstra.compute_best_path(dijkstra::Query {
+            src_idx: src.idx,
+            dst_idx: dst.idx,
+            graph: &graph,
+            routing_cfg: &routing_cfg,
+        });
         assert_eq!(
             option_path.is_some(),
             option_specs.is_some(),
@@ -114,54 +147,52 @@ pub fn compare_dijkstras(ch_fmi_config_file: &str, metric_id: &str) {
     // parse graph
 
     let parsing_cfg = configs::parsing::Config::from_yaml(ch_fmi_config_file);
-    let graph = Parser::parse_and_finalize(parsing_cfg).unwrap();
+    let graph = io::network::graph::Parser::parse_and_finalize(parsing_cfg)
+        .expect("Expect parser to be successful when comparing Dijkstras.");
+
+    let metric_idx = graph.cfg().edges.metrics.idx_of(metric_id);
+
+    // get route-pairs from writing-section
+    let routes_cfg = configs::writing::routing::Config::from_yaml(ch_fmi_config_file);
 
     // init dijkstra for routing
 
-    let nodes = graph.nodes();
-    let mut dijkstra = routing::Dijkstra::new();
+    let mut dijkstra = Dijkstra::new();
 
-    let mut routing_cfg = configs::routing::Config::from_str(
-        &format!("routing: {{ metrics: [{{ id: '{}' }}] }}", metric_id),
-        graph.cfg(),
+    let raw_cfg = format!(
+        "{}\n{}\n{}\n{}\n{}",
+        "routing:",
+        format!("  route-pairs-file: '{}'", routes_cfg.file.display()),
+        "  algorithm: 'Dijkstra'",
+        "  metrics:",
+        format!("  - id: '{}'", metric_id),
     );
-    routing_cfg.is_ch_dijkstra = false;
+    let mut routing_cfg = configs::routing::Config::from_str(&raw_cfg, graph.cfg());
+    routing_cfg.routing_algo = configs::routing::RoutingAlgo::Dijkstra;
     let mut ch_routing_cfg = routing_cfg.clone();
-    ch_routing_cfg.is_ch_dijkstra = true;
-
-    // generate random route-pairs
-
-    let route_count = 100;
-    let seed = 42;
-
-    // if all possible routes are less than the preferred route-count
-    // -> just print all possible routes
-    // else: print random routes
-    let mut gen_route = {
-        let mut rng = rand_pcg::Pcg32::seed_from_u64(seed);
-        let die = Uniform::from(0..nodes.count());
-        let mut i = 0;
-        move || {
-            if i < route_count {
-                let src_idx = NodeIdx(die.sample(&mut rng));
-                let dst_idx = NodeIdx(die.sample(&mut rng));
-                i += 1;
-                Some((src_idx, dst_idx))
-            } else {
-                None
-            }
-        }
-    };
+    ch_routing_cfg.routing_algo = configs::routing::RoutingAlgo::CHDijkstra;
 
     // testing
 
-    while let Some((src_idx, dst_idx)) = gen_route() {
-        let src = nodes.create(src_idx);
-        let dst = nodes.create(dst_idx);
+    let route_pairs = io::routing::Parser::parse(&ch_routing_cfg)
+        .expect("Parsing and finalizing route-pairs didn't work.");
 
-        let option_ch_path =
-            dijkstra.compute_best_path(src.idx(), dst.idx(), &graph, &ch_routing_cfg);
-        let option_path = dijkstra.compute_best_path(src.idx(), dst.idx(), &graph, &routing_cfg);
+    for RoutePair { src, dst } in route_pairs
+        .iter()
+        .map(|(route_pair, _)| route_pair.into_node(&graph))
+    {
+        let option_ch_path = dijkstra.compute_best_path(dijkstra::Query {
+            src_idx: src.idx(),
+            dst_idx: dst.idx(),
+            graph: &graph,
+            routing_cfg: &ch_routing_cfg,
+        });
+        let option_path = dijkstra.compute_best_path(dijkstra::Query {
+            src_idx: src.idx(),
+            dst_idx: dst.idx(),
+            graph: &graph,
+            routing_cfg: &routing_cfg,
+        });
 
         // check if both are none/not-none
         if option_ch_path.is_none() != option_path.is_none() {
@@ -189,9 +220,21 @@ pub fn compare_dijkstras(ch_fmi_config_file: &str, metric_id: &str) {
             let cost = flattened_path.costs();
             // not approx because both Dijkstras are running on the same graph
             // -> same best path-cost should be found
-            assert!(ch_cost == cost,
-                "CH-Dijkstra's path's cost ({:?}) is different ({:?}) from Dijkstra's path's cost ({:?}). --------------------- CH-Dijkstra's path {} --------------------- Dijkstra's path {}",
-                ch_cost, helpers::sub(&ch_cost, &cost), cost,
+            // but approx is needed, because rounding-errors(?)
+            assert!(
+                flattened_ch_path.src_idx() == flattened_path.src_idx()
+                    && flattened_ch_path.dst_idx() == flattened_path.dst_idx()
+                    && Approx(ch_cost[*metric_idx]) == Approx(cost[*metric_idx]),
+                "CH-Dijkstra's path's cost ({:?}) is different ({:?}) \
+                 from Dijkstra's path's cost ({:?}). \
+                 Metric-units are {:?} with alphas {:?}. \
+                 --------------------- CH-Dijkstra's path {} \
+                 --------------------- Dijkstra's path {}",
+                ch_cost,
+                helpers::sub(&ch_cost, &cost),
+                cost,
+                graph.cfg().edges.metrics.units,
+                routing_cfg.alphas,
                 flattened_ch_path,
                 flattened_path
             );
@@ -210,6 +253,35 @@ pub fn assert_graph(
     bwd_test_edges: Vec<TestEdge>,
     graph: &Graph,
 ) {
+    assert_eq!(
+        fwd_test_edges.len(),
+        bwd_test_edges.len(),
+        "The amount of expected fwd-edges should be equal to the amount of bwd-edges."
+    );
+    assert_graph_sloppy(test_nodes.len(), fwd_test_edges.len(), graph);
+
+    // comparing nodes
+
+    let nodes = graph.nodes();
+    for (expected, original) in test_nodes
+        .iter()
+        .map(|expected| (expected, TestNode::from(nodes.create(expected.idx))))
+    {
+        assert_eq!(
+            expected, &original,
+            "Expected node {} but graph-node is {}.",
+            expected, original
+        );
+    }
+
+    // comparing forward- and backward-edges
+
+    for test_edge in fwd_test_edges.iter().chain(bwd_test_edges.iter()) {
+        test_edge.assert_correct(&graph);
+    }
+}
+
+pub fn assert_graph_sloppy(expected_node_count: usize, expected_edge_count: usize, graph: &Graph) {
     let _nodes = graph.nodes();
     let nodes = graph.nodes(); // calling twice should be fine
     let _fwd_edges = graph.fwd_edges();
@@ -219,25 +291,74 @@ pub fn assert_graph(
 
     assert_eq!(
         nodes.count(),
-        test_nodes.len(),
+        expected_node_count,
         "Number of nodes in graph should be {} but is {}.",
-        test_nodes.len(),
+        expected_node_count,
         nodes.count()
+    );
+    // implicitly checked below, but explicit is better than implicit
+    assert_eq!(
+        fwd_edges.count(),
+        bwd_edges.count(),
+        "The amount of fwd-edges should be equal to the amount of bwd-edges."
     );
     assert_eq!(
         fwd_edges.count(),
-        fwd_test_edges.len(),
+        expected_edge_count,
         "Number of fwd-edges in graph should be {} but is {}.",
-        fwd_test_edges.len(),
+        expected_edge_count,
         fwd_edges.count()
     );
     assert_eq!(
         bwd_edges.count(),
-        bwd_test_edges.len(),
+        expected_edge_count,
         "Number of bwd-edges in graph should be {} but is {}.",
-        bwd_test_edges.len(),
+        expected_edge_count,
         bwd_edges.count()
     );
+
+    // check shortcut-consistency
+
+    for edge_idx in &fwd_edges {
+        if let Some(&[sc_edge_0, sc_edge_1]) = fwd_edges.sc_edges(edge_idx) {
+            assert!(
+                *sc_edge_0 < fwd_edges.count(),
+                "Sc-edge-0 {} of edge-idx {} is too large (only {} edges in graph).",
+                *sc_edge_0,
+                *edge_idx,
+                fwd_edges.count()
+            );
+            assert!(
+                *sc_edge_1 < fwd_edges.count(),
+                "Sc-edge-1 {} of edge-idx {} is too large (only {} edges in graph).",
+                *sc_edge_1,
+                *edge_idx,
+                fwd_edges.count()
+            );
+
+            let src_idx = bwd_edges.dst_idx(edge_idx);
+            let dst_idx = fwd_edges.dst_idx(edge_idx);
+            let src_0_idx = bwd_edges.dst_idx(sc_edge_0);
+            let dst_0_idx = fwd_edges.dst_idx(sc_edge_0);
+            let src_1_idx = bwd_edges.dst_idx(sc_edge_1);
+            let dst_1_idx = fwd_edges.dst_idx(sc_edge_1);
+
+            let err_msg = format!(
+                "Shortcut-edge (edge-idx: {}) (node-idx: {} -> node-idx: {}) \
+                doesn't match with sc-edges (node-idx: {} -> node-idx: {}) \
+                and (node-idx: {} -> node-idx: {})",
+                edge_idx, src_idx, dst_idx, src_0_idx, dst_0_idx, src_1_idx, dst_1_idx
+            );
+            assert_eq!(src_idx, src_0_idx, "{}", err_msg);
+            assert_eq!(dst_0_idx, src_1_idx, "{}", err_msg);
+            assert_eq!(dst_1_idx, dst_idx, "{}", err_msg);
+        } else {
+            assert!(
+                !fwd_edges.is_shortcut(edge_idx),
+                "Not every shortcut-edge is seen as shortcut-edge."
+            );
+        }
+    }
 
     // for i in nodes.count()..(2 * nodes.count()) {
     //     for j in nodes.count()..(2 * nodes.count()) {
@@ -267,25 +388,4 @@ pub fn assert_graph(
     //         );
     //     }
     // }
-
-    //--------------------------------------------------------------------------------------------//
-    // testing nodes
-
-    for (expected, original) in test_nodes
-        .iter()
-        .map(|expected| (expected, TestNode::from(nodes.create(expected.idx))))
-    {
-        assert_eq!(
-            expected, &original,
-            "Expected node {} but graph-node is {}.",
-            expected, original
-        );
-    }
-
-    //--------------------------------------------------------------------------------------------//
-    // testing forward- and backward-edges
-
-    for test_edge in fwd_test_edges.iter().chain(bwd_test_edges.iter()) {
-        test_edge.assert_correct(&graph);
-    }
 }

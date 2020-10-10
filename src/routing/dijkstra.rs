@@ -1,10 +1,19 @@
 use super::paths::Path;
 use crate::{
-    configs::routing::Config,
+    configs::routing::{Config, RoutingAlgo},
+    defaults::routing::IS_USING_CH_LEVEL_SPEEDUP,
     helpers,
     network::{EdgeIdx, Graph, NodeIdx},
 };
 use std::{cmp::Reverse, collections::BinaryHeap};
+
+#[derive(Copy, Clone)]
+pub struct Query<'a> {
+    pub src_idx: NodeIdx,
+    pub dst_idx: NodeIdx,
+    pub graph: &'a Graph,
+    pub routing_cfg: &'a Config,
+}
 
 /// A bidirectional implementation of Dijkstra's algorithm.
 /// This implementation reuses the underlying datastructures to speedup multiple computations.
@@ -20,6 +29,7 @@ pub struct Dijkstra {
     predecessors: [Vec<Option<EdgeIdx>>; 2],
     is_visited: [Vec<bool>; 2],
     has_found_best_meeting_node: [bool; 2],
+    touched: [Vec<usize>; 2],
 }
 
 impl Dijkstra {
@@ -27,10 +37,11 @@ impl Dijkstra {
         Dijkstra {
             is_ch_dijkstra: false,
             queue: BinaryHeap::new(),
-            costs: [Vec::new(), Vec::new()],
-            predecessors: [Vec::new(), Vec::new()],
-            is_visited: [Vec::new(), Vec::new()],
+            costs: [vec![], vec![]],
+            predecessors: [vec![], vec![]],
+            is_visited: [vec![], vec![]],
             has_found_best_meeting_node: [false, false],
+            touched: [vec![], vec![]],
         }
     }
 
@@ -59,15 +70,20 @@ impl Dijkstra {
     /// Resizes existing datastructures storing routing-data, like costs, saving re-allocations.
     fn init_query(&mut self, new_len: usize) {
         // fwd and bwd
-        for dir in vec![Direction::FWD, Direction::BWD] {
+        for &dir in &[Direction::FWD, Direction::BWD] {
             let dir = self.dir_idx(dir);
-            self.costs[dir].resize(new_len, std::f64::INFINITY);
-            self.costs[dir]
-                .iter_mut()
-                .for_each(|c| *c = std::f64::INFINITY);
+            if self.costs.len() != new_len {
+                self.costs[dir].resize(new_len, std::f64::INFINITY);
+                self.predecessors[dir].resize(new_len, None);
+            }
 
-            self.predecessors[dir].resize(new_len, None);
-            self.predecessors[dir].iter_mut().for_each(|p| *p = None);
+            for i in self.touched[dir].drain(..) {
+                self.costs[dir][i] = std::f64::INFINITY;
+                self.predecessors[dir][i] = None;
+            }
+
+            // assert!(self.costs[dir].iter().all(|&c| c == f64::INFINITY));
+            // assert!(self.predecessors[dir].iter().all(|&p| p == None));
 
             if !self.is_ch_dijkstra {
                 self.is_visited[dir].resize(new_len, false);
@@ -81,6 +97,7 @@ impl Dijkstra {
     }
 
     fn visit(&mut self, costnode: &CostNode) {
+        // not needed for ch-dijkstra, because it has to dig through all candidates by cost
         if !self.is_ch_dijkstra {
             self.is_visited[self.dir_idx(costnode.direction)][*costnode.idx] = true
         }
@@ -111,6 +128,7 @@ impl Dijkstra {
     /// Returns true, if the provided costnode's cost are better than the registered cost for this
     /// node-idx (and for this query-direction).
     fn has_costnode_improved(&self, costnode: &CostNode) -> bool {
+        // <= instead of < needed for initial costs
         costnode.cost <= self.costs[self.dir_idx(costnode.direction)][*costnode.idx]
     }
 
@@ -120,23 +138,37 @@ impl Dijkstra {
     }
 
     /// None means no path exists, whereas an empty path is a path from a node to itself.
-    pub fn compute_best_path(
-        &mut self,
-        src_idx: NodeIdx,
-        dst_idx: NodeIdx,
-        graph: &Graph,
-        cfg_routing: &Config,
-    ) -> Option<Path> {
-        if cfg_routing.alphas.len() <= 0 {
-            panic!("Best path should be computed, but no alphas are specified.");
+    ///
+    /// ATTENTION!
+    /// If any alpha-value in the routing-config is negative, or any metric in the graph is negative, this method won't terminate.
+    pub fn compute_best_path(&mut self, query: Query) -> Option<Path> {
+        debug_assert!(
+            !query.routing_cfg.alphas.is_empty(),
+            "Best path should be computed, but no alphas are specified."
+        );
+
+        for alpha in query.routing_cfg.alphas.iter() {
+            // Dijkstra would not terminate with negative weights
+            // -> no path found
+            if alpha < &0.0 {
+                return None;
+            }
         }
 
-        self.is_ch_dijkstra = cfg_routing.is_ch_dijkstra;
+        self.is_ch_dijkstra = match query.routing_cfg.routing_algo {
+            RoutingAlgo::Dijkstra => false,
+            RoutingAlgo::CHDijkstra => true,
+            #[cfg(feature = "gpl-3.0")]
+            RoutingAlgo::Explorator { algo } => panic!(
+                "Dijkstra is called with {:?} as specified routing-algorithm",
+                RoutingAlgo::Explorator { algo }
+            ),
+        };
 
         //----------------------------------------------------------------------------------------//
         // initialization-stuff
 
-        let nodes = graph.nodes();
+        let nodes = query.graph.nodes();
         let xwd_edges = {
             debug_assert_eq!(
                 0,
@@ -148,7 +180,7 @@ impl Dijkstra {
                 self.dir_idx(Direction::BWD),
                 "Direction-Idx of BWD is expected to be 1."
             );
-            [graph.fwd_edges(), graph.bwd_edges()]
+            [query.graph.fwd_edges(), query.graph.bwd_edges()]
         };
         self.init_query(nodes.count());
         let mut best_meeting: Option<(NodeIdx, f64)> = None;
@@ -158,26 +190,29 @@ impl Dijkstra {
 
         // push src-node
         self.queue.push(Reverse(CostNode {
-            idx: src_idx,
+            idx: query.src_idx,
             cost: 0.0,
             direction: Direction::FWD,
         }));
         // push dst-node
         self.queue.push(Reverse(CostNode {
-            idx: dst_idx,
+            idx: query.dst_idx,
             cost: 0.0,
             direction: Direction::BWD,
         }));
         // update fwd-stats
-        self.costs[self.fwd_idx()][*src_idx] = 0.0;
+        self.costs[self.fwd_idx()][*query.src_idx] = 0.0;
+        self.touched[self.fwd_idx()].push(*query.src_idx);
+
         // update bwd-stats
-        self.costs[self.bwd_idx()][*dst_idx] = 0.0;
+        self.costs[self.bwd_idx()][*query.dst_idx] = 0.0;
+        self.touched[self.bwd_idx()].push(*query.dst_idx);
 
         //----------------------------------------------------------------------------------------//
         // search for shortest path
 
         while let Some(Reverse(current)) = self.queue.pop() {
-            // For non-contracted graphs, this could be an slight improvement.
+            // For non-contracted graphs, this could be a slight improvement.
             // For contracted graphs, this is the only stop-criterion.
             // This is needed, because the bidirectional Dijkstra processes sub-graphs,
             // which are not equal.
@@ -218,9 +253,9 @@ impl Dijkstra {
                 if new_total_cost < best_total_cost {
                     best_meeting = Some((current.idx, new_total_cost));
                 }
-            } else
+            }
             // if meeting-node is found for the first time, remember it
-            if self.is_meeting_costnode(&current) {
+            else if self.is_meeting_costnode(&current) {
                 let new_total_cost = self.total_cost(&current);
                 best_meeting = Some((current.idx, new_total_cost));
             }
@@ -230,15 +265,20 @@ impl Dijkstra {
                 if self.is_ch_dijkstra
                     && nodes.level(current.idx) > nodes.level(leaving_edge.dst_idx())
                 {
-                    // break because leaving-edges are sorted by level
-                    break;
+                    if !IS_USING_CH_LEVEL_SPEEDUP {
+                        continue;
+                    } else {
+                        // break because leaving-edges are sorted by level
+                        break;
+                    }
                 }
 
                 let new_cost = current.cost
-                    + helpers::dot_product(&cfg_routing.alphas, &leaving_edge.metrics());
+                    + helpers::dot_product(&query.routing_cfg.alphas, &leaving_edge.metrics());
                 if new_cost < self.costs[dir][*leaving_edge.dst_idx()] {
                     self.predecessors[dir][*leaving_edge.dst_idx()] = Some(leaving_edge.idx());
                     self.costs[dir][*leaving_edge.dst_idx()] = new_cost;
+                    self.touched[dir].push(*leaving_edge.dst_idx());
 
                     // if path is found
                     // -> Run until queue is empty
@@ -289,7 +329,13 @@ impl Dijkstra {
                 cur_idx = xwd_edges[opp_dir].dst_idx(leaving_idx);
             }
 
-            Some(Path::new(src_idx, dst_idx, proto_path))
+            Some(Path::new(
+                query.src_idx,
+                nodes.id(query.src_idx),
+                query.dst_idx,
+                nodes.id(query.dst_idx),
+                proto_path,
+            ))
         } else {
             None
         }
@@ -311,7 +357,7 @@ struct CostNode {
 
 mod costnode {
     use super::{CostNode, Direction};
-    use crate::helpers::{ApproxCmp, ApproxEq};
+    use crate::approximating::Approx;
     use std::{
         cmp::Ordering,
         fmt::{self, Display},
@@ -329,8 +375,8 @@ mod costnode {
 
     impl Ord for CostNode {
         fn cmp(&self, other: &CostNode) -> Ordering {
-            self.cost
-                .approx_cmp(&other.cost)
+            Approx(self.cost)
+                .cmp(&Approx(other.cost))
                 .then_with(|| self.idx.cmp(&other.idx))
                 .then_with(|| self.direction.cmp(&other.direction))
         }
@@ -339,8 +385,8 @@ mod costnode {
     impl PartialOrd for CostNode {
         fn partial_cmp(&self, other: &CostNode) -> Option<Ordering> {
             Some(
-                self.cost
-                    .approx_partial_cmp(&other.cost)?
+                Approx(self.cost)
+                    .partial_cmp(&Approx(other.cost))?
                     .then_with(|| self.idx.cmp(&other.idx))
                     .then_with(|| self.direction.cmp(&other.direction)),
             )
@@ -353,7 +399,7 @@ mod costnode {
         fn eq(&self, other: &CostNode) -> bool {
             self.idx == other.idx
                 && self.direction == other.direction
-                && self.cost.approx_eq(&other.cost)
+                && Approx(self.cost) == Approx(other.cost)
         }
     }
 

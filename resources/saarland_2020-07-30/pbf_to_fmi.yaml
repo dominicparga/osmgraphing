@@ -1,0 +1,39 @@
+parsing:
+  map-file: 'resources/saarland_2020-07-30/graph.osm.pbf'
+  nodes:
+  - meta: { info: 'NodeId', id: 'node-id' }
+  - metric: { unit: 'Latitude', id: 'latitude' }
+  - metric: { unit: 'Longitude', id: 'longitude' }
+  edges:
+    data:
+    - meta: { info: 'SrcId', id: 'src-id' }
+    - meta: { info: 'DstId', id: 'dst-id' }
+    - metric: { unit: 'KilometersPerHour', id: 'kmph' }
+    - metric: { unit: 'LaneCount', id: 'lane-count' }
+  generating:
+    nodes:
+    - meta: { info: 'NodeIdx', id: 'node-idx' }
+    edges:
+    - meta: { info: 'EdgeId', id: 'edge-id' }
+    - haversine: { unit: 'Kilometers', id: 'kilometers' }
+    - calc:
+        result: { unit: 'Hours', id: 'hours' }
+        a: { unit: 'Kilometers', id: 'kilometers' }
+        b: { unit: 'KilometersPerHour', id: 'kmph' }
+writing:
+  graph:
+    map-file: 'resources/saarland_2020-07-30/graph.fmi'
+    nodes:
+    - id: 'node-idx'
+    - id: 'node-id'
+    - id: 'latitude'
+    - id: 'longitude'
+    edges:
+      with_shortcuts: false
+      ids:
+      - id: 'edge-id'
+      - id: 'src-id'
+      - id: 'dst-id'
+      - id: 'kilometers'
+      - id: 'hours'
+      - id: 'lane-count'

@@ -26,13 +26,13 @@ Maybe, it is concept for later documentation, or just keep-up-the-good-work (`ku
     - Get population from osm-data
       - Take nodes/ways and distribute according to max-speed (low speed <-> high population-density).
       - Take city-level and let routes go from lower to higher levels.
+- Reduce visibility of modules and control public-access, e.g. of module `defaults`, which is only needed in tests.
+- Mention and explain cargo-features somewhere.
 
 
 ### Build-script
 
-- A build-script could, maybe, build the inline-size for `SmallVec` dependent of an env-var when compiling.
-  The command `include!(...)` could help.
-  More info in [this cargo-issue][github/rust-lang/cargo/issues/5624].
+\-
 
 
 ### Documentation
@@ -51,30 +51,44 @@ Maybe, it is concept for later documentation, or just keep-up-the-good-work (`ku
   - Create graph of 2 nodes and 8 edges, where 3 edges are dominated by the others.
   - At least `2d + 1` edges are needed.
   - Test restriction(?)
+- Test created route-files.
+- Test edge-ids (especially parsing).
+- Write config-tests without checking content, so configs can be checked automatically.
 
 
 ### Extend configs
 
 - Warn user when parsing `pbf`-map, if unused categories are provided in the config.
+- Write parser __parsing all configs__ at once.
+- Cleanup `kebab-cases` and `snake_cases` etc.
+- Check if writing-cfg contains shortcut-indices when `is_ch-graph == false`.
+- Some configs are damaged!
 
 
 ### Extend parsing
 
 - Use __preprocessing-phase__ for `pbf`-parser to count edges and __allocate memory__ accordingly.
 - Print __edit-link__ for weird osm-content (in addition to currently printed warnings).
-- Parse lanes (currently, default is used).
+- __Parse lanes__ (currently, default is used).
   - tags: `lanes`, `lanes:backward` (`way-id: 33172848`)
 
 
 ### Extend routing
 
-- Implement little parser for a file containing routes.
-  Preferred is a format, where every line defines `src, dst`.
-  To make this less dependent of a certain map, every node is represented by its coordinate or id instead of its index.
+\-
+
+
+### Extend balancing
+
+- Update route-counts of shortcuts after updating normal edges.
+- Flatten the found routes after the loops and cumulate all workloads for sc-edges at once.
+  This reduces the access to edges.
+- Use `ch-constructor` (written in `c/cpp`) as binary or build wrapping rust-crate?
 
 
 ## Info
 
+- [C with Rust][rust-docs/c-with-rust]
 - [OSM-tags][taginfo]
 - serde-yaml
   - `https://stackoverflow.com/questions/53243795/how-do-you-read-a-yaml-file-in-rust`
@@ -91,42 +105,21 @@ Maybe, it is concept for later documentation, or just keep-up-the-good-work (`ku
   - [JMapViewer (Java)][osm/wiki/jmapviewer]
 
 
-### Proof of correctness for bidirectional Dijkstra
-
-The termination of the bidirectional Astar is based on the first node v, that is marked by both, the forward- and the backward-subroutine.
-However, this common node v is part of the shortest path s->t wrt to this particular hop-distance H, but doesn't have to be part of the shortest path s->t wrt to edge-weights.
-
-Every node, that is not settled in any of the both subroutines, has a longer distance to both s and t than the already found common node v and hence can not be part of the shortest path (wrt to edge-weights).
-Otherwise, it would have been settled before v since the priority-queues sort by weights.
-In other words, only already settled nodes and their neighbors (which are already enqueued) can be part of the shortest path.
-
-In conclusion, emptying the remaining nodes in the queues and picking the shortest path of the resulting common nodes leads to the shortest path wrt to edge-weights from s to t.
-
-
-### Proof of correctness for bidirectional Dijkstra for contracted graphs
-
-Here, the proof for bidirectional Dijkstra doesn't hold, because each sub-graph doesn't visit every node of the total graph, due to the level-filter when pushing edges to the queue.
-Hence, the forward- and the backward-query are not balanced wrt weights.
-Thus, after finding the first meeting-node, the hop-distance of the shortest-path could be arbitrary.
-This leads to wrong paths with normal bidirectional Dijkstra.
-To correct this issue, stop the query after polling a node of a sub-distance, which is higher than the currently best meeting-node's total distance.
-
-
 ### License
 
 [When is a program and its plug-ins considered a single combined program?][gnu/licenses/gpl-faq/gplplugins]
 
 
 [acm/micro-travel-demand]: https://dl.acm.org/doi/10.1145/3347146.3359361
-[destatis]: https://www.destatis.de/DE/Service/Statistik-Visualisiert/RegionalatlasAktuell.html
-[statistik-bw]: https://www.statistik-bw.de/Intermaptiv/?re=gemeinde&ags=08317057&i=01202&r=0&g=0001&afk=5&fkt=besetzung&fko=mittel
 [atlas.zensus2011.de]: https://atlas.zensus2011.de/
-[statistikportal]: https://www.statistikportal.de/de/flaechenatlas
-[github/rust-lang/cargo/issues/5624]: https://github.com/rust-lang/cargo/issues/5624
+[destatis]: https://www.destatis.de/DE/Service/Statistik-Visualisiert/RegionalatlasAktuell.html
 [github/vbuchhold/routing-framework]: https://github.com/vbuchhold/routing-framework
 [gnu/licenses/gpl-faq/gplplugins]: https://www.gnu.org/licenses/gpl-faq.html#GPLPlugins
 [kde/marble]: http://api.kde.org/4.x-api/kdeedu-apidocs/marble/html/namespaceMarble.html
 [leafletjs]: https://leafletjs.com/
 [osm/wiki/jmapviewer]: https://wiki.openstreetmap.org/wiki/JMapViewer
+[rust-docs/c-with-rust]: https://rust-embedded.github.io/book/interoperability/c-with-rust.html
+[statistik-bw]: https://www.statistik-bw.de/Intermaptiv/?re=gemeinde&ags=08317057&i=01202&r=0&g=0001&afk=5&fkt=besetzung&fko=mittel
+[statistikportal]: https://www.statistikportal.de/de/flaechenatlas
 [taginfo]: https://taginfo.openstreetmap.org/
 [worldometers/germany]: https://www.worldometers.info/world-population/germany-population/

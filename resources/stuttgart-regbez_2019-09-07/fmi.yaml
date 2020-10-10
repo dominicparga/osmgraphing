@@ -1,0 +1,22 @@
+parsing:
+  map-file: 'resources/stuttgart-regbez_2019-09-07/graph.fmi'
+  vehicles:
+    category: 'Car'
+    are_drivers_picky: false
+  nodes:
+  - meta: { info: 'NodeId', id: 'node-id' } # node-idx
+  - ignored # osm-id
+  - metric: { unit: 'Latitude', id: 'latitude' }
+  - metric: { unit: 'Longitude', id: 'longitude' }
+  edges:
+    data:
+    - meta: { info: 'SrcId', id: 'src-id' } # src-idx
+    - meta: { info: 'DstId', id: 'dst-id' } # dst-idx
+    - metric: { unit: 'Kilometers', id: 'kilometers' }
+    - metric: { unit: 'Hours', id: 'hours' }
+    - ignored # lane-count
+routing:
+  route-pairs-file: 'resources/stuttgart-regbez_2019-09-07/10_000.route-pairs'
+  algorithm: 'Dijkstra'
+  metrics:
+  - id: 'kilometers'

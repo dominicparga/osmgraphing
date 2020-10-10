@@ -1,20 +1,37 @@
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{black_box, Criterion};
 use log::error;
 use osmgraphing::{
     configs, helpers,
-    io::Parser,
+    io::network::graph::Parser,
     network::{Graph, NodeIdx},
-    routing,
+    routing::dijkstra::{self, Dijkstra},
 };
+use std::time::Duration;
 
-fn criterion_benchmark(c: &mut Criterion) {
-    helpers::init_logging("WARN", vec![]).expect("No user-input, so this should be fine.");
+fn main() {
+    let mut criterion = Criterion::default()
+        .warm_up_time(Duration::from_secs(10))
+        .measurement_time(Duration::from_secs(120))
+        .configure_from_args();
+    do_benchmark(&mut criterion);
+    criterion.final_summary();
+}
+
+fn do_benchmark(criterion: &mut Criterion) {
+    helpers::init_logging("WARN", &[]).expect("No user-input, so this should be fine.");
 
     // parsing
-    let parsing_cfg = configs::parsing::Config::from_yaml("resources/configs/isle-of-man.pbf.yaml");
+    let parsing_cfg =
+        configs::parsing::Config::from_yaml("resources/isle_of_man_2020-03-14/osm.pbf.yaml");
     let routing_strs = vec![
-        "routing: { metrics: [{ id: 'kilometers' }] }",
-        "routing: { metrics: [{ id: 'kilometers' }, { id: 'minutes' }] }",
+        (
+            "1D",
+            "routing: { algorithm: Dijkstra, metrics: [{ id: 'kilometers' }] }",
+        ),
+        (
+            "2D",
+            "routing: { algorithm: Dijkstra, metrics: [{ id: 'kilometers' }, { id: 'hours' }] }",
+        ),
     ];
 
     // create graph
@@ -52,19 +69,19 @@ fn criterion_benchmark(c: &mut Criterion) {
             "",
             " with long routes (~56 km)",
             vec![(
-                nodes.idx_from(1_151_603_193).expect("E"),
+                nodes.idx_from(1_700_989_735).expect("E"),
                 nodes.idx_from(456_478_793).expect("F"),
             )],
         ),
     ];
 
     // benchmarking shortest routing
-    for routing_str in routing_strs {
+    for (dim, routing_str) in routing_strs {
         let routing_cfg = configs::routing::Config::from_str(routing_str, graph.cfg());
 
         for (prefix, suffix, routes) in labelled_routes.iter() {
-            c.bench_function(
-                &format!("{}Shortest Dijkstra (bidir){}", prefix, suffix),
+            criterion.bench_function(
+                &format!("{}Shortest Dijkstra (bidir, {}){}", prefix, dim, suffix),
                 |b| {
                     b.iter(|| {
                         bidir_shortest_dijkstra(
@@ -79,8 +96,8 @@ fn criterion_benchmark(c: &mut Criterion) {
 
         // benchmarking fastest routing
         for (prefix, suffix, routes) in labelled_routes.iter() {
-            c.bench_function(
-                &format!("{}Fastest Dijkstra (bidir){}", prefix, suffix),
+            criterion.bench_function(
+                &format!("{}Fastest Dijkstra (bidir, {}){}", prefix, dim, suffix),
                 |b| {
                     b.iter(|| {
                         bidir_fastest_dijkstra(
@@ -95,20 +112,20 @@ fn criterion_benchmark(c: &mut Criterion) {
     }
 }
 
-criterion_group!(benches, criterion_benchmark);
-criterion_main!(benches);
-
-//------------------------------------------------------------------------------------------------//
-
 fn bidir_shortest_dijkstra(
     graph: &Graph,
     routes: &Vec<(NodeIdx, NodeIdx)>,
     cfg: &configs::routing::Config,
 ) {
-    let mut dijkstra = routing::Dijkstra::new();
+    let mut dijkstra = Dijkstra::new();
 
     for &(src_idx, dst_idx) in routes.iter() {
-        let _option_path = dijkstra.compute_best_path(src_idx, dst_idx, graph, cfg);
+        let _option_path = dijkstra.compute_best_path(dijkstra::Query {
+            src_idx,
+            dst_idx,
+            graph,
+            routing_cfg: cfg,
+        });
     }
 }
 
@@ -117,9 +134,14 @@ fn bidir_fastest_dijkstra(
     routes: &Vec<(NodeIdx, NodeIdx)>,
     cfg: &configs::routing::Config,
 ) {
-    let mut dijkstra = routing::Dijkstra::new();
+    let mut dijkstra = Dijkstra::new();
 
     for &(src_idx, dst_idx) in routes.iter() {
-        let _option_path = dijkstra.compute_best_path(src_idx, dst_idx, graph, cfg);
+        let _option_path = dijkstra.compute_best_path(dijkstra::Query {
+            src_idx,
+            dst_idx,
+            graph,
+            routing_cfg: cfg,
+        });
     }
 }

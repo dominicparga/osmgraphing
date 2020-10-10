@@ -1,16 +1,37 @@
-# License and Copyright
+# Copyright and License
 
-As long as you are not building with or depending on the build-feature `gpl-3.0`, the `Apache-2.0`-license holds.
+## Mentioning this Copyright in own projects
+
+Please include this Copyright- and License-notice in your project.
+As suggested in the `Apache License, Version 2.0`, you may choose a separate file like "NOTICE" for this.
+Instead of copying the whole file, you may copy only the following short version.
+
+```text
+osmgraphing
+https://github.com/dominicparga/osmgraphing
+Copyright 2019 Dominic Parga Cacheiro
+License Apache-2.0
+
+
+Only needed, if the respective features are built.
+
+balancing
+https://github.com/dominicparga/osmgraphing
+Copyright 2020 Dominic Parga Cacheiro
+License GPL-3.0-only
+```
+
+The following description gives an (incomplete) overview about this repository (and resulting binaries), for which the above copyright-notice holds.
+Note that the following overview describes content licensed under the `Apache License, Version 2.0` and content licensed under the `GPL-3.0`.
+
+This repository `osmgraphing` parses maps of own format or maps from openstreetmap.
+To do this, a binary `osmgraphing` is built and an own-defined config-file can be provided to specify parsing-, writing- and routing-settings.
+Further, this repository also explorates graphs and optimizes resulting routes with the module `exploration` and the binary `balancer` using `multi-ch-constructor`, which can be called from a binary `multi-ch-constructor` as well.
+
 
 ## Apache-2.0
 
-This repository `osmgraphing` parses maps of own format or maps from
-openstreetmap. To do this, a binary `osmgraphing` is built and an own-
-defined config-file can be provided to specify parser- and routing-
-settings. Besides that, a binary `mapgenerator` is built and can be used
-to generate map-files.
-
-The description above gives a (maybe uncomplete) overview about the part of this repository (and resulting binaries), which is licensed under the `Apache License, Version 2.0`.
+This work is licensed under the `Apache License, Version 2.0`.
 You may not use content of this repository or its files, which are directly or indirectly related to above mentioned parts, except in compliance with the `Apache License, Version 2.0`.
 You may obtain a copy of the License at
 
@@ -22,33 +43,21 @@ See the License for the specific language governing permissions and limitations 
 
 ## GPL-3.0
 
-Besides that, this repository also explorates graphs and optimizes resulting routes with the module `exploration` and the binary `balancer`.
-Since these parts of this repository use code, which is licensed under the `GPL-3.0`, every other module and binary, using it as described in the `GPL-3.0`, has to be licensed respectively under the `GPL-3.0`.
+This repository allows to build some content based on code licensed under the `GPL-3.0`.
+Thus, the respective binaries and code-parts are licensed under the `GPL-3.0` as well.
 You may obtain a copy of the License at
 
 `https://www.gnu.org/licenses/`
 
 
-## Mentioning this Copyright in own projects
-
-Please include this Copyright- and License-notice in your project.
-As suggested in the `Apache License, Version 2.0`, you may choose a separate file like "NOTICE" for this.
-Instead of copying the whole notice, you may copy only the following short version.
+## Dependencies
 
 ```text
-osmgraphing, mapgenerator
-https://github.com/dominicparga/osmgraphing
-Copyright 2019 Dominic Parga Cacheiro
-License Apache-2.0
-
-explorator, balancer
-https://github.com/dominicparga/osmgraphing
-Copyright (C) 2020 Dominic Parga Cacheiro
-License GPL-3.0-only
+chrono
+https://github.com/chronotope/chrono
+Copyright (c) 2014--2017, Kang Seonghoon and contributors
+License MIT OR Apache-2.0
 ```
-
-
-## Dependencies
 
 ```text
 clap
@@ -79,6 +88,18 @@ License MIT OR Apache-2.0
 ```
 
 ```text
+multi-ch-constructor
+https://github.com/lesstat/multi-ch-constructor
+License GPL-3.0-only
+```
+
+```text
+nalgebra
+https://github.com/rustsim/nalgebra
+License BSD 3-Clause
+```
+
+```text
 nd-triangulation
 https://github.com/lesstat/nd-triangulation
 License GPL-3.0-only
@@ -87,7 +108,7 @@ License GPL-3.0-only
 ```text
 osmpbfreader
 https://github.com/TeXitoi/osmpbfreader-rs
-License WTFPL WITH LGPLv3
+License WTFPL OR LGPLv3
 ```
 
 ```text

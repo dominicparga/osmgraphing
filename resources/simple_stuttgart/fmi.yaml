@@ -1,0 +1,34 @@
+parsing:
+  map-file: 'resources/simple_stuttgart/graph.fmi'
+  vehicles:
+    category: 'Car'
+    are_drivers_picky: false
+  nodes:
+  - meta: { info: 'NodeId', id: 'node-id' }
+  - metric: { unit: 'Latitude', id: 'latitude' }
+  - metric: { unit: 'Longitude', id: 'longitude' }
+  edges:
+    data:
+    - meta: { info: 'SrcId', id: 'src-id' }
+    - meta: { info: 'DstId', id: 'dst-id' }
+    - metric: { unit: 'Meters', id: 'meters' }
+    - metric: { unit: 'KilometersPerHour', id: 'kmph' }
+  generating:
+    nodes: []
+    edges:
+    - convert:
+        from: { unit: 'Meters', id: 'meters' }
+        to: { unit: 'Kilometers', id: 'kilometers' }
+    - calc:
+        result: { unit: 'Hours', id: 'hours' }
+        a: { unit: 'Kilometers', id: 'kilometers' }
+        b: { unit: 'KilometersPerHour', id: 'kmph' }
+writing:
+  route-pairs:
+    file: 'resources/simple_stuttgart/all_31.route-pairs'
+    random_or_all: { max_count: 100 }
+# needed for examples/dijkstra
+routing:
+  algorithm: 'Dijkstra'
+  metrics:
+  - id: 'kilometers'

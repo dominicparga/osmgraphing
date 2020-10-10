@@ -1,0 +1,24 @@
+parsing:
+  map-file: 'resources/saarland_2020-07-30/graph.fmi'
+  nodes:
+  - ignored # node-idx
+  - meta: { info: 'NodeId', id: 'node-id' } # osm-id
+  - metric: { unit: 'Latitude', id: 'latitude' }
+  - metric: { unit: 'Longitude', id: 'longitude' }
+  edges:
+    data:
+    - meta: { info: 'EdgeId', id: 'edge-id' }
+    - meta: { info: 'SrcId', id: 'src-id' } # src-idx
+    - meta: { info: 'DstId', id: 'dst-id' } # dst-idx
+    - metric: { unit: 'Kilometers', id: 'kilometers' }
+    - metric: { unit: 'Hours', id: 'hours' }
+    - metric: { unit: 'LaneCount', id: 'lane-count' }
+  generating:
+    nodes: []
+    edges: []
+# needed for examples/exploration.rs
+routing:
+  algorithm: 'Dijkstra'
+  metrics:
+  - id: 'kilometers'
+  - id: 'hours'

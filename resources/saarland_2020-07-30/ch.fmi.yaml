@@ -1,0 +1,34 @@
+parsing:
+  map-file: 'resources/saarland_2020-07-30/graph.ch.fmi'
+  nodes:
+  - ignored # node-idx
+  - meta: { info: 'NodeId', id: 'node-id' } # osm-id
+  - metric: { unit: 'Latitude', id: 'latitude' }
+  - metric: { unit: 'Longitude', id: 'longitude' }
+  - ignored # height
+  - meta: { info: 'CHLevel', id: 'ch-level' }
+  edges:
+    data:
+    - meta: { info: 'EdgeId', id: 'edge-id' }
+    - meta: { info: 'SrcId', id: 'src-id' }
+    - meta: { info: 'DstId', id: 'dst-id' }
+    - metric: { unit: 'Kilometers', id: 'kilometers' }
+    - metric: { unit: 'Hours', id: 'hours' }
+    - meta: { info: 'ShortcutIdx0', id: 'sc-idx-0' }
+    - meta: { info: 'ShortcutIdx1', id: 'sc-idx-1' }
+routing:
+  algorithm: 'CHDijkstra'
+  # list of routing-relevant metrics
+  metrics:
+  - id: 'hours'
+writing:
+  route-pairs:
+    file: 'resources/saarland_2020-07-30/10_000.route-pairs'
+    random_or_all:
+      seed: 42
+      max_count: 10000
+  # route-pairs:
+  #   file: 'resources/saarland_2020-07-30/10_000_eval.route-pairs'
+  #   random_or_all:
+  #     seed: 24
+  #     max_count: 10000

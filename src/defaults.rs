@@ -1,3 +1,5 @@
+pub const SEED: u64 = 42;
+
 pub mod accuracy {
     /// value is good because it refers to
     /// - 1 mm for km
@@ -10,19 +12,25 @@ pub mod accuracy {
     ///   - lon: distance depends on latitude
     ///     -> 1e-6 degrees equals <= 0.11 m (equator)
     ///   -> 1e-5 degrees points to a person in a room, see https://xkcd.com/2170/
-    pub const F64_ABS: f64 = 0.000_001; // = 10^(-F64__FMT_DIGITS)
-    pub const F64_FMT_DIGITS: usize = 6;
+    pub const F64_ABS: f64 = 0.000_001;
+    // F64_ABS = 10^(-F64__FMT_DIGITS)
+    // but +1 because of float-representation
+    // e.g. 0.000_001 is 0.000_000_9.....
+    // and results in 0.000_000 with only 6 digits
+    pub const _F64_FMT_DIGITS: usize = 7; // TODO remove
 }
 
 pub mod speed {
-    pub const MAX_KMH: u16 = 130;
+    const _MAX_KMH: u16 = 130;
     pub const MIN_KMH: u8 = 5;
 }
 
 pub mod capacity {
+    use crate::compiler;
+
     // For optimal performance and memory-usage:
     // Change this value before compiling, dependent of your number of stored metrics in the graph.
-    pub const SMALL_VEC_INLINE_SIZE: usize = 4;
+    pub const SMALL_VEC_INLINE_SIZE: usize = compiler::GRAPH_DIM;
     pub type DimVec<T> = smallvec::SmallVec<[T; SMALL_VEC_INLINE_SIZE]>;
     pub const MAX_BYTE_PER_CHUNK: usize = 200 * 1_000_000;
 }
@@ -30,15 +38,235 @@ pub mod capacity {
 pub mod parsing {
     // provided by multi-ch-constructor
     pub const NO_SHORTCUT_IDX: &str = "-1";
+    pub const IS_USING_SHORTCUTS: bool = false;
+
+    pub const WILL_NORMALIZE_METRICS_BY_MEAN: bool = false;
+
+    // vehicles
+
+    pub mod vehicles {
+        use crate::network::vehicles::Category as VehicleCategory;
+
+        pub const CATEGORY: VehicleCategory = VehicleCategory::Car;
+        pub const ARE_DRIVERS_PICKY: bool = true;
+    }
 }
 
 pub mod writing {
     pub use super::parsing::NO_SHORTCUT_IDX;
     pub const IGNORE_STR: &str = "_";
+
+    pub const IS_WRITING_WITH_HEADER: bool = true;
+    pub const WILL_DENORMALIZE_METRICS_BY_MEAN: bool = false;
+}
+
+pub mod smarts {
+    pub const IS_WRITING: bool = false;
+    pub const XML_FILE_NAME: &str = "smarts.xml";
+
+    /// Route-File-Format from [SMARTS-homepage](https://projects.eng.unimelb.edu.au/smarts/documentation/)
+    pub mod route_file_format {
+        pub const VERSION: &str = "1.0";
+        pub const VEHICLE_TYPE: &str = "CAR";
+        pub const START_TIME: &str = "0.4";
+        pub const DRIVER_PROFILE: &str = "NORMAL";
+    }
 }
 
 pub mod routing {
     pub const ALPHA: f64 = 1.0;
+    pub const TOLERATED_SCALE_INF: f64 = std::f64::INFINITY;
+    pub const TOLERATED_SCALE: f64 = std::f64::INFINITY;
+    /// If true, the edges are sorted by their dsts' ch-level to speedup routing.
+    /// This sort isn't stable in combination with a ch-construction and varying metrics, because a ch-constructor sets the ch-levels dependent on the metrics.
+    /// In result, edges can't be identified in balancer.
+    pub const IS_USING_CH_LEVEL_SPEEDUP: bool = true;
+}
+
+#[cfg(feature = "gpl-3.0")]
+pub mod balancing {
+    use crate::{
+        approximating::Approx,
+        configs,
+        helpers::err,
+        network::{EdgeIdx, Graph},
+    };
+    use kissunits::distance::Kilometers;
+    use log::{info, warn};
+    use std::cmp::max;
+
+    // A high work-size could be less productive since less dynamic:
+    // Work-size is adjusted for thread of index 0, implying that a high work-size leads to less parallelization in the end.
+    // With k threads, k times work-size will be worked off before an adjustment follows.
+    // If k times work-size is a huge part of the total work, the remaining work is done with less threads.
+    pub const INIT_WORK_SIZE: usize = 50;
+    pub const WORK_SIZE_PLUS: usize = 30;
+    pub const WORK_SIZE_MINUS: usize = 10;
+    pub const NUM_THREADS: usize = 4;
+    pub const IS_ERR_WHEN_METRIC_IS_ZERO: bool = true;
+
+    pub mod stats {
+        pub const DIR: &str = "stats";
+
+        pub mod files {
+            pub const ABS_WORKLOADS: &str = "abs_workloads.csv";
+        }
+
+        pub mod csv_names {
+            pub const NUM_ROUTES: &str = "num_routes";
+        }
+    }
+
+    pub mod files {
+        pub const ITERATION_CFG: &str = "iteration.yaml";
+    }
+
+    /// Nagel-Schreckenberg-Model -> `7.5 m` space for every vehicle
+    ///
+    /// Returns at least 1
+    pub fn _calc_num_vehicles(km: Kilometers) -> u64 {
+        max(1, (km / Kilometers(0.0075)) as u64)
+    }
+
+    /// This is only called once per balancer-iteration or undefined behaviour occurs!
+    pub fn update_new_metric(
+        iteration: usize,
+        abs_workloads: &Vec<usize>,
+        graph: &mut Graph,
+        balancing_cfg: &configs::balancing::Config,
+    ) -> err::Feedback {
+        // No capacity is calculated, because the new metric should smoothen against speed-limit.
+        // A higher speed-limit kind of implies more popularity.
+        // With normalization by capacity, this popularity would be weaken,
+        // so the influence of the speed-limit would be increased indirectly.
+        // But that's the point, the new metric should balance.
+
+        let old_metric_idx = graph
+            .cfg()
+            .edges
+            .metrics
+            .idx_of(&balancing_cfg.optimization.metric_id);
+
+        let mut new_metrics: Vec<_> = abs_workloads.iter().map(|&w| w as f64).collect();
+        let mut metrics = graph.metrics_mut();
+
+        // normalize new workloads
+
+        // compute new mean
+
+        let mean: f64 = new_metrics.iter().sum::<f64>() / (new_metrics.len() as f64);
+        if Approx(mean) == Approx(0.0) {
+            return Err(err::Msg::from(
+                "The new workload-metric's mean is zero, hence no normalization can be done.",
+            ));
+        }
+
+        // normalize abs-workloads with new computed mean
+
+        for new_metric in &mut new_metrics {
+            *new_metric /= mean;
+        }
+
+        // now: new_metrics has all new metrics, normalized by its own workloads' mean
+
+        // update
+
+        for (edge_idx, new_metric) in new_metrics.iter_mut().enumerate() {
+            *new_metric = {
+                let old_metric = metrics[EdgeIdx(edge_idx)][*old_metric_idx];
+
+                match balancing_cfg.optimization.method {
+                    configs::balancing::OptimizationMethod::ExplicitEuler { correction } => {
+                        old_metric + (*new_metric - old_metric) * correction
+                    }
+                    configs::balancing::OptimizationMethod::Averaging => {
+                        (iteration as f64 * old_metric + *new_metric) / ((iteration + 1) as f64)
+                    }
+                }
+            };
+        }
+
+        // set new_metric to minimum (if specified)
+
+        if let Some(min_new_metric) = balancing_cfg.min_new_metric {
+            for new_metric in &mut new_metrics {
+                if Approx(*new_metric) <= Approx(min_new_metric) {
+                    *new_metric = min_new_metric;
+                }
+            }
+        } else {
+            let mut zero_metric_msg = None;
+
+            for new_metric in &new_metrics {
+                // if new metric is 0 (or lower)
+                if Approx(new_metric) <= Approx(&0.0) {
+                    // if no error is thrown
+                    // -> show one warning after loop
+                    // -> remember message
+                    zero_metric_msg = Some(format!(
+                        "{}{}",
+                        "The new metric contains zero-values,",
+                        " which could lead to many shortcuts or an inefficient Dijkstra.",
+                    ));
+
+                    // if this should be treated as an error -> immediately stop
+                    if balancing_cfg.is_err_when_metric_is_zero {
+                        return Err(err::Msg::from(
+                            zero_metric_msg
+                                .expect("The variable 'zero_metric_msg' should be some."),
+                        ));
+                    }
+                }
+            }
+
+            // warn if zero-metric occurred
+            if let Some(msg) = zero_metric_msg {
+                warn!("{}", msg);
+            }
+        }
+
+        // normalize again
+
+        // compute new mean
+
+        let mean: f64 = new_metrics.iter().sum::<f64>() / (new_metrics.len() as f64);
+        if Approx(mean) <= Approx(0.0) {
+            return Err(err::Msg::from(
+                "The new workload-metric's mean is zero, hence no normalization can be done.",
+            ));
+        }
+
+        // normalize abs-workloads with new computed mean
+
+        for new_metric in &mut new_metrics {
+            *new_metric /= mean;
+        }
+
+        // update graph's metric's mean
+
+        if let Some(means) = metrics.means() {
+            means[*old_metric_idx] = mean;
+            info!("New workload-metric has mean: {}", means[*old_metric_idx]);
+        }
+
+        // update graph's metric
+
+        for (edge_idx, new_metric) in new_metrics.into_iter().enumerate() {
+            metrics[EdgeIdx(edge_idx)][*old_metric_idx] = new_metric;
+        }
+
+        Ok(())
+    }
+}
+
+#[cfg(feature = "gpl-3.0")]
+pub mod explorating {
+    pub mod files {
+
+        pub fn capacities(i: usize, n: usize) -> String {
+            format!("capacities{:0digits$}.csv", i, digits = n.to_string().len())
+        }
+    }
 }
 
 pub mod network {
@@ -94,7 +322,7 @@ pub mod network {
                 StreetCategory::TertiaryLink => 30,
                 StreetCategory::Unclassified => 50,
                 StreetCategory::Residential => 50,
-                StreetCategory::LivingStreet => 15,
+                StreetCategory::LivingStreet => 15, // TODO probably 10?
                 StreetCategory::Service => 20,
                 StreetCategory::Track => 30,
                 StreetCategory::Road => 50,
@@ -127,9 +355,9 @@ pub mod network {
                 StreetCategory::Unclassified => true,
                 StreetCategory::Residential => true,
                 StreetCategory::LivingStreet => true,
-                StreetCategory::Service => !is_driver_picky,
+                StreetCategory::Service => false,
                 StreetCategory::Track => !is_driver_picky,
-                StreetCategory::Road => !is_driver_picky,
+                StreetCategory::Road => false,
                 StreetCategory::Cycleway => false,
                 StreetCategory::Pedestrian => false,
                 StreetCategory::Path => false,
@@ -153,14 +381,14 @@ pub mod network {
                 StreetCategory::LivingStreet => true,
                 StreetCategory::Service => true,
                 StreetCategory::Track => !is_driver_picky,
-                StreetCategory::Road => !is_driver_picky,
+                StreetCategory::Road => false,
                 StreetCategory::Cycleway => true,
                 StreetCategory::Pedestrian => !is_driver_picky,
                 StreetCategory::Path => !is_driver_picky,
             }
         }
 
-        fn is_for_pedestrians(&self, is_driver_picky: bool) -> bool {
+        fn is_for_pedestrians(&self, _is_driver_picky: bool) -> bool {
             match self {
                 StreetCategory::Motorway => false,
                 StreetCategory::MotorwayLink => false,
@@ -177,15 +405,12 @@ pub mod network {
                 StreetCategory::LivingStreet => true,
                 StreetCategory::Service => true,
                 StreetCategory::Track => true,
-                StreetCategory::Road => !is_driver_picky,
+                StreetCategory::Road => false,
                 StreetCategory::Cycleway => false,
                 StreetCategory::Pedestrian => true,
                 StreetCategory::Path => true,
             }
         }
-
-        //--------------------------------------------------------------------------------------------//
-        // parsing
 
         pub fn from(way: &Way) -> Option<StreetCategory> {
             // read highway-tag from way

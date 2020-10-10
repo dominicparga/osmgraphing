@@ -1,34 +1,32 @@
-use log::info;
+use log::{error, info};
 use osmgraphing::{
-    configs, helpers,
-    io::Parser,
+    configs,
+    helpers::{err, init_logging},
+    io::network::graph::Parser,
     network::NodeIdx,
-    routing::{self},
+    routing::dijkstra::{self, Dijkstra},
 };
 use std::{path::PathBuf, time::Instant};
 
-fn main() -> Result<(), String> {
-    helpers::init_logging("INFO", vec!["dijkstra"]).expect("LogLevel 'INFO' does exist.");
-    info!("Executing example: A*");
+fn main() {
+    init_logging("INFO", &["dijkstra"]).expect("LogLevel 'INFO' does exist.");
+    let result = run();
+    if let Err(msg) = result {
+        error!("{}", msg);
+        panic!("{}", msg);
+    }
+}
 
-    let raw_cfg = PathBuf::from("resources/configs/simple-stuttgart.fmi.yaml");
+fn run() -> err::Feedback {
+    info!("Executing example: Dijkstra");
+
+    let raw_cfg = PathBuf::from("resources/simple_stuttgart/fmi.yaml");
 
     // parsing
 
-    let parsing_cfg = match configs::parsing::Config::try_from_yaml(&raw_cfg) {
-        Ok(parsing_cfg) => parsing_cfg,
-        Err(msg) => return Err(format!("{}", msg)),
-    };
-
-    // measure parsing-time
+    let parsing_cfg = configs::parsing::Config::try_from_yaml(&raw_cfg)?;
     let now = Instant::now();
-
-    // parse and create graph
-
-    let graph = match Parser::parse_and_finalize(parsing_cfg) {
-        Ok(graph) => graph,
-        Err(msg) => return Err(format!("{}", msg)),
-    };
+    let graph = Parser::parse_and_finalize(parsing_cfg)?;
     info!(
         "Finished parsing in {} seconds ({} µs).",
         now.elapsed().as_secs(),
@@ -39,11 +37,8 @@ fn main() -> Result<(), String> {
 
     // routing
 
-    let routing_cfg = match configs::routing::Config::try_from_yaml(&raw_cfg, graph.cfg()) {
-        Ok(routing_cfg) => routing_cfg,
-        Err(msg) => return Err(format!("{}", msg)),
-    };
-    let mut dijkstra = routing::Dijkstra::new();
+    let routing_cfg = configs::routing::Config::try_from_yaml(&raw_cfg, graph.cfg())?;
+    let mut dijkstra = Dijkstra::new();
 
     // generate route-pairs
 
@@ -52,7 +47,12 @@ fn main() -> Result<(), String> {
     let dst = nodes.create(NodeIdx(5));
 
     let now = Instant::now();
-    let option_path = dijkstra.compute_best_path(src.idx(), dst.idx(), &graph, &routing_cfg);
+    let option_path = dijkstra.compute_best_path(dijkstra::Query {
+        src_idx: src.idx(),
+        dst_idx: dst.idx(),
+        graph: &graph,
+        routing_cfg: &routing_cfg,
+    });
 
     info!("");
     info!(
