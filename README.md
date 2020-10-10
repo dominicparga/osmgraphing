@@ -17,7 +17,8 @@
 
 Welcome to the `osmgraphing`-repo! `:)`
 Goal of this repo is parsing [openstreetmap][osm]-data to calculate traffic-routes and different related use-cases on it.
-This repo will be involved in dealing with the analysis of selfish routing and learning metrics for balancing load in street-networks.
+This repo is involved in dealing with the analysis of selfish routing and learning metrics for balancing load in street-networks.
+See [my master-thesis][github/dominicparga/master-thesis] for more details.
 However, if a self-written parser-module does exist, every map-format supported by this module (e.g. own `csv`-like formats) can be used, which doesn't need to be a street-network.
 
 All calculations will be optimized for a single desktop instead of a more expensive cluster.
@@ -61,38 +62,47 @@ Please find instructions and info below.
 
 ### Long story short <a name="long-story-short"></a>
 
-Rust has a build-tool called `cargo`, which can be used to run everything except scripts in `scripts/`.
-The concept of all this repo's binaries lays on the usage of config-files.
-You can find all available options in `resources/blueprint.yaml` and examples in `resources/<map-name>`.
+Execute the following for a (verbose) routing-example.
 
 ```zsh
+# Further execution-info
+cargo run --release --bin osmgraphing -- --help
+
 # Build the binary for parsing maps and do routing
 # and parse isle-of-man.
 cargo run --release --bin osmgraphing -- --config resources/isle_of_man_2020-03-14/osm.pbf.yaml --routing
-# Further execution-info
-cargo run --release --bin osmgraphing -- --help
 ```
 
-You can download `pbf`-files from [geofabrik][geofabrik].
+You can download `pbf`-files from [geofabrik][geofabrik] and cast them to other formats.
 When editing the config, take [`resources/blueprint.yaml`][github/self/blob/blueprint.yaml] as guide.
 
-For using the balancer, you have to enable features licensed under the `GPL-3.0`.
-Besides that, please find installation-info about the submodule in the [`multi-ch-constructor`-repo][github/lesstat/multi-ch-constructor], because it is written in `c++`.
-For usage, this `osmgraphing`-repo has a module wrapping the submodule, using configs for its execution-parameters.
+To use the balancer, a [clone][github/dominicparga/multi-ch-constructor] of [`multi-ch-constructor`-repo][github/lesstat/multi-ch-constructor] is used as submodule, written in `c++`.
+This `osmgraphing`-repo is wrapping the submodule as `rust`-module, using configs for its execution-parameters.
+To get it run, please install the dependencies according to the [workflow-file][github/self/workflow] (working successfully in `August 2020`).
+Please note that the balancer bases on code, that is licensed under the `GPL-3.0`.
+Therefore, you have to enable features (via `cargo`).
 
 ```zsh
-# Update git-submodules used in the balancer
+# Update git-submodules, because they are used in the balancer
 git submodule update --init --recursive
+
 # Build also features licensed under the `GPL-3.0`.
 # Build with GRAPH_DIM=6.
 GRAPH_DIM=6 cargo run --release --features='gpl-3.0' --bin osmgraphing -- --config resources/isle_of_man_2020-03-14/balancing/config.yaml --balancing
+
+# After finishing, you may visualize the data
+# (the results-dir, excluding the utc-stamp, is specified in the config)
+py ./scripts/balancing/visualizer --results-dir 'custom/results/<map-name>/utc_<date_and_time>
 ```
 
 As mentioned above, you may find a detailled config-blueprint in `resources/` and a balancing-example in `resources/isle_of_man/`.
 As defined in the `config.yaml`, the results can be found in `custom/results/isle_of_man` and may be visualized with the python-module in `scripts/`.
 The python-tool has a help-msg, but the balancer also prints the respective command after finishing.
 
-Get further help with `cargo run --bin osmgraphing -- --help`.
+> __Note__:
+> The `reources/blueprint.yaml` is correct and complete.
+> Configs of the maps might be slightly broken due to missing or old keywords, because they are not used very often.
+> Since this repository is used by just a very few people, these configs are still kept as helping example.
 
 
 ### Overview over all features
@@ -217,6 +227,8 @@ He has implemented the first (and running) approach of the `A*`-algorithm.
 [docs.rs/self/badge]: https://img.shields.io/crates/v/osmgraphing?color=informational&label=docs&style=for-the-badge
 [geofabrik]: https://geofabrik.de
 [github/dominicparga]: https://github.com/dominicparga
+[github/dominicparga/master-thesis]: https://github.com/dominicparga/master-thesis
+[github/dominicparga/multi-ch-constructor]: https://github.com/dominicparga/multi-ch-constructor
 [github/jenasat]: https://github.com/JenaSat
 [github/lesstat]: https://github.com/lesstat
 [github/lesstat/cyclops/blob/README]: https://github.com/Lesstat/cyclops/blob/master/README.md#graph-data
@@ -236,6 +248,7 @@ He has implemented the first (and running) approach of the `A*`-algorithm.
 [github/self/tags/badge]: https://img.shields.io/github/v/tag/dominicparga/osmgraphing?sort=semver&style=for-the-badge
 [github/self/tree/examples]: https://github.com/dominicparga/osmgraphing/tree/nightly/examples
 [github/self/wiki/usage]: https://github.com/dominicparga/osmgraphing/wiki/Usage
+[github/self/workflow]: https://github.com/dominicparga/osmgraphing/blob/nightly/.github/workflows/rust.yml
 [github/servo/rust-smallvec]: https://github.com/servo/rust-smallvec
 [osm]: https://openstreetmap.org
 [self/balancing]: #balancing
