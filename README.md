@@ -40,7 +40,7 @@ Because of this, version `1.1.1` has been published in `October 2020` without ma
 
 Please refer to `LICENSE.md` for details.
 Copyright-owner is `Parga Cacheiro, Dominic`.
-In short, this repository and generated binaries are licensed under the `Apache-2.0`-license as long as you are not using the `cargo`-feature `gpl-3.0`.
+In short, this repository and generated binaries are licensed under the `Apache-2.0`-license as long as you are not using the `cargo`-feature `gpl`.
 Using this `cargo`-feature adds some code and binaries, which depend on code licensed under the `GPL-3.0`.
 Thus, the resulting binaries are licensed under the `GPL-3.0`.
 
@@ -94,7 +94,7 @@ git submodule update --init --recursive
 
 # Build also features licensed under the `GPL-3.0`.
 # Build with GRAPH_DIM=6.
-GRAPH_DIM=6 cargo run --release --features='gpl-3.0' --bin osmgraphing -- --config resources/isle_of_man_2020-03-14/balancing/config.yaml --balancing
+GRAPH_DIM=6 cargo run --release --features='gpl' --bin osmgraphing -- --config resources/isle_of_man_2020-03-14/balancing/config.yaml --balancing
 
 # After finishing, you may visualize the data
 # (the results-dir, excluding the utc-stamp, is specified in the config)
@@ -120,7 +120,7 @@ You can build with `cargo`-features using `cargo build --features='F0,F1,...'` (
 
 | `cargo`-feature | Notes |
 |:---------------:|:------|
-| `'gpl-3.0'` | This feature is needed for every part of the code, that is licensed under the `GPL-3.0`. Even if you are using this `cargo`-feature, it doesn't force you to license data under the `GPL-3.0`, that has been created with the `gpl-3.0`-code. |
+| `'gpl'` | This feature is needed for every part of the code, that is licensed under the `GPL-3.0`. Even if you are using this `cargo`-feature, it doesn't force you to license data under the `GPL-3.0`, that has been created with the `gpl`-code. |
 | `'custom'` | This repository ships with small maps, like handmade maps or `Isle-of-Man`, but larger maps like the German state `Saarland`, parts of German states like `Stuttgart-Regierungsbezirk` or countires like `Germany` consume multiple `100 MB` and more memory. Although, some tests are using these maps and configs may be useful, which is the reason for this `cargo`-feature. To get this feature working, simply download the maps, move them into the respective map-directory in `resources/`, and name them according to other map-directories. |
 
 
@@ -206,7 +206,7 @@ See its README for more info.
 
 ## Balancing <a name="balancing"></a>
 
-See `cargo run --features='gpl-3.0' --release --bin osmgraphing -- --help`.
+See `cargo run --features='gpl' --release --bin osmgraphing -- --help`.
 
 
 ## Credits <a name="credits"></a>

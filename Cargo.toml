@@ -28,7 +28,7 @@ default = []
 # TODO different test-lengths
 # https://testing.googleblog.com/2010/12/test-sizes.html
 custom = []
-'gpl-3.0' = [ 'nd-triangulation' ]
+'gpl' = [ 'nd-triangulation' ]
 
 
 [[bin]]
@@ -38,7 +38,7 @@ path = 'src/bin/osmgraphing/mod.rs'
 [[bin]]
 name = 'multi-ch-constructor'
 path = 'src/bin/multi-ch-constructor.rs'
-required-features = ['gpl-3.0']
+required-features = ['gpl']
 
 
 [[example]]
@@ -52,7 +52,7 @@ path = 'examples/dijkstra.rs'
 [[example]]
 name = 'exploration'
 path = 'examples/exploration.rs'
-required-features = ['gpl-3.0']
+required-features = ['gpl']
 
 
 [[example]]
@@ -74,7 +74,7 @@ path = 'examples/playground/multithreading.rs'
 [[example]]
 name = 'playground_nd-triangulation'
 path = 'examples/playground/nd_triangulation.rs'
-required-features = ['gpl-3.0']
+required-features = ['gpl']
 
 [[example]]
 name = 'playground_pipes_and_filters'

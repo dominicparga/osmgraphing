@@ -1,9 +1,9 @@
 use serde::Deserialize;
 use std::{fmt, fmt::Display};
 
-#[cfg(feature = "gpl-3.0")]
+#[cfg(feature = "gpl")]
 pub mod balancing;
-#[cfg(feature = "gpl-3.0")]
+#[cfg(feature = "gpl")]
 pub mod evaluating_balance;
 pub mod parsing;
 pub mod routing;

@@ -21,7 +21,7 @@ pub mod routing {
     pub use crate::io::parsing::routing::Parser;
     pub use crate::io::writing::routing::Writer;
 }
-#[cfg(feature = "gpl-3.0")]
+#[cfg(feature = "gpl")]
 pub mod evaluating_balance {
     pub use crate::io::writing::evaluating_balance::Writer;
 }

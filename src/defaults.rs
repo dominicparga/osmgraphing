@@ -83,7 +83,7 @@ pub mod routing {
     pub const IS_USING_CH_LEVEL_SPEEDUP: bool = true;
 }
 
-#[cfg(feature = "gpl-3.0")]
+#[cfg(feature = "gpl")]
 pub mod balancing {
     use crate::{
         approximating::Approx,
@@ -259,7 +259,7 @@ pub mod balancing {
     }
 }
 
-#[cfg(feature = "gpl-3.0")]
+#[cfg(feature = "gpl")]
 pub mod explorating {
     pub mod files {
 

@@ -158,7 +158,7 @@ impl Dijkstra {
         self.is_ch_dijkstra = match query.routing_cfg.routing_algo {
             RoutingAlgo::Dijkstra => false,
             RoutingAlgo::CHDijkstra => true,
-            #[cfg(feature = "gpl-3.0")]
+            #[cfg(feature = "gpl")]
             RoutingAlgo::Explorator { algo } => panic!(
                 "Dijkstra is called with {:?} as specified routing-algorithm",
                 RoutingAlgo::Explorator { algo }

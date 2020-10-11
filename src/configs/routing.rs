@@ -137,7 +137,7 @@ impl Config {
 pub enum RoutingAlgo {
     Dijkstra,
     CHDijkstra,
-    #[cfg(feature = "gpl-3.0")]
+    #[cfg(feature = "gpl")]
     Explorator {
         algo: ExploratorAlgo,
     },
@@ -149,7 +149,7 @@ impl RoutingAlgo {
     }
 }
 
-#[cfg(feature = "gpl-3.0")]
+#[cfg(feature = "gpl")]
 impl From<ExploratorAlgo> for RoutingAlgo {
     fn from(algo: ExploratorAlgo) -> RoutingAlgo {
         match algo {
@@ -164,7 +164,7 @@ impl From<ProtoRoutingAlgo> for RoutingAlgo {
         match proto_routing_algo {
             ProtoRoutingAlgo::Dijkstra => RoutingAlgo::Dijkstra,
             ProtoRoutingAlgo::CHDijkstra => RoutingAlgo::CHDijkstra,
-            #[cfg(feature = "gpl-3.0")]
+            #[cfg(feature = "gpl")]
             ProtoRoutingAlgo::Explorator { algo } => RoutingAlgo::Explorator {
                 algo: ExploratorAlgo::from(algo),
             },
@@ -172,14 +172,14 @@ impl From<ProtoRoutingAlgo> for RoutingAlgo {
     }
 }
 
-#[cfg(feature = "gpl-3.0")]
+#[cfg(feature = "gpl")]
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum ExploratorAlgo {
     Dijkstra,
     CHDijkstra,
 }
 
-#[cfg(feature = "gpl-3.0")]
+#[cfg(feature = "gpl")]
 impl From<ProtoExploratorAlgo> for ExploratorAlgo {
     fn from(proto_algo: ProtoExploratorAlgo) -> ExploratorAlgo {
         match proto_algo {
@@ -222,7 +222,7 @@ impl TryFrom<RawConfig> for ProtoConfig {
 pub enum ProtoRoutingAlgo {
     Dijkstra,
     CHDijkstra,
-    #[cfg(feature = "gpl-3.0")]
+    #[cfg(feature = "gpl")]
     Explorator {
         algo: ProtoExploratorAlgo,
     },
@@ -233,7 +233,7 @@ impl From<RawRoutingAlgo> for ProtoRoutingAlgo {
         match raw_routing_algo {
             RawRoutingAlgo::Dijkstra => ProtoRoutingAlgo::Dijkstra,
             RawRoutingAlgo::CHDijkstra => ProtoRoutingAlgo::CHDijkstra,
-            #[cfg(feature = "gpl-3.0")]
+            #[cfg(feature = "gpl")]
             RawRoutingAlgo::Explorator { algo } => ProtoRoutingAlgo::Explorator {
                 algo: ProtoExploratorAlgo::from(algo),
             },
@@ -241,14 +241,14 @@ impl From<RawRoutingAlgo> for ProtoRoutingAlgo {
     }
 }
 
-#[cfg(feature = "gpl-3.0")]
+#[cfg(feature = "gpl")]
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum ProtoExploratorAlgo {
     Dijkstra,
     CHDijkstra,
 }
 
-#[cfg(feature = "gpl-3.0")]
+#[cfg(feature = "gpl")]
 impl From<RawExploratorAlgo> for ProtoExploratorAlgo {
     fn from(raw_algo: RawExploratorAlgo) -> ProtoExploratorAlgo {
         match raw_algo {
@@ -309,13 +309,13 @@ pub struct RawContent {
 pub enum RawRoutingAlgo {
     Dijkstra,
     CHDijkstra,
-    #[cfg(feature = "gpl-3.0")]
+    #[cfg(feature = "gpl")]
     Explorator {
         algo: RawExploratorAlgo,
     },
 }
 
-#[cfg(feature = "gpl-3.0")]
+#[cfg(feature = "gpl")]
 #[derive(Copy, Clone, Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub enum RawExploratorAlgo {

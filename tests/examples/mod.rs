@@ -32,7 +32,7 @@ fn parser() {
     example::test();
 }
 
-#[cfg(feature = "gpl-3.0")]
+#[cfg(feature = "gpl")]
 #[test]
 fn exploration() {
     #[allow(dead_code)]

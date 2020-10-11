@@ -1,5 +1,5 @@
 use log::{debug, error, info, warn};
-#[cfg(feature = "gpl-3.0")]
+#[cfg(feature = "gpl")]
 mod balancing;
 use osmgraphing::{
     configs::{self, routing::RoutingAlgo},
@@ -8,12 +8,12 @@ use osmgraphing::{
     network::{Graph, RoutePair},
     routing::dijkstra::{self, Dijkstra},
 };
-#[cfg(feature = "gpl-3.0")]
+#[cfg(feature = "gpl")]
 use osmgraphing::{defaults, routing::explorating::ConvexHullExplorator};
-#[cfg(feature = "gpl-3.0")]
+#[cfg(feature = "gpl")]
 use rand::SeedableRng;
 use std::{convert::TryFrom, path::PathBuf, time::Instant};
-#[cfg(feature = "gpl-3.0")]
+#[cfg(feature = "gpl")]
 use std::{fs, sync::Arc};
 
 //------------------------------------------------------------------------------------------------//
@@ -172,12 +172,12 @@ fn run(args: CmdlineArgs) -> err::Feedback {
         if !args.is_evaluating_balance {
             do_simply_routing(&args, &graph)?;
         } else {
-            #[cfg(feature = "gpl-3.0")]
+            #[cfg(feature = "gpl")]
             do_evaluating_routing(&args, &Arc::new(graph))?;
         }
     }
 
-    #[cfg(feature = "gpl-3.0")]
+    #[cfg(feature = "gpl")]
     if args.is_balancing {
         balancing::run(balancing::CmdlineArgs {
             max_log_level: args.max_log_level.clone(),
@@ -231,7 +231,7 @@ fn do_simply_routing(args: &CmdlineArgs, graph: &Graph) -> err::Feedback {
                 }
             }
         }
-        #[cfg(feature = "gpl-3.0")]
+        #[cfg(feature = "gpl")]
         RoutingAlgo::Explorator { algo } => {
             let mut dijkstra = Dijkstra::new();
             let mut explorator = ConvexHullExplorator::new();
@@ -273,7 +273,7 @@ fn do_simply_routing(args: &CmdlineArgs, graph: &Graph) -> err::Feedback {
     Ok(())
 }
 
-#[cfg(feature = "gpl-3.0")]
+#[cfg(feature = "gpl")]
 fn do_evaluating_routing(args: &CmdlineArgs, arc_graph: &Arc<Graph>) -> err::Feedback {
     // get config by provided user-input
     let routing_cfg = configs::routing::Config::try_from_yaml(&args.cfg, arc_graph.cfg())?;
@@ -333,7 +333,7 @@ fn parse_cmdline<'a>() -> err::Result<CmdlineArgs> {
             doing some routing-queries (if provided in config-file).\n\
             \n\
             NOTE\n\
-            Some cmdline-arguments can only be used with the cargo-feature 'gpl-3.0' and hence are \
+            Some cmdline-arguments can only be used with the cargo-feature 'gpl' and hence are \
             hidden without it.",
         );
 
@@ -434,7 +434,7 @@ fn parse_cmdline<'a>() -> err::Result<CmdlineArgs> {
                 py ./scripts/balancing/visualizer --results-dir <RESULTS_DIR/DATE>\n",
             )
             .takes_value(false)
-            .hidden(!cfg!(feature = "gpl-3.0"))
+            .hidden(!cfg!(feature = "gpl"))
             .requires(constants::ids::CFG);
         args.arg(arg_is_balancing)
     };
@@ -451,7 +451,7 @@ fn parse_cmdline<'a>() -> err::Result<CmdlineArgs> {
                 py ./scripts/balancing/visualizer --results-dir <RESULTS_DIR/DATE>\n",
             )
             .takes_value(false)
-            .hidden(!cfg!(feature = "gpl-3.0"))
+            .hidden(!cfg!(feature = "gpl"))
             .requires(constants::ids::CFG);
         args.arg(arg_is_evaluating_balance)
     };
@@ -480,7 +480,7 @@ struct CmdlineArgs {
     is_writing_edges: bool,
     is_writing_route_pairs: bool,
     is_routing: bool,
-    #[cfg(feature = "gpl-3.0")]
+    #[cfg(feature = "gpl")]
     is_balancing: bool,
     is_evaluating_balance: bool,
 }
@@ -514,7 +514,7 @@ impl<'a> TryFrom<clap::ArgMatches<'a>> for CmdlineArgs {
             is_writing_edges,
             is_writing_route_pairs,
             is_routing,
-            #[cfg(feature = "gpl-3.0")]
+            #[cfg(feature = "gpl")]
             is_balancing,
             is_evaluating_balance,
         })
@@ -522,8 +522,8 @@ impl<'a> TryFrom<clap::ArgMatches<'a>> for CmdlineArgs {
 }
 
 fn check_for_activated_feature() -> err::Feedback {
-    if !cfg!(feature = "gpl-3.0") {
-        return Err(err::Msg::from("Please activate cargo-feature gpl-3.0."));
+    if !cfg!(feature = "gpl") {
+        return Err(err::Msg::from("Please activate cargo-feature gpl."));
     }
 
     Ok(())
