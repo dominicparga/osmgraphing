@@ -6,7 +6,7 @@ default-run = 'osmgraphing' # bin/osmgraphing.rs
 # Changing this version in a branch 'release' and pushing it to
 # GitHub will lead to publishing it automatically to crates.io.
 # Hence do not forget updating Unreleased in CHANGELOG.md.
-version = '1.1.1' # !!!
+version = '1.1.2' # !!!
 description = 'Playing around with graphs created via parsing OpenStreetMap data'
 edition = '2018'
 
@@ -56,10 +56,6 @@ required-features = ['gpl']
 
 
 [[example]]
-name = 'playground_actix'
-path = 'examples/playground/actix.rs'
-
-[[example]]
 name = 'playground_edge-containers'
 path = 'examples/playground/edge_containers.rs'
 
@@ -100,20 +96,17 @@ clap = '2.33' # cmdline-parsing
 env_logger = '0.6' # logging for external use, e.g. main.rs and examples
 kissunits = '2' # units like Meters or Coordinate
 log = '0.4' # logging for internal use, e.g. lib.rs
-nalgebra = '0.21' # vectors and matrics
+nalgebra = '0.31' # vectors and matrics
 nd-triangulation = { version = '0.3', optional = true } # CGAL for convex hulls
 osmpbfreader = '0.13' # read osm.pbf-files
 progressing = '3' # progress-bar
 rand = '0.7' # generate random numbers
 rand_pcg = '0.2' # generate random numbers
-serde = '1' # serialization
+serde = { version = '1', features = ["derive"] } # serialization
 serde_yaml = '0.8' # (de-)serialization
 smallvec = '1' # inlining small vecs
 
 
 [dev-dependencies]
-actix-rt = '0.2' # backend-server
-actix-web = '1' # backend-server
 criterion = '0.3' # benchmarking
-futures = '0.1' # backend-server
-quick-xml = '0.14' # read xml-files
+quick-xml = '0.23' # read xml-files

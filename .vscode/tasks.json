@@ -1,0 +1,122 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "group": "none",
+            "label": "[example] run",
+            "type": "shell",
+            "command": "cargo run --example ${input:example}",
+            "presentation": {
+                "clear": true,
+                "reveal": "always",
+                "focus": true
+            },
+            "problemMatcher": []
+        },
+        {
+            "group": "none",
+            "label": "[playground] run",
+            "type": "shell",
+            "command": "cargo run --example playground_${input:playground}",
+            "presentation": {
+                "clear": true,
+                "reveal": "always",
+                "focus": true
+            },
+            "problemMatcher": []
+        },
+        {
+            "group": "none",
+            "label": "[bin] isle_of_man",
+            "type": "shell",
+            "command": "cargo run --release --bin osmgraphing -- --config resources/isle_of_man_2020-03-14/osm.pbf.yaml",
+            "presentation": {
+                "clear": true,
+                "reveal": "always",
+                "focus": true
+            },
+            "problemMatcher": []
+        },
+        {
+            "group": "build",
+            "label": "[build] clean",
+            "type": "shell",
+            "command": "cargo build",
+            "presentation": {
+                "clear": true,
+                "reveal": "silent"
+            }
+        },
+        {
+            "group": "build",
+            "label": "[build] clean build",
+            "type": "shell",
+            "command": "cargo build --features='${input:feature}'",
+            "presentation": {
+                "clear": true,
+                "reveal": "silent"
+            },
+            "dependsOn": [
+                "[build] clean"
+            ]
+        },
+        {
+            "group": "build",
+            "label": "[build] build",
+            "type": "shell",
+            "command": "cargo build --features='${input:feature}'",
+            "presentation": {
+                "clear": true,
+                "reveal": "silent"
+            }
+        },
+        {
+            "group": "test",
+            "label": "[test] run",
+            "type": "shell",
+            "command": "cargo fmt -- --check && cargo test --features='${input:feature}'",
+            "presentation": {
+                "clear": true,
+                "reveal": "silent"
+            }
+        },
+    ],
+    "inputs": [
+        {
+            "id": "feature",
+            "type": "pickString",
+            "description": "Select your build-feature",
+            "options": [
+                "",
+                "gpl"
+            ],
+            "default": ""
+        },
+        {
+            "id": "example",
+            "type": "pickString",
+            "description": "Select your example",
+            "options": [
+                "dijkstra",
+                "parser",
+            ],
+            "default": ""
+        },
+        {
+            "id": "playground",
+            "type": "pickString",
+            "description": "Select your playground",
+            "options": [
+                "actix",
+                "edge-containers",
+                "graph",
+                "multithreading",
+                "nd-triangulation --features='gpl'",
+                "pipes_and_filters",
+                "random",
+                "xml_reader",
+            ],
+            "default": ""
+        }
+    ]
+}
